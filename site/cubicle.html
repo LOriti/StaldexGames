@@ -1,0 +1,3166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vitals 365 — Personal Wellbeing</title>
+<style>
+  :root {
+    --viva-bg: #f5f5f5;
+    --viva-card: #ffffff;
+    --viva-purple: #6264a7;
+    --viva-purple-dark: #464775;
+    --viva-purple-deep: #33344a;
+    --viva-green: #92c353;
+    --viva-green-deep: #498205;
+    --viva-green-soft: #dff6dd;
+    --viva-amber: #e8a33d;
+    --viva-amber-soft: #fff4ce;
+    --viva-red: #c4314b;
+    --viva-red-soft: #fde7e9;
+    --viva-blue: #0078d4;
+    --viva-text: #242424;
+    --viva-text-sub: #616161;
+    --viva-text-soft: #8a8886;
+    --viva-border: #e1dfdd;
+    --viva-hover: #f3f2f1;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
+  html, body { height: 100%; overflow: hidden; }
+  body {
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    background: var(--viva-bg);
+    color: var(--viva-text);
+    font-size: 14px;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ============ HEADER ============ */
+  .viva-header {
+    background: var(--viva-purple-deep);
+    border-bottom: none;
+    padding: 8px 14px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    height: 44px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+    flex-shrink: 0;
+    color: white;
+  }
+  .viva-logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 600;
+    font-size: 14px;
+    color: white;
+  }
+  .viva-logo .icon {
+    width: 26px;
+    height: 26px;
+    background: white;
+    border-radius: 5px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--viva-purple-dark);
+    font-weight: 800;
+    font-size: 14px;
+    letter-spacing: -0.5px;
+  }
+  .logo-text {
+    font-weight: 600;
+    letter-spacing: 0.2px;
+  }
+
+  /* ============ CONTENT ============ */
+  .viva-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: hidden;
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .viva-time-pill {
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 16px;
+    padding: 4px 12px;
+    font-size: 13px;
+    font-weight: 600;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-variant-numeric: tabular-nums;
+  }
+  .viva-time-pill .dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--viva-green);
+    animation: pulse 2s infinite;
+    box-shadow: 0 0 0 1.5px var(--viva-purple-deep);
+  }
+  @keyframes pulse { 50% { opacity: 0.5; } }
+  .viva-time-pill.event-incoming { background: var(--viva-amber); border-color: var(--viva-amber); color: var(--viva-purple-deep); }
+  .viva-time-pill.event-incoming .dot { background: var(--viva-purple-deep); box-shadow: none; }
+
+  /* === Tile row === */
+  .tile-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+  .tile {
+    background: white;
+    border: 1px solid var(--viva-border);
+    border-radius: 8px;
+    padding: 10px 14px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .tile-label {
+    font-size: 10px;
+    color: var(--viva-text-sub);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 3px;
+    font-weight: 600;
+  }
+  .tile-value {
+    font-size: 19px;
+    font-weight: 700;
+    line-height: 1.1;
+    color: var(--viva-purple-dark);
+  }
+  .tile.alert {
+    background: var(--viva-amber-soft);
+    border-color: var(--viva-amber);
+  }
+  .tile.alert .tile-value, .tile.alert .tile-label { color: #a05500; }
+
+  .viva-card {
+    background: var(--viva-card);
+    border: 1px solid var(--viva-border);
+    border-radius: 8px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .feed-card { flex: 1; min-height: 0; display: flex; padding: 4px 0; }
+  .meters-card { flex-shrink: 0; padding: 6px 14px; }
+  .actions-card { flex-shrink: 0; padding: 8px; }
+  .viva-card-title {
+    font-size: 13px;
+    font-weight: 600;
+    margin-bottom: 2px;
+  }
+  .viva-card-sub {
+    font-size: 11px;
+    color: var(--viva-text-sub);
+    margin-bottom: 12px;
+  }
+
+  /* === Wellbeing meters === */
+  .viva-meter-row {
+    display: grid;
+    grid-template-columns: 64px 1fr 32px;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--viva-border);
+    font-size: 12px;
+  }
+  .viva-meter-row:last-child { border-bottom: none; }
+  .viva-meter-row .name { font-weight: 500; }
+  .viva-meter-bar {
+    height: 6px;
+    background: #f3f2f1;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .viva-meter-fill {
+    height: 100%;
+    background: var(--viva-purple);
+    border-radius: 3px;
+    transition: width 0.4s ease, background 0.3s;
+  }
+  .viva-meter-fill.good { background: var(--viva-green-deep); }
+  .viva-meter-fill.warn { background: var(--viva-amber); }
+  .viva-meter-fill.danger { background: var(--viva-red); animation: pulse 0.5s infinite; }
+  .viva-meter-num {
+    font-weight: 600;
+    font-size: 12px;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* === Activity feed === */
+  .viva-feed {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding: 4px 12px;
+    background: white;
+    border-radius: 4px;
+    font-size: 13px;
+    line-height: 1.4;
+    width: 100%;
+  }
+  .viva-feed-item {
+    padding: 5px 0;
+    color: var(--viva-text);
+    border-bottom: 1px solid #efeeed;
+  }
+  .viva-feed-item:last-child { border-bottom: none; }
+  .viva-feed-item .ts {
+    color: var(--viva-text-soft);
+    font-size: 11px;
+    margin-right: 8px;
+    font-variant-numeric: tabular-nums;
+    font-weight: 500;
+  }
+  .viva-feed-item.action { color: var(--viva-text); }
+  .viva-feed-item.event { color: var(--viva-purple-dark); font-weight: 500; }
+  .viva-feed-item.good { color: var(--viva-green); }
+  .viva-feed-item.warn { color: var(--viva-amber); font-weight: 500; }
+  .viva-feed-item.crit { color: var(--viva-red); font-weight: 600; }
+  .viva-feed-item.boss { color: #6b4423; font-weight: 600; }
+  .viva-feed-item.callback { color: var(--viva-amber); font-style: italic; }
+  .viva-feed-item.combo { color: var(--viva-purple-dark); font-weight: 700; }
+
+  /* === Action grid === */
+  .actions-card .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 6px;
+  }
+  .viva-action {
+    background: white;
+    border: 1px solid var(--viva-border);
+    padding: 8px 10px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--viva-text);
+    transition: background 0.1s, border-color 0.1s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .viva-action:active:not(:disabled) {
+    background: rgba(98,100,167,0.10);
+    border-color: var(--viva-purple);
+  }
+  .viva-action:disabled { opacity: 0.4; cursor: not-allowed; }
+  .viva-action .name { font-weight: 600; font-size: 12px; line-height: 1.2; }
+  .viva-action .meta {
+    font-size: 10px;
+    color: var(--viva-text-sub);
+    margin-top: 2px;
+  }
+  .viva-action.primary {
+    grid-column: span 2;
+    background: var(--viva-purple);
+    color: white;
+    border: none;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(98,100,167,0.3);
+  }
+  .viva-action.primary:active:not(:disabled) {
+    background: var(--viva-purple-dark);
+  }
+  .viva-action.primary .meta { color: rgba(255,255,255,0.85); margin-top: 2px; font-size: 10px; }
+  .viva-action.lockin {
+    grid-column: span 2;
+    background: var(--viva-green-deep);
+    color: white;
+    border: none;
+    text-align: center;
+    font-weight: 700;
+    font-size: 14px;
+    padding: 11px;
+    border-radius: 6px;
+    animation: lockin-pulse 1s infinite;
+  }
+  @keyframes lockin-pulse {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(73,130,5,0.55); }
+    50% { box-shadow: 0 0 0 6px rgba(73,130,5,0); }
+  }
+  .viva-action.bathroom {
+    grid-column: span 2;
+    background: #2f7d8b;
+    color: white;
+    border: none;
+    text-align: center;
+    font-weight: 600;
+    font-size: 14px;
+    padding: 11px;
+    border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(47,125,139,0.3);
+  }
+  .viva-action.bathroom:active {
+    background: #246575;
+  }
+  .viva-action.bathroom .meta { color: rgba(255,255,255,0.85); margin-top: 2px; font-size: 10px; }
+  .viva-action.imodium { background: #fafafa; }
+  .viva-action.snack { background: #fafafa; }
+
+  /* === Week strip === */
+  .viva-week-strip {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 4px;
+    margin-top: 8px;
+  }
+  .viva-week-day {
+    text-align: center;
+    padding: 8px 4px;
+    border-radius: 4px;
+    background: #f3f2f1;
+    font-size: 10px;
+  }
+  .viva-week-day.done {
+    background: var(--viva-green);
+    color: white;
+  }
+  .viva-week-day.missed {
+    background: var(--viva-red);
+    color: white;
+  }
+  .viva-week-day.perfect {
+    background: linear-gradient(135deg, #ffd700 0%, #c9a302 100%);
+    color: white;
+  }
+  .viva-week-day.current {
+    background: var(--viva-purple);
+    color: white;
+    font-weight: 600;
+  }
+  .viva-week-day .day-name {
+    font-weight: 600;
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+  .viva-week-day .tasks { font-size: 11px; margin-top: 2px; }
+
+  /* === Insights / events === */
+  .viva-insight {
+    background: linear-gradient(135deg, #f3f2fa 0%, #e8e6f5 100%);
+    border-left: 3px solid var(--viva-purple);
+    padding: 10px 12px;
+    border-radius: 0 4px 4px 0;
+    margin-bottom: 8px;
+  }
+  .viva-insight.good { background: linear-gradient(135deg, #e0f0e0 0%, #c8e3c8 100%); border-left-color: var(--viva-green); }
+  .viva-insight.warn { background: var(--viva-amber-soft); border-left-color: var(--viva-amber); }
+  .viva-insight.bad { background: var(--viva-red-soft); border-left-color: var(--viva-red); }
+  .viva-insight-title {
+    font-weight: 600;
+    font-size: 12px;
+    color: var(--viva-purple-dark);
+    margin-bottom: 4px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .viva-insight.good .viva-insight-title { color: #0a5d0a; }
+  .viva-insight.warn .viva-insight-title { color: #a04000; }
+  .viva-insight.bad .viva-insight-title { color: var(--viva-red); }
+  .viva-insight-body {
+    font-size: 11px;
+    color: var(--viva-text);
+    line-height: 1.4;
+  }
+
+  /* ============ MODAL ============ */
+  .modal {
+    position: fixed; inset: 0;
+    background: rgba(36, 36, 36, 0.5);
+    backdrop-filter: blur(2px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    padding: 12px;
+  }
+  .modal.show { display: flex; }
+  .modal-card {
+    background: white;
+    border-radius: 8px;
+    max-width: 480px;
+    width: 100%;
+    padding: 18px;
+    box-shadow: 0 24px 48px rgba(0,0,0,0.2);
+    max-height: 92vh;
+    overflow-y: auto;
+  }
+  .modal-card.event {
+    border-top: 4px solid var(--viva-purple);
+  }
+  .modal-card.event.good { border-top-color: var(--viva-green-deep); }
+  .modal-card.event.callback { border-top-color: var(--viva-amber); }
+  .modal-card.event.crash { border-top-color: var(--viva-red); }
+  .modal-card h2 {
+    font-size: 20px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    text-align: center;
+  }
+  .modal-card h3 {
+    font-size: 17px;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--viva-purple-dark);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .modal-card.event.good h3 { color: var(--viva-green); }
+  .modal-card.event.callback h3 { color: var(--viva-amber); }
+  .modal-card.event.crash h3 { color: var(--viva-red); }
+  .modal-card p {
+    font-size: 14px;
+    margin-bottom: 14px;
+    line-height: 1.45;
+    color: var(--viva-text);
+  }
+  .modal-card p.centered { text-align: center; }
+  .modal-card p.subtle {
+    font-size: 12px;
+    color: var(--viva-text-sub);
+    margin-bottom: 14px;
+  }
+  .modal-card p.carryover {
+    font-size: 12px;
+    color: var(--viva-amber);
+    font-style: italic;
+    text-align: center;
+    margin-top: -8px;
+  }
+  .modal-card .morning-name {
+    font-size: 18px;
+    font-weight: 600;
+    margin: 6px 0 4px;
+    text-align: center;
+    color: var(--viva-purple-dark);
+  }
+  .modal-card .morning-name.good { color: var(--viva-green); }
+  .modal-card .morning-name.bad { color: var(--viva-red); }
+  .choices {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+  .choices button {
+    background: white;
+    border: 1px solid var(--viva-border);
+    padding: 10px 12px;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 12px;
+    cursor: pointer;
+    text-align: left;
+    color: var(--viva-text);
+    line-height: 1.3;
+    transition: all 0.1s;
+  }
+  .choices button:hover {
+    background: rgba(98,100,167,0.06);
+    border-color: var(--viva-purple);
+  }
+  .choices button.primary {
+    background: var(--viva-purple);
+    color: white;
+    border: none;
+    font-weight: 600;
+    text-align: center;
+    padding: 12px;
+    box-shadow: 0 1px 3px rgba(98,100,167,0.3);
+  }
+  .choices button.primary:hover {
+    background: var(--viva-purple-dark);
+  }
+  .mode-opt {
+    background: white;
+    border: 1.5px solid var(--viva-border) !important;
+    padding: 11px 14px !important;
+    border-radius: 6px;
+    font-family: inherit;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    text-align: left;
+    color: var(--viva-text);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .mode-opt .mode-sub {
+    font-size: 11px;
+    font-weight: 400;
+    color: var(--viva-text-sub);
+  }
+  .mode-opt.selected {
+    border-color: var(--viva-purple) !important;
+    background: rgba(98,100,167,0.08);
+  }
+  .mode-opt.selected .mode-sub { color: var(--viva-purple-dark); }
+
+  /* Summary rows for day/week end */
+  .summary-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 6px;
+    font-size: 13px;
+    padding: 4px 0;
+    border-bottom: 1px solid var(--viva-border);
+  }
+  .summary-row.good { color: var(--viva-green-deep); }
+  .summary-row.bad { color: var(--viva-red); }
+  .summary-row.total {
+    border-top: 2px solid var(--viva-text);
+    border-bottom: none;
+    padding-top: 8px;
+    margin-top: 6px;
+    font-size: 16px;
+    font-weight: 700;
+  }
+
+  /* Category ratings */
+  .ratings-wrap { margin: 4px 0 10px; }
+  .rating-row { margin-bottom: 9px; }
+  .rating-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 3px;
+  }
+  .rating-name { font-size: 12px; font-weight: 600; }
+  .rating-num { font-size: 12px; font-weight: 700; color: var(--viva-text-sub); font-variant-numeric: tabular-nums; }
+  .rating-bar {
+    height: 6px;
+    background: #eceaf3;
+    border-radius: 3px;
+    overflow: hidden;
+  }
+  .rating-fill { height: 100%; border-radius: 3px; transition: width 0.6s ease; }
+  .rating-label {
+    font-size: 10.5px;
+    color: var(--viva-text-sub);
+    font-style: italic;
+    margin-top: 3px;
+    line-height: 1.3;
+  }
+
+  .next-week-punch {
+    background: var(--viva-purple-deep);
+    color: white;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin: 10px 0 12px;
+  }
+  .nwp-head {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.7;
+    margin-bottom: 5px;
+    font-weight: 700;
+  }
+  .nwp-body { font-size: 13px; line-height: 1.4; }
+
+  .day-strip-mini {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px;
+    margin: 8px 0;
+  }
+  .dsm {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 3px 7px;
+    border-radius: 4px;
+    background: #eceaf3;
+  }
+  .dsm.good { background: var(--viva-green-deep); color: white; }
+  .dsm.ok { background: #d8e8d0; }
+  .dsm.bad { background: var(--viva-red); color: white; }
+
+  /* Grade letter */
+  .grade {
+    font-size: 80px;
+    font-weight: 700;
+    text-align: center;
+    margin: 8px 0;
+    line-height: 1;
+    letter-spacing: -3px;
+  }
+  .grade.S { color: #c9a302; }
+  .grade.A { color: var(--viva-green); }
+  .grade.B { color: var(--viva-purple-dark); }
+  .grade.C { color: var(--viva-amber); }
+  .grade.D { color: var(--viva-red); }
+  .grade.F { color: var(--viva-red); }
+
+  /* Lock-in countdown */
+  .lockin-progress {
+    height: 4px;
+    background: rgba(255,255,255,0.3);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+  .lockin-progress-fill {
+    height: 100%;
+    background: white;
+    width: 100%;
+    animation: countdown 5s linear forwards;
+  }
+  @keyframes countdown { to { width: 0%; } }
+
+  /* Shake */
+  .shake { animation: shake 0.3s; }
+  @keyframes shake {
+    0%, 100% { transform: translate(0,0); }
+    25% { transform: translate(-3px, 1px); }
+    75% { transform: translate(3px, -1px); }
+  }
+
+  /* Combo banner */
+  .combo-banner {
+    position: fixed;
+    top: 60px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: linear-gradient(135deg, var(--viva-purple) 0%, var(--viva-purple-deep) 100%);
+    color: white;
+    padding: 8px 18px;
+    border-radius: 20px;
+    font-weight: 700;
+    font-size: 13px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    box-shadow: 0 8px 24px rgba(98,100,167,0.45);
+    z-index: 150;
+    pointer-events: none;
+    animation: combo-pop 2.5s ease-out forwards;
+  }
+  @keyframes combo-pop {
+    0% { opacity: 0; transform: translate(-50%, -10px); }
+    15% { opacity: 1; transform: translate(-50%, 0); }
+    85% { opacity: 1; transform: translate(-50%, 0); }
+    100% { opacity: 0; transform: translate(-50%, -10px); }
+  }
+</style>
+</head>
+<body>
+
+<header class="viva-header">
+  <div class="viva-logo">
+    <div class="icon">V</div>
+    <span class="logo-text">Vitals 365</span>
+  </div>
+  <div class="viva-time-pill" id="timePill">
+    <span class="dot"></span>
+    <span id="timeDisplay">09:00</span>
+  </div>
+</header>
+
+<main class="viva-content">
+
+  <!-- Two compact tiles: Tasks + Day -->
+  <div class="tile-row">
+    <div class="tile" id="tileTasks">
+      <div class="tile-label">Reports</div>
+      <div class="tile-value"><span id="tasks">0</span> / <span id="quota">8</span></div>
+    </div>
+    <div class="tile">
+      <div class="tile-label">Today</div>
+      <div class="tile-value" id="dayTile">Monday</div>
+    </div>
+  </div>
+
+  <!-- Activity feed: top priority -->
+  <div class="viva-card feed-card">
+    <div class="viva-feed" id="log"></div>
+  </div>
+
+  <!-- Wellbeing meters: compact -->
+  <div class="viva-card meters-card">
+    <div class="viva-meter-row">
+      <span class="name">Focus</span>
+      <div class="viva-meter-bar"><div class="viva-meter-fill good" id="focusFill" style="width:50%"></div></div>
+      <span class="viva-meter-num" id="focusVal">50</span>
+    </div>
+    <div class="viva-meter-row">
+      <span class="name">Bowel</span>
+      <div class="viva-meter-bar"><div class="viva-meter-fill" id="bowelFill" style="width:20%"></div></div>
+      <span class="viva-meter-num" id="bowelVal">20</span>
+    </div>
+    <div class="viva-meter-row">
+      <span class="name">Jitter</span>
+      <div class="viva-meter-bar"><div class="viva-meter-fill" id="jitterFill" style="width:0%"></div></div>
+      <span class="viva-meter-num" id="jitterVal">0</span>
+    </div>
+    <div class="viva-meter-row">
+      <span class="name">Stim load</span>
+      <div class="viva-meter-bar"><div class="viva-meter-fill" id="stimFill" style="width:0%"></div></div>
+      <span class="viva-meter-num" id="stimVal">0</span>
+    </div>
+  </div>
+
+  <!-- Actions -->
+  <div class="viva-card actions-card">
+    <div class="actions" id="actionGrid">
+      <button class="viva-action" data-action="coffee"><div class="name">☕ Coffee</div><div class="meta">4-7m</div></button>
+      <button class="viva-action" data-action="dex"><div class="name">⊖ Dexi</div><div class="meta">4-7m</div></button>
+      <button class="viva-action" data-action="nicotine"><div class="name">🚬 Nicotine</div><div class="meta">8-12m</div></button>
+      <button class="viva-action" data-action="energy"><div class="name">⚡ Energy drink</div><div class="meta">5-8m</div></button>
+      <button class="viva-action" data-action="preworkout"><div class="name">🥤 Pre-workout</div><div class="meta">4-6m</div></button>
+      <button class="viva-action" data-action="walk"><div class="name">🚶 Walk</div><div class="meta">18-24m</div></button>
+      <button class="viva-action imodium" data-action="loperamide"><div class="name">⊘ Imodium</div><div class="meta"><span id="lop">1</span> left · 3-5m</div></button>
+      <button class="viva-action" data-action="scroll"><div class="name">▤ Slack off</div><div class="meta">15-30m</div></button>
+      <button class="viva-action snack" data-action="snack"><div class="name">🍫 Snack</div><div class="meta">4-7m</div></button>
+      <button class="viva-action" data-action="hydrate"><div class="name">💧 Hydrate</div><div class="meta">2-4m</div></button>
+      <button class="viva-action bathroom" data-action="bathroom"><div class="name">🚻 Bathroom</div><div class="meta">8-30m</div></button>
+      <button class="viva-action primary" data-action="work"><div class="name">⌨ Do work</div><div class="meta">file report · 22-32m</div></button>
+    </div>
+  </div>
+
+</main>
+
+<!-- DAY START MODAL -->
+<!-- MODE SELECT MODAL (first screen) -->
+<div class="modal show" id="modeModal">
+  <div class="modal-card">
+    <h2>Vitals 365</h2>
+    <p class="centered subtle">Personal Wellbeing · Choose your week</p>
+
+    <div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--viva-text-sub);text-transform:uppercase;letter-spacing:0.5px;">Length</div>
+    <div class="choices" id="lengthChoices">
+      <button class="mode-opt selected" data-length="5">Full Week <span class="mode-sub">Mon–Fri · the full grind</span></button>
+      <button class="mode-opt" data-length="3">3-Day Sprint <span class="mode-sub">Mon–Wed · the front half</span></button>
+    </div>
+
+    <div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--viva-text-sub);text-transform:uppercase;letter-spacing:0.5px;">Difficulty</div>
+    <div class="choices" id="diffChoices">
+      <button class="mode-opt selected" data-diff="normal">Normal <span class="mode-sub">a regular nightmare</span></button>
+      <button class="mode-opt" data-diff="hungover">Hungover <span class="mode-sub">every morning is a wreck</span></button>
+      <button class="mode-opt" data-diff="openplan">Open Plan <span class="mode-sub">events fire twice as often</span></button>
+    </div>
+
+    <div class="choices" style="margin-top:16px;">
+      <button class="primary" onclick="confirmMode()">Start the week</button>
+    </div>
+  </div>
+</div>
+
+<div class="modal" id="dayStartModal">
+  <div class="modal-card">
+    <h2 id="dayStartTitle">Monday morning</h2>
+    <p class="centered subtle">09:00 · Wellbeing intake</p>
+    <div class="morning-name" id="morningName"></div>
+    <p class="centered" id="morningDesc"></p>
+    <p class="carryover" id="carryoverText"></p>
+    <div class="choices">
+      <button class="primary" onclick="startDay()">Clock in</button>
+    </div>
+  </div>
+</div>
+
+<!-- EVENT MODAL -->
+<div class="modal" id="eventModal">
+  <div class="modal-card event" id="eventCard">
+    <h3 id="eventTitle"></h3>
+    <p id="eventDesc"></p>
+    <div class="choices" id="eventChoices"></div>
+  </div>
+</div>
+
+<!-- LOCK-IN MODAL -->
+<div class="modal" id="lockinModal">
+  <div class="modal-card event good">
+    <h3 id="lockinTitle">⚡ You're locked in</h3>
+    <p id="lockinDesc">Focus is sharp. Stim load is humming. You can ride this — 1 to 4 tasks in one go. Decide fast.</p>
+    <div class="lockin-progress"><div class="lockin-progress-fill" id="lockinTimer"></div></div>
+    <div class="choices" style="margin-top:12px;">
+      <button class="primary" onclick="commitLockIn()">SEND IT</button>
+      <button onclick="declineLockIn()">Let it pass</button>
+    </div>
+  </div>
+</div>
+
+<!-- DAY END MODAL -->
+<div class="modal" id="dayEndModal">
+  <div class="modal-card">
+    <h2 id="dayEndTitle">End of Monday</h2>
+    <p class="centered" id="dayEndQuip"></p>
+    <div id="dayEndSummary"></div>
+    <div class="choices" style="margin-top:14px;">
+      <button class="primary" id="nextDayBtn" onclick="nextDay()">Home, then bed</button>
+    </div>
+  </div>
+</div>
+
+<!-- WEEK END MODAL -->
+<div class="modal" id="weekEndModal">
+  <div class="modal-card">
+    <h2 id="weekEndTitle">The week is over.</h2>
+    <div class="grade" id="weekGrade">?</div>
+    <p class="centered" id="weekVerdict"></p>
+    <div id="weekSummary"></div>
+    <div id="lbSection" style="display:none;margin-top:12px;border-top:1px solid var(--viva-border);padding-top:12px;">
+      <div style="display:flex;gap:6px;align-items:center;">
+        <input id="lbName" type="text" maxlength="20" placeholder="Display name" style="flex:1;padding:9px 10px;border:1px solid var(--viva-border);border-radius:6px;font-family:inherit;font-size:13px;">
+        <button onclick="submitScore()" id="lbSubmitBtn" style="padding:9px 14px;background:var(--viva-purple);color:white;border:none;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">Submit</button>
+      </div>
+      <p class="centered subtle" id="lbStatus" style="margin-top:8px;"></p>
+      <div id="lbBoard" style="margin-top:8px;font-size:12px;"></div>
+      <button onclick="viewLeaderboard()" style="width:100%;margin-top:8px;padding:8px;background:white;border:1px solid var(--viva-border);border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;">View leaderboard</button>
+    </div>
+    <div class="choices" style="margin-top:14px;">
+      <button class="primary" onclick="location.reload()">New week</button>
+    </div>
+  </div>
+</div>
+
+<!-- INSTANT GAME OVER -->
+<div class="modal" id="gameoverModal">
+  <div class="modal-card event crash">
+    <h3 id="goTitle">⚠ Wellbeing incident logged</h3>
+    <p class="centered" id="goMsg"></p>
+    <p class="centered subtle">Week ended on <span id="goDay">Monday</span>. Score: <span id="goScore">0</span></p>
+    <div class="choices" style="margin-top:14px;">
+      <button class="primary" onclick="location.reload()">New week</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ==================== CORE CONSTANTS ====================
+const END_TIME = 1020;
+const START_TIME = 540;
+
+const FULL_WEEK = [
+  { name: "Monday",    short: "MON", quota: 7 },
+  { name: "Tuesday",   short: "TUE", quota: 8 },
+  { name: "Wednesday", short: "WED", quota: 9 },
+  { name: "Thursday",  short: "THU", quota: 8 },
+  { name: "Friday",    short: "FRI", quota: 6 },
+];
+
+// Mode config — chosen at start. length + difficulty.
+const MODE = {
+  length: 5,          // 3 or 5
+  difficulty: 'normal', // 'normal' | 'hungover' | 'openplan'
+};
+
+// DAYS is derived from MODE at start (3-day = Mon-Tue-Wed front half).
+let DAYS = FULL_WEEK.slice();
+
+function applyModeToDays() {
+  DAYS = FULL_WEEK.slice(0, MODE.length);
+  // Crunch-style difficulty bumps would go here if added; openplan/hungover don't change quotas
+}
+
+// ==================== WEEK STATE ====================
+const week = {
+  dayIndex: 0,
+  weekScore: 0,
+  totalTasks: 0,
+  totalQuota: 0,
+  daysMissed: 0,
+  daysWon: 0,
+  perfectDays: 0,
+  shartCount: 0,
+  cardiacCount: 0,
+  bossWarnings: 0,
+  bathroomTrips: 0,
+  stimsConsumed: 0,
+  combosTriggered: 0,
+  lockInsSeized: 0,
+  blackouts: 0,
+  pipRisk: 0,                 // accumulates from dodging — most rolls miss
+  pipMeetingThisDay: false,   // resets daily — first meeting attended decays risk
+  missedMeetings: 0,          // silent counter — 3+ unlocks meeting-about-meetings
+  meetingAboutMeetingsDone: false,
+  concern: 0,                 // wellness/culture concern counter
+  wellnessTrainingDone: false,
+  // category-rating raw accumulators (across the whole run)
+  socialAttended: 0,          // donuts, cake, lunch invites, drinks taken
+  rudeDeclines: 0,            // rude/abrupt social declines
+  grudgesResolved: 0,
+  meetingsAttended: 0,
+  meetingsDodged: 0,
+  internHelped: 0,
+  urgentsHandled: 0,
+  urgentsIgnored: 0,
+  lateStimDays: 0,            // days you stimmed after 15:00
+  totalCoffees: 0,
+  totalWalks: 0,
+  totalLunchesProper: 0,
+  lunchesSkipped: 0,
+  closeBowelCalls: 0,         // bowel hit >85 and survived
+  closeCardiacCalls: 0,       // jitter hit >85 and survived
+  stimCrashesSurvived: 0,
+  whiteouts: 0,
+  gossipMoments: 0,           // walk of shame, boss laughs, slack storms, hickey, screen-share
+  preworkoutsTotal: 0,
+  dexTotal: 0,
+  dayResults: [],
+  grudges: {},
+  shownEvents: new Set(),     // persists across days — no repeats
+  midweekDrinks: false,
+  bossOnHoliday: false,
+  carryoverPenalty: null,     // set by late-day stims — forces bad next morning
+};
+
+// PIP risk helper. Most rolls don't register — silly things might not be reported.
+function pipRoll(chance, points, reasonForLog) {
+  if (Math.random() < chance) {
+    week.pipRisk += points;
+    if (reasonForLog) logMsg(reasonForLog, 'warn');
+  }
+}
+
+// Attending a meeting properly decays PIP risk — once per day
+function decayPipFromMeeting() {
+  week.meetingsAttended++;
+  if (!week.pipMeetingThisDay && week.pipRisk > 0) {
+    week.pipRisk = Math.max(0, week.pipRisk - 1);
+    week.pipMeetingThisDay = true;
+  }
+}
+
+// Missed-meeting tracker — silent. No feed message.
+function noteMissedMeeting() {
+  week.missedMeetings++;
+  week.meetingsDodged++;
+}
+
+// Social warmth helpers — feed Kitchen Standing (positive) and Sociopath (negative)
+function noteSocial() { week.socialAttended++; }
+function noteRudeDecline() { week.rudeDeclines++; if (state) state.history.socialDeclined++; noteConcern(1); }
+function noteMumIgnored() { if (state) state.history.mumIgnored++; week.mumIgnoredTotal = (week.mumIgnoredTotal || 0) + 1; }
+function noteGossip() { week.gossipMoments++; }
+
+// Concern tracker — silent. Heavy stims, rude behaviour, poor culture.
+function noteConcern(points) {
+  week.concern += points;
+}
+
+let state = null;
+let pendingEvent = false;
+let lockInActive = false;
+let lockInTimeout = null;
+
+// ==================== STIM ACTIONS (with timing flex) ====================
+const ACTIONS = {
+  coffee:     { focus: +18, bowel: +14, jitter: +5,  stim: +10, time: [4, 7] },
+  dex:        { focus: +26, bowel: +6,  jitter: +20, stim: +25, time: [4, 7] },
+  nicotine:   { focus: +26, bowel: +14, jitter: +6,  stim: +15, time: [8, 12] },
+  energy:     { focus: +20, bowel: +16, jitter: +12, stim: +12, time: [5, 8] },
+  preworkout: { focus: +30, bowel: +24, jitter: +32, stim: +45, time: [4, 6] },
+  walk:       { focus: +28, bowel: -8,  jitter: -15, stim: -5,  time: [18, 24] },
+};
+
+// ==================== COMBOS ====================
+const COMBOS = [
+  { id: 'classic',         prev: ['coffee'], curr: ['nicotine'], window: 15, label: 'THE CLASSIC', focus: +14, bowel: +10, jitter: -4, lockInBoost: true },
+  { id: 'reverse_classic', prev: ['nicotine'], curr: ['coffee'], window: 15, label: 'THE CLASSIC', focus: +14, bowel: +10, jitter: -4, lockInBoost: true },
+  { id: 'jitter_coffee',   prev: ['coffee'], curr: ['coffee'], window: 10, label: 'JITTER COFFEE', focus: +4, bowel: 0, jitter: +18 },
+  { id: 'professional',    prev: ['dex'], curr: ['coffee'], window: 15, label: 'PROFESSIONAL', focus: +18, bowel: 0, jitter: +8 },
+  { id: 'professional_r',  prev: ['coffee'], curr: ['dex'], window: 15, label: 'PROFESSIONAL', focus: +18, bowel: 0, jitter: +8 },
+  { id: 'danger_zone',     prev: ['dex'], curr: ['preworkout'], window: 10, label: 'DANGER ZONE', focus: +20, bowel: 0, jitter: +30, stim: +25 },
+  { id: 'danger_zone_r',   prev: ['preworkout'], curr: ['dex'], window: 10, label: 'DANGER ZONE', focus: +20, bowel: 0, jitter: +30, stim: +25 },
+  { id: 'conv_store',      prev: ['energy'], curr: ['nicotine'], window: 15, label: 'CONVENIENCE STORE', focus: +10, bowel: +10, jitter: +4 },
+  { id: 'conv_store_r',    prev: ['nicotine'], curr: ['energy'], window: 15, label: 'CONVENIENCE STORE', focus: +10, bowel: +10, jitter: +4 },
+  { id: 'reset_a',         prev: ['walk'], curr: ['coffee'], window: 20, label: 'RESET', focus: +12, bowel: -6, jitter: -12 },
+  { id: 'reset_b',         prev: ['coffee'], curr: ['walk'], window: 20, label: 'RESET', focus: +12, bowel: -6, jitter: -12 },
+  { id: 'smoke_break',     prev: ['nicotine'], curr: ['walk'], window: 15, label: 'THE SMOKE BREAK', focus: +15, bowel: -6, jitter: -10 },
+  { id: 'smoke_break_r',   prev: ['walk'], curr: ['nicotine'], window: 15, label: 'THE SMOKE BREAK', focus: +15, bowel: -6, jitter: -10 },
+];
+
+// ==================== FLAVOUR TEXT ====================
+const FLAVOUR = {
+  coffee: [
+    "Sip the burnt office coffee. Bowels stir.",
+    "Pod machine spits something brown. You drink it.",
+    "Third coffee. The cup is just a prop now.",
+    "Coffee's gone cold. You drink it anyway. Like a man.",
+    "You add three sugars. You used to take it black.",
+    "The mug says 'World's OK-est Employee'. Aspirational.",
+    "Plunger coffee from Tara's stash. She'll know.",
+    "Long black. The 'long' is a lie.",
+    "Instant. You're not above it.",
+    "Iced latte from reception's stash. You owe reception now.",
+  ],
+  dex: [
+    "Half a dexi under the tongue. Things sharpen.",
+    "Snap a dexi in two. Take the bigger half.",
+    "Dexi kicks in. Your spreadsheet has lore now.",
+    "Tongue-melting bitter. The morning gets a soundtrack.",
+    "10mg. Conservative. By your standards.",
+    "Dexi hits. The fluorescent lights become information.",
+    "You wash it down with cold coffee. The combo is the meal.",
+    "Dexi. You read an email subject and understand its purpose.",
+  ],
+  nicotine: [
+    "Step out for a dart. Focus arrives sharp and mean.",
+    "Vape in the stairwell. Strawberry clarity.",
+    "Nicotine pouch in. Brain comes online.",
+    "Smoke with Kev. Kev has thoughts on Bitcoin.",
+    "Rollie out the fire escape. Tastes like 2009.",
+    "ZYN under the lip. Discreet. Slightly evil.",
+    "Cigarette outside. Cold air helps too. Two for one.",
+    "Vape rip. You blow out a cloud the size of your regrets.",
+    "Nicotine gum. You chew it like it owes you money.",
+  ],
+  energy: [
+    "Crack a warm Monster from the drawer.",
+    "Red Bull, room temperature. The crime is the temperature.",
+    "Sugar-free V. Tastes like cleaning product. Effective.",
+    "You drink a Mother. Your mother would be disappointed.",
+    "The can hisses. So do your kidneys.",
+    "Rockstar. From a service station in 2017, possibly.",
+    "Mango Monster. The mango is a memory.",
+    "Reign. 'TOTAL BODY FUEL'. Aspirational.",
+  ],
+  preworkout: [
+    "Dry-scoop pre-workout. You taste your heartbeat.",
+    "C4 in water. Tongue numb. Vision pink.",
+    "Beta-alanine tingles. You feel like a bee.",
+    "Dry-scoop. You cough for a full minute. Worth it.",
+    "Half a scoop. You are no coward but the full scoop killed Brad.",
+    "Ghost pre. Sour Patch flavour. Vile. Effective.",
+    "Bucked Up. The label has antlers on it. You feel like a stag.",
+  ],
+  walk: [
+    "You walked the block. Sun on your face. The world existed.",
+    "Lap around the park. You saw a dog. Day improved 40%.",
+    "Walked to the harbour and back. Real air.",
+    "20 minutes outside. You forgot Brad existed.",
+    "Brisk walk, headphones in. You felt like a person.",
+    "Walked past three cafés you'll never try. Reset complete.",
+    "You walked and called your sister. She didn't answer. Still helped.",
+  ],
+};
+
+const SCROLL_LINES = [
+  "Reddit. Slight calm. Time bleeds.",
+  "Nine-minute video about a man building a chair.",
+  "Twitter. Two minutes of doomscrolling, eight of regret.",
+  "Wikipedia article about a 1960s submarine disaster.",
+  "Instagram. Everyone is in Greece. You are not.",
+  "LinkedIn. Someone from school just got promoted. They were a moron.",
+  "Same TikTok 4 times in a row.",
+  "Property listings. You can't afford any. You keep looking.",
+  "AITA for 20 minutes. The husband was wrong.",
+  "YouTube Shorts. Where did 25 minutes go.",
+  "A Reddit thread about a tradie's worst customer. Eight pages.",
+  "Twenty minutes on Maps. You don't have a trip planned.",
+];
+
+const SNACK_LINES = [
+  "Vending machine Snickers. The big one. No regrets, future regrets.",
+  "Half a leftover banh mi from Priya's lunch run.",
+  "Almonds from the drawer. Older than your laptop. You eat them anyway.",
+  "Two muesli bars stacked. The protein one and the chocolate one.",
+  "A mandarin from the kitchen bowl. Citrus oil on your fingers all afternoon.",
+  "Stale Tim Tam. Found at the back of the third drawer. Eaten.",
+  "A boiled egg you brought in. Audibly. Greg looked over.",
+  "Half a packet of Smith's. You can't open the other half without finishing this one.",
+  "Bag of grapes. The good kind. Briefly, life is fine.",
+  "Mi Goreng cup at the kitchen sink. Steam. Soy sauce. Salt levels: spiritual.",
+  "Two squares of dark chocolate. You meant to have one.",
+  "A protein shake. Tastes like sweetened chalk. Effective.",
+  "Cold leftover pizza. From Sunday. From a friend's birthday. Still good.",
+  "A whole sleeve of Saladas. Greg saw. Greg knows.",
+  "Carrot sticks. You brought them in. You ate them. You feel virtuous and unsatisfied.",
+];
+
+const HYDRATE_LINES = [
+  "Full glass of water. Bladder noted.",
+  "You filled the Owala. Drank half of it standing at the sink.",
+  "Tap water. Cold. Hits like punctuation.",
+  "Drink the warm bottle that's been on your desk since Tuesday. Approach with caution.",
+  "Sparkling water from the kitchen fridge. Smug little hiss.",
+  "You skull a full pint of water like a man in a desert. Done.",
+  "Stanley cup refill. The ice has melted into a single iceberg.",
+  "Plain water. Tasteless. Effective. The body sighs.",
+  "Lukewarm water. You're thirsty enough not to mind.",
+  "A glass at the kitchen sink. Standing. Like an animal.",
+  "Electrolyte sachet stirred into water. Tastes like a beach.",
+  "Cold water. You feel briefly, deeply, like a wellness influencer.",
+];
+
+const BATHROOM_LINES = {
+  clear: [
+    "Sweet relief. You return a changed person.",
+    "Tactical victory. You feel 4kg lighter.",
+    "Mission accomplished. You washed your hands for the optics.",
+    "Catastrophic emptying. Beautiful work.",
+  ],
+  scrolled: [
+    "You scrolled in there. Long minutes of true peace.",
+    "Read a full article on the toilet. Productive in spirit.",
+    "Phone in. Phone out. Bowel: empty. Hands: only kind of washed.",
+  ],
+  ambush: [
+    "Greg walked in. Greg wanted to chat. About macros.",
+    "The stall next door had a man on a work call. WITH VIDEO.",
+    "The hand dryer was broken. You wiped on your trousers.",
+    "Out of paper. You did a thing you cannot speak of.",
+    "Marcus from H&S audited the soap dispensers. While you were trying to leave.",
+    "Someone you hate started a conversation through the wall.",
+  ],
+  zen: [
+    "Top tier session. You came back grinning.",
+    "The good cubicle was free. The far one. Near the window.",
+    "You did breathwork in there. Transcendent.",
+    "Optimal everything. Paper plush. Light correct. Acoustics gentle.",
+  ],
+};
+
+const WORK_LINES = [
+  "Report submitted. ", "Spreadsheet finalised. ",
+  "PowerPoint inflicted on stakeholders. ",
+  "Email written. Re-written. Sent. ",
+  "Quarterly summary filed. ", "Form lodged. ",
+  "Slide deck shipped. ", "Reconciliation completed. ",
+  "Risk register updated. ", "Memo circulated. ",
+  "Forecast model run. Numbers are made up but feel real. ",
+];
+
+const STARING_LINES = [
+  "You stare at the screen. The cursor blinks. Nothing.",
+  "You open the document. You close it. You open it again.",
+  "Brain offline. Just staring. Time passes anyway.",
+  "Your hand is on the mouse. That's all that's happening.",
+  "You typed your name into the address bar by accident.",
+];
+
+const JITTER_FAIL_LINES = [
+  "Hands shake too hard. Task fails.",
+  "You typed your password into the report. Three times. Task fails.",
+  "Wrong tab. Wrong file. Wrong everything. Task fails.",
+  "Ctrl-Z'd four times too many. Two hours of work gone. Task fails.",
+  "You typed in caps without realising. The email read like a war crime. Task fails.",
+];
+
+const BLACKOUT_LINES_2 = [
+  "You sat down at 11:47. You looked up at 11:47. Two reports were filed. You don't remember writing them.",
+  "Your hands were typing. You were elsewhere. When you returned, the work was done. Twice.",
+  "Blacked in. Two tasks in the time of one. The mouse cursor was warm.",
+  "Time slid. The fluorescents hummed in a new key. Two reports, complete, your name on both.",
+  "You did one. Then another. The second one is better. You can't remember writing either.",
+];
+
+const BLACKOUT_LINES_3 = [
+  "Triple. THREE reports filed. Sweat on your collar. You blink and it's done.",
+  "The screen blurred. You typed THREE THINGS. Your colleagues looked over. They look concerned.",
+  "Massive blackout. Three tasks. You feel like you ran a marathon at your desk.",
+  "You wrote three reports in one sitting. Linda whispers something. You don't catch it.",
+];
+
+const BLACKOUT_BAD_LINES = [
+  "The task is done. You don't recognise the writing. Your name is on it though.",
+  "Done. The formatting is wild. Did you do this? You did this. Maybe.",
+  "Filed. The sender field has a typo of your own name. Sent anyway.",
+  "Submitted. You stand. Your legs are not working properly. The task is, however, complete.",
+];
+
+const WHITEOUT_LINES = [
+  "You stare at the screen. The screen stares back. Neither of you blinks. Nothing happens.",
+  "Your hand is on the mouse. The mouse is on the desk. The desk is in the office. That's all you've got.",
+  "The cursor blinks. You blink. The blinks do not sync. You are not driving right now.",
+  "You opened a document. You think. You may have closed it. Time is a suggestion.",
+  "Too much. The chemicals have the wheel and they are not good drivers. You wait it out.",
+  "You typed a sentence. It was the same word eleven times. You delete it. Or don't.",
+];
+
+const WHITEOUT_ENTER_LINES = [
+  "💥 OVERSTIMMED. The wheels have come fully off. You're a passenger now. The next hour belongs to the chemicals.",
+  "💥 You took too much. Everything goes bright and flat. You are present but not here. Ride it out.",
+  "💥 Critical overstim. The room is humming. Your hands aren't yours. Nothing will work for a while.",
+];
+
+// ==================== ENDINGS ====================
+const ENDINGS = {
+  shart: [
+    "SHARTASTROPHE. Karen made eye contact. She knows. Her Slack is already open.",
+    "CODE BROWN. The chair is a write-off. You are the Floor 3 ghost story.",
+    "THE SOUND. Louder than the printer. Everyone looked up. Even the boss.",
+    "A REPORT WAS FILED. Not by you. About you. HR want a chat about 'cubicle integrity'.",
+    "PYRRHIC VICTORY. Won the spreadsheet war. Lost the sphincter war.",
+    "WET FRIDAY. You stand. You sit. You consider, briefly, simply living here.",
+    "RIP CHAIR. The Aeron gave a final, sad squeak.",
+    "BIOHAZARD. Facilities arrived in full PPE. They took photos for training.",
+  ],
+  cardiac: [
+    "CARDIAC EVENT. Left arm numb. Paramedics found three empty pre-workout tubs.",
+    "OVERCLOCKED. Your Apple Watch sent 14 alerts. Then it stopped. Out of concern or respect, unclear.",
+    "VIBRATING. You achieved liftoff and crashed into the ceiling tile. They're calling it 'a workplace incident'.",
+    "TOO MUCH. Your heart wrote a strongly-worded resignation. Your body accepted it.",
+    "VENTRICULAR. The defib pads were warm before they touched you. You were giving off steam.",
+  ],
+  fired_midweek: [
+    "FIRED. The boss called the days missed 'a pattern'.",
+    "ESCORTED OUT. Two days under quota. The boss didn't make eye contact.",
+    "MANAGED OUT. They called it 'a values misalignment'. The values were 'doing work'.",
+  ],
+};
+
+// ==================== MORNINGS ====================
+const MORNINGS = [
+  { name: "Fully rested", kind: "good", desc: "You slept 9 hours. The pillow was cool. The dreams were neutral. You feel suspiciously functional.",
+    apply: () => { state.focus = 72; state.bowel = 15; addPill('Well-rested', 'good'); } },
+  { name: "Hungover", kind: "bad", desc: "There was wine. There was definitely wine. The wine had opinions and you agreed with all of them.",
+    apply: () => { state.focus = 28; state.bowel = 48; state.jitter = 18; addPill('Hungover', 'bad'); state.flags.hungover = true; } },
+  { name: "Dodgy kebab", kind: "bad", desc: "The kebab at 11pm was a mistake. Your gut knows. Your gut REMEMBERS.",
+    apply: () => { state.bowel = 58; addPill('Dodgy gut', 'bad'); state.flags.dodgyGut = true; schedule(70 + Math.random()*40, 'kebab_revenge'); } },
+  { name: "F45 morning", kind: "good", desc: "5am F45. You ate eggs. You are powerful. The endorphins are real. You smug.",
+    apply: () => { state.focus = 66; state.jitter = 4; addPill('Gym pumped', 'good'); } },
+  { name: "Toddler crisis", kind: "bad", desc: "Your kid was up at 3am. And 4am. And 5am. You are running on rage and a banana.",
+    apply: () => { state.focus = 24; state.jitter = 12; addPill('2hrs sleep', 'bad'); } },
+  { name: "Double espresso start", kind: "good", desc: "You hit a real café on the way in. Single origin. The barista nodded at you.",
+    apply: () => { state.focus = 64; state.bowel = 32; addPill('Good coffee', 'good'); } },
+  { name: "Sunday roast aftermath", kind: "bad", desc: "You ate a small cow yesterday. The cow is still in there. Negotiating.",
+    apply: () => { state.bowel = 52; state.focus = 42; addPill('Heavy gut', 'bad'); }, days: [0] },
+  { name: "Functional depressive", kind: "bad", desc: "You stared at the ceiling until 8:47am. You're here now. That counts.",
+    apply: () => { state.focus = 34; addPill('Bleak', 'bad'); } },
+  { name: "Meditated", kind: "good", desc: "10 minutes on the Calm app. Breathwork. You are centred. You are also still here.",
+    apply: () => { state.focus = 56; state.jitter = 0; addPill('Zen', 'good'); state.flags.zen = true; } },
+  { name: "Pre-dosed", kind: "bad", desc: "You took a dexi in the car park. You are ahead of the curve. You are also already too far gone.",
+    apply: () => { state.focus = 66; state.jitter = 26; state.stim = 25; addPill('Pre-dosed', 'bad'); } },
+  { name: "Tinder walk of shame", kind: "bad", desc: "You're wearing yesterday's shirt. There is a hickey. Greg saw it. Greg is going to mention it.",
+    apply: () => { state.focus = 42; state.bowel = 36; addPill('Walk of shame', 'bad'); state.flags.walkOfShame = true; schedule(60 + Math.random()*120, 'greg_mentions_it'); } },
+  { name: "Big walk in", kind: "good", desc: "You walked the whole way to work. 45 minutes. Podcast. Crisp morning. You feel Scandinavian.",
+    apply: () => { state.focus = 60; state.jitter = -6; addPill('Steps done', 'good'); } },
+  { name: "Train chaos", kind: "bad", desc: "Three cancellations. A man eating a samosa at 7:30am. You had to stand. You are simmering.",
+    apply: () => { state.focus = 40; state.jitter = 20; addPill('Simmering', 'bad'); } },
+  { name: "Hump day energy", kind: "good", desc: "Halfway. Officially halfway. The week is downhill from here. (It's not. But the idea helps.)",
+    apply: () => { state.focus = 56; addPill('Hump day', 'good'); }, days: [2] },
+  { name: "Friday feeling", kind: "good", desc: "It's Friday. You smell like cologne for some reason. Beers tonight. You can taste them already.",
+    apply: () => { state.focus = 56; state.jitter = -4; addPill('Friday mode', 'good'); }, days: [4] },
+  { name: "Post-drinks wreck", kind: "bad", desc: "Yesterday went late. Like, real late. The team are all in sunnies indoors.",
+    apply: () => { state.focus = 26; state.bowel = 52; state.jitter = 22; addPill('Wrecked', 'bad'); state.flags.hungover = true; }, days: [1, 2, 3, 4] },
+  { name: "Monday-est of Mondays", kind: "bad", desc: "Every Monday energy you've ever felt, distilled. Even the office plants look depressed.",
+    apply: () => { state.focus = 38; state.bowel = 28; addPill('Monday', 'bad'); }, days: [0] },
+  { name: "Therapy yesterday", kind: "good", desc: "Yesterday's session went well. You feel processed. Also slightly raw, but in a productive way.",
+    apply: () => { state.focus = 58; state.jitter = -8; addPill('Processed', 'good'); state.flags.zen = true; } },
+];
+
+// ==================== EVENTS (60 total) ====================
+const EVENTS = [
+  // === STANDARD POOL (40) ===
+  { id: 'gary_talks', title: "📧 Gary from IT", desc: "Gary is at your cubicle. He wants to explain the new ticketing system. He has slides. He printed them.", choices: [
+    { label: "Listen politely (28 min)", apply: () => { advanceTime(28); state.bowel = clamp(state.bowel + 10); state.focus = clamp(state.focus - 15); week.grudges.gary = (week.grudges.gary || 0) - 1; logMsg("Gary spoke for 28 minutes. You aged. He left two laminated handouts.", 'event'); } },
+    { label: "Fake a phone call (5 min, Gary remembers)", apply: () => { advanceTime(5); state.focus = clamp(state.focus - 5); week.grudges.gary = (week.grudges.gary || 0) + 1; logMsg("You faked a call. Gary looked hurt. Gary writes things down.", 'event'); schedule(180 + Math.random()*120, 'gary_revenge'); } },
+    { label: "Pretend you don't speak English (8 min)", apply: () => { advanceTime(8); week.grudges.gary = (week.grudges.gary || 0) + 2; logMsg("'Sorry, no English.' Gary nodded sadly. He'll be back.", 'event'); schedule(120 + Math.random()*60, 'gary_returns'); } },
+  ]},
+  { id: 'standup', title: "📅 Urgent standup", desc: "Your team has called an 'urgent' stand-up. Brad will speak for 12 minutes about velocity.", choices: [
+    { label: "Attend in person (25 min)", apply: () => { advanceTime(25); state.bowel = clamp(state.bowel + 12); state.jitter = clamp(state.jitter + 5); decayPipFromMeeting(); logMsg("Brad explained 'synergy'. Linda nodded. You died inside.", 'event'); } },
+    { label: "Join muted, camera off (15 min)", apply: () => { advanceTime(15); state.focus = clamp(state.focus + 3); logMsg("You half-attended. Said 'yep' twice. Nobody noticed.", 'event'); } },
+    { label: "'Sorry, on a deadline' (3 min, risky)", apply: () => { advanceTime(3); noteMissedMeeting(); if (Math.random() < 0.5) logMsg("Manager said 'no worries'. Beautiful.", 'good'); else { logMsg("Manager said 'we'll talk after'. Ominous.", 'warn'); schedule(40 + Math.random()*30, 'manager_chat'); } pipRoll(0.25, 1, null); } },
+  ]},
+  { id: 'free_donuts', title: "🍩 Free donuts in the kitchen", desc: "Someone's birthday. The good ones are going first. Linda has TWO.", triggerWindow: [570, 690], choices: [
+    { label: "Grab one (4 min)", apply: () => { advanceTime(4); state.focus = clamp(state.focus + 8); state.bowel = clamp(state.bowel + 10); logMsg("Sugar hit. Brief glory. Bowels noted.", 'good'); } },
+    { label: "Grab three (9 min, big bowel cost)", apply: () => { advanceTime(9); state.focus = clamp(state.focus + 12); state.bowel = clamp(state.bowel + 22); logMsg("Three donuts. Greg saw. Greg will tell people.", 'event'); } },
+    { label: "Resist (1 min)", apply: () => { advanceTime(1); state.focus = clamp(state.focus - 3); logMsg("You walked past. You are strong. Are you?", 'event'); } },
+  ]},
+  { id: 'fire_drill', title: "🚨 Fire drill", desc: "The alarm goes off. It's a drill. Marcus from H&S has been waiting for this since 2019.", choices: [
+    { label: "Evacuate properly (22 min)", apply: () => { advanceTime(22); state.jitter = clamp(state.jitter - 10); state.focus = clamp(state.focus - 5); decayPipFromMeeting(); logMsg("Marcus took attendance twice. Fresh air helped.", 'event'); } },
+    { label: "Hide under desk (14 min, risky)", apply: () => { advanceTime(14); if (Math.random() < 0.4) { state.tasks = Math.max(0, state.tasks - 1); week.bossWarnings++; pipRoll(1.0, 2, null); logMsg("Marcus FOUND YOU. Written warning. Lost a task to paperwork.", 'warn'); } else { state.focus = clamp(state.focus + 5); pipRoll(0.25, 2, null); logMsg("You hid. Marcus didn't find you. Beautiful. (Marcus might still be checking.)", 'good'); } } },
+    { label: "Leave and don't come back for ages (38 min)", apply: () => { advanceTime(38); state.focus = clamp(state.focus + 12); state.jitter = clamp(state.jitter - 15); state.bowel = clamp(state.bowel - 5); pipRoll(0.30, 2, null); logMsg("Coffee from the place across the road. Human again.", 'good'); } },
+  ]},
+  { id: 'printer_jam', title: "🖨 Printer jam", desc: "The printer is your problem now. It's jammed. Tara is staring at you.", choices: [
+    { label: "Fix it (16 min)", apply: () => { advanceTime(16); state.jitter = clamp(state.jitter + 8); week.grudges.tara = (week.grudges.tara || 0) - 1; logMsg("You wrestled paper. You won. Tara nodded once.", 'event'); } },
+    { label: "Walk away fast (2 min, Tara remembers)", apply: () => { advanceTime(2); week.grudges.tara = (week.grudges.tara || 0) + 2; logMsg("You suddenly remembered an email. Tara has the long memory.", 'event'); } },
+    { label: "Press buttons randomly (7 min)", apply: () => { advanceTime(7); if (Math.random() < 0.5) logMsg("The printer printed 47 copies of a 2019 P&L.", 'event'); else logMsg("Somehow worse. It's making a clicking noise. You leave.", 'warn'); } },
+  ]},
+  { id: 'spill', title: "☕ Coffee spill", desc: "You knocked your coffee. The L key is the worst affected.", choices: [
+    { label: "Clean it properly (13 min)", apply: () => { advanceTime(13); state.focus = clamp(state.focus - 8); logMsg("Mostly clean. The keys are sticky forever now.", 'event'); } },
+    { label: "Cover with paper, deal later (3 min)", apply: () => { advanceTime(3); state.jitter = clamp(state.jitter + 5); logMsg("Future you can deal with it.", 'event'); schedule(120 + Math.random()*60, 'sticky_keyboard'); } },
+    { label: "Steal a keyboard from an empty desk (6 min)", apply: () => { advanceTime(6); state.focus = clamp(state.focus + 5); logMsg("Mechanical. Clicky. Whose desk was that? Doesn't matter.", 'good'); } },
+  ]},
+  { id: 'flow_state', title: "✨ A moment of clarity", titleClass: 'good', desc: "The fluorescent light hums in a new way. Your brain feels sharp.", choices: [
+    { label: "Ride the wave", apply: () => { advanceTime(2); state.focus = clamp(state.focus + 25); state.jitter = clamp(state.jitter - 10); logMsg("Dialled in. Briefly. Beautifully.", 'good'); } },
+  ]},
+  { id: 'lunch', title: "🥖 Lunch time", desc: "12-ish. Your body wants food. Your body is a snitch.", triggerWindow: [690, 810], choices: [
+    { label: "Proper lunch out (38 min)", apply: () => {
+      advanceTime(38);
+      if (state.history.twentyInJacket) {
+        state.focus = clamp(state.focus + 26); state.bowel = clamp(state.bowel + 24); state.jitter = clamp(state.jitter - 22);
+        logMsg("You bought lunch with the jacket $20. Felt rich. Ate like one.", 'good');
+        state.history.twentyInJacket = false;
+      } else if (state.history.preworkoutUntil > state.time) {
+        state.focus = clamp(state.focus + 14); state.bowel = clamp(state.bowel + 20); state.jitter = clamp(state.jitter - 15);
+        logMsg("You ordered. Couldn't taste it. Pre-workout still doing the talking.", 'warn');
+      } else {
+        state.focus = clamp(state.focus + 22); state.bowel = clamp(state.bowel + 24); state.jitter = clamp(state.jitter - 20);
+        logMsg("You ate like a human. Heavy though.", 'good');
+      }
+      state.history.lastAteAt = state.time;
+    } },
+    { label: "Sad desk salad (12 min)", apply: () => { advanceTime(12); state.focus = clamp(state.focus + 5); state.bowel = clamp(state.bowel + 6); state.history.lastAteAt = state.time; logMsg("Salad eaten. Joy: minimal. Time: saved.", 'event'); } },
+    { label: "Banh mi with Priya (24 min)", apply: () => { advanceTime(24); state.focus = clamp(state.focus + 15); state.bowel = clamp(state.bowel + 15); state.jitter = clamp(state.jitter - 10); state.history.lastAteAt = state.time; logMsg("Priya is now your best friend. Banh mi was elite.", 'good'); } },
+    { label: "Skip lunch (0 min)", apply: () => { state.focus = clamp(state.focus - 12); state.jitter = clamp(state.jitter + 10); logMsg("Skipped lunch. Your hands started shaking.", 'warn'); state.flags.skippedLunch = true; schedule(60 + Math.random()*45, 'lunch_revenge'); } },
+  ]},
+  { id: 'recruiter', title: "💼 LinkedIn message", desc: "A recruiter has sent you a 'quick opportunity'. Base is suspiciously vague.", choices: [
+    { label: "Reply seriously (13 min)", apply: () => { advanceTime(13); state.focus = clamp(state.focus - 5); logMsg("You replied. Hope, briefly, returns.", 'good'); } },
+    { label: "'Depends, what's the package' (3 min)", apply: () => { advanceTime(3); logMsg("Power move. They'll ghost you in two weeks.", 'event'); } },
+    { label: "Ignore", apply: () => { logMsg("You ignored it. Fine.", 'event'); } },
+  ]},
+  { id: 'urgent_email', title: "📧 URGENT — need by EOD", desc: "From a stakeholder. They sent it 4 minutes ago. They're already in the lobby.", choices: [
+    { label: "Handle now (20 min, +1 task)", apply: () => { advanceTime(20); state.tasks++; state.focus = clamp(state.focus - 15); logMsg("Handled. Counts as a task. Painful.", 'good'); } },
+    { label: "Send holding email (5 min)", apply: () => { advanceTime(5); logMsg("'Will revert by COB.' Bought time.", 'event'); schedule(120 + Math.random()*60, 'urgent_returns'); } },
+    { label: "Ignore (1 min, risky)", apply: () => { advanceTime(1); if (Math.random() < 0.5) { logMsg("They followed up CC'ing your boss.", 'warn'); state.jitter = clamp(state.jitter + 10); schedule(20, 'boss_email'); pipRoll(0.30, 1, null); } else logMsg("Nobody noticed. Glorious. For now.", 'good'); } },
+  ]},
+  { id: 'birthday_song', title: "🎂 Happy birthday dear Dave", titleClass: 'good', desc: "The kitchen is singing. Dave from finance. Nobody likes Dave but cake is cake.", triggerWindow: [840, 960], choices: [
+    { label: "Join in fully (11 min, get cake)", apply: () => { advanceTime(11); state.focus = clamp(state.focus + 14); state.jitter = clamp(state.jitter - 6); state.bowel = clamp(state.bowel + 10); logMsg("You sang. Got cake. Dave teared up. Sugar hit + social warmth.", 'good'); } },
+    { label: "Hover at the edge (5 min)", apply: () => { advanceTime(5); state.focus = clamp(state.focus + 5); logMsg("You mouthed the words. Caught a piece. No risk.", 'good'); } },
+    { label: "Fake call (3 min)", apply: () => { advanceTime(3); state.jitter = clamp(state.jitter + 4); logMsg("You hid behind your monitor. Dave saw.", 'event'); } },
+  ]},
+  { id: 'gut_warning', title: "⚠ A gurgle", titleClass: 'warn', desc: "Your stomach made a noise. Loud enough that the cubicle next door heard. They did not acknowledge it. Worse.", choices: [
+    { label: "Acknowledge reality", apply: () => { state.bowel = clamp(state.bowel + 15); logMsg("It's getting serious in there.", 'warn'); } },
+  ]},
+  { id: 'occupied', title: "🚻 Bathroom situation", desc: "Marcus is in there. Marcus likes a chat. You hear him humming.", triggerOn: 'high_bowel', choices: [
+    { label: "Wait it out (15 min)", apply: () => { advanceTime(15); state.bowel = clamp(state.bowel + 8); logMsg("You waited. Marcus hummed all of Bohemian Rhapsody.", 'event'); } },
+    { label: "Other floor's bathroom (12 min)", apply: () => { advanceTime(12); state.bowel = clamp(state.bowel - 35); logMsg("Took the stairs. Worth it. Sanctuary.", 'good'); } },
+    { label: "Disabled toilet (5 min)", apply: () => { advanceTime(5); state.bowel = clamp(state.bowel - 38); logMsg("Wrong. But necessary. The shame is for later you.", 'event'); } },
+  ]},
+  { id: 'noise_complaint', title: "🍎 Chewing", desc: "Linda is eating an apple. She is taking her TIME with it.", choices: [
+    { label: "Say something (4 min, conflict)", apply: () => { advanceTime(4); state.jitter = clamp(state.jitter + 10); week.grudges.linda = (week.grudges.linda || 0) + 2; logMsg("Linda said 'excuse me?'. Frosty now.", 'event'); } },
+    { label: "Headphones on, suffer (7 min)", apply: () => { advanceTime(7); state.jitter = clamp(state.jitter + 6); logMsg("You hear it through the headphones. In your soul.", 'event'); } },
+    { label: "Move to a different desk (12 min)", apply: () => { advanceTime(12); state.focus = clamp(state.focus + 5); logMsg("Set up by the window. Better in every way.", 'good'); } },
+  ]},
+  { id: 'wifi_down', title: "📡 WiFi is down", desc: "Brad is asking if anyone else has this. Yes, Brad. Everyone.", choices: [
+    { label: "Tether to phone (6 min)", apply: () => { advanceTime(6); state.focus = clamp(state.focus - 3); logMsg("You tethered. Data bill will be a problem in two weeks.", 'good'); } },
+    { label: "Wait, pretend to work (16 min)", apply: () => { advanceTime(16); state.focus = clamp(state.focus - 8); logMsg("Stared at a frozen Teams call. Time has no meaning.", 'event'); } },
+    { label: "Walk to 'clear your head' (26 min)", apply: () => { advanceTime(26); state.focus = clamp(state.focus + 10); state.jitter = clamp(state.jitter - 8); logMsg("Walked around the block. Twice. Glorious.", 'good'); } },
+  ]},
+  { id: 'aircon', title: "🌡 Aircon war", desc: "Tara wants it warmer. Greg wants it cold. Greg is winning.", choices: [
+    { label: "Side with Tara (5 min)", apply: () => { advanceTime(5); week.grudges.tara = (week.grudges.tara || 0) - 1; logMsg("Tara filed you under 'people I tolerate'.", 'good'); } },
+    { label: "Side with Greg (5 min)", apply: () => { advanceTime(5); logMsg("Greg fist-bumped you. You feel unclean.", 'event'); } },
+    { label: "Hide (1 min)", apply: () => { advanceTime(1); logMsg("You ducked. Cowardly. Effective.", 'event'); } },
+  ]},
+  { id: 'compliment', title: "✨ Unexpected compliment", titleClass: 'good', desc: "The boss said your slide deck from last week was 'really sharp'. The boss has never complimented anything.", choices: [
+    { label: "Bask", apply: () => {
+      advanceTime(3);
+      if (state.flags.walkOfShame) {
+        state.focus = clamp(state.focus + 10); state.jitter = clamp(state.jitter - 2);
+        logMsg("Boss said 'really sharp'. You were wearing yesterday's shirt. The endorphins came with shame.", 'good');
+      } else if (state.jitter > 60) {
+        state.focus = clamp(state.focus + 8); state.jitter = clamp(state.jitter - 4);
+        logMsg("Boss said 'really sharp' — then glanced at your hands. Awkward. Mixed signals.", 'event');
+      } else if (state.history.dexUntil > state.time) {
+        state.focus = clamp(state.focus + 12); state.jitter = clamp(state.jitter - 6);
+        logMsg("Boss said 'really sharp'. Your eyes were too wide. They lingered.", 'good');
+      } else {
+        state.focus = clamp(state.focus + 15); state.jitter = clamp(state.jitter - 8);
+        logMsg("Endorphins. A free hit. Use them.", 'good');
+      }
+      state.history.bossCompliment = true;
+    } },
+  ]},
+  { id: 'twenty_in_jacket', title: "💵 Twenty in your jacket pocket", titleClass: 'good', desc: "Past-you. Drunk-you. Some-version-of-you left a $20 in there. Free money. Lunch is sorted.", choices: [
+    { label: "Quietly celebrate", apply: () => { advanceTime(2); state.focus = clamp(state.focus + 10); state.jitter = clamp(state.jitter - 5); state.history.twentyInJacket = true; logMsg("Tiny lottery win. Universe winked.", 'good'); } },
+  ]},
+  { id: 'boss_laugh', title: "😄 The boss laughed at your joke", titleClass: 'good', desc: "Not a polite laugh. A real one. In front of the team. The boss DOES NOT laugh.", choices: [
+    { label: "Internalise the win", apply: () => {
+      advanceTime(2);
+      if (state.history.dexUntil > state.time || state.history.preworkoutUntil > state.time) {
+        state.focus = clamp(state.focus + 8); state.jitter = clamp(state.jitter - 5);
+        logMsg("Joke landed. You laughed too hard. The room cooled. Win, slightly clipped.", 'event');
+      } else if (state.jitter > 60) {
+        state.focus = clamp(state.focus + 10); state.jitter = clamp(state.jitter - 12);
+        logMsg("Joke landed despite the sweat. Endorphins beat the cortisol.", 'good');
+      } else {
+        state.focus = clamp(state.focus + 14); state.jitter = clamp(state.jitter - 10);
+        logMsg("You're untouchable for an hour. Briefly.", 'good');
+      }
+      state.history.bossLaughed = true;
+      noteGossip();
+    } },
+  ]},
+  { id: 'slack_reactions', title: "🎉 Reaction storm on your Slack", titleClass: 'good', desc: "You posted something in the team channel. It's getting 🔥🔥🔥 and 💯 from people you didn't even know were online.", choices: [
+    { label: "Pretend it's not a big deal", apply: () => { advanceTime(3); state.focus = clamp(state.focus + 10); state.jitter = clamp(state.jitter - 6); noteGossip(); logMsg("You re-read it. It IS funny. You're funny.", 'good'); } },
+  ]},
+  { id: 'parking_spot', title: "🅿 You got THE parking spot", titleClass: 'good', desc: "The good one. Near the door. Under the tree. Half the team must be WFH today — the lot's a ghost town.", daysOnly: [-1], choices: [
+    { label: "Bask in the omen", apply: () => { advanceTime(2); state.focus = clamp(state.focus + 12); state.jitter = clamp(state.jitter - 8); state.history.gotParkingSpot = true; schedule(120 + Math.random()*120, 'greg_parking_complaint'); logMsg("A small thing. A vast feeling. The lot was empty. Today is yours.", 'good'); } },
+  ]},
+  { id: 'fwd_great_work', title: "📧 Forwarded with 'great work'", titleClass: 'good', desc: "Boss forwarded your email to the leadership team with the words 'great work team'. Your name is in there.", choices: [
+    { label: "Pretend you didn't see", apply: () => { advanceTime(3); state.focus = clamp(state.focus + 16); state.jitter = clamp(state.jitter - 8); state.history.greatWorkFwd = true; logMsg("Three managers you've never met now know you exist. Positively.", 'good'); } },
+  ]},
+  { id: 'intern_mentor', title: "🎓 The intern called you their mentor", titleClass: 'good', desc: "Overheard. To another intern. 'They're great, really patient.' You are neither of those things. But.", choices: [
+    { label: "Feel briefly worthy", apply: () => { advanceTime(2); state.focus = clamp(state.focus + 12); state.jitter = clamp(state.jitter - 6); logMsg("Imposter syndrome temporarily defeated.", 'good'); } },
+  ]},
+  { id: 'lost_pen', title: "✒ Where's your pen", desc: "Your good pen. The Lamy. Four years. Gone.", choices: [
+    { label: "Search for it (13 min)", apply: () => { advanceTime(13); if (Math.random() < 0.6) { state.focus = clamp(state.focus + 8); logMsg("Found it. Under the keyboard. You feel whole again.", 'good'); } else { state.jitter = clamp(state.jitter + 8); logMsg("Gone. Someone took it. You suspect Brad.", 'warn'); } } },
+    { label: "Steal a Bic from reception (5 min)", apply: () => { advanceTime(5); logMsg("A Bic. The fall is real.", 'event'); } },
+  ]},
+  { id: 'package', title: "📦 Reception has a package", desc: "You don't remember ordering anything. The box is heavy.", choices: [
+    { label: "Go collect it (11 min)", apply: () => { advanceTime(11); const items = [
+      "It's a 5kg bag of basmati rice. You live alone.",
+      "A body pillow. Drunk-you knew you'd need it.",
+      "A coffee machine. Past-you was an optimist.",
+      "A single Allen key. Packaging enormous.",
+      "A Magic Bullet. You are now a smoothie person.",
+      "A knock-off Stanley cup. The 'Stanley' is spelt 'Stalney'.",
+      "A subscription Owala you didn't order. Drunk-you again.",
+    ]; logMsg(pick(items), 'event'); } },
+    { label: "Leave for after work (1 min)", apply: () => { advanceTime(1); logMsg("Reception will judge. Reception always judges.", 'event'); } },
+  ]},
+  { id: 'team_lunch', title: "🍜 Team lunch proposal", desc: "Priya's pushing the new Thai place. It's Monday but the spirit is Friday.", choices: [
+    { label: "In (45 min, gut roulette)", apply: () => { advanceTime(45); state.focus = clamp(state.focus + 22); state.jitter = clamp(state.jitter - 15); noteSocial(); if (Math.random() < 0.3) { state.bowel = clamp(state.bowel + 38); logMsg("The pad krapao was a love letter. Also a threat.", 'warn'); } else { state.bowel = clamp(state.bowel + 18); logMsg("Pad see ew was elite. The team is bonded.", 'good'); } } },
+    { label: "Out (1 min)", apply: () => { advanceTime(1); state.flags.skippedLunch = true; state.focus = clamp(state.focus - 5); state.jitter = clamp(state.jitter + 6); noteRudeDecline(); logMsg("Priya was hurt. You watched them leave. FOMO sets in.", 'event'); } },
+  ]},
+  { id: 'phone_buzz', title: "📞 Phone buzz", desc: "It's mum. She knows you're at work.", triggerWindow: [630, 930], choices: [
+    { label: "Answer (13 min)", apply: () => { advanceTime(13); const lines = [
+      "Mum's wifi is down. You walked her through restarting the router. Three times.",
+      "Mum found a recipe. She's reading it out. The whole thing.",
+      "Mum heard about a friend's son who got married. Subtle.",
+      "Mum's neighbour died. You met him once. You listen.",
+    ]; logMsg(pick(lines), 'event'); state.focus = clamp(state.focus - 8); noteSocial(); } },
+    { label: "Decline, text 'in a meeting'", apply: () => { advanceTime(1); state.jitter = clamp(state.jitter + 4); noteMumIgnored(); logMsg("Guilt: deployed. She'll call back at 2pm.", 'event'); schedule(120 + Math.random()*60, 'mum_again'); } },
+  ]},
+  { id: 'intern', title: "🎓 Intern question", desc: "The intern has a question. It will not be a quick question. They are using their thinking face.", choices: [
+    { label: "Help properly (15 min)", apply: () => { advanceTime(15); state.focus = clamp(state.focus - 8); logMsg("You explained it three ways. The intern now worships you slightly.", 'good'); } },
+    { label: "'Have you tried Googling?' (2 min)", apply: () => { advanceTime(2); logMsg("The intern's face fell. The intern remembered.", 'event'); } },
+    { label: "Pass them to Brad (3 min)", apply: () => { advanceTime(3); logMsg("Brad will speak at them for 40 minutes. Cruel but effective.", 'good'); } },
+  ]},
+  { id: 'slack_dm', title: "💬 Slack DM from Brad", desc: "'Got a sec?'. He's three desks away. He could just walk over. He won't.", choices: [
+    { label: "Reply 'sure' (9 min)", apply: () => { advanceTime(9); state.focus = clamp(state.focus - 6); logMsg("Brad wanted opinions on his email draft. You said 'looks good'.", 'event'); } },
+    { label: "'5 min, on a call' (1 min)", apply: () => { advanceTime(1); logMsg("Bought time. He'll forget. Probably.", 'event'); schedule(40 + Math.random()*30, 'brad_returns'); } },
+    { label: "Ignore", apply: () => { logMsg("Read at 11:32. Replied: never.", 'event'); week.grudges.brad = (week.grudges.brad || 0) + 1; } },
+  ]},
+  { id: 'sneeze', title: "🤧 Violent sneeze", desc: "Hard. Loud. Wet. Everyone heard. Karen's eye flickered.", choices: [
+    { label: "Acknowledge it (2 min)", apply: () => { advanceTime(2); state.bowel = clamp(state.bowel + 4); logMsg("'Allergies!' You don't have allergies.", 'event'); } },
+    { label: "Pretend nothing happened (1 min)", apply: () => { advanceTime(1); logMsg("Everyone agreed, silently, not to mention it.", 'event'); } },
+  ]},
+  { id: 'pavlov_ping', title: "🔔 Slack notification", desc: "Your laptop dinged. Everyone in the open-plan looked over. It was a notification that you had no notifications.", choices: [
+    { label: "Acknowledge the indignity", apply: () => { advanceTime(5); state.focus = clamp(state.focus - 3); logMsg("It was nothing. It's never anything.", 'event'); } },
+  ]},
+  { id: 'karen_perfume', title: "👃 Karen's perfume cloud", desc: "Karen walked past. Her perfume entered the cubicle 30 seconds before she did and remained for 4 minutes after.", choices: [
+    { label: "Endure", apply: () => { advanceTime(5); state.focus = clamp(state.focus - 8); logMsg("Eyes watering. Brand: 'Defensive'.", 'event'); } },
+  ]},
+  { id: 'boss_holiday', title: "🏖 Boss is out tomorrow", titleClass: 'good', desc: "Word travels. The boss is taking Friday off. The team relaxes one notch.", triggerWindow: [840, 990], choices: [
+    { label: "Internalise the good news", apply: () => { advanceTime(2); state.focus = clamp(state.focus + 12); state.jitter = clamp(state.jitter - 12); logMsg("You feel a small wave of peace. The week breathes.", 'good'); week.bossOnHoliday = true; } },
+  ]},
+  { id: 'dropped_pen', title: "✏ Pen behind the desk", desc: "It fell. You have to bend. Bending while wearing tight pants is risky.", choices: [
+    { label: "Bend like a person (7 min)", apply: () => { advanceTime(7); state.bowel = clamp(state.bowel + 6); state.focus = clamp(state.focus - 4); logMsg("You bent. The bowel objected. You survived.", 'event'); } },
+    { label: "Pretend it never existed (2 min)", apply: () => { advanceTime(2); logMsg("The pen now belongs to the void.", 'event'); } },
+  ]},
+  { id: 'ai_training', title: "🤖 Mandatory AI tool training", desc: "Calendar invite, can't decline. The 'training' is 32 minutes of someone explaining ChatGPT to people who already use ChatGPT.", choices: [
+    { label: "Attend properly (32 min)", apply: () => { advanceTime(32); state.focus = clamp(state.focus - 8); state.bowel = clamp(state.bowel + 6); logMsg("You learned nothing. You're 'AI-certified' now.", 'event'); } },
+    { label: "Join, mute, work on the side (12 min lost)", apply: () => { advanceTime(12); state.focus = clamp(state.focus - 4); logMsg("Half-watched. Half-worked. Net loss minimal.", 'event'); } },
+    { label: "Skip ('conflict') (2 min)", apply: () => { advanceTime(2); if (Math.random() < 0.3) { logMsg("HR noticed. They send a passive-aggressive Slack later.", 'warn'); } else logMsg("Nobody noticed.", 'good'); } },
+  ]},
+  { id: 'leaving_party', title: "🎉 Someone's leaving party", titleClass: 'good', desc: "Greg from accounts is moving on. There's sad cake in the kitchen. Hits different.", triggerWindow: [870, 990], choices: [
+    { label: "Attend, mingle (12 min)", apply: () => { advanceTime(12); state.bowel = clamp(state.bowel + 8); state.focus = clamp(state.focus + 12); state.jitter = clamp(state.jitter - 8); logMsg("Sad cake eaten. Greg cried a bit. You said 'we should keep in touch'. Genuinely connected.", 'good'); } },
+    { label: "Drop in for 4 minutes (4 min)", apply: () => { advanceTime(4); state.focus = clamp(state.focus + 8); state.jitter = clamp(state.jitter - 4); logMsg("Showed face. Got cake. Left before the speeches. Low-cost social credit.", 'good'); } },
+  ]},
+  { id: 'no_agenda', title: "📅 Calendar invite, no agenda", desc: "From Brad. Subject: 'quick chat'. Duration: 30 min. Description: empty. You're already nervous.", choices: [
+    { label: "Accept (28 min)", apply: () => { advanceTime(28); state.focus = clamp(state.focus - 8); state.jitter = clamp(state.jitter + 8); logMsg("Brad wanted to 'workshop' his roadmap. You said 'looks great'.", 'event'); } },
+    { label: "Decline politely (2 min)", apply: () => { advanceTime(2); week.grudges.brad = (week.grudges.brad || 0) + 1; logMsg("You declined. Brad will remember.", 'event'); } },
+  ]},
+  { id: 'recruiter_call', title: "📞 Unknown number — recruiter", desc: "Your phone is going. Mobile. Not mum. Probably a recruiter cold-call.", choices: [
+    { label: "Answer (16 min)", apply: () => { advanceTime(16); state.focus = clamp(state.focus - 10); logMsg("You walked outside and pretended to be more senior than you are.", 'event'); } },
+    { label: "Decline", apply: () => { advanceTime(1); logMsg("Voicemail will sit unread forever.", 'event'); } },
+  ]},
+  { id: 'office_plant', title: "🌿 Office plant is dying", desc: "The pothos in the corner. Brown leaves. Nobody else has noticed in three weeks.", choices: [
+    { label: "Water it (5 min)", apply: () => { advanceTime(5); state.focus = clamp(state.focus + 4); logMsg("Small good deed. The universe filed it.", 'good'); } },
+    { label: "Not your problem (1 min)", apply: () => { advanceTime(1); logMsg("The plant has accepted its fate. You have too.", 'event'); } },
+  ]},
+  { id: 'mfa_meltdown', title: "🔐 Two-factor auth meltdown", desc: "The code expired before you typed it. Three times. Now it's locked you out for 15 minutes. You can hear your own pulse.", choices: [
+    { label: "Wait it out (15 min)", apply: () => { advanceTime(15); state.jitter = clamp(state.jitter + 10); state.focus = clamp(state.focus - 10); logMsg("Pure rage. You consider career change. The timer ticks.", 'warn'); } },
+    { label: "Call IT (Gary) (8 min)", apply: () => { advanceTime(8); week.grudges.gary = (week.grudges.gary || 0) - 1; logMsg("Gary helped immediately. Gary forgives you a little.", 'good'); } },
+  ]},
+  { id: 'surprise_1on1', title: "👔 Surprise 1:1 with boss", desc: "'You free now?' The slack from your manager. Camera-on. Now.", choices: [
+    { label: "Attend (22 min)", apply: () => { advanceTime(22); state.bowel = clamp(state.bowel + 8); state.focus = clamp(state.focus - 8); if (Math.random() < 0.3) { logMsg("Boss had concerns. You promised to do better.", 'warn'); week.bossWarnings++; } else logMsg("Boss just wanted to 'check in'. Vague. Mildly threatening.", 'event'); } },
+    { label: "'In a meeting' (4 min, risky)", apply: () => { advanceTime(4); schedule(40 + Math.random()*30, 'manager_chat'); logMsg("You dodged. They will return.", 'event'); } },
+  ]},
+  { id: 'aircon_drip', title: "💧 Aircon dripping on your monitor", desc: "There is now a small puddle expanding across your desk. From above.", choices: [
+    { label: "Move desk (10 min)", apply: () => { advanceTime(10); state.focus = clamp(state.focus - 4); logMsg("You relocated. Marcus filed an incident report. You exist in his system now.", 'event'); } },
+    { label: "Catch it in a mug (4 min)", apply: () => { advanceTime(4); state.focus = clamp(state.focus - 6); logMsg("Engineered solution. Marcus would be proud.", 'event'); } },
+  ]},
+  { id: 'greg_strava', title: "🏃 Greg shows you his Strava", desc: "He ran 24km on Saturday. He has a screenshot. He's holding the phone in front of your face.", choices: [
+    { label: "Be polite (5 min)", apply: () => { advanceTime(5); logMsg("'That's wild mate.' Greg beamed.", 'event'); } },
+    { label: "Pretend you're on a call (2 min)", apply: () => { advanceTime(2); week.grudges.greg = (week.grudges.greg || 0) + 1; logMsg("Greg looked hurt. Greg makes mental notes.", 'event'); } },
+  ]},
+  { id: 'power_outage', title: "🔌 Power outage", desc: "Lights out. 90 seconds. Then back. Everyone cheered. Saved files: zero.", choices: [
+    { label: "Mourn the lost work", apply: () => { advanceTime(6); state.focus = clamp(state.focus - 8); state.jitter = clamp(state.jitter + 4); logMsg("You hadn't saved. You hadn't saved.", 'warn'); } },
+  ]},
+  { id: 'karen_baking', title: "🧁 Karen brought baked goods", titleClass: 'good', desc: "From the weekend. Banana bread. Looks suspicious. Looks great.", triggerWindow: [540, 660], choices: [
+    { label: "Take a slice (5 min)", apply: () => { advanceTime(5); state.focus = clamp(state.focus + 14); state.bowel = clamp(state.bowel + 10); state.jitter = clamp(state.jitter - 6); logMsg("It was great. Slightly dense. You feel held.", 'good'); } },
+    { label: "Be polite, half a piece (3 min)", apply: () => { advanceTime(3); state.bowel = clamp(state.bowel + 6); state.focus = clamp(state.focus + 8); logMsg("Diplomatic. Karen pleased.", 'good'); } },
+    { label: "Decline (1 min)", apply: () => { advanceTime(1); logMsg("Karen looked wounded. You held the line.", 'event'); } },
+  ]},
+  { id: 'screen_mirror', title: "📺 You've been screen-sharing all day", desc: "You just noticed. Since 09:14. Linda has seen everything. Linda has seen the Reddit tabs.", choices: [
+    { label: "Sit with the dread", apply: () => { advanceTime(2); state.focus = clamp(state.focus - 12); state.jitter = clamp(state.jitter + 12); noteGossip(); logMsg("Linda saw the Reddit. Linda saw the LinkedIn-recruiter reply. Linda saw it all.", 'crit'); } },
+  ]},
+
+  // === DAY-SPECIFIC (15) ===
+  { id: 'mon_inbox', title: "📥 Monday inbox apocalypse", desc: "87 unread emails. Three are marked URGENT. None are actually urgent. All require a reply.", daysOnly: [0], triggerWindow: [540, 630], choices: [
+    { label: "Triage properly (25 min)", apply: () => { advanceTime(25); state.focus = clamp(state.focus - 12); state.bowel = clamp(state.bowel + 6); logMsg("You inboxed yourself to zero. Briefly. Linda emailed again.", 'event'); } },
+    { label: "Mark all as read (3 min)", apply: () => { advanceTime(3); state.jitter = clamp(state.jitter + 6); logMsg("Nuclear option. Two of them were actually urgent.", 'warn'); } },
+  ]},
+  { id: 'mon_pep_talk', title: "📋 Monday all-hands", desc: "'Quick' all-hands. There will be a slide titled 'Q3 PRIORITIES'. There will be five priorities.", daysOnly: [0], triggerWindow: [570, 660], choices: [
+    { label: "Attend (32 min)", apply: () => { advanceTime(32); state.bowel = clamp(state.bowel + 8); state.jitter = clamp(state.jitter + 4); logMsg("Five priorities. None are actually priorities.", 'event'); } },
+    { label: "Skip ('blocker meeting') (3 min)", apply: () => { advanceTime(3); if (Math.random() < 0.4) { logMsg("Boss noticed. Email incoming.", 'warn'); schedule(60 + Math.random()*40, 'boss_email'); } else logMsg("Nobody noticed. Power move.", 'good'); } },
+  ]},
+  { id: 'mon_gossip', title: "☕ Priya's weekend gossip", titleClass: 'good', desc: "Priya has news. Several news. You will not be productive for a while.", daysOnly: [0], triggerWindow: [540, 690], choices: [
+    { label: "Sit and listen (16 min)", apply: () => { advanceTime(16); state.focus = clamp(state.focus + 14); state.jitter = clamp(state.jitter - 10); logMsg("You learned everything about everyone. Worth every second. Social fuel.", 'good'); } },
+    { label: "'I'm slammed' (3 min)", apply: () => { advanceTime(3); logMsg("Priya will save it for later. You hate later.", 'event'); } },
+  ]},
+  { id: 'tue_brad_doc', title: "📄 Brad's thought leadership doc", desc: "Brad has shared a Google Doc. It's 14 pages. The first paragraph contains the word 'paradigm' twice.", daysOnly: [1], choices: [
+    { label: "Read it properly (24 min)", apply: () => { advanceTime(24); state.focus = clamp(state.focus - 14); state.jitter = clamp(state.jitter + 4); logMsg("You read it. It was bad. You commented 'great thinking!' on three places.", 'event'); } },
+    { label: "Skim and 'looks great' (5 min)", apply: () => { advanceTime(5); logMsg("Brad replied 'thx mate!' within 11 seconds. He had been watching.", 'event'); } },
+    { label: "Refuse on principle (2 min)", apply: () => { advanceTime(2); week.grudges.brad = (week.grudges.brad || 0) + 2; logMsg("You did not engage. Brad will remember. Brad always remembers.", 'event'); } },
+  ]},
+  { id: 'tue_3pm_slump', title: "😴 3pm slump", titleClass: 'warn', desc: "It is 3pm on a Tuesday. The afternoon stretches like wet bread. Your brain is gravel.", daysOnly: [1], triggerWindow: [870, 930], choices: [
+    { label: "Acknowledge", apply: () => { state.focus = clamp(state.focus - 18); state.jitter = clamp(state.jitter - 4); logMsg("The slump has slumped. Recover or perish.", 'warn'); } },
+  ]},
+  { id: 'tue_tacos', title: "🌮 Tuesday tacos at the food truck", desc: "The food truck is out. The queue is forming. The tacos are excellent. The bathroom risk is real.", daysOnly: [1], triggerWindow: [690, 810], choices: [
+    { label: "Get the tacos (28 min)", apply: () => { advanceTime(28); state.focus = clamp(state.focus + 22); state.bowel = clamp(state.bowel + 32); logMsg("Three tacos. Worth every gram of regret coming later.", 'good'); } },
+    { label: "Resist (1 min)", apply: () => { advanceTime(1); state.focus = clamp(state.focus - 4); state.jitter = clamp(state.jitter + 6); logMsg("You walked past. You can smell them from here. FOMO building.", 'event'); } },
+  ]},
+  { id: 'wed_drinks', title: "🍺 Midweek drinks?", titleClass: 'good', desc: "Priya's rallying for after-work drinks. Wednesday. The week is long. The bar is close.", daysOnly: [2], triggerWindow: [870, 1020], choices: [
+    { label: "Say yes (2 min)", apply: () => { advanceTime(2); week.midweekDrinks = true; state.focus = clamp(state.focus + 10); state.jitter = clamp(state.jitter - 10); logMsg("You're in. Something to look forward to. Future-you will pay.", 'good'); } },
+    { label: "Hard no (1 min)", apply: () => { advanceTime(1); logMsg("'Bit slammed.' Priya nodded. She knows you're lying.", 'event'); } },
+  ]},
+  { id: 'wed_panic', title: "⏳ Half-week panic", desc: "It's Wednesday afternoon. You're either ahead or behind for the week. Time to pick a posture.", daysOnly: [2], triggerWindow: [780, 930], choices: [
+    { label: "Push for an extra task (32 min, +1 task if focus high)", apply: () => { advanceTime(32); if (state.focus > 50) { state.tasks++; logMsg("You squeezed out an extra report. Hero behaviour.", 'good'); } else { state.focus = clamp(state.focus - 10); logMsg("You tried. The brain wasn't there. Time lost.", 'warn'); } } },
+    { label: "Pace yourself (4 min)", apply: () => { advanceTime(4); state.jitter = clamp(state.jitter - 6); logMsg("Sustainable. Marathon, not sprint.", 'event'); } },
+  ]},
+  { id: 'wed_dry_july', title: "🍷 Linda announces she's doing dry July", desc: "It is May. Linda is committed. Linda has told everyone.", daysOnly: [2], choices: [
+    { label: "Nod supportively", apply: () => { advanceTime(2); logMsg("Linda will mention this every day until Friday.", 'event'); } },
+  ]},
+  { id: 'thu_new_friday', title: "🍻 Thursday is the new Friday", titleClass: 'good', desc: "The office mood is loose. Greg is already wearing trainers. Productivity has left the building.", daysOnly: [3], triggerWindow: [840, 1020], choices: [
+    { label: "Lean into it", apply: () => { state.flags.thursdayLoose = true; state.focus = clamp(state.focus + 8); state.jitter = clamp(state.jitter - 10); logMsg("You loosen too. Looser mind, easier work. For a while.", 'good'); } },
+  ]},
+  { id: 'thu_friday_check', title: "👔 Boss: 'How are we for Friday?'", desc: "The boss has materialised at your desk. Wanting reassurance about tomorrow.", daysOnly: [3], triggerWindow: [840, 990], choices: [
+    { label: "Confident lies (5 min)", apply: () => { advanceTime(5); state.jitter = clamp(state.jitter + 8); logMsg("'On track, mate.' You are not on track.", 'event'); } },
+    { label: "Honest update (8 min)", apply: () => { advanceTime(8); state.focus = clamp(state.focus - 5); logMsg("Boss appreciated the candour. Filed it. Watching.", 'event'); } },
+  ]},
+  { id: 'thu_late_project', title: "🔥 Late-arriving project", desc: "Stakeholder has dropped a 'critical' deliverable on you. They want it by EOD Friday. They had it Monday.", daysOnly: [3], choices: [
+    { label: "Take it on (+1 to Friday quota)", apply: () => { advanceTime(8); state.flags.fridayBonusQuota = true; state.jitter = clamp(state.jitter + 10); logMsg("Friday's quota is now harder. You are a hero. You are a fool.", 'warn'); } },
+    { label: "Push back hard (12 min)", apply: () => { advanceTime(12); state.focus = clamp(state.focus - 8); logMsg("They moved it to next Tuesday. Beautiful.", 'good'); } },
+  ]},
+  { id: 'fri_early', title: "🏃 Anyone leaving early?", titleClass: 'good', desc: "It's Friday. The team is testing the waters. Greg is already packing his bag at 3:45.", daysOnly: [4], triggerWindow: [870, 990], choices: [
+    { label: "Slip out early (gain 35 min)", apply: () => { state.time = clamp(state.time + 35, 0, END_TIME); logMsg("You ghosted. Beautifully.", 'good'); } },
+    { label: "Stay, look productive (5 min)", apply: () => { advanceTime(5); state.focus = clamp(state.focus - 5); logMsg("You stayed. Boss noticed. Cheap respect, but respect.", 'good'); } },
+  ]},
+  { id: 'fri_pub_run', title: "🍻 3pm pub run?", titleClass: 'good', desc: "Priya proposes pub. Now. As a team. The week's nearly done.", daysOnly: [4], triggerWindow: [870, 990], choices: [
+    { label: "Go (ends the day, locks in current tasks)", apply: () => { state.focus = clamp(state.focus + 12); logMsg("You went to the pub. The week is over for you. Joyful exit.", 'good'); state.time = END_TIME - 5; } },
+    { label: "'After 5' (5 min)", apply: () => { advanceTime(5); logMsg("You held. Strength of character. Boredom incoming.", 'event'); } },
+  ]},
+  { id: 'fri_casual', title: "👖 Casual Friday gone wrong", titleClass: 'good', desc: "Greg wore shorts. Like, real shorts. The boss saw. There was a pause. There were words.", daysOnly: [4], triggerWindow: [540, 630], choices: [
+    { label: "Witness the carnage", apply: () => { advanceTime(4); state.focus = clamp(state.focus + 14); state.jitter = clamp(state.jitter - 8); logMsg("Greg has been sent to put on long trousers. He will not. Free entertainment.", 'good'); } },
+  ]},
+
+  // === CONDITIONAL (5) ===
+  { id: 'sweat_moment', title: "💦 Visible sweat", titleClass: 'warn', desc: "You can feel it. Your forehead. Your collar. People will notice.", triggerOn: 'high_jitter', choices: [
+    { label: "Cardigan it (5 min)", apply: () => { advanceTime(5); state.focus = clamp(state.focus - 4); logMsg("Cardigan deployed. Hides the multitudes.", 'event'); } },
+    { label: "Own it (1 min)", apply: () => { advanceTime(1); logMsg("You are sweating. Everyone is sweating. We are all sweating.", 'event'); } },
+  ]},
+  { id: 'stim_crash', title: "💥 The wheels are coming off", titleClass: 'crash', desc: "Stim load critical. Brain dropping out of the sky. You need to do something or you'll crash hard.", triggerOn: 'stim_crash', choices: [
+    { label: "Eat sugar (8 min, instant patch)", apply: () => { advanceTime(8); state.focus = clamp(state.focus + 12); state.bowel = clamp(state.bowel + 8); state.stim = clamp(state.stim - 10); logMsg("Sugar hit. Brain back online. Stim load still high.", 'good'); } },
+    { label: "Walk it off (25 min, real reset)", apply: () => { advanceTime(25); state.stim = clamp(state.stim - 30); state.jitter = clamp(state.jitter - 18); state.focus = clamp(state.focus + 6); logMsg("Long walk. Brain returns by degrees. Stim load drained.", 'good'); } },
+    { label: "Push through (5 min, brutal)", apply: () => { advanceTime(5); state.focus = clamp(state.focus - 20); state.jitter = clamp(state.jitter + 10); logMsg("You pushed. The body objected. Loudly.", 'warn'); } },
+  ]},
+  { id: 'two_scoops', title: "🪦 Two scoops", titleClass: 'crash', desc: "That's your second pre-workout of the day. There is no third option. The dice are in the air.", triggerOn: 'forced', choices: [
+    { label: "Roll the dice", apply: () => {
+      if (Math.random() < 0.5) {
+        // Hospital outcome
+        advanceTime(5);
+        state.jitter = clamp(state.jitter + 50);
+        state.stim = clamp(state.stim + 30);
+        state.focus = clamp(state.focus - 30);
+        logMsg("Heart is doing something irregular. Linda dialled 000. Your week is now a wellbeing incident.", 'crit');
+        week.cardiacCount++;
+        schedule(2, 'two_scoops_hospital');
+      } else {
+        // Inhuman productivity
+        advanceTime(3);
+        state.focus = clamp(state.focus + 40);
+        state.stim = clamp(state.stim + 25);
+        state.jitter = clamp(state.jitter + 25);
+        logMsg("You ascend. The keyboard is a piano. You write the report in 11 minutes. It is your best work. You don't remember any of it.", 'good');
+      }
+    } },
+  ]},
+  { id: 'the_shakes', title: "☕☕☕ The shakes", titleClass: 'warn', desc: "Three coffees in 30 minutes. Your hands have ideas. Your hands have plans. Your hands won't stop moving.", triggerOn: 'forced', choices: [
+    { label: "Sit very still (8 min)", apply: () => { advanceTime(8); state.jitter = clamp(state.jitter + 25); state.focus = clamp(state.focus - 10); state.stim = clamp(state.stim + 10); logMsg("You sat. You vibrated. You waited for it to pass. It did not.", 'warn'); } },
+    { label: "Lap of the building (12 min)", apply: () => { advanceTime(12); state.jitter = clamp(state.jitter + 10); state.focus = clamp(state.focus - 4); state.bowel = clamp(state.bowel - 4); logMsg("Walking burned some of it off. You returned 30% calmer. Still feel like a beehive.", 'event'); } },
+    { label: "Power through (4 min)", apply: () => { advanceTime(4); state.jitter = clamp(state.jitter + 35); state.focus = clamp(state.focus - 18); logMsg("You typed an email. The email read like a manifesto. You did not send it. Probably.", 'crit'); } },
+  ]},
+  { id: 'meeting_about_meetings', title: "📅 Quick sync re: engagement", titleClass: 'crash', desc: "Your calendar just ate itself. A 45-minute meeting titled 'touching base on visibility'. Brad organised it. No agenda. You've skipped a lot lately. You know exactly what this is — and it's landed right as you were finally flying.", triggerOn: 'forced', choices: [
+    { label: "Sit through it (45 min)", apply: () => { advanceTime(45); state.focus = clamp(state.focus - 32); state.bowel = clamp(state.bowel + 8); week.missedMeetings = 0; logMsg("They used the word 'optics' four times. You have learned nothing except a low, structural fear. Your focus is gone.", 'crash'); } },
+    { label: "'I've been heads-down delivering' (20 min, 50/50)", apply: () => { advanceTime(20); if (Math.random() < 0.5) { state.focus = clamp(state.focus - 12); week.missedMeetings = 1; logMsg("They bought it. Barely. 'Just keep us in the loop, yeah?'", 'event'); } else { state.focus = clamp(state.focus - 35); state.jitter = clamp(state.jitter + 12); week.bossWarnings++; logMsg("They did not buy it. It escalated. The word 'pattern' was used. About you.", 'crash'); } } },
+  ]},
+  { id: 'wellness_training', title: "🧘 Mandatory wellbeing session", titleClass: 'crash', desc: "HR 'just wants to make sure you're supported'. There is a worksheet. There is a circle of chairs. Someone has noticed how much you've been running on chemicals — and they've scheduled their concern for exactly now, while you were locked in.", triggerOn: 'forced', choices: [
+    { label: "Attend, nod, survive (40 min)", apply: () => { advanceTime(40); state.focus = clamp(state.focus - 28); week.concern = 0; logMsg("You did a breathing exercise with Linda from HR. You wrote a 'wellbeing goal' on a Post-it. The Post-it is a lie. Your focus is spent.", 'crash'); } },
+    { label: "'I'm honestly fine' (15 min, risky)", apply: () => { advanceTime(15); if (Math.random() < 0.45) { state.focus = clamp(state.focus - 10); week.concern = 1; logMsg("They let you go. 'Our door's always open.' The door is a threat.", 'event'); } else { state.focus = clamp(state.focus - 30); week.concern = Math.max(0, week.concern - 2); logMsg("Insisting you're fine while visibly twitching did not land. They've 'flagged' you. Softly. Forever.", 'crash'); } } },
+  ]},
+  { id: 'bathroom_reputation', title: "🚽 Marcus has a spreadsheet", titleClass: 'warn', desc: "Marcus from H&S has 'noticed a pattern' in your bathroom usage. He has, and this is true, a spreadsheet. He wants to 'check in about your hydration'. The paranoia of being monitored sets in.", triggerOn: 'forced', choices: [
+    { label: "Endure the chat (10 min)", apply: () => { advanceTime(10); state.focus = clamp(state.focus - 10); state.jitter = clamp(state.jitter + 8); logMsg("Marcus showed you the spreadsheet. There's a graph. You are a line on the graph. The line is going up.", 'warn'); } },
+    { label: "'Mate, that's weird' (4 min)", apply: () => { advanceTime(4); state.jitter = clamp(state.jitter + 5); week.grudges.marcus = (week.grudges.marcus || 0) + 1; logMsg("You called it out. Marcus retreated. Marcus does not forget. Marcus has a tab for grudges.", 'warn'); } },
+  ]},
+  { id: 'stim_wellness_check', title: "👁 'You sleeping okay?'", titleClass: 'warn', desc: "Karen cornered you by the kettle. 'You just seem... wired, lately. Everything okay at home?' It is not a kind question. It is reconnaissance. The whole kitchen is listening.", triggerOn: 'forced', choices: [
+    { label: "'Yeah! Just busy!' (5 min)", apply: () => { advanceTime(5); state.jitter = clamp(state.jitter + 6); noteConcern(1); logMsg("You were too bright. Too fast. Karen's eyes narrowed. The performance did not convince.", 'warn'); } },
+    { label: "Deflect and leave (3 min)", apply: () => { advanceTime(3); state.focus = clamp(state.focus - 4); logMsg("You mumbled something and walked off. It reads as guilt. Karen files it away.", 'event'); } },
+  ]},
+  { id: 'coffee_smell_shakes', title: "☕ The smell alone", titleClass: 'warn', desc: "You've had a lot of coffee this week. So much that walking PAST the kitchen just now, the SMELL gave you a jolt. Your body has recalibrated. This is not sustainable. This is your life now.", triggerOn: 'forced', choices: [
+    { label: "Acknowledge the dependency", apply: () => { advanceTime(3); state.jitter = clamp(state.jitter + 12); state.focus = clamp(state.focus + 4); logMsg("Pavlov would be proud. Coffee gives you less now and costs you more. The rest of today, anyway.", 'warn'); state.flags.coffeeTolerance = true; } },
+  ]},
+  { id: 'kitchen_aligned', title: "🔪 The kitchen has aligned", titleClass: 'crash', desc: "Multiple grudges have reached critical mass. Linda, Tara, and Karen were seen talking. They stopped when you walked in. The office social fabric has organised itself against you. This is worse than any single enemy.", triggerOn: 'forced', choices: [
+    { label: "Make a peace offering (15 min)", apply: () => { advanceTime(15); state.focus = clamp(state.focus - 12); week.grudges.linda = 0; week.grudges.tara = 0; week.grudges.karen = 0; week.grudgesResolved += 3; logMsg("You bought a box of Krispy Kremes for the kitchen. Diplomatic. Expensive. The alliance disbands. For now.", 'good'); } },
+    { label: "Stand your ground (5 min)", apply: () => { advanceTime(5); state.jitter = clamp(state.jitter + 15); logMsg("You made eye contact with all three. Nobody blinked. The cold war continues. You eat lunch at your desk now.", 'crash'); } },
+  ]},
+];
+
+// ==================== CALLBACKS ====================
+const CALLBACKS = {
+  gary_revenge: { title: "📧 Gary's back", titleClass: 'callback', desc: "Gary has returned. 'A few more slides'. He's smiling. It's the worst smile.", choices: [
+    { label: "Endure (38 min)", apply: () => { advanceTime(38); state.focus = clamp(state.focus - 20); state.bowel = clamp(state.bowel + 12); logMsg("38 minutes. Gary now considers you a friend.", 'callback'); week.grudges.gary = (week.grudges.gary || 0) - 2; } },
+    { label: "'Mate, I'm slammed' (4 min)", apply: () => { advanceTime(4); logMsg("Gary nodded sadly. Grudge deepens.", 'callback'); week.grudges.gary = (week.grudges.gary || 0) + 1; } },
+  ]},
+  gary_returns: { title: "📧 Gary returns with Google Translate", titleClass: 'callback', desc: "Gary is back with Google Translate open. Pointing at his phone: 'IT TICKET FORM'.", choices: [
+    { label: "Drop the act (22 min)", apply: () => { advanceTime(22); state.focus = clamp(state.focus - 10); logMsg("You spoke English again. Gary's face. The betrayal.", 'callback'); week.grudges.gary = (week.grudges.gary || 0) + 1; } },
+    { label: "Keep the bit going (10 min)", apply: () => { advanceTime(10); logMsg("'Si, si.' Gary left baffled. You have an enemy for life.", 'callback'); week.grudges.gary = (week.grudges.gary || 0) + 3; } },
+  ]},
+  kebab_revenge: { title: "🥙 The kebab calls", titleClass: 'callback', desc: "It's been hours. The kebab has decided. The kebab is ready to leave.", choices: [
+    { label: "Accept", apply: () => { state.bowel = clamp(state.bowel + 28); logMsg("The garlic sauce returns. With interest.", 'callback'); } },
+  ]},
+  manager_chat: { title: "👔 Got a sec?", titleClass: 'callback', desc: "Your manager. At your desk. 'Just want to chat about deadline communication.' Calm voice.", choices: [
+    { label: "Apologise (16 min)", apply: () => { advanceTime(16); state.focus = clamp(state.focus - 10); state.jitter = clamp(state.jitter + 5); logMsg("You apologised. Repeatedly. They seemed satisfied.", 'callback'); } },
+    { label: "Push back politely (12 min)", apply: () => { advanceTime(12); if (Math.random() < 0.5) logMsg("They respected the candour. Maybe.", 'good'); else { logMsg("They did not respect the candour. PIP closer.", 'warn'); state.jitter = clamp(state.jitter + 12); week.bossWarnings++; } } },
+  ]},
+  sticky_keyboard: { title: "⌨ Sticky L key", titleClass: 'callback', desc: "The coffee spill. The L key is permanently stuck. Emails going out with no L. PEOPLE ARE NOTICING.", choices: [
+    { label: "Fix it now (13 min)", apply: () => { advanceTime(13); state.focus = clamp(state.focus - 5); logMsg("You pried the L key off. Never feels right again.", 'callback'); } },
+    { label: "Adapt linguistically (5 min)", apply: () => { advanceTime(5); state.focus = clamp(state.focus - 8); logMsg("'Pease ook into this.' Greg replied: 'wat?'", 'callback'); } },
+  ]},
+  urgent_returns: { title: "📧 Stakeholder follow-up", titleClass: 'callback', desc: "They've followed up. With your boss CC'd. 'Gentle nudge!' in the subject.", choices: [
+    { label: "Smash it out (22 min, +1 task)", apply: () => { advanceTime(22); state.tasks++; state.focus = clamp(state.focus - 18); logMsg("Done. They said 'champion'. You feel hollow.", 'callback'); } },
+    { label: "Pass to Priya (5 min)", apply: () => { advanceTime(5); logMsg("Priya owes you. Or you owe her. Unclear.", 'callback'); } },
+  ]},
+  boss_email: { title: "📧 From: Your boss", titleClass: 'callback', desc: "Subject: 'Re: URGENT — need by EOD'. Body: 'Are we on this?' That's all.", choices: [
+    { label: "Reply immediately (11 min)", apply: () => { advanceTime(11); state.jitter = clamp(state.jitter + 8); logMsg("You replied. Tone: confident lies.", 'callback'); } },
+  ]},
+  brad_returns: { title: "💬 Brad walks over", titleClass: 'callback', desc: "Brad has physically come to your desk. Laptop open like a tray. Wants to show you something.", choices: [
+    { label: "Engage (13 min)", apply: () => { advanceTime(13); state.focus = clamp(state.focus - 8); logMsg("Brad's email was bad. You said it was fine.", 'callback'); } },
+    { label: "'Headphones in for a reason' (3 min)", apply: () => { advanceTime(3); week.grudges.brad = (week.grudges.brad || 0) + 1; logMsg("Brad walked away. Brad will remember.", 'callback'); } },
+  ]},
+  greg_mentions_it: { title: "💬 Greg saw the hickey", titleClass: 'callback', desc: "Greg is at your desk. Smirking. He has questions. They will not be subtle.", choices: [
+    { label: "Confirm nothing (5 min)", apply: () => { advanceTime(5); state.jitter = clamp(state.jitter + 5); logMsg("'Wild weekend, hey?' You said 'no comment'. He winked. Vile.", 'callback'); } },
+    { label: "Lean in (9 min)", apply: () => { advanceTime(9); state.focus = clamp(state.focus + 5); logMsg("You told Greg a story. 30% true. He was riveted.", 'good'); } },
+  ]},
+  greg_parking_complaint: { title: "🚗 Greg's car got dinged", titleClass: 'callback', desc: "Greg has been at your desk for four minutes. Going on about the parking lot. His bumper. Says some 'WFH cowboy' didn't leave room. He's looking at you when he says it.", choices: [
+    { label: "Sympathise (6 min)", apply: () => { advanceTime(6); state.focus = clamp(state.focus - 4); logMsg("'Mate, that's rough.' Greg nodded. The matter is closed. For now.", 'callback'); } },
+    { label: "Pretend you didn't park there (4 min, risky)", apply: () => { advanceTime(4); if (Math.random() < 0.5) { logMsg("Greg looked at you. Greg knew. Greg said nothing.", 'callback'); week.grudges.greg = (week.grudges.greg || 0) + 1; } else { logMsg("Greg bought it. Greg will lose this memory by tomorrow.", 'good'); } } },
+  ]},
+  greg_walk_validation: { title: "💪 Greg saw you walking", titleClass: 'good', desc: "Greg has appeared. 'Saw you out walking again — getting after it, mate!' He fist-bumps you. He saw both walks. He is keeping track.", choices: [
+    { label: "Accept the validation (3 min)", apply: () => { advanceTime(3); state.focus = clamp(state.focus + 8); state.jitter = clamp(state.jitter - 6); logMsg("Greg is rooting for you. Strange feeling. You'll take it.", 'good'); } },
+  ]},
+  lunch_revenge: { title: "📉 Low blood sugar", titleClass: 'callback', desc: "You skipped lunch. The body has notes.", choices: [
+    { label: "Acknowledge", apply: () => { state.focus = clamp(state.focus - 15); state.jitter = clamp(state.jitter + 12); logMsg("Shaky. Headache. You eyed a stranger's apple.", 'callback'); } },
+  ]},
+  mum_again: { title: "📞 Mum, round two", titleClass: 'callback', desc: "She's calling again. She knows you weren't in a meeting.", choices: [
+    { label: "Answer (16 min)", apply: () => { advanceTime(16); state.focus = clamp(state.focus - 8); logMsg("She asked when you're visiting. You said soon. You lied.", 'callback'); } },
+    { label: "Ignore again (1 min)", apply: () => { advanceTime(1); state.jitter = clamp(state.jitter + 8); logMsg("Decline. Guilt now structural.", 'callback'); } },
+  ]},
+  // Cross-day grudges
+  gary_grudge_email: { title: "📧 14-paragraph email from Gary", titleClass: 'callback', desc: "Subject: 'IT POLICY REMINDER'. Body: an essay. He CC'd your boss. There's a PDF attached.", choices: [
+    { label: "Read it all (13 min)", apply: () => { advanceTime(13); state.focus = clamp(state.focus - 12); logMsg("You read the whole thing. Gary feels seen.", 'callback'); week.grudges.gary = 0; } },
+    { label: "Reply 'thanks!' (2 min)", apply: () => { advanceTime(2); logMsg("Gary will know you didn't read it. Gary always knows.", 'callback'); week.grudges.gary = (week.grudges.gary || 0) + 2; } },
+  ]},
+  linda_grudge_revenge: { title: "🍎 Linda strikes back", titleClass: 'callback', desc: "Linda is eating CRISPS now. At your desk pod. The packet is loud. She is making eye contact while doing it.", choices: [
+    { label: "Move desks again (13 min)", apply: () => { advanceTime(13); state.focus = clamp(state.focus - 5); logMsg("Tactical retreat. Linda won this round.", 'callback'); } },
+    { label: "Apologise for yesterday (5 min)", apply: () => { advanceTime(5); logMsg("Linda accepted with the slowest nod imaginable.", 'callback'); week.grudges.linda = 0; } },
+  ]},
+  tara_grudge_passive_aggressive: { title: "🖨 Tara has 'tagged' you", titleClass: 'callback', desc: "Tara has emailed everyone in the office about 'printer etiquette'. She's named no one. She means you.", choices: [
+    { label: "Apologise directly (6 min)", apply: () => { advanceTime(6); logMsg("Tara accepted with a single nod. Truce.", 'callback'); week.grudges.tara = 0; } },
+    { label: "Ignore (1 min)", apply: () => { advanceTime(1); logMsg("Tara will print another email tomorrow.", 'callback'); week.grudges.tara = (week.grudges.tara || 0) + 1; } },
+  ]},
+  brad_grudge_meeting: { title: "📅 Brad books you a 'sync'", titleClass: 'callback', desc: "Brad has booked you a 45-min meeting. Tomorrow. Recurring. With an agenda titled 'alignment'.", choices: [
+    { label: "Accept and pre-empt (10 min)", apply: () => { advanceTime(10); logMsg("You replied with a counter-agenda. Brad disengaged. Smart.", 'callback'); week.grudges.brad = 0; } },
+    { label: "Decline with no explanation (2 min)", apply: () => { advanceTime(2); logMsg("Brad: '👍'. Brad is escalating.", 'callback'); week.grudges.brad = (week.grudges.brad || 0) + 1; } },
+  ]},
+};
+
+// ==================== UTILITIES ====================
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+function clamp(v, min=0, max=100) { return Math.max(min, Math.min(max, v)); }
+function rangeTime(t) { return t[0] + Math.floor(Math.random() * (t[1] - t[0] + 1)); }
+
+function fmtTime(mins) {
+  const h = Math.floor(mins/60), m = mins%60;
+  return String(h).padStart(2,'0') + ':' + String(m).padStart(2,'0');
+}
+
+function fmtTimeLeft(mins) {
+  const h = Math.floor(mins/60), m = mins%60;
+  return h + 'h ' + String(m).padStart(2,'0') + 'm';
+}
+
+function expectedTasks() {
+  const elapsed = state.time - START_TIME;
+  return (elapsed / (END_TIME - START_TIME)) * state.quota;
+}
+
+function schedule(delay, eventId) {
+  state.scheduled.push({ at: state.time + delay, eventId });
+}
+
+function addPill(label, kind) {
+  state.pills.push({ label, kind });
+}
+
+function logMsg(text, cls='action') {
+  const log = document.getElementById('log');
+  const p = document.createElement('div');
+  p.className = 'viva-feed-item ' + cls;
+  p.innerHTML = `<span class="ts">${fmtTime(state.time)}</span>${text}`;
+  log.appendChild(p);
+  log.scrollTop = log.scrollHeight;
+}
+
+function newDayState() {
+  const day = DAYS[week.dayIndex];
+  const banked = state ? state.loperamide : 0;
+  // Lock-in not always possible — some days the zone just won't come. ~25% of days.
+  const lockInPossible = Math.random() > 0.25;
+  return {
+    time: START_TIME,
+    focus: 50, bowel: 20, jitter: 0,
+    stim: 0,
+    tasks: 0, dayScore: 0,
+    loperamide: banked + 1,
+    alive: true,
+    nextEventTime: START_TIME + (MODE.difficulty === 'openplan' ? 12 + Math.floor(Math.random() * 12) : 25 + Math.floor(Math.random() * 25)),
+    flags: {},
+    scheduled: [],
+    pills: [],
+    morning: null,
+    quota: day.quota + (week.dayIndex === (MODE.length - 1) && state?.flags?.fridayBonusQuota ? 1 : 0),
+    lastStim: null,        // {action, time}
+    lastLockIn: -999,      // game time of last lock-in
+    lockInUsedToday: false, // one shot per day
+    lockInPossible,        // some days the zone just isn't available
+    workDisabledUntil: -1, // post-lockin cooldown
+    cleanWorkStreak: 0,    // consecutive Do Works without stims — flow state for clean play
+    lastActionType: null,  // for varied-action rhythm bonus
+    whiteoutUntil: -1,     // overstim whiteout window
+    lateStimToday: false,  // stimmed after 15:00 → carryover
+    history: {
+      coffees: 0, nicotines: 0, dexes: 0, energies: 0, preworkouts: 0,
+      walks: 0, snacks: 0, bathrooms: 0, totalStims: 0,
+      lastAteAt: -999,
+      blackoutsTriggered: 0,
+      lastComboTime: undefined,
+      coffeeTimes: [],          // for triple-coffee detection within 30 min window
+      lastImodiumAt: -999,      // bathroom doesn't work if recently taken
+      gregWalkValidated: false, // K - one-shot
+      walkPipDecayUsed: false,  // D - once per day
+      mumIgnored: 0,            // sociopath signal
+      socialDeclined: 0,        // sociopath signal
+      imodiumToWork: 0,         // sociopath signal — suppressing the body to keep going
+      // event memory flags — read by other events for interconnection
+      bossLaughed: false,
+      bossCompliment: false,
+      greatWorkFwd: false,
+      gotParkingSpot: false,
+      twentyInJacket: false,
+      // active substance windows (game-time minutes)
+      dexUntil: -1,
+      preworkoutUntil: -1,
+    },
+  };
+}
+
+// ==================== RENDER ====================
+function render() {
+  if (!state) return;
+  document.getElementById('timeDisplay').textContent = fmtTime(state.time);
+  document.getElementById('tasks').textContent = state.tasks;
+  document.getElementById('quota').textContent = state.quota;
+  document.getElementById('lop').textContent = state.loperamide;
+  document.getElementById('dayTile').textContent = DAYS[week.dayIndex].name;
+
+  // Pace indication on tasks tile
+  const behind = state.tasks < expectedTasks() - 1;
+  document.getElementById('tileTasks').classList.toggle('alert', behind);
+
+  // Meters
+  const setMeter = (id, val, warn, danger) => {
+    document.getElementById(id+'Val').textContent = Math.round(val);
+    document.getElementById(id+'Fill').style.width = clamp(val) + '%';
+    const fill = document.getElementById(id+'Fill');
+    fill.classList.remove('good','warn','danger');
+    if (val >= danger) fill.classList.add('danger');
+    else if (val >= warn) fill.classList.add('warn');
+    else fill.classList.add('good');
+  };
+  setMeter('focus', state.focus, 999, 999);
+  document.getElementById('focusFill').classList.remove('warn','danger');
+  document.getElementById('focusFill').classList.add('good');
+  setMeter('bowel', state.bowel, 65, 85);
+  setMeter('jitter', state.jitter, 65, 85);
+  setMeter('stim', state.stim, 60, 85);
+
+  // Disable imodium if none
+  document.querySelector('[data-action="loperamide"]').disabled = state.loperamide <= 0;
+  // Disable work during post-lockin cooldown
+  document.querySelector('[data-action="work"]').disabled = state.time < state.workDisabledUntil;
+}
+
+// ==================== TIME ADVANCE ====================
+function advanceTime(mins) {
+  const beforeHour = Math.floor(state.time / 60);
+  state.time += mins;
+  const afterHour = Math.floor(state.time / 60);
+
+  let focusDrift = mins * 0.7;
+  let bowelDrift = mins * 0.35;
+  let jitterDrift = mins * 0.7;
+  let stimDrift = mins * 2.0;
+  if (state.flags.hungover) { bowelDrift *= 1.4; focusDrift *= 1.2; }
+  if (state.flags.dodgyGut) bowelDrift *= 1.5;
+  if (state.flags.zen) jitterDrift *= 1.4;
+  if (state.flags.thursdayLoose) focusDrift *= 1.2;
+
+  state.focus = clamp(state.focus - focusDrift);
+  state.bowel = clamp(state.bowel + bowelDrift);
+  state.jitter = clamp(state.jitter - jitterDrift);
+  state.stim = clamp(state.stim - stimDrift);
+
+  // Stat interplay #1: high jitter feeds the bowel (anxiety gut)
+  if (state.jitter > 70) {
+    state.bowel = clamp(state.bowel + mins * 0.25);
+  }
+
+  if (afterHour > beforeHour && state.time < END_TIME) {
+    bossCheckIn();
+  }
+}
+
+function bossCheckIn() {
+  const expected = expectedTasks();
+  const deficit = expected - state.tasks;
+  const lenient = week.bossOnHoliday ? 1.0 : 0;
+  if (deficit > 3.5 + lenient) {
+    return instantFail("Wellbeing incident: Fired on the spot.", `${state.tasks}/${state.quota} at ${fmtTime(state.time)}. Boss didn't even check the calendar.`);
+  }
+
+  // Friendly mode if boss laughed at your joke recently or you got 'great work' email today
+  const friendly = state.history.bossLaughed || state.history.greatWorkFwd;
+
+  if (deficit > 1.5 + lenient) {
+    // If you'd been complimented earlier, the check-in is more painful — disappointment hits harder
+    if (state.history.bossCompliment && !friendly) {
+      logMsg(`Manager: "Hmm. After this morning, I thought we'd be further along." (${state.tasks}/${state.quota})`, 'boss');
+      state.focus = clamp(state.focus - 6);
+      state.history.bossCompliment = false; // consume
+    } else if (friendly) {
+      logMsg(`Manager: "How we tracking, champ?" (${state.tasks}/${state.quota}) — softer than expected.`, 'boss');
+      // friendly buffer absorbs one warning
+      state.history.bossLaughed = false;
+      state.history.greatWorkFwd = false;
+    } else {
+      const lines = [
+        `Manager: "Where are we on those reports?" (${state.tasks}/${state.quota})`,
+        `Manager lingered. "Everything... ok?" (${state.tasks}/${state.quota})`,
+        `Manager: "Love a quick update." (${state.tasks}/${state.quota})`,
+        `Manager hovered. Said nothing. Worse. (${state.tasks}/${state.quota})`,
+      ];
+      logMsg(pick(lines), 'boss');
+      week.bossWarnings++;
+    }
+  } else {
+    if (friendly) {
+      const friendlyLines = [
+        `Manager: "Mate, good one earlier." Walked off grinning. (${state.tasks}/${state.quota})`,
+        `Manager: "You're on a roll today. Keep it up." (${state.tasks}/${state.quota})`,
+        `Manager fist-bumped you. Genuinely. (${state.tasks}/${state.quota})`,
+      ];
+      logMsg(pick(friendlyLines), 'good');
+      state.focus = clamp(state.focus + 4);
+      state.history.bossLaughed = false;
+      state.history.greatWorkFwd = false;
+    } else if (state.time > 600 && state.history.dexUntil > state.time) {
+      // Dex active during a normal check-in: boss notices something
+      logMsg(`Manager: "Great work today." Then a long pause. "...you alright?" (${state.tasks}/${state.quota})`, 'boss');
+    } else {
+      const lines = [
+        `Manager walked past. Approving nod. (${state.tasks}/${state.quota})`,
+        `Manager: "Great work today." (${state.tasks}/${state.quota})`,
+        `Manager: 👍 in passing. (${state.tasks}/${state.quota})`,
+        `Manager smiled. Walked on. (${state.tasks}/${state.quota})`,
+      ];
+      logMsg(pick(lines), 'boss');
+    }
+  }
+}
+
+// ==================== COMBOS ====================
+function checkCombo(action) {
+  if (!state.lastStim) return null;
+  const elapsed = state.time - state.lastStim.time;
+  for (const combo of COMBOS) {
+    if (combo.prev.includes(state.lastStim.action) && combo.curr.includes(action) && elapsed <= combo.window) {
+      return combo;
+    }
+  }
+  return null;
+}
+
+function applyCombo(combo) {
+  state.focus = clamp(state.focus + (combo.focus || 0));
+  state.bowel = clamp(state.bowel + (combo.bowel || 0));
+  state.jitter = clamp(state.jitter + (combo.jitter || 0));
+  state.stim = clamp(state.stim + (combo.stim || 0));
+  week.combosTriggered++;
+  state.history.lastComboTime = state.time;
+  logMsg(`COMBO: ${combo.label}`, 'combo');
+  showComboBanner(combo.label);
+  return combo;
+}
+
+function showComboBanner(label) {
+  const b = document.createElement('div');
+  b.className = 'combo-banner';
+  b.textContent = '⚡ ' + label + ' ⚡';
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 2500);
+}
+
+// ==================== LOCK-IN ====================
+function checkLockInTrigger() {
+  if (lockInActive) return false;
+  if (!state.lockInPossible) return false;
+  if (state.lockInUsedToday) return false;
+  if (state.time < state.whiteoutUntil) return false; // no zone while the chemicals drive
+  if (state.focus < 75) return false;
+
+  // Base chance scales with focus
+  let chance;
+  if (state.focus >= 95) chance = 0.55;
+  else if (state.focus >= 90) chance = 0.45;
+  else if (state.focus >= 85) chance = 0.35;
+  else if (state.focus >= 80) chance = 0.25;
+  else chance = 0.15; // 75-79
+
+  // Modifiers
+  if (state.history.lastComboTime !== undefined && state.time - state.history.lastComboTime <= 20) chance += 0.15;
+  if (state.stim >= 30 && state.stim <= 70) chance += 0.10;
+  if (state.bowel > 70) chance -= 0.15;
+  if (state.jitter > 80) chance -= 0.10;
+
+  return Math.random() < chance;
+}
+
+function offerLockIn() {
+  lockInActive = true;
+  document.getElementById('lockinModal').classList.add('show');
+  // Reset CSS animation
+  const fill = document.getElementById('lockinTimer');
+  fill.style.animation = 'none';
+  void fill.offsetWidth;
+  fill.style.animation = '';
+  // 5-sec timeout
+  lockInTimeout = setTimeout(() => {
+    if (lockInActive) declineLockIn();
+  }, 5000);
+}
+
+function declineLockIn() {
+  clearTimeout(lockInTimeout);
+  lockInActive = false;
+  document.getElementById('lockinModal').classList.remove('show');
+  logMsg("Lock-in declined. The moment passed.", 'event');
+  state.lastLockIn = state.time;
+}
+
+function commitLockIn() {
+  clearTimeout(lockInTimeout);
+  lockInActive = false;
+  document.getElementById('lockinModal').classList.remove('show');
+  state.lastLockIn = state.time;
+  state.lockInUsedToday = true;
+  week.lockInsSeized++;
+
+  // Lottery: 1-4 tasks weighted 20/40/30/10
+  const roll = Math.random();
+  let count;
+  if (roll < 0.20) count = 1;
+  else if (roll < 0.60) count = 2;
+  else if (roll < 0.90) count = 3;
+  else count = 4;
+
+  // Focus drop per task scales with total commitment
+  const focusDropPerTask = count === 1 ? 10 : count === 2 ? 12 : count === 3 ? 14 : 16;
+
+  let actual = 0;
+  let score = 0;
+  for (let i = 0; i < count; i++) {
+    // Each task takes 18-24 min (a bit faster than normal Do Work because you're locked in)
+    advanceTime(18 + Math.floor(Math.random() * 7));
+    // Jitter-fail chance
+    if (state.jitter > 55 && Math.random() < (state.jitter - 55) / 60) {
+      logMsg("Task lost to the void mid-lockin.", 'warn');
+      state.focus = clamp(state.focus - focusDropPerTask);
+      continue;
+    }
+    const q = Math.floor(state.focus / 10);
+    state.tasks++;
+    state.dayScore += q;
+    score += q;
+    actual++;
+    state.focus = clamp(state.focus - focusDropPerTask);
+    state.bowel = clamp(state.bowel + 3);
+    state.jitter = clamp(state.jitter + 2);
+  }
+
+  // Result text
+  const results = [
+    null,
+    "You did one whole thing. The wave broke early.",
+    "Two reports in the time it usually takes for one. The boss saw.",
+    "THREE in a row. You barely blinked. Spreadsheets fear you.",
+    "FOUR. You've never been here before. The keyboard is warm. Someone clapped.",
+  ];
+  logMsg(`LOCK-IN: ${actual}/${count} tasks. +${score} score. ${results[actual] || ''}`, 'combo');
+
+  if (count >= 3) {
+    logMsg(pick([
+      "Body's tapped. The chair is warm. You earned the burnout.",
+      "You stand up too fast. The room tilts.",
+      "The fluorescents are vibrating. So are you.",
+      "Your hands are typing in mid-air. Briefly.",
+      "You did the thing. The price is your afternoon.",
+    ]), 'warn');
+  }
+
+  finishTurn();
+}
+
+// ==================== EVENT TRIGGER ====================
+function maybeTriggerEvent() {
+  if (!state.alive) return;
+
+  // Scheduled callbacks first
+  const due = state.scheduled.find(s => s.at <= state.time);
+  if (due) {
+    state.scheduled = state.scheduled.filter(s => s !== due);
+    const cb = CALLBACKS[due.eventId];
+    if (cb) { showEvent(cb); return; }
+  }
+
+  // Conditional triggers (high priority) — stim crash only; bowel is the player's problem
+  // Suppressed during a whiteout: you're already past the crash, you're IN it
+  if (state.stim > 90 && state.time >= state.whiteoutUntil) {
+    const crash = EVENTS.find(e => e.id === 'stim_crash');
+    if (crash) { showEvent(crash); return; }
+  }
+
+  if (state.time < state.nextEventTime) return;
+
+  const pool = EVENTS.filter(e => {
+    if (week.shownEvents.has(e.id) && !['gut_warning', 'pavlov_ping'].includes(e.id)) return false;
+    if (e.daysOnly && !e.daysOnly.includes(week.dayIndex)) return false;
+    if (e.triggerWindow && (state.time < e.triggerWindow[0] || state.time > e.triggerWindow[1])) return false;
+    if (e.triggerOn === 'high_bowel' && state.bowel < 60) return false;
+    if (e.triggerOn === 'high_jitter' && state.jitter < 75) return false;
+    if (e.triggerOn === 'critical_bowel' || e.triggerOn === 'stim_crash') return false; // these are auto-fired above
+    if (e.triggerOn === 'forced') return false; // two_scoops, the_shakes — fired manually
+    return true;
+  });
+  if (pool.length === 0) {
+    state.nextEventTime = state.time + 40;
+    return;
+  }
+
+  const ev = pick(pool);
+  week.shownEvents.add(ev.id);
+  const gap = MODE.difficulty === 'openplan' ? 15 + Math.floor(Math.random() * 15) : 30 + Math.floor(Math.random() * 30);
+  state.nextEventTime = state.time + gap;
+  showEvent(ev);
+}
+
+function showEvent(ev) {
+  pendingEvent = false;
+  const modal = document.getElementById('eventModal');
+  const card = document.getElementById('eventCard');
+  card.className = 'modal-card event ' + (ev.titleClass || '');
+  document.getElementById('eventTitle').textContent = ev.title;
+  document.getElementById('eventDesc').textContent = ev.desc;
+  const choices = document.getElementById('eventChoices');
+  choices.innerHTML = '';
+  ev.choices.forEach(c => {
+    const btn = document.createElement('button');
+    btn.textContent = c.label;
+    btn.onclick = () => {
+      c.apply();
+      modal.classList.remove('show');
+      render();
+      checkFailures();
+      if (state.alive) {
+        scheduleNextEventCheck();
+      }
+    };
+    choices.appendChild(btn);
+  });
+  modal.classList.add('show');
+}
+
+function scheduleNextEventCheck() {
+  // small delay before next event might fire
+  setTimeout(maybeTriggerEvent, 200);
+}
+
+// ==================== FAILURES ====================
+function checkFailures() {
+  if (!state.alive) return;
+  // Track near-misses for the end-of-week Sphincter rating (once per crossing)
+  if (state.bowel >= 88 && !state._bowelFlagged) { week.closeBowelCalls++; state._bowelFlagged = true; }
+  if (state.bowel < 80) state._bowelFlagged = false;
+  if (state.jitter >= 88 && !state._jitterFlagged) { week.closeCardiacCalls++; state._jitterFlagged = true; }
+  if (state.jitter < 80) state._jitterFlagged = false;
+
+  if (state.bowel >= 100) {
+    week.shartCount++;
+    return instantFail("Wellbeing incident: bathroom.", pick(ENDINGS.shart));
+  }
+  if (state.jitter >= 100) {
+    week.cardiacCount++;
+    return instantFail("Wellbeing incident: cardiac.", pick(ENDINGS.cardiac));
+  }
+  if (state.time >= END_TIME) {
+    endDay();
+  }
+}
+
+function instantFail(title, msg) {
+  state.alive = false;
+  document.getElementById('goTitle').textContent = title;
+  document.getElementById('goMsg').textContent = msg;
+  document.getElementById('goDay').textContent = DAYS[week.dayIndex].name;
+  document.getElementById('goScore').textContent = week.weekScore + state.dayScore;
+  document.getElementById('gameoverModal').classList.add('show');
+}
+
+// ==================== ACTIONS ====================
+function doAction(action) {
+  if (!state || !state.alive) return;
+  if (pendingEvent) return;
+  if (lockInActive) return;
+
+  if (action === 'work') {
+    if (state.time < state.workDisabledUntil) return;
+
+    // Overstim whiteout (A): if you're whited out, work just fails
+    if (state.time < state.whiteoutUntil) {
+      logMsg(pick(WHITEOUT_LINES), 'crit');
+      advanceTime(8);
+      finishTurn(); return;
+    }
+
+    if (state.focus < 30) {
+      logMsg(pick(STARING_LINES), 'action');
+      advanceTime(8);
+      state.cleanWorkStreak = 0;
+      finishTurn(); return;
+    }
+    if (state.jitter > 70 && Math.random() < (state.jitter - 70) / 50) {
+      logMsg(pick(JITTER_FAIL_LINES), 'warn');
+      state.focus = clamp(state.focus - 10);
+      advanceTime(20);
+      state.cleanWorkStreak = 0;
+      finishTurn(); return;
+    }
+
+    // Stat interplay #1: high bowel saps work quality (can't concentrate when you need to go)
+    let bowelPenalty = 0;
+    if (state.bowel > 75) {
+      bowelPenalty = state.bowel > 88 ? 4 : 2;
+    }
+
+    // Productivity blackout: stim load >75 + focus ≥60 = chance for bonus tasks
+    let blackoutBonus = 0;
+    let blackoutBackfire = false;
+    if (state.stim > 75 && state.focus >= 60 && Math.random() < 0.40) {
+      const r = Math.random();
+      if (r < 0.15) {
+        blackoutBackfire = true;
+        blackoutBonus = 0;
+      } else if (r < 0.40) {
+        blackoutBonus = 2; // 3 total
+      } else {
+        blackoutBonus = 1; // 2 total
+      }
+      state.history.blackoutsTriggered++;
+      week.blackouts++;
+    }
+
+    // Clean-work flow streak (#3): consecutive Do Works with no stim active builds momentum
+    const stimActive = state.stim > 25;
+    if (!stimActive) {
+      state.cleanWorkStreak++;
+    } else {
+      state.cleanWorkStreak = 0;
+    }
+    let flowBonus = 0;
+    if (state.cleanWorkStreak >= 3 && !stimActive) {
+      flowBonus = 2;
+    }
+
+    const quality = Math.max(1, Math.floor(state.focus / 10) - bowelPenalty + flowBonus);
+    state.dayScore += quality;
+    state.tasks += 1;
+    state.totalTasksAccum = (state.totalTasksAccum || 0) + 1;
+    state.focus = clamp(state.focus - 22);
+    advanceTime(22 + Math.floor(Math.random() * 11)); // 22-32
+
+    if (state.cleanWorkStreak === 3 && !stimActive) {
+      showComboBanner('🌿 IN THE FLOW 🌿');
+      logMsg("Three clean reports in a row. No chemicals. Just you and the work. A rare, sustainable high.", 'good');
+    }
+
+    if (blackoutBackfire) {
+      state.tasks += 1;
+      state.dayScore += Math.max(2, quality - 4);
+      state.jitter = clamp(state.jitter + 20);
+      logMsg(pick(BLACKOUT_BAD_LINES), 'combo');
+      logMsg(`Filed (somehow). +1 task. (${state.tasks}/${state.quota})`, 'action');
+    } else if (blackoutBonus > 0) {
+      // Apply bonus tasks
+      for (let i = 0; i < blackoutBonus; i++) {
+        state.tasks += 1;
+        state.dayScore += Math.max(3, quality - 2);
+      }
+      const banner = blackoutBonus === 2 ? '⚡ TRIPLE BLACKOUT ⚡' : '⚡ PRODUCTIVITY BLACKOUT ⚡';
+      showComboBanner(banner);
+      const lines = blackoutBonus === 2 ? BLACKOUT_LINES_3 : BLACKOUT_LINES_2;
+      logMsg(pick(lines), 'combo');
+      logMsg(`+${blackoutBonus + 1} tasks. (${state.tasks}/${state.quota})`, 'action');
+      state.jitter = clamp(state.jitter + 6 * blackoutBonus); // small cost
+    } else {
+      let suffix = bowelPenalty > 0 ? " (distracted — you really need to go)" : "";
+      logMsg(pick(WORK_LINES) + `+${quality} score.${suffix} (${state.tasks}/${state.quota})`, 'action');
+    }
+    state.lastActionType = 'work';
+  } else if (action === 'scroll') {
+    state.focus = clamp(state.focus + 4);
+    state.jitter = clamp(state.jitter - 10);
+    state.stim = clamp(state.stim - 8);
+    state.cleanWorkStreak = 0;
+    advanceTime(15 + Math.floor(Math.random() * 16)); // 15-30
+    logMsg(pick(SCROLL_LINES), 'action');
+  } else if (action === 'snack') {
+    state.focus = clamp(state.focus + 18);
+    state.bowel = clamp(state.bowel + 12);
+    state.jitter = clamp(state.jitter - 6);
+    state.history.snacks++;
+    state.history.lastAteAt = state.time;
+    advanceTime(4 + Math.floor(Math.random() * 4)); // 4-7
+    logMsg(pick(SNACK_LINES), 'action');
+  } else if (action === 'hydrate') {
+    state.focus = clamp(state.focus + 6);
+    state.jitter = clamp(state.jitter - 6);
+    state.bowel = clamp(state.bowel + 12);
+    advanceTime(2 + Math.floor(Math.random() * 3)); // 2-4
+    logMsg(pick(HYDRATE_LINES), 'action');
+  } else if (action === 'bathroom') {
+    goBathroom();
+  } else if (action === 'loperamide') {
+    if (state.loperamide <= 0) return;
+    state.loperamide--;
+    // Sociopath signal: using Imodium at high bowel = suppressing the body to keep working
+    if (state.bowel > 55) state.history.imodiumToWork++;
+    state.bowel = clamp(state.bowel - 25); // nerfed
+    state.history.lastImodiumAt = state.time;
+    state.cleanWorkStreak = 0;
+    advanceTime(3 + Math.floor(Math.random() * 3)); // 3-5
+    logMsg(pick([
+      "Imodium swallowed dry. Concrete pours into your insides.",
+      "Imodium down. Gut goes silent. Too silent.",
+      "Sphincter of steel engaged. The rebound will come.",
+    ]), 'action');
+    schedule(120 + Math.random() * 40, 'imodium_rebound');
+  } else {
+    // Stim actions
+    const a = ACTIONS[action];
+    if (!a) return;
+
+    // Overstim whiteout: taking MORE stimulant while whited out digs the hole deeper.
+    // Walk is exempt — it's the way out (drains stim load).
+    if (action !== 'walk' && state.time < state.whiteoutUntil) {
+      const extra = 12 + Math.floor(Math.random() * 8); // 12-19 min added
+      state.whiteoutUntil += extra;
+      state.jitter = clamp(state.jitter + 20);
+      state.stim = clamp(state.stim + 8);
+      noteConcern(1);
+      advanceTime(3);
+      logMsg(pick([
+        "You took more. Of course you did. The hole gets deeper. The hour gets longer.",
+        "More stimulant into a body that's already gone. The whiteout stretches out ahead of you.",
+        "You reached for it on instinct. There was no thought. The wheels spin further off.",
+        "The answer to too much was, somehow, more. Your heart takes notes.",
+      ]), 'crit');
+      finishTurn();
+      return;
+    }
+
+    week.stimsConsumed++;
+    state.history.totalStims++;
+
+    // Track for triggers BEFORE stat application
+    let triggerTripleCoffee = false;
+    let triggerSecondPreW = false;
+
+    if (action === 'coffee') {
+      state.history.coffees++;
+      week.totalCoffees++;
+      // Coffee dependency: hit 8 coffees across the week → the smell-alone shakes (one-shot)
+      if (week.totalCoffees === 8 && !week.coffeeSmellDone) {
+        week.coffeeSmellDone = true;
+        schedule(10 + Math.random()*20, 'coffee_smell_cb');
+      }
+      // G: track times for triple-coffee within 30 min
+      state.history.coffeeTimes.push(state.time);
+      // Keep only last 3 timestamps
+      if (state.history.coffeeTimes.length > 3) state.history.coffeeTimes.shift();
+      if (state.history.coffeeTimes.length === 3 && (state.history.coffeeTimes[2] - state.history.coffeeTimes[0]) <= 30) {
+        triggerTripleCoffee = true;
+        state.history.coffeeTimes = []; // reset so it doesn't immediately re-fire
+      }
+    }
+    else if (action === 'nicotine') state.history.nicotines++;
+    else if (action === 'dex') { state.history.dexes++; week.dexTotal++; state.history.dexUntil = state.time + 60; }
+    else if (action === 'energy') state.history.energies++;
+    else if (action === 'preworkout') {
+      // F: second pre-workout in a day triggers "two scoops" event
+      if (state.history.preworkouts >= 1) triggerSecondPreW = true;
+      state.history.preworkouts++;
+      week.preworkoutsTotal++;
+      state.history.preworkoutUntil = state.time + 90;
+    }
+    else if (action === 'walk') {
+      state.history.walks++;
+      week.totalWalks++;
+      // K: second walk in a day → Greg validation (one-shot)
+      if (state.history.walks === 2 && !state.history.gregWalkValidated) {
+        state.history.gregWalkValidated = true;
+        schedule(15 + Math.random()*30, 'greg_walk_validation');
+      }
+    }
+
+    // Concern accumulates from heavy hard-stim use (dexi/pre-workout especially)
+    if ((action === 'dex' || action === 'preworkout') && state.history.totalStims >= 5) {
+      noteConcern(1);
+    }
+
+    // Combo check
+    const combo = checkCombo(action);
+
+    // Stim load multiplier
+    let mult = 1.0;
+    if (state.stim > 90) mult = 0.4;
+    else if (state.stim > 70) mult = 0.6;
+    else if (state.stim > 40) mult = 0.8;
+
+    state.focus = clamp(state.focus + a.focus * mult);
+    state.bowel = clamp(state.bowel + a.bowel);
+
+    // H: Walk's jitter relief scales with current jitter
+    if (action === 'walk') {
+      let jitterRelief = a.jitter; // base -15
+      if (state.jitter > 70) jitterRelief = -25;
+      else if (state.jitter > 50) jitterRelief = -20;
+      state.jitter = clamp(state.jitter + jitterRelief);
+      // Walking is the designed exit from a whiteout — burns it off faster
+      if (state.time < state.whiteoutUntil) {
+        state.whiteoutUntil = Math.max(state.time, state.whiteoutUntil - 18);
+        state.stim = clamp(state.stim - 10); // extra drain on top of walk's normal -5
+        logMsg("Cold air. One foot, then the other. The static recedes a little. Walking it off is working.", 'good');
+      }
+    } else {
+      state.jitter = clamp(state.jitter + a.jitter);
+    }
+
+    state.stim = clamp(state.stim + a.stim);
+
+    // Overstim whiteout (A): the spike PEAK is what tips you over — checked before decay.
+    // ≥85 → lose ~45-60 min to the chemicals. Fires before the cardiac zone.
+    let enteredWhiteout = false;
+    if (action !== 'walk' && state.stim >= 85 && state.time >= state.whiteoutUntil) {
+      enteredWhiteout = true;
+      week.whiteouts++;
+      noteConcern(2); // colleagues notice
+    }
+
+    // Taking any real stim breaks the clean-work flow streak
+    if (action !== 'walk') {
+      state.cleanWorkStreak = 0;
+      // Late-day stim (after 15:00 = 900) → next-morning carryover, except walk
+      if (state.time >= 900) {
+        state.lateStimToday = true;
+      }
+    }
+
+    advanceTime(rangeTime(a.time));
+    logMsg(pick(FLAVOUR[action]), 'action');
+
+    // Apply combo bonus
+    if (combo) applyCombo(combo);
+
+    // Update last stim
+    state.lastStim = { action, time: state.time };
+
+    // Overstim whiteout window applies from when the action resolves
+    if (enteredWhiteout) {
+      const dur = 45 + Math.floor(Math.random() * 16);
+      state.whiteoutUntil = state.time + dur;
+      logMsg(pick(WHITEOUT_ENTER_LINES), 'crit');
+      state.focus = clamp(state.focus - 15);
+    }
+
+    // Stim-induced bowel surge - scales with potency
+    if (state.bowel > 60) {
+      const surgeChance = action === 'preworkout' ? 0.75 : action === 'nicotine' ? 0.55 : action === 'coffee' ? 0.35 : action === 'energy' ? 0.4 : 0.25;
+      if (Math.random() < surgeChance) {
+        const surge = 5 + Math.floor(Math.random()*12);
+        state.bowel = clamp(state.bowel + surge);
+        logMsg(pick([
+          `A gurgle. A warning. +${surge} pressure.`,
+          `Stomach lurched. +${surge} pressure.`,
+          `Something shifted in there. +${surge} pressure.`,
+          `Internal weather report: imminent. +${surge} pressure.`,
+        ]), 'warn');
+        document.querySelector('main').classList.add('shake');
+        setTimeout(() => document.querySelector('main').classList.remove('shake'), 300);
+      }
+    }
+    if (state.jitter > 80 && Math.random() < 0.3) {
+      logMsg(pick([
+        "Your eye twitches violently.",
+        "Your jaw is clenching audibly.",
+        "Hands won't stop. Why won't they stop.",
+        "You blinked 11 times in a row.",
+      ]), 'warn');
+    }
+
+    // Pre-workout schedules a forced crash regardless
+    if (action === 'preworkout') {
+      schedule(85 + Math.random() * 15, 'forced_crash');
+    }
+
+    // D: Walk decays PIP risk once per day (boss-saw-you-stretching credit)
+    if (action === 'walk' && !state.history.walkPipDecayUsed && week.pipRisk > 0) {
+      week.pipRisk = Math.max(0, week.pipRisk - 1);
+      state.history.walkPipDecayUsed = true;
+    }
+
+    // F: Second pre-workout in a day → forced 50/50 "two scoops" event
+    if (triggerSecondPreW) {
+      setTimeout(() => showEvent(EVENTS.find(e => e.id === 'two_scoops')), 500);
+    }
+    // G: Triple coffee within 30 min → forced "the shakes" event
+    else if (triggerTripleCoffee) {
+      setTimeout(() => showEvent(EVENTS.find(e => e.id === 'the_shakes')), 500);
+    }
+
+    // Lock-in trigger check (only after a stim, not after work/scroll/etc.)
+    finishTurn(true);
+    return;
+  }
+
+  finishTurn();
+}
+
+function goBathroom() {
+  week.bathroomTrips++;
+  state.history.bathrooms = (state.history.bathrooms || 0) + 1;
+
+  // Bathroom reputation: 5+ trips in one day → Marcus and his spreadsheet (one-shot per week)
+  if (state.history.bathrooms === 5 && !week.bathroomRepDone) {
+    week.bathroomRepDone = true;
+    schedule(20 + Math.random()*30, 'bathroom_reputation_cb');
+  }
+
+  // Imodium check — if taken in the last 100 min, bowels are cement
+  if (state.time - state.history.lastImodiumAt < 100) {
+    logMsg(pick([
+      "Sat down. Nothing. The Imodium has cancelled all internal traffic.",
+      "Pure stalemate. The cement is holding. You stood up unchanged.",
+      "Body refused to cooperate. The pill is winning.",
+      "Tried. Couldn't. The Imodium has made you a statue.",
+    ]), 'action');
+    state.focus = clamp(state.focus - 8);
+    advanceTime(8 + Math.floor(Math.random() * 6));
+    return;
+  }
+
+  if (state.bowel < 20) {
+    logMsg(pick([
+      "False alarm. Embarrassing walk back.",
+      "Sat down. Nothing. Stood up. Defeated.",
+      "Phantom pressure. Scrolled and left.",
+      "Body lied. Body has lied before.",
+    ]), 'action');
+    state.focus = clamp(state.focus - 8);
+    advanceTime(5 + Math.floor(Math.random() * 6));
+    return;
+  }
+
+  const roll = Math.random();
+  if (roll < 0.15) {
+    logMsg(pick([
+      "Got there, urge vanished. Confusing.",
+      "False emergency. Stood in stall reading memes.",
+      "Bowel said 'just kidding'. Bowel is a liar.",
+    ]), 'action');
+    state.bowel = clamp(state.bowel - 15);
+    state.focus = clamp(state.focus - 5);
+    advanceTime(8 + Math.floor(Math.random() * 6));
+  } else if (roll < 0.30) {
+    logMsg(pick(BATHROOM_LINES.ambush), 'event');
+    state.bowel = 5;
+    state.focus = clamp(state.focus - 12);
+    state.jitter = clamp(state.jitter + 8);
+    advanceTime(18 + Math.floor(Math.random() * 13)); // 18-30
+  } else if (roll < 0.50) {
+    logMsg(pick(BATHROOM_LINES.zen), 'good');
+    state.bowel = 5;
+    state.focus = clamp(state.focus - 4);
+    state.jitter = clamp(state.jitter - 8);
+    advanceTime(14 + Math.floor(Math.random() * 8));
+  } else if (roll < 0.75) {
+    logMsg(pick(BATHROOM_LINES.scrolled), 'good');
+    state.bowel = 5;
+    state.focus = clamp(state.focus - 8);
+    advanceTime(13 + Math.floor(Math.random() * 7));
+  } else {
+    logMsg(pick(BATHROOM_LINES.clear), 'good');
+    state.bowel = 5;
+    state.focus = clamp(state.focus - 6);
+    advanceTime(8 + Math.floor(Math.random() * 5));
+  }
+}
+
+function finishTurn(justStimmed = false) {
+  render();
+  checkFailures();
+  if (!state.alive) return;
+
+  // Kitchen alignment: 3+ simultaneous critical grudges → the office turns as a bloc (one-shot)
+  if (!week.kitchenAlignedDone) {
+    const critGrudges = Object.values(week.grudges).filter(v => v >= 2).length;
+    if (critGrudges >= 3) {
+      week.kitchenAlignedDone = true;
+      schedule(10 + Math.random()*25, 'kitchen_aligned_cb');
+    }
+  }
+
+  // "They pull you in when you're winning" — at peak focus, accumulated counters can bite.
+  // Both gated: need the threshold AND high focus AND a roll that often misses.
+  if (state.focus >= 78 && !pendingEvent && !lockInActive) {
+    // Meeting about meetings — needs 3+ missed meetings
+    if (week.missedMeetings >= 3 && !week.meetingAboutMeetingsDone && Math.random() < 0.30) {
+      week.meetingAboutMeetingsDone = true;
+      setTimeout(() => showEvent(EVENTS.find(e => e.id === 'meeting_about_meetings')), 300);
+      return;
+    }
+    // Wellness training — needs concern 4+
+    if (week.concern >= 4 && !week.wellnessTrainingDone && Math.random() < 0.30) {
+      week.wellnessTrainingDone = true;
+      setTimeout(() => showEvent(EVENTS.find(e => e.id === 'wellness_training')), 300);
+      return;
+    }
+  }
+
+  // Lock-in check
+  if (justStimmed && checkLockInTrigger()) {
+    setTimeout(offerLockIn, 350);
+    return;
+  }
+
+  // Event check with delay + EVENT INCOMING state
+  // Look ahead: if an event is due now, flag pendingEvent during delay
+  const eventDue = state.scheduled.some(s => s.at <= state.time) ||
+                   state.stim > 90 ||
+                   state.time >= state.nextEventTime;
+
+  if (eventDue) {
+    pendingEvent = true;
+    document.getElementById('timePill').classList.add('event-incoming');
+    document.getElementById('timeDisplay').textContent = 'EVENT INCOMING';
+    setTimeout(() => {
+      document.getElementById('timePill').classList.remove('event-incoming');
+      document.getElementById('timeDisplay').textContent = fmtTime(state.time);
+      maybeTriggerEvent();
+    }, 600);
+  }
+}
+
+// Add Imodium rebound callback
+CALLBACKS.imodium_rebound = {
+  title: "💊 The Imodium wears off", titleClass: 'callback',
+  desc: "Body remembers what you did. Body has notes.",
+  choices: [{ label: "Accept the rebound", apply: () => { state.bowel = clamp(state.bowel + 18); logMsg("Rebound surge. The cycle is complete.", 'callback'); } }]
+};
+
+// Forced crash from pre-workout
+CALLBACKS.forced_crash = {
+  title: "💥 Pre-workout crash", titleClass: 'crash',
+  desc: "The crash arrives on schedule. The body is not asking.",
+  choices: [
+    { label: "Eat something sugary (10 min)", apply: () => { advanceTime(10); state.focus = clamp(state.focus + 10); state.bowel = clamp(state.bowel + 8); state.jitter = clamp(state.jitter - 5); logMsg("Patch job. Holds for now.", 'callback'); } },
+    { label: "Walk it off (22 min)", apply: () => { advanceTime(22); state.focus = clamp(state.focus + 18); state.stim = clamp(state.stim - 30); state.jitter = clamp(state.jitter - 20); state.history.walks++; logMsg("Long walk. Cold air. The crash diffuses. Brain returns clearer than before.", 'good'); } },
+    { label: "Suffer (4 min)", apply: () => { advanceTime(4); state.focus = clamp(state.focus - 22); state.jitter = clamp(state.jitter + 8); logMsg("You suffered. You always do.", 'warn'); } },
+  ]
+};
+
+// Two scoops gone wrong — instant fail
+CALLBACKS.two_scoops_hospital = {
+  title: "🚑 Wellbeing incident", titleClass: 'crash',
+  desc: "Paramedics are here. Your week is over. The pre-workout tubs (both) are evidence.",
+  choices: [
+    { label: "End the week", apply: () => { instantFail("Wellbeing incident: cardiac.", "Two scoops. The body said no. Paramedics found the second tub still in your hand."); } },
+  ]
+};
+
+// Buildup callbacks — point to the forced events so they fire via the scheduler
+CALLBACKS.bathroom_reputation_cb = EVENTS.find(e => e.id === 'bathroom_reputation');
+CALLBACKS.coffee_smell_cb = EVENTS.find(e => e.id === 'coffee_smell_shakes');
+CALLBACKS.kitchen_aligned_cb = EVENTS.find(e => e.id === 'kitchen_aligned');
+
+// Imodium wears off — the gut presents its invoice
+CALLBACKS.imodium_rebound = {
+  title: "💊 The Imodium wears off", titleClass: 'callback',
+  desc: "The cement is crumbling. Everything it was holding back has been waiting. With interest.",
+  choices: [
+    { label: "Accept the reckoning", apply: () => { advanceTime(2); state.bowel = clamp(state.bowel + 18); logMsg("The gut reawakens. It remembers everything. It forgives nothing.", 'warn'); } },
+  ]
+};
+
+// ==================== END OF DAY ====================
+const DAY_QUIPS = {
+  great: [
+    "You absolutely smashed it. Suspicious.",
+    "A perfect-ish day. Don't get used to it.",
+    "You walked out grinning. Greg was confused.",
+    "Boss said 'see you tomorrow' WARMLY.",
+  ],
+  good: [
+    "Solid. Quota met. Sphincter intact.",
+    "A day. You had it. It's over now.",
+    "No complaints from your body or your boss.",
+    "Functional. The bar was on the floor and you cleared it.",
+  ],
+  ok: [
+    "Got there. Just barely. Don't look back.",
+    "Quota hit by the skin of your teeth.",
+    "Close. Ugly. Counts.",
+    "A win is a win. They don't ask how.",
+  ],
+  miss: [
+    "Behind quota. The week has notes.",
+    "Today went sideways. There's still days left.",
+    "You missed. Tomorrow's another day.",
+    "Short by a few. Boss noticed. Boss always notices.",
+  ],
+};
+
+function endDay() {
+  state.alive = false;
+  const won = state.tasks >= state.quota;
+  const perfectish = won && state.bowel < 35 && state.jitter < 25;
+
+  week.weekScore += state.dayScore;
+  week.totalTasks += state.tasks;
+  week.totalQuota += state.quota;
+  if (won) week.daysWon++; else week.daysMissed++;
+  if (perfectish) week.perfectDays++;
+
+  week.dayResults.push({
+    day: DAYS[week.dayIndex].name,
+    short: DAYS[week.dayIndex].short,
+    tasks: state.tasks,
+    quota: state.quota,
+    score: state.dayScore,
+    won, perfect: perfectish,
+  });
+
+  // Aggregate per-day signals into week totals for the ratings system
+  week.mumIgnoredTotal = (week.mumIgnoredTotal || 0) + (state.history.mumIgnored || 0);
+  week.imodiumToWorkTotal = (week.imodiumToWorkTotal || 0) + (state.history.imodiumToWork || 0);
+  if (state.flags.skippedLunch) week.lunchesSkipped = (week.lunchesSkipped || 0) + 1;
+  if (state.lateStimToday) { /* already counted as carryover next morning */ }
+
+  if (week.daysMissed >= 2) {
+    return instantFail("Wellbeing incident: pattern detected.", pick(ENDINGS.fired_midweek));
+  }
+
+  let pool;
+  if (perfectish) pool = DAY_QUIPS.great;
+  else if (won && state.tasks > state.quota) pool = DAY_QUIPS.good;
+  else if (won) pool = DAY_QUIPS.ok;
+  else pool = DAY_QUIPS.miss;
+
+  document.getElementById('dayEndTitle').textContent = `End of ${DAYS[week.dayIndex].name}`;
+  document.getElementById('dayEndQuip').textContent = pick(pool);
+
+  const summary = document.getElementById('dayEndSummary');
+  summary.innerHTML = '';
+  const add = (label, value, cls='') => {
+    const row = document.createElement('div');
+    row.className = 'summary-row ' + cls;
+    row.innerHTML = `<span>${label}</span><span>${value}</span>`;
+    summary.appendChild(row);
+  };
+  add('Reports filed', `${state.tasks}/${state.quota}`, won ? 'good' : 'bad');
+  add('Day score', state.dayScore);
+  if (state.bowel < 30) add('Bowel discipline', '✓', 'good');
+  if (state.jitter < 20) add('Calm hands', '✓', 'good');
+  if (week.combosTriggered > 0 && week.dayIndex === 0) add('Combos triggered', week.combosTriggered, 'good');
+  if (week.lockInsSeized > 0) add('Lock-ins seized', week.lockInsSeized);
+  if (state.bowel > 70) add('Sphincter strain', '⚠', 'bad');
+  if (state.jitter > 70) add('Twitching mess', '⚠', 'bad');
+  add('Week tasks', `${week.totalTasks}/${week.totalQuota}`);
+  add('Week score', week.weekScore, 'total');
+
+  document.getElementById('nextDayBtn').textContent = week.dayIndex >= 4 ? 'See week summary →' : 'Home, then bed →';
+
+  document.getElementById('dayEndModal').classList.add('show');
+}
+
+const CARRYOVER_QUIPS = {
+  bender: [
+    "Drinks turned into 'a thing'. Body wrecked.",
+    "Wednesday drinks were a mistake. You can taste tequila.",
+  ],
+  ate_well: [
+    "You actually cooked. A real meal. The kitchen is clean. Suspicious.",
+    "Home, broccoli, 8 hours sleep. You are a fraction of the way to becoming the protagonist.",
+  ],
+  rough: [
+    "Got home and ate beige food. The TV was on. You don't remember what.",
+    "Scrolled until 1am. You knew you shouldn't.",
+  ],
+  ok: [
+    "Went home. Ate. Slept. The basics, executed.",
+    "Showered, ate, watched 20 minutes of a documentary, asleep.",
+  ],
+};
+
+function nextDay() {
+  document.getElementById('dayEndModal').classList.remove('show');
+  week.dayIndex++;
+
+  if (week.dayIndex >= DAYS.length) {
+    showWeekEnd();
+    return;
+  }
+
+  const prevState = state;
+  state = newDayState();
+
+  let eligibleMornings = MORNINGS.filter(m => !m.days || m.days.includes(week.dayIndex));
+  if (prevState && (prevState.bowel > 70 || prevState.jitter > 70)) {
+    const bad = eligibleMornings.filter(m => m.kind === 'bad');
+    if (bad.length && Math.random() < 0.6) eligibleMornings = bad;
+  }
+  // Late-day stim carryover (B): if you stimmed after 15:00, weight hard toward a wrecked morning
+  if (prevState && prevState.lateStimToday) {
+    const bad = eligibleMornings.filter(m => m.kind === 'bad');
+    if (bad.length) eligibleMornings = bad;
+  }
+  // Difficulty: Hungover mode forces a wrecked morning every day
+  if (MODE.difficulty === 'hungover') {
+    const wrecks = MORNINGS.filter(m => m.kind === 'bad' && (!m.days || m.days.includes(week.dayIndex)));
+    if (wrecks.length) eligibleMornings = wrecks;
+  }
+  if (week.dayIndex === 3 && week.midweekDrinks) {
+    const drinks = MORNINGS.find(m => m.name === "Post-drinks wreck");
+    if (drinks) eligibleMornings = [drinks];
+  }
+  const m = pick(eligibleMornings);
+  state.morning = m;
+
+  let carry = '';
+  if (prevState && prevState.lateStimToday) {
+    carry = "You stimmed late yesterday. The dexi was still talking at 2am. You feel it.";
+    week.lateStimDays++;
+  } else if (week.midweekDrinks && week.dayIndex === 3) {
+    carry = "Last night's drinks were a tactical error.";
+    week.midweekDrinks = false;
+  } else if (prevState && prevState.bowel > 70) carry = pick(CARRYOVER_QUIPS.rough);
+  else if (prevState && prevState.tasks > prevState.quota) carry = pick(CARRYOVER_QUIPS.ate_well);
+  else carry = pick(CARRYOVER_QUIPS.ok);
+
+  if ((week.grudges.gary || 0) >= 3) schedule(60 + Math.random() * 120, 'gary_grudge_email');
+  if ((week.grudges.linda || 0) >= 3) schedule(80 + Math.random() * 100, 'linda_grudge_revenge');
+  if ((week.grudges.tara || 0) >= 2) schedule(90 + Math.random() * 90, 'tara_grudge_passive_aggressive');
+  if ((week.grudges.brad || 0) >= 2) schedule(100 + Math.random() * 80, 'brad_grudge_meeting');
+
+  document.getElementById('dayStartTitle').textContent = `${DAYS[week.dayIndex].name} morning`;
+  document.getElementById('morningName').textContent = m.name;
+  document.getElementById('morningName').className = 'morning-name ' + (m.kind || '');
+  document.getElementById('morningDesc').textContent = m.desc;
+  document.getElementById('carryoverText').textContent = carry;
+  document.getElementById('dayStartModal').classList.add('show');
+
+  document.getElementById('log').innerHTML = '';
+  render();
+}
+
+function startDay() {
+  document.getElementById('dayStartModal').classList.remove('show');
+  state.morning.apply();
+  logMsg(`Morning: ${state.morning.name}`, 'event');
+  // Log any active grudges as feed entries
+  Object.entries(week.grudges).forEach(([who, score]) => {
+    if (score >= 2) logMsg(`${who[0].toUpperCase() + who.slice(1)} is holding a grudge.`, 'warn');
+  });
+  logMsg(`Today's quota: ${state.quota} reports.`, 'event');
+  render();
+
+  // 25% chance you got the good parking spot today. Day-start omen — half the office must be WFH.
+  if (Math.random() < 0.25) {
+    const parkingEv = EVENTS.find(e => e.id === 'parking_spot');
+    if (parkingEv && !week.shownEvents.has(parkingEv.id)) {
+      week.shownEvents.add(parkingEv.id);
+      setTimeout(() => showEvent(parkingEv), 400);
+    }
+  }
+}
+
+// ==================== WEEK END ====================
+// Category ratings — six axes derived from the week's accumulators.
+function computeRatings() {
+  const days = Math.max(1, week.dayResults.length);
+
+  // Kitchen Standing — social warmth given and received
+  let kitchen = 35 + week.socialAttended * 9 + week.grudgesResolved * 6 - week.rudeDeclines * 7;
+  const heldGrudges = Object.values(week.grudges).filter(v => v >= 2).length;
+  kitchen -= heldGrudges * 8;
+
+  // Shareholder Value — raw output. Pure grind.
+  const quotaPct = week.totalQuota > 0 ? week.totalTasks / week.totalQuota : 0;
+  let shareholder = quotaPct * 55 + week.lockInsSeized * 6 + week.blackouts * 4 + Math.max(0, week.totalTasks - week.totalQuota) * 3;
+
+  // Calendar Compliance — the corporate liturgy
+  let calendar = 40 + week.meetingsAttended * 9 - week.meetingsDodged * 10 - week.bossWarnings * 4;
+
+  // Sociopath — warmth SUPPRESSED. Ignored mum, declined social, chemical coldness, suppressing the body.
+  let socio = 18;
+  socio += week.dexTotal * 4 + week.preworkoutsTotal * 6;
+  socio += (week.mumIgnoredTotal || 0) * 10;       // ignoring mum is the purest signal
+  socio += week.rudeDeclines * 6;
+  socio += (week.imodiumToWorkTotal || 0) * 5;     // suppressing the body to keep working
+  socio += (week.lunchesSkipped || 0) * 4;
+  socio -= week.socialAttended * 4;
+  socio -= week.grudgesResolved * 3;
+  // cold efficiency: lots of output with low social = high
+  if (quotaPct >= 1 && week.socialAttended <= 1) socio += 15;
+
+  // Sphincter Security — how dry you stayed (high = good/safe)
+  let sphincter = 70 - week.closeBowelCalls * 6 - week.closeCardiacCalls * 6 - week.shartCount * 40 - week.cardiacCount * 40 + (week.bathroomTrips === 0 ? 5 : 0);
+
+  // Watercooler Mentions — how much of the week became legend
+  let watercooler = 15 + week.gossipMoments * 12 + week.whiteouts * 10 + week.shartCount * 25 + heldGrudges * 6;
+
+  const clamp100 = v => Math.max(0, Math.min(100, Math.round(v)));
+  return {
+    kitchen: clamp100(kitchen),
+    shareholder: clamp100(shareholder),
+    calendar: clamp100(calendar),
+    socio: clamp100(socio),
+    sphincter: clamp100(sphincter),
+    watercooler: clamp100(watercooler),
+  };
+}
+
+function band(value, bands) {
+  // bands: array of [threshold, label] ascending; pick highest threshold <= value
+  let label = bands[0][1];
+  for (const [t, l] of bands) { if (value >= t) label = l; }
+  return label;
+}
+
+const RATING_BANDS = {
+  kitchen: [[0,"They've stopped offering you cake."],[21,"Tolerated near the kettle."],[41,"People remember your name. Most of it."],[61,"You get told things. Real things."],[81,"You ARE the kitchen. People orbit you."]],
+  shareholder: [[0,"You did the bare minimum and felt nothing."],[21,"A functional cog. Lightly oiled."],[41,"You gave them a solid week of your finite life."],[61,"Locked in. The grind has you."],[81,"You'd work through your own funeral. They'd let you."]],
+  calendar: [[0,"You attend nothing. They've noticed."],[21,"You show up to the ones with food."],[41,"Reliably present. Rarely contributing."],[61,"A pillar of the standup. Brad respects you."],[81,"You said yes to everything. Including the Christmas party. Fool."]],
+  socio: [[0,"You feel things. Concerning, for this office."],[21,"A healthy detachment. You still call your mum."],[41,"Morning routine: 1000 crunches, dexi, no eye contact."],[61,"You've started narrating your own competence internally."],[81,"There is an idea of you, but no real you. Only the quota remains."]],
+  sphincter: [[0,"You should be in a hospital, not a leaderboard."],[21,"Multiple near-misses. The chair remembers."],[41,"A few wobbles. You held."],[61,"Steady. Disciplined. Dry."],[81,"Iron gut. Unbothered. Untouchable."]],
+  watercooler: [[0,"Nobody can describe your face."],[21,"A quiet week. Forgettable."],[41,"You came up in conversation. Twice."],[61,"People are talking. You don't know why."],[81,"You are this week's story. Linda has notes."]],
+};
+
+const RATING_META = {
+  kitchen: { name: "Kitchen Standing", icon: "☕" },
+  shareholder: { name: "Shareholder Value", icon: "📈" },
+  calendar: { name: "Calendar Compliance", icon: "📅" },
+  socio: { name: "Sociopath Score", icon: "🔪" },
+  sphincter: { name: "Sphincter Security", icon: "🚽" },
+  watercooler: { name: "Watercooler Mentions", icon: "💬" },
+};
+
+// Next-week punchline — reads the dominant categories and the run's outcome.
+function nextWeekOutcome(r, gradeLetter, fired) {
+  const hi = (v) => v >= 65;
+  const lo = (v) => v <= 30;
+
+  // Priority-ordered: most specific / funniest first.
+  if (fired) return "Monday: you don't have a Monday. The lanyard was deactivated over the weekend. Security has your mug.";
+  if (week.shartCount > 0) return "You quietly threw out the chair. Facilities have stopped asking questions. A new chair appeared. No one speaks of it.";
+  if (gradeLetter === 'S' && hi(r.socio)) return "The CEO knows your name now. This is bad. There's a 'special project'. It has your name on it and no end date.";
+  if (hi(r.socio) && hi(r.shareholder) && lo(r.kitchen)) return "Promoted. You now have direct reports. Three of them. They are scared of you. Good.";
+  if (hi(r.socio) && hi(r.shareholder)) return "A recruiter slid into your DMs. The package has equity. You stared at the ceiling until 4am doing the maths.";
+  if (hi(r.shareholder) && hi(r.sphincter) && !fired) return "Employee of the month. Your photo's by the lifts. You look unwell in it. You'll look worse next month.";
+  if (hi(r.kitchen) && lo(r.shareholder)) return "You've been nominated Culture Champion. It comes with a certificate and exactly no money.";
+  if (hi(r.calendar)) return "You've been volunteered to 'own' the offsite. This is what saying yes gets you. The venue is a Novotel.";
+  if (hi(r.watercooler) && r.shareholder >= 40) return "Greg's started a rumour about you. It's better than the truth. You let it run. It grows.";
+  if (hi(r.socio)) return "You returned some videotapes this week. Metaphorically. Probably. The feeling lingers into Monday.";
+  if (lo(r.shareholder) && lo(r.calendar)) return "Monday: a calendar invite titled 'quick chat'. No agenda. You already know. You've always known.";
+  if (lo(r.sphincter)) return "Occupational Health 'just want to check in'. There's a form. The form asks about your week. You cannot answer honestly.";
+  if (hi(r.kitchen) && hi(r.sphincter)) return "A genuinely fine week. Suspiciously fine. Next week will correct for this. The universe keeps a ledger.";
+  if (gradeLetter === 'A') return "A strong week, quietly logged. No one congratulates you. The bar simply rises. Monday's quota is higher.";
+  return "Another week survives you. Or you survive it. The distinction blurs around Thursday. Monday returns, as Mondays do.";
+}
+
+function gradeWeek() {
+  const quotaPct = week.totalTasks / week.totalQuota;
+  let score = quotaPct * 100;
+  score += week.perfectDays * 8;
+  score -= week.bossWarnings * 4;
+  score -= week.daysMissed * 12;
+  if (week.shartCount > 0 || week.cardiacCount > 0) score -= 50;
+  score += Math.min(week.combosTriggered, 5) * 2;
+  score += week.lockInsSeized * 3;
+
+  if (score >= 110) return { letter: 'S', verdict: "Inhuman. The boss is genuinely scared of you. HR is reviewing the CCTV." };
+  if (score >= 95)  return { letter: 'A', verdict: "Elite. Promotion conversation incoming. Probably." };
+  if (score >= 80)  return { letter: 'B', verdict: "Solid week. Boss is content. You may have a future here." };
+  if (score >= 65)  return { letter: 'C', verdict: "You survived. The bar was 'employed by Friday'. You cleared it." };
+  if (score >= 50)  return { letter: 'D', verdict: "Rough. The boss said 'we should chat next week'. The voice." };
+  return { letter: 'F', verdict: "Disastrous. Get the CV updated. Maybe the LinkedIn recruiter was real." };
+}
+
+function showWeekEnd() {
+  const g = gradeWeek();
+  document.getElementById('weekGrade').textContent = g.letter;
+  document.getElementById('weekGrade').className = 'grade ' + g.letter;
+  document.getElementById('weekVerdict').textContent = g.verdict;
+
+  const ratings = computeRatings();
+  const sum = document.getElementById('weekSummary');
+  sum.innerHTML = '';
+
+  // Mode line
+  const modeLine = document.createElement('div');
+  modeLine.style.cssText = 'text-align:center;font-size:11px;color:var(--viva-text-sub);text-transform:uppercase;letter-spacing:0.5px;margin-bottom:10px;';
+  const lenName = MODE.length === 3 ? '3-Day Sprint' : 'Full Week';
+  const diffName = MODE.difficulty === 'normal' ? 'Normal' : MODE.difficulty === 'hungover' ? 'Hungover' : 'Open Plan';
+  modeLine.textContent = `${lenName} · ${diffName}`;
+  sum.appendChild(modeLine);
+
+  // Category rating bars
+  const ratingsWrap = document.createElement('div');
+  ratingsWrap.className = 'ratings-wrap';
+  ['kitchen','shareholder','calendar','socio','sphincter','watercooler'].forEach(key => {
+    const v = ratings[key];
+    const meta = RATING_META[key];
+    const label = band(v, RATING_BANDS[key]);
+    const row = document.createElement('div');
+    row.className = 'rating-row';
+    const barColour = key === 'socio'
+      ? (v >= 61 ? 'var(--viva-red)' : v >= 41 ? 'var(--viva-amber)' : 'var(--viva-green-deep)')
+      : key === 'sphincter'
+        ? (v >= 61 ? 'var(--viva-green-deep)' : v >= 41 ? 'var(--viva-amber)' : 'var(--viva-red)')
+        : 'var(--viva-purple)';
+    row.innerHTML = `
+      <div class="rating-head">
+        <span class="rating-name">${meta.icon} ${meta.name}</span>
+        <span class="rating-num">${v}</span>
+      </div>
+      <div class="rating-bar"><div class="rating-fill" style="width:${v}%;background:${barColour}"></div></div>
+      <div class="rating-label">${label}</div>`;
+    ratingsWrap.appendChild(row);
+  });
+  sum.appendChild(ratingsWrap);
+
+  // Next-week punchline
+  const punch = document.createElement('div');
+  punch.className = 'next-week-punch';
+  punch.innerHTML = `<div class="nwp-head">📋 Next week</div><div class="nwp-body">${nextWeekOutcome(ratings, g.letter, week.daysMissed >= 2 || week.shartCount > 0 || week.cardiacCount > 0)}</div>`;
+  sum.appendChild(punch);
+
+  // Compact stat strip
+  const add = (label, value, cls='') => {
+    const row = document.createElement('div');
+    row.className = 'summary-row ' + cls;
+    row.innerHTML = `<span>${label}</span><span>${value}</span>`;
+    sum.appendChild(row);
+  };
+  const dayLine = document.createElement('div');
+  dayLine.className = 'day-strip-mini';
+  week.dayResults.forEach(r => {
+    const status = r.perfect ? '★' : r.won ? '✓' : '✗';
+    const cls = r.perfect ? 'good' : r.won ? 'ok' : 'bad';
+    dayLine.innerHTML += `<span class="dsm ${cls}">${r.short} ${r.tasks}/${r.quota} ${status}</span>`;
+  });
+  sum.appendChild(dayLine);
+
+  add('Lock-ins seized', week.lockInsSeized);
+  add('Blackouts', week.blackouts);
+  add('Combos', week.combosTriggered);
+  if (week.whiteouts > 0) add('Overstim whiteouts', week.whiteouts, 'bad');
+  add('Boss warnings', week.bossWarnings, week.bossWarnings > 2 ? 'bad' : '');
+  add('TOTAL SCORE', week.weekScore, 'total');
+
+  document.getElementById('weekEndModal').classList.add('show');
+  initLeaderboardSection();
+}
+
+// ==================== LEADERBOARD (optional) ====================
+// Set to your deployed Worker URL, e.g. 'https://cubicle-leaderboard.yourname.workers.dev'
+// Leave empty to hide all leaderboard UI — the game works fully standalone.
+const LEADERBOARD_API = '';
+
+function lbMode() {
+  return (MODE.length === 3 ? 'sprint' : 'week') + '_' + MODE.difficulty;
+}
+function lbPlayerId() {
+  let id = localStorage.getItem('cubicle_uuid');
+  if (!id) { id = crypto.randomUUID(); localStorage.setItem('cubicle_uuid', id); }
+  return id;
+}
+function initLeaderboardSection() {
+  if (!LEADERBOARD_API) return;
+  const sec = document.getElementById('lbSection');
+  if (!sec) return;
+  sec.style.display = 'block';
+  document.getElementById('lbName').value = localStorage.getItem('cubicle_name') || '';
+}
+async function submitScore() {
+  const name = document.getElementById('lbName').value.trim();
+  const status = document.getElementById('lbStatus');
+  if (!name) { status.textContent = 'Needs a name. Any name. Greg uses his real one.'; return; }
+  localStorage.setItem('cubicle_name', name);
+  document.getElementById('lbSubmitBtn').disabled = true;
+  status.textContent = 'Submitting…';
+  try {
+    const g = gradeWeek();
+    const res = await fetch(LEADERBOARD_API + '/api/score', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        uuid: lbPlayerId(), name, mode: lbMode(),
+        grade: g.letter, score: Math.round(week.weekScore),
+        tasks: week.totalTasks, quota: week.totalQuota,
+        daysWon: week.daysWon, perfectDays: week.perfectDays,
+        breakdown: week.dayResults.map(d => ({ d: d.short, t: d.tasks, q: d.quota })),
+      }),
+    });
+    const data = await res.json();
+    if (data.ok) {
+      status.textContent = data.flagged
+        ? `Rank #${data.rank}. (Flagged for review — HR has questions.)`
+        : `You're #${data.rank} on the ${lbMode().replace('_', ' ')} board.`;
+    } else {
+      status.textContent = data.error === 'rate limited — take a walk' ? data.error : 'Submission failed: ' + (data.error || 'unknown');
+    }
+  } catch (e) {
+    status.textContent = 'Leaderboard unreachable. It happens. The work was still real.';
+  }
+  document.getElementById('lbSubmitBtn').disabled = false;
+}
+async function viewLeaderboard() {
+  const board = document.getElementById('lbBoard');
+  board.innerHTML = '<p class="centered subtle">Loading…</p>';
+  try {
+    const res = await fetch(LEADERBOARD_API + '/api/leaderboard?mode=' + lbMode() + '&limit=20&uuid=' + lbPlayerId());
+    const data = await res.json();
+    if (!data.entries || !data.entries.length) { board.innerHTML = '<p class="centered subtle">Nobody has survived a week yet. Be first.</p>'; return; }
+    let html = '<table style="width:100%;border-collapse:collapse;">';
+    for (const e of data.entries) {
+      const safe = String(e.name).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+      html += `<tr style="border-bottom:1px solid var(--viva-border);">
+        <td style="padding:4px 6px;color:var(--viva-text-sub);">#${e.rank}</td>
+        <td style="padding:4px 6px;font-weight:600;">${safe}${e.flagged ? ' ⚠' : ''}</td>
+        <td style="padding:4px 6px;text-align:center;">${e.grade}</td>
+        <td style="padding:4px 6px;text-align:right;font-variant-numeric:tabular-nums;">${e.score}</td>
+      </tr>`;
+    }
+    html += '</table>';
+    if (data.you) html += `<p class="centered subtle" style="margin-top:6px;">You: #${data.you.rank} · ${data.you.score}</p>`;
+    board.innerHTML = html;
+  } catch (e) {
+    board.innerHTML = '<p class="centered subtle">Couldn\'t reach the board.</p>';
+  }
+}
+
+// ==================== INIT ====================
+function setupFirstDay() {
+  applyModeToDays();
+  state = newDayState();
+  let eligibleMornings = MORNINGS.filter(m => !m.days || m.days.includes(0));
+  if (MODE.difficulty === 'hungover') {
+    const wrecks = eligibleMornings.filter(m => m.kind === 'bad');
+    if (wrecks.length) eligibleMornings = wrecks;
+  }
+  const m = pick(eligibleMornings);
+  state.morning = m;
+  document.getElementById('dayStartTitle').textContent = `${DAYS[0].name} morning`;
+  document.getElementById('morningName').textContent = m.name;
+  document.getElementById('morningName').className = 'morning-name ' + (m.kind || '');
+  document.getElementById('morningDesc').textContent = m.desc;
+  const lenText = MODE.length === 3 ? "Three days." : "Five days.";
+  document.getElementById('carryoverText').textContent = `It's Monday. The week stretches ahead. ${lenText} You can do this.`;
+  document.getElementById('dayStartModal').classList.add('show');
+}
+
+// Mode select interaction
+document.querySelectorAll('#lengthChoices .mode-opt').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#lengthChoices .mode-opt').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    MODE.length = parseInt(btn.dataset.length, 10);
+  });
+});
+document.querySelectorAll('#diffChoices .mode-opt').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('#diffChoices .mode-opt').forEach(b => b.classList.remove('selected'));
+    btn.classList.add('selected');
+    MODE.difficulty = btn.dataset.diff;
+  });
+});
+
+function confirmMode() {
+  document.getElementById('modeModal').classList.remove('show');
+  setupFirstDay();
+}
+
+document.querySelectorAll('button[data-action]').forEach(btn => {
+  btn.addEventListener('click', () => doAction(btn.dataset.action));
+});
+</script>
+
+</body>
+</html>

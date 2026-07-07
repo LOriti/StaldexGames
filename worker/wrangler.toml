@@ -1,0 +1,9 @@
+name = "cubicle-leaderboard"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "cubicle-leaderboard"
+# Paste the database_id that `wrangler d1 create cubicle-leaderboard` prints:
+database_id = "REPLACE_ME"

@@ -1,0 +1,270 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Projects</title>
+<meta name="description" content="A repository of projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard.">
+<style>
+  /* ============ SHELL — the neutral container ============ */
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+
+  body {
+    background: #FAFAF8;
+    color: #1A1A1A;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-size: 16px;
+    line-height: 1.55;
+  }
+  .wrap { max-width: 640px; margin: 0 auto; padding: 72px 20px 96px; }
+
+  h1 { font-size: 13px; font-weight: 400; color: #6B6B6B; letter-spacing: 0.02em; margin-bottom: 28px; }
+
+  details.project { border-top: 1px solid #E4E4E0; }
+  details.project:last-of-type { border-bottom: 1px solid #E4E4E0; }
+
+  summary.row {
+    list-style: none; cursor: pointer; padding: 20px 2px;
+    display: flex; justify-content: space-between; align-items: baseline; gap: 16px;
+  }
+  summary.row::-webkit-details-marker { display: none; }
+  summary.row:focus-visible { outline: 2px solid #1A1A1A; outline-offset: 2px; }
+
+  .row-name { font-size: 20px; font-weight: 600; }
+  .row-meta { font-size: 13px; color: #6B6B6B; white-space: nowrap; }
+  .row-line { font-size: 14px; color: #6B6B6B; padding: 0 2px 18px; margin-top: -8px; max-width: 52ch; }
+  summary.row .chev { color: #6B6B6B; font-size: 13px; }
+  details[open] summary.row .chev { display: none; }
+
+  .panel { margin: 0 0 28px; }
+
+  @media (max-width: 480px) {
+    .wrap { padding-top: 48px; }
+    summary.row { flex-wrap: wrap; gap: 4px; }
+  }
+
+  /* ============ CUBICLE PANEL — Vitals 365, styles lifted from the game ============ */
+  .vitals {
+    --viva-bg: #f5f5f5; --viva-card: #ffffff;
+    --viva-purple: #6264a7; --viva-purple-dark: #464775; --viva-purple-deep: #33344a;
+    --viva-green: #92c353; --viva-green-deep: #498205;
+    --viva-amber: #e8a33d; --viva-amber-soft: #fff4ce;
+    --viva-red: #c4314b;
+    --viva-text: #242424; --viva-text-sub: #616161; --viva-text-soft: #8a8886;
+    --viva-border: #e1dfdd;
+    background: var(--viva-bg);
+    border: 1px solid var(--viva-border);
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, system-ui, sans-serif;
+    color: var(--viva-text);
+  }
+  /* Header — as in the game */
+  .vitals .viva-header {
+    background: var(--viva-purple-deep); color: white; height: 44px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 8px 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+  }
+  .vitals .viva-logo { display: flex; align-items: center; gap: 10px; font-weight: 600; font-size: 14px; }
+  .vitals .viva-logo .icon {
+    width: 26px; height: 26px; background: white; border-radius: 5px;
+    display: flex; align-items: center; justify-content: center;
+    color: var(--viva-purple-dark); font-weight: 800; font-size: 14px; letter-spacing: -0.5px;
+  }
+  .vitals .viva-time-pill {
+    background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 16px; padding: 4px 12px; font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; gap: 8px; font-variant-numeric: tabular-nums;
+  }
+  .vitals .viva-time-pill .dot {
+    width: 8px; height: 8px; border-radius: 50%;
+    background: var(--viva-green); box-shadow: 0 0 0 1.5px var(--viva-purple-deep);
+  }
+
+  .vitals .v-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+
+  /* Tile row — as in the game */
+  .vitals .tile-row { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .vitals .tile {
+    background: white; border: 1px solid var(--viva-border); border-radius: 8px;
+    padding: 10px 14px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+  .vitals .tile-label {
+    font-size: 10px; color: var(--viva-text-sub); text-transform: uppercase;
+    letter-spacing: 0.5px; margin-bottom: 3px; font-weight: 600;
+  }
+  .vitals .tile-value { font-size: 19px; font-weight: 700; line-height: 1.1; color: var(--viva-purple-dark); }
+
+  /* Card chrome — as in the game */
+  .vitals .viva-card {
+    background: var(--viva-card); border: 1px solid var(--viva-border); border-radius: 8px;
+    padding: 10px 12px; box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+  }
+
+  /* Feed — as in the game */
+  .vitals .viva-feed { font-size: 13px; line-height: 1.4; }
+  .vitals .viva-feed-item { padding: 5px 0; color: var(--viva-text); border-bottom: 1px solid #efeeed; }
+  .vitals .viva-feed-item:last-child { border-bottom: none; }
+  .vitals .viva-feed-item .ts {
+    color: var(--viva-text-soft); font-size: 11px; margin-right: 8px;
+    font-variant-numeric: tabular-nums; font-weight: 500;
+  }
+  .vitals .viva-feed-item.event { color: var(--viva-purple-dark); font-weight: 500; }
+  .vitals .viva-feed-item.combo { color: var(--viva-purple-dark); font-weight: 700; }
+
+  /* Meters — as in the game */
+  .vitals .viva-meter-row {
+    display: grid; grid-template-columns: 64px 1fr 32px; align-items: center;
+    gap: 8px; padding: 4px 0; border-bottom: 1px solid var(--viva-border); font-size: 12px;
+  }
+  .vitals .viva-meter-row:last-child { border-bottom: none; }
+  .vitals .viva-meter-row .name { font-weight: 500; }
+  .vitals .viva-meter-bar { height: 6px; background: #f3f2f1; border-radius: 3px; overflow: hidden; }
+  .vitals .viva-meter-fill { height: 100%; border-radius: 3px; background: var(--viva-purple); }
+  .vitals .viva-meter-fill.good { background: var(--viva-green-deep); }
+  .vitals .viva-meter-fill.warn { background: var(--viva-amber); }
+  .vitals .viva-meter-num { font-weight: 600; font-size: 12px; text-align: right; }
+
+  /* Primary action — as in the game */
+  .vitals .viva-action-primary {
+    display: block; text-align: center; text-decoration: none;
+    background: var(--viva-purple); color: white; border: none;
+    font-weight: 600; font-size: 14px; padding: 11px; border-radius: 6px;
+    box-shadow: 0 1px 3px rgba(98,100,167,0.3);
+  }
+  .vitals .viva-action-primary:hover, .vitals .viva-action-primary:focus-visible { background: var(--viva-purple-dark); }
+  .vitals .viva-action-primary .meta { display: block; font-weight: 400; color: rgba(255,255,255,0.85); margin-top: 2px; font-size: 10px; }
+  .vitals a:focus-visible, .vitals select:focus-visible { outline: 2px solid var(--viva-purple); outline-offset: 2px; }
+
+  /* Leaderboard card */
+  .vitals .v-card-title { font-size: 10px; font-weight: 600; color: var(--viva-text-sub); text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 8px; }
+  .vitals .v-sub { font-size: 12px; color: var(--viva-text-sub); margin-bottom: 10px; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .vitals select {
+    font-family: inherit; font-size: 12px; color: var(--viva-text);
+    background: white; border: 1px solid var(--viva-border); border-radius: 6px; padding: 4px 8px;
+  }
+  .vitals table.v-lb { width: 100%; border-collapse: collapse; font-size: 13px; }
+  .vitals table.v-lb td { padding: 6px 4px; border-bottom: 1px solid #efeeed; }
+  .vitals table.v-lb tr:last-child td { border-bottom: none; }
+  .vitals table.v-lb .r { color: var(--viva-text-sub); width: 40px; }
+  .vitals table.v-lb .n { font-weight: 600; }
+  .vitals table.v-lb .g { text-align: center; width: 44px; color: var(--viva-purple); font-weight: 700; }
+  .vitals table.v-lb .s { text-align: right; width: 70px; font-variant-numeric: tabular-nums; }
+  .vitals .v-empty { font-size: 13px; color: var(--viva-text-sub); padding: 4px 0; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <h1>Projects</h1>
+
+  <!-- ============ CUBICLE ============ -->
+  <details class="project" id="cubicle">
+    <summary class="row">
+      <span class="row-name">Cubicle</span>
+      <span class="row-meta">Game · browser <span class="chev">＋</span></span>
+    </summary>
+    <p class="row-line">A stimulant-management sim wrapped in a corporate wellness dashboard. Hit quota. Mind your gut. The boss can tell when you're wired.</p>
+
+    <div class="panel">
+      <div class="vitals">
+        <div class="viva-header">
+          <div class="viva-logo"><span class="icon">V</span> Vitals 365</div>
+          <div class="viva-time-pill"><span class="dot"></span> 09:31</div>
+        </div>
+        <div class="v-body">
+
+          <div class="tile-row" aria-hidden="true">
+            <div class="tile"><div class="tile-label">Reports</div><div class="tile-value">2 / 7</div></div>
+            <div class="tile"><div class="tile-label">Today</div><div class="tile-value">Monday</div></div>
+          </div>
+
+          <div class="viva-card viva-feed" aria-hidden="true">
+            <div class="viva-feed-item event"><span class="ts">09:00</span>Morning: Big walk in</div>
+            <div class="viva-feed-item event"><span class="ts">09:00</span>Today's quota: 7 reports.</div>
+            <div class="viva-feed-item combo"><span class="ts">09:25</span>LOCK-IN: 2/2 tasks. Two reports in the time it usually takes for one. The boss saw.</div>
+            <div class="viva-feed-item"><span class="ts">09:31</span>Dexi. You read an email subject and understand its purpose.</div>
+          </div>
+
+          <div class="viva-card" aria-hidden="true">
+            <div class="viva-meter-row"><span class="name">Focus</span><div class="viva-meter-bar"><div class="viva-meter-fill good" style="width:78%"></div></div><span class="viva-meter-num">78</span></div>
+            <div class="viva-meter-row"><span class="name">Bowel</span><div class="viva-meter-bar"><div class="viva-meter-fill warn" style="width:67%"></div></div><span class="viva-meter-num">67</span></div>
+            <div class="viva-meter-row"><span class="name">Jitter</span><div class="viva-meter-bar"><div class="viva-meter-fill good" style="width:28%"></div></div><span class="viva-meter-num">28</span></div>
+            <div class="viva-meter-row"><span class="name">Stim load</span><div class="viva-meter-bar"><div class="viva-meter-fill good" style="width:13%"></div></div><span class="viva-meter-num">13</span></div>
+          </div>
+
+          <a class="viva-action-primary" href="./cubicle.html">⌨ Play Cubicle<span class="meta">free · runs in this browser</span></a>
+
+          <div class="viva-card">
+            <div class="v-card-title">Leaderboard</div>
+            <div class="v-sub">Best surviving week per employee.
+              <select id="lbMode" aria-label="Leaderboard mode">
+                <option value="week_normal">Full week · Normal</option>
+                <option value="week_hungover">Full week · Hungover</option>
+                <option value="week_openplan">Full week · Open Plan</option>
+                <option value="sprint_normal">3-day sprint · Normal</option>
+                <option value="sprint_hungover">3-day sprint · Hungover</option>
+                <option value="sprint_openplan">3-day sprint · Open Plan</option>
+              </select>
+            </div>
+            <div id="lbContent" class="v-empty">Loading…</div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </details>
+
+</div>
+
+<script>
+// ==================== LEADERBOARD ====================
+// Set to your deployed Worker URL, e.g. 'https://cubicle-leaderboard.yourname.workers.dev'
+// Leave empty until the Worker is live — the board shows a holding message.
+const LEADERBOARD_API = '';
+
+const lbContent = document.getElementById('lbContent');
+const lbModeSel = document.getElementById('lbMode');
+const cubicleDetails = document.getElementById('cubicle');
+let lbLoadedOnce = false;
+
+function esc(s) { return String(s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
+
+async function loadBoard() {
+  if (!LEADERBOARD_API) {
+    lbContent.textContent = 'Leaderboard coming online soon.';
+    return;
+  }
+  lbContent.textContent = 'Loading…';
+  try {
+    const res = await fetch(LEADERBOARD_API + '/api/leaderboard?mode=' + lbModeSel.value + '&limit=10');
+    const data = await res.json();
+    if (!data.entries || data.entries.length === 0) {
+      lbContent.textContent = 'No completed weeks on this board yet.';
+      return;
+    }
+    let html = '<table class="v-lb">';
+    for (const e of data.entries) {
+      html += '<tr>'
+        + '<td class="r">#' + e.rank + '</td>'
+        + '<td class="n">' + esc(e.name) + (e.flagged ? ' ⚠' : '') + '</td>'
+        + '<td class="g">' + esc(e.grade) + '</td>'
+        + '<td class="s">' + e.score + '</td>'
+        + '</tr>';
+    }
+    html += '</table>';
+    lbContent.innerHTML = html;
+  } catch (err) {
+    lbContent.textContent = 'Leaderboard unreachable right now.';
+  }
+}
+
+cubicleDetails.addEventListener('toggle', () => {
+  if (cubicleDetails.open && !lbLoadedOnce) { lbLoadedOnce = true; loadBoard(); }
+});
+lbModeSel.addEventListener('change', loadBoard);
+</script>
+
+</body>
+</html>
