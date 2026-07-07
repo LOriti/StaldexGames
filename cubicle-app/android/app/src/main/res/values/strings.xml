@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Cubicle</string>
+    <string name="title_activity_main">Cubicle</string>
+    <string name="package_name">com.tldkgames.cubicle</string>
+    <string name="custom_url_scheme">com.tldkgames.cubicle</string>
+</resources>

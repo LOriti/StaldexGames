@@ -1,0 +1,25 @@
+{
+  "name": "cubicle",
+  "version": "1.0.0",
+  "description": "Cubicle — a survival game disguised as a corporate wellness dashboard",
+  "private": true,
+  "scripts": {
+    "sync": "cap sync",
+    "android": "cap run android",
+    "android:open": "cap open android",
+    "ios": "cap run ios",
+    "ios:open": "cap open ios",
+    "assets": "capacitor-assets generate --iconBackgroundColor \"#33344a\" --splashBackgroundColor \"#33344a\""
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.1.2",
+    "@capacitor/core": "^6.1.2",
+    "@capacitor/ios": "^6.1.2"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.1.2"
+  },
+  "optionalDependencies": {
+    "@capacitor/assets": "^3.0.5"
+  }
+}

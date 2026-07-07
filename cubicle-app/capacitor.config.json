@@ -1,0 +1,14 @@
+{
+  "appId": "com.tldkgames.cubicle",
+  "appName": "Cubicle",
+  "webDir": "www",
+  "server": {
+    "androidScheme": "https"
+  },
+  "ios": {
+    "contentInset": "always"
+  },
+  "android": {
+    "backgroundColor": "#33344a"
+  }
+}

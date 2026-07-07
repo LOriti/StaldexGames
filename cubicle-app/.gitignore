@@ -1,0 +1,23 @@
+# Dependencies
+node_modules/
+
+# Capacitor / Android build output
+android/app/build/
+android/build/
+android/.gradle/
+android/captures/
+android/local.properties
+android/app/release/
+
+# Signing secrets — NEVER commit these
+keystore.properties
+android/keystore.properties
+keystore/
+*.jks
+*.keystore
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*~
+dist/
