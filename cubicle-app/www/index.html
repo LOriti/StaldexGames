@@ -102,6 +102,20 @@
     gap: 8px;
   }
 
+  .resign-btn {
+    background: rgba(255,255,255,0.12);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: white;
+    font-family: inherit;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 5px 10px;
+    border-radius: 14px;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+  .resign-btn:hover, .resign-btn:focus-visible { background: rgba(255,255,255,0.22); }
+
   .viva-time-pill {
     background: rgba(255,255,255,0.15);
     border: 1px solid rgba(255,255,255,0.25);
@@ -613,6 +627,43 @@
   .dsm.ok { background: #d8e8d0; }
   .dsm.bad { background: var(--viva-red); color: white; }
 
+  .hidden { display: none !important; }
+
+  /* Week summary / leaderboard tab switch */
+  .week-tabs {
+    display: flex;
+    gap: 4px;
+    margin: 10px 0;
+    padding: 3px;
+    background: #f3f2f1;
+    border-radius: 8px;
+  }
+  .tab-btn {
+    flex: 1;
+    padding: 7px;
+    border-radius: 6px;
+    background: none;
+    border: none;
+    font-family: inherit;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--viva-text-sub);
+    cursor: pointer;
+  }
+  .tab-btn.active { background: white; color: var(--viva-text); box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+
+  .lb-selectors { display: flex; gap: 6px; margin-top: 10px; }
+  .lb-selectors select {
+    flex: 1;
+    font-family: inherit;
+    font-size: 12px;
+    color: var(--viva-text);
+    background: white;
+    border: 1px solid var(--viva-border);
+    border-radius: 6px;
+    padding: 6px 8px;
+  }
+
   /* Grade letter */
   .grade {
     font-size: 80px;
@@ -694,6 +745,7 @@
     <span class="dot"></span>
     <span id="timeDisplay">09:00</span>
   </div>
+  <button class="resign-btn" onclick="resignRun()" title="Abandon this run and go back to the menu">Resign</button>
 </header>
 
 <main class="viva-content">
@@ -768,8 +820,8 @@
 
     <div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--viva-text-sub);text-transform:uppercase;letter-spacing:0.5px;">Length</div>
     <div class="choices" id="lengthChoices">
-      <button class="mode-opt" data-length="3">3-Day Sprint <span class="mode-sub">Mon–Wed · the front half</span></button>
-      <button class="mode-opt selected" data-length="5">Full Week <span class="mode-sub">Mon–Fri · the full grind</span></button>
+      <button class="mode-opt selected" data-length="3">3-Day Sprint <span class="mode-sub">Mon–Wed · the front half</span></button>
+      <button class="mode-opt" data-length="5">Full Week <span class="mode-sub">Mon–Fri · the full grind</span></button>
     </div>
 
     <div style="margin:14px 0 6px;font-size:12px;font-weight:700;color:var(--viva-text-sub);text-transform:uppercase;letter-spacing:0.5px;">Difficulty</div>
@@ -838,16 +890,34 @@
     <h2 id="weekEndTitle">The week is over.</h2>
     <div class="grade" id="weekGrade">?</div>
     <p class="centered" id="weekVerdict"></p>
+
+    <div id="weekTabs" class="week-tabs hidden">
+      <button class="tab-btn active" id="tabBtnSummary" onclick="switchWeekTab('summary')">Week summary</button>
+      <button class="tab-btn" id="tabBtnBoard" onclick="switchWeekTab('board')">Leaderboard</button>
+    </div>
+
     <div id="weekSummary"></div>
-    <div id="lbSection" style="display:none;margin-top:12px;border-top:1px solid var(--viva-border);padding-top:12px;">
+
+    <div id="lbSection" style="display:none;">
       <div style="display:flex;gap:6px;align-items:center;">
         <input id="lbName" type="text" maxlength="20" placeholder="Display name" style="flex:1;padding:9px 10px;border:1px solid var(--viva-border);border-radius:6px;font-family:inherit;font-size:13px;">
         <button onclick="submitScore()" id="lbSubmitBtn" style="padding:9px 14px;background:var(--viva-purple);color:white;border:none;border-radius:6px;font-family:inherit;font-size:13px;font-weight:600;cursor:pointer;">Submit</button>
       </div>
       <p class="centered subtle" id="lbStatus" style="margin-top:8px;"></p>
+      <div class="lb-selectors">
+        <select id="lbLength" onchange="viewLeaderboard()">
+          <option value="week">Full Week</option>
+          <option value="sprint">3-Day Sprint</option>
+        </select>
+        <select id="lbDiff" onchange="viewLeaderboard()">
+          <option value="normal">Normal</option>
+          <option value="hungover">Hungover</option>
+          <option value="openplan">Open Plan</option>
+        </select>
+      </div>
       <div id="lbBoard" style="margin-top:8px;font-size:12px;"></div>
-      <button onclick="viewLeaderboard()" style="width:100%;margin-top:8px;padding:8px;background:white;border:1px solid var(--viva-border);border-radius:6px;font-family:inherit;font-size:12px;cursor:pointer;">View leaderboard</button>
     </div>
+
     <div class="choices" style="margin-top:14px;">
       <button class="primary" onclick="location.reload()">New week</button>
     </div>
@@ -871,7 +941,7 @@ const FULL_WEEK = [
 
 // Mode config — chosen at start. length + difficulty.
 const MODE = {
-  length: 5,          // 3 or 5
+  length: 3,           // 3 or 5
   difficulty: 'normal', // 'normal' | 'hungover' | 'openplan'
 };
 
@@ -2788,6 +2858,12 @@ const CARRYOVER_QUIPS = {
   ],
 };
 
+function resignRun() {
+  if (confirm('Resign? This ends your run right now — no summary, no leaderboard entry.')) {
+    location.reload();
+  }
+}
+
 function nextDay() {
   document.getElementById('dayEndModal').classList.remove('show');
   week.dayIndex++;
@@ -3053,11 +3129,18 @@ function showWeekEnd(dnfVerdict) {
   });
   sum.appendChild(dayLine);
 
-  add('Lock-ins seized', week.lockInsSeized);
-  add('Blackouts', week.blackouts);
-  add('Combos', week.combosTriggered);
-  if (week.whiteouts > 0) add('Overstim whiteouts', week.whiteouts, 'bad');
-  add('Boss warnings', week.bossWarnings, week.bossWarnings > 2 ? 'bad' : '');
+  // Condensed stat chips — same visual language as the day strip, saves vertical space
+  const statLine = document.createElement('div');
+  statLine.className = 'day-strip-mini';
+  statLine.innerHTML = `
+    <span class="dsm">🔒 ${week.lockInsSeized}</span>
+    <span class="dsm">💥 ${week.blackouts}</span>
+    <span class="dsm">🔗 ${week.combosTriggered}</span>
+    ${week.whiteouts > 0 ? `<span class="dsm bad">🌀 ${week.whiteouts}</span>` : ''}
+    <span class="dsm ${week.bossWarnings > 2 ? 'bad' : ''}">⚠ ${week.bossWarnings}</span>
+  `;
+  sum.appendChild(statLine);
+
   add('TOTAL SCORE', week.weekScore, 'total');
 
   document.getElementById('weekEndModal').classList.add('show');
@@ -3071,6 +3154,10 @@ const LEADERBOARD_API = 'https://staldex.com/api/cubicle';
 function lbMode() {
   return (MODE.length === 3 ? 'sprint' : 'week') + '_' + MODE.difficulty;
 }
+// Mode currently selected in the leaderboard viewer — independent of what was just played.
+function lbViewMode() {
+  return document.getElementById('lbLength').value + '_' + document.getElementById('lbDiff').value;
+}
 function lbPlayerId() {
   let id = localStorage.getItem('cubicle_uuid');
   if (!id) { id = crypto.randomUUID(); localStorage.setItem('cubicle_uuid', id); }
@@ -3078,10 +3165,20 @@ function lbPlayerId() {
 }
 function initLeaderboardSection() {
   if (!LEADERBOARD_API) return;
-  const sec = document.getElementById('lbSection');
-  if (!sec) return;
-  sec.style.display = 'block';
+  document.getElementById('weekTabs').classList.remove('hidden');
   document.getElementById('lbName').value = localStorage.getItem('cubicle_name') || '';
+  // Default the viewer to the mode just played, not always sprint/normal.
+  document.getElementById('lbLength').value = MODE.length === 3 ? 'sprint' : 'week';
+  document.getElementById('lbDiff').value = MODE.difficulty;
+  switchWeekTab('summary');
+}
+function switchWeekTab(tab) {
+  const showBoard = tab === 'board';
+  document.getElementById('weekSummary').classList.toggle('hidden', showBoard);
+  document.getElementById('lbSection').style.display = showBoard ? 'block' : 'none';
+  document.getElementById('tabBtnSummary').classList.toggle('active', !showBoard);
+  document.getElementById('tabBtnBoard').classList.toggle('active', showBoard);
+  if (showBoard) viewLeaderboard();
 }
 async function submitScore() {
   const name = document.getElementById('lbName').value.trim();
@@ -3132,18 +3229,21 @@ async function viewLeaderboard() {
   const board = document.getElementById('lbBoard');
   board.innerHTML = '<p class="centered subtle">Loading…</p>';
   try {
-    const res = await fetch(LEADERBOARD_API + '/leaderboard?mode=' + lbMode() + '&limit=20&uuid=' + lbPlayerId());
+    const res = await fetch(LEADERBOARD_API + '/leaderboard?mode=' + lbViewMode() + '&limit=20&uuid=' + lbPlayerId());
     const data = await res.json();
     if (!data.entries || !data.entries.length) { board.innerHTML = '<p class="centered subtle">Nobody has survived a week yet. Be first.</p>'; return; }
-    let html = '<table style="width:100%;border-collapse:collapse;">';
+    let html = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
     for (const e of data.entries) {
       const safe = String(e.name).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
+      const days = `${e.days_won}w${e.perfect_days ? '·' + e.perfect_days + '★' : ''}`;
       html += `<tr style="border-bottom:1px solid var(--viva-border);">
-        <td style="padding:4px 6px;color:var(--viva-text-sub);">#${e.rank}</td>
-        <td style="padding:4px 6px;font-weight:600;">${safe}${e.flagged ? ' ⚠' : ''}</td>
-        <td style="padding:4px 6px;text-align:center;">${e.grade}</td>
-        <td style="padding:4px 6px;text-align:center;font-size:11px;">${standoutTrait(e)}</td>
-        <td style="padding:4px 6px;text-align:right;font-variant-numeric:tabular-nums;">${e.score}</td>
+        <td style="padding:3px 4px;color:var(--viva-text-sub);">#${e.rank}</td>
+        <td style="padding:3px 4px;font-weight:600;">${safe}${e.flagged ? ' ⚠' : ''}</td>
+        <td style="padding:3px 4px;text-align:center;">${e.grade}</td>
+        <td style="padding:3px 4px;text-align:center;">${standoutTrait(e)}</td>
+        <td style="padding:3px 4px;text-align:center;color:var(--viva-text-sub);white-space:nowrap;">${e.tasks}/${e.quota}</td>
+        <td style="padding:3px 4px;text-align:center;color:var(--viva-text-sub);white-space:nowrap;">${days}</td>
+        <td style="padding:3px 4px;text-align:right;font-variant-numeric:tabular-nums;font-weight:600;">${e.score}</td>
       </tr>`;
     }
     html += '</table>';

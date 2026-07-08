@@ -144,13 +144,14 @@
     font-family: inherit; font-size: 12px; color: var(--viva-text);
     background: white; border: 1px solid var(--viva-border); border-radius: 6px; padding: 4px 8px;
   }
-  .vitals table.v-lb { width: 100%; border-collapse: collapse; font-size: 13px; }
-  .vitals table.v-lb td { padding: 6px 4px; border-bottom: 1px solid #efeeed; }
+  .vitals table.v-lb { width: 100%; border-collapse: collapse; font-size: 12px; }
+  .vitals table.v-lb td { padding: 5px 3px; border-bottom: 1px solid #efeeed; }
   .vitals table.v-lb tr:last-child td { border-bottom: none; }
-  .vitals table.v-lb .r { color: var(--viva-text-sub); width: 40px; }
+  .vitals table.v-lb .r { color: var(--viva-text-sub); width: 32px; }
   .vitals table.v-lb .n { font-weight: 600; }
-  .vitals table.v-lb .g { text-align: center; width: 44px; color: var(--viva-purple); font-weight: 700; }
-  .vitals table.v-lb .s { text-align: right; width: 70px; font-variant-numeric: tabular-nums; }
+  .vitals table.v-lb .g { text-align: center; width: 34px; color: var(--viva-purple); font-weight: 700; }
+  .vitals table.v-lb .t, .vitals table.v-lb .d { text-align: center; color: var(--viva-text-sub); font-size: 11px; white-space: nowrap; }
+  .vitals table.v-lb .s { text-align: right; width: 60px; font-variant-numeric: tabular-nums; }
   .vitals .v-empty { font-size: 13px; color: var(--viva-text-sub); padding: 4px 0; }
 
   /* ============ CAFEPASS PANEL — warm coffee palette, lifted from the product ============ */
@@ -246,14 +247,16 @@
 
           <div class="viva-card">
             <div class="v-card-title">Leaderboard</div>
-            <div class="v-sub">Best surviving week per employee.
-              <select id="lbMode" aria-label="Leaderboard mode">
-                <option value="week_normal">Full week · Normal</option>
-                <option value="week_hungover">Full week · Hungover</option>
-                <option value="week_openplan">Full week · Open Plan</option>
-                <option value="sprint_normal">3-day sprint · Normal</option>
-                <option value="sprint_hungover">3-day sprint · Hungover</option>
-                <option value="sprint_openplan">3-day sprint · Open Plan</option>
+            <div class="v-sub">Best surviving week per employee.</div>
+            <div class="v-sub">
+              <select id="lbLength" aria-label="Length">
+                <option value="week">Full week</option>
+                <option value="sprint" selected>3-day sprint</option>
+              </select>
+              <select id="lbDiff" aria-label="Difficulty">
+                <option value="normal" selected>Normal</option>
+                <option value="hungover">Hungover</option>
+                <option value="openplan">Open Plan</option>
               </select>
             </div>
             <div id="lbContent" class="v-empty">Loading…</div>
@@ -303,7 +306,8 @@
 const LEADERBOARD_API = 'https://staldex.com/api/cubicle';
 
 const lbContent = document.getElementById('lbContent');
-const lbModeSel = document.getElementById('lbMode');
+const lbLengthSel = document.getElementById('lbLength');
+const lbDiffSel = document.getElementById('lbDiff');
 const cubicleDetails = document.getElementById('cubicle');
 let lbLoadedOnce = false;
 
@@ -316,7 +320,8 @@ async function loadBoard() {
   }
   lbContent.textContent = 'Loading…';
   try {
-    const res = await fetch(LEADERBOARD_API + '/leaderboard?mode=' + lbModeSel.value + '&limit=10');
+    const mode = lbLengthSel.value + '_' + lbDiffSel.value;
+    const res = await fetch(LEADERBOARD_API + '/leaderboard?mode=' + mode + '&limit=10');
     const data = await res.json();
     if (!data.entries || data.entries.length === 0) {
       lbContent.textContent = 'No completed weeks on this board yet.';
@@ -324,10 +329,13 @@ async function loadBoard() {
     }
     let html = '<table class="v-lb">';
     for (const e of data.entries) {
+      const days = e.days_won + 'w' + (e.perfect_days ? '·' + e.perfect_days + '★' : '');
       html += '<tr>'
         + '<td class="r">#' + e.rank + '</td>'
         + '<td class="n">' + esc(e.name) + (e.flagged ? ' ⚠' : '') + '</td>'
         + '<td class="g">' + esc(e.grade) + '</td>'
+        + '<td class="t">' + e.tasks + '/' + e.quota + '</td>'
+        + '<td class="d">' + days + '</td>'
         + '<td class="s">' + e.score + '</td>'
         + '</tr>';
     }
@@ -341,7 +349,8 @@ async function loadBoard() {
 cubicleDetails.addEventListener('toggle', () => {
   if (cubicleDetails.open && !lbLoadedOnce) { lbLoadedOnce = true; loadBoard(); }
 });
-lbModeSel.addEventListener('change', loadBoard);
+lbLengthSel.addEventListener('change', loadBoard);
+lbDiffSel.addEventListener('change', loadBoard);
 </script>
 
 </body>
