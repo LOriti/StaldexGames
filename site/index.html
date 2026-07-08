@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Projects</title>
-<meta name="description" content="A repository of projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard.">
+<meta name="description" content="A repository of projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard. CafePass: a subscription coffee membership platform.">
 <style>
   /* ============ SHELL — the neutral container ============ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -152,6 +152,54 @@
   .vitals table.v-lb .g { text-align: center; width: 44px; color: var(--viva-purple); font-weight: 700; }
   .vitals table.v-lb .s { text-align: right; width: 70px; font-variant-numeric: tabular-nums; }
   .vitals .v-empty { font-size: 13px; color: var(--viva-text-sub); padding: 4px 0; }
+
+  /* ============ CAFEPASS PANEL — warm coffee palette, lifted from the product ============ */
+  .cafepass {
+    --cp-bg: #F4EFE6; --cp-ink: #1A1410; --cp-muted: #8B7355; --cp-line: #E5DCC9; --cp-gold: #C9A876; --cp-paper: #ffffff;
+    background: var(--cp-bg);
+    border: 1px solid var(--cp-line);
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--cp-ink);
+  }
+  .cafepass .cp-top {
+    background: var(--cp-ink); color: var(--cp-gold);
+    padding: 12px 16px;
+    display: flex; align-items: center; justify-content: space-between;
+    font-family: system-ui, -apple-system, "Segoe UI", sans-serif;
+  }
+  .cafepass .cp-brand { font-weight: 700; font-size: 13px; }
+  .cafepass .cp-sub { font-size: 11px; opacity: 0.75; }
+  .cafepass .cp-body { padding: 14px; display: flex; flex-direction: column; gap: 12px; }
+  .cafepass .cp-usual {
+    background: var(--cp-paper); border: 1px solid var(--cp-line); border-radius: 12px;
+    padding: 13px; position: relative;
+  }
+  .cafepass .cp-usual-badge {
+    position: absolute; top: -8px; left: 13px;
+    background: var(--cp-gold); color: var(--cp-ink);
+    font-family: system-ui, sans-serif; font-size: 8px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .cafepass .cp-usual-drink { font-size: 17px; font-style: italic; }
+  .cafepass .cp-usual-detail { font-family: system-ui, sans-serif; font-size: 10.5px; color: var(--cp-muted); margin-top: 3px; }
+  .cafepass .cp-badges { display: flex; gap: 6px; flex-wrap: wrap; }
+  .cafepass .cp-badge {
+    font-family: system-ui, sans-serif; font-size: 10px; font-weight: 600;
+    color: var(--cp-muted); border: 1px solid var(--cp-line);
+    padding: 4px 10px; border-radius: 999px; background: var(--cp-paper);
+  }
+  .cafepass .cp-cta {
+    display: block; text-align: center; text-decoration: none;
+    background: var(--cp-ink); color: var(--cp-bg);
+    font-family: system-ui, sans-serif; font-weight: 600; font-size: 14px;
+    padding: 11px; border-radius: 6px;
+  }
+  .cafepass .cp-cta:hover, .cafepass .cp-cta:focus-visible { background: #3D2F22; }
+  .cafepass .cp-cta .meta { display: block; font-weight: 400; color: rgba(244,239,230,0.75); margin-top: 2px; font-size: 10px; }
+  .cafepass a:focus-visible { outline: 2px solid var(--cp-gold); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -216,13 +264,43 @@
     </div>
   </details>
 
+  <!-- ============ CAFEPASS ============ -->
+  <details class="project" id="cafepass">
+    <summary class="row">
+      <span class="row-name">CafePass</span>
+      <span class="row-meta">App · browser demo <span class="chev">＋</span></span>
+    </summary>
+    <p class="row-line">A subscription coffee membership platform — a member app with order-ahead and daily QR redemption, plus a zero-training tablet for cafes.</p>
+
+    <div class="panel">
+      <div class="cafepass">
+        <div class="cp-top">
+          <span class="cp-brand">☕ CafePass</span>
+          <span class="cp-sub">Ember &amp; Bean · Leederville</span>
+        </div>
+        <div class="cp-body">
+          <div class="cp-usual" aria-hidden="true">
+            <div class="cp-usual-badge">Your usual</div>
+            <div class="cp-usual-drink">Flat white</div>
+            <div class="cp-usual-detail">Full cream · Regular · Extra hot</div>
+          </div>
+          <div class="cp-badges" aria-hidden="true">
+            <span class="cp-badge">Order-ahead queue</span>
+            <span class="cp-badge">Single-scan redemption</span>
+            <span class="cp-badge">Monthly settlement</span>
+          </div>
+          <a class="cp-cta" href="./cafepass.html">View live demo<span class="meta">member app · cafe tablet · both interactive</span></a>
+        </div>
+      </div>
+    </div>
+  </details>
+
 </div>
 
 <script>
 // ==================== LEADERBOARD ====================
-// Set to your deployed Worker URL, e.g. 'https://cubicle-leaderboard.yourname.workers.dev'
 // Leave empty until the Worker is live — the board shows a holding message.
-const LEADERBOARD_API = '';
+const LEADERBOARD_API = 'https://staldex.com/api/cubicle';
 
 const lbContent = document.getElementById('lbContent');
 const lbModeSel = document.getElementById('lbMode');
@@ -238,7 +316,7 @@ async function loadBoard() {
   }
   lbContent.textContent = 'Loading…';
   try {
-    const res = await fetch(LEADERBOARD_API + '/api/leaderboard?mode=' + lbModeSel.value + '&limit=10');
+    const res = await fetch(LEADERBOARD_API + '/leaderboard?mode=' + lbModeSel.value + '&limit=10');
     const data = await res.json();
     if (!data.entries || data.entries.length === 0) {
       lbContent.textContent = 'No completed weeks on this board yet.';

@@ -4,33 +4,36 @@ Trust-based leaderboard (Option A): submissions accepted, suspicious scores flag
 Six boards: `{week|sprint}_{normal|hungover|openplan}`. One best score per player per board.
 Identity: localStorage UUID + display name. No login.
 
-## Deploy (~10 min, free tier)
+Served at `staldex.com/api/cubicle/*` — same domain as the site, no separate `workers.dev`
+subdomain (see `routes` in `wrangler.toml`).
 
-```bash
-# 1. Install wrangler + login (opens browser)
-npm install -g wrangler
-wrangler login
+## Deploy
 
-# 2. Create the D1 database — copy the database_id it prints into wrangler.toml
-wrangler d1 create cubicle-leaderboard
+`wrangler` needs a platform it doesn't ship for (this was built/tested on Windows ARM64,
+which has no `workerd` binary), so deployment goes through **Cloudflare Workers Builds**
+(Git integration) instead of running `wrangler` locally — Cloudflare builds and deploys
+this on its own servers on every push to `main`, the same way Pages already does for `site/`.
 
-# 3. Apply the schema to the remote DB
-wrangler d1 execute cubicle-leaderboard --file=schema.sql --remote
+One-time setup, all in the Cloudflare dashboard, no CLI:
 
-# 4. Deploy — note the URL it prints (https://cubicle-leaderboard.<you>.workers.dev)
-wrangler deploy
-```
+1. **Create the D1 database**: Workers & Pages → D1 SQL Database → Create database →
+   name it `cubicle-leaderboard`. This is a provisioning step `wrangler deploy` can't do
+   for you even from CI, so it has to happen once, here.
+2. **Apply the schema**: open the new database → Console tab → paste in `schema.sql` → run.
+3. **Copy the database_id** shown on the database's page into `wrangler.toml` (replaces
+   `REPLACE_ME`), commit and push.
+4. **Connect the Worker to this repo**: Workers & Pages → Create → Workers → connect to
+   Git → select this repo → set the root directory to `worker/`. Cloudflare will run
+   `wrangler deploy` from there (picks up `wrangler.toml`'s D1 binding and `routes`
+   automatically) on every push.
 
-Then in `cubicle.html`, set:
-```js
-const LEADERBOARD_API = 'https://cubicle-leaderboard.<you>.workers.dev';
-```
-Leave it `''` and all leaderboard UI stays hidden — the game runs fully standalone.
+Leave `LEADERBOARD_API` empty in the game files and all leaderboard UI stays hidden — the
+game runs fully standalone either way.
 
 ## API
 
-- `POST /api/score` — `{uuid, name, mode, grade, score, tasks, quota, daysWon, perfectDays, breakdown}` → `{ok, rank, flagged, flags}`
-- `GET /api/leaderboard?mode=week_normal&limit=20&uuid=<optional>` → `{mode, entries[], you?}`
+- `POST /api/cubicle/score` — `{uuid, name, mode, grade, score, tasks, quota, daysWon, perfectDays, breakdown, ratings: {kitchen, shareholder, calendar, socio, sphincter, watercooler}}` → `{ok, rank, flagged, flags}`
+- `GET /api/cubicle/leaderboard?mode=week_normal&limit=20&uuid=<optional>` → `{mode, entries[] (each including the six ratings), you?}`
 
 ## Heuristic flags (accepted but marked ⚠)
 - `score_impossible` — >300 week / >200 sprint

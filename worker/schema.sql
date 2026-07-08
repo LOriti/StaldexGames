@@ -13,6 +13,13 @@ CREATE TABLE IF NOT EXISTS scores (
   flags TEXT DEFAULT '[]',
   breakdown TEXT DEFAULT '[]',
   submitted_at INTEGER,
+  -- Six end-of-week personality ratings (0-100), see computeRatings() in cubicle.html
+  kitchen INTEGER DEFAULT 0,
+  shareholder INTEGER DEFAULT 0,
+  calendar INTEGER DEFAULT 0,
+  socio INTEGER DEFAULT 0,
+  sphincter INTEGER DEFAULT 0,
+  watercooler INTEGER DEFAULT 0,
   PRIMARY KEY (uuid, mode)
 );
 CREATE INDEX IF NOT EXISTS idx_scores_mode_score ON scores(mode, score DESC);

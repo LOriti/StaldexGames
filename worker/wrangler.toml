@@ -2,8 +2,15 @@ name = "cubicle-leaderboard"
 main = "src/index.js"
 compatibility_date = "2026-06-01"
 
+# Served under the main site's domain rather than a workers.dev subdomain.
+# Requires staldex.com to already be an active zone on this Cloudflare account
+# (it is — Pages already serves site/ there).
+routes = [
+  { pattern = "staldex.com/api/cubicle/*", zone_name = "staldex.com" }
+]
+
 [[d1_databases]]
 binding = "DB"
 database_name = "cubicle-leaderboard"
 # Paste the database_id that `wrangler d1 create cubicle-leaderboard` prints:
-database_id = "REPLACE_ME"
+database_id = "3252611e-3586-4063-a602-a33e8547a23d"

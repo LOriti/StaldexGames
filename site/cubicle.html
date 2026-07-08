@@ -3061,9 +3061,8 @@ function showWeekEnd(dnfVerdict) {
 }
 
 // ==================== LEADERBOARD (optional) ====================
-// Set to your deployed Worker URL, e.g. 'https://cubicle-leaderboard.yourname.workers.dev'
 // Leave empty to hide all leaderboard UI — the game works fully standalone.
-const LEADERBOARD_API = '';
+const LEADERBOARD_API = 'https://staldex.com/api/cubicle';
 
 function lbMode() {
   return (MODE.length === 3 ? 'sprint' : 'week') + '_' + MODE.difficulty;
@@ -3089,7 +3088,7 @@ async function submitScore() {
   status.textContent = 'Submitting…';
   try {
     const g = gradeWeek();
-    const res = await fetch(LEADERBOARD_API + '/api/score', {
+    const res = await fetch(LEADERBOARD_API + '/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -3098,6 +3097,7 @@ async function submitScore() {
         tasks: week.totalTasks, quota: week.totalQuota,
         daysWon: week.daysWon, perfectDays: week.perfectDays,
         breakdown: week.dayResults.map(d => ({ d: d.short, t: d.tasks, q: d.quota })),
+        ratings: computeRatings(),
       }),
     });
     const data = await res.json();
@@ -3113,11 +3113,22 @@ async function submitScore() {
   }
   document.getElementById('lbSubmitBtn').disabled = false;
 }
+// Highest of the six personality ratings on a leaderboard entry — shown as flavour, e.g. "🔪 82"
+function standoutTrait(e) {
+  let bestKey = null, bestVal = -1;
+  for (const k of ['kitchen', 'shareholder', 'calendar', 'socio', 'sphincter', 'watercooler']) {
+    const v = e[k];
+    if (typeof v === 'number' && v > bestVal) { bestVal = v; bestKey = k; }
+  }
+  if (!bestKey) return '';
+  const meta = RATING_META[bestKey];
+  return `<span title="${meta.name}">${meta.icon} ${bestVal}</span>`;
+}
 async function viewLeaderboard() {
   const board = document.getElementById('lbBoard');
   board.innerHTML = '<p class="centered subtle">Loading…</p>';
   try {
-    const res = await fetch(LEADERBOARD_API + '/api/leaderboard?mode=' + lbMode() + '&limit=20&uuid=' + lbPlayerId());
+    const res = await fetch(LEADERBOARD_API + '/leaderboard?mode=' + lbMode() + '&limit=20&uuid=' + lbPlayerId());
     const data = await res.json();
     if (!data.entries || !data.entries.length) { board.innerHTML = '<p class="centered subtle">Nobody has survived a week yet. Be first.</p>'; return; }
     let html = '<table style="width:100%;border-collapse:collapse;">';
@@ -3127,6 +3138,7 @@ async function viewLeaderboard() {
         <td style="padding:4px 6px;color:var(--viva-text-sub);">#${e.rank}</td>
         <td style="padding:4px 6px;font-weight:600;">${safe}${e.flagged ? ' ⚠' : ''}</td>
         <td style="padding:4px 6px;text-align:center;">${e.grade}</td>
+        <td style="padding:4px 6px;text-align:center;font-size:11px;">${standoutTrait(e)}</td>
         <td style="padding:4px 6px;text-align:right;font-variant-numeric:tabular-nums;">${e.score}</td>
       </tr>`;
     }

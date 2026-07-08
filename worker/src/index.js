@@ -1,9 +1,9 @@
 // Cubicle Leaderboard — Cloudflare Worker + D1
 // Option A: trust submissions, apply heuristic flags, single best week per player per mode.
 //
-// Endpoints:
-//   POST /api/score        — submit a completed week
-//   GET  /api/leaderboard  — ?mode=week_normal&limit=20&uuid=<optional, returns your rank>
+// Routed at staldex.com/api/cubicle/* (see wrangler.toml). Endpoints:
+//   POST /api/cubicle/score        — submit a completed week, body includes {ratings: {kitchen, shareholder, calendar, socio, sphincter, watercooler}}
+//   GET  /api/cubicle/leaderboard  — ?mode=week_normal&limit=20&uuid=<optional, returns your rank>
 //
 // Modes: {week|sprint}_{normal|hungover|openplan} — six boards.
 
@@ -18,6 +18,12 @@ const VALID_MODES = new Set([
   'sprint_normal', 'sprint_hungover', 'sprint_openplan',
 ]);
 const VALID_GRADES = new Set(['S', 'A', 'B', 'C', 'D', 'F']);
+
+// Six end-of-week personality ratings — see computeRatings() in cubicle.html.
+const RATING_KEYS = ['kitchen', 'shareholder', 'calendar', 'socio', 'sphincter', 'watercooler'];
+function clampRating(v) {
+  return Number.isFinite(v) ? Math.max(0, Math.min(100, Math.round(v))) : 0;
+}
 
 function json(data, status = 200) {
   return new Response(JSON.stringify(data), {
@@ -73,6 +79,7 @@ async function handleSubmit(request, env) {
   const quota = Number.isFinite(body.quota) ? Math.round(body.quota) : 0;
   const daysWon = Number.isFinite(body.daysWon) ? Math.round(body.daysWon) : 0;
   const perfectDays = Number.isFinite(body.perfectDays) ? Math.round(body.perfectDays) : 0;
+  const ratings = Object.fromEntries(RATING_KEYS.map(k => [k, clampRating(body.ratings && body.ratings[k])]));
 
   // Light rate limit: max 12 submissions per uuid per hour (across modes)
   const hourAgo = Date.now() - 3600_000;
@@ -87,8 +94,8 @@ async function handleSubmit(request, env) {
 
   // Upsert: keep the best score per (uuid, mode). Name always updates to latest.
   await env.DB.prepare(`
-    INSERT INTO scores (uuid, mode, name, grade, score, tasks, quota, days_won, perfect_days, flagged, flags, breakdown, submitted_at)
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    INSERT INTO scores (uuid, mode, name, grade, score, tasks, quota, days_won, perfect_days, flagged, flags, breakdown, submitted_at, kitchen, shareholder, calendar, socio, sphincter, watercooler)
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ON CONFLICT(uuid, mode) DO UPDATE SET
       name = excluded.name,
       grade = CASE WHEN excluded.score > scores.score THEN excluded.grade ELSE scores.grade END,
@@ -100,8 +107,17 @@ async function handleSubmit(request, env) {
       flags = CASE WHEN excluded.score > scores.score THEN excluded.flags ELSE scores.flags END,
       breakdown = CASE WHEN excluded.score > scores.score THEN excluded.breakdown ELSE scores.breakdown END,
       submitted_at = CASE WHEN excluded.score > scores.score THEN excluded.submitted_at ELSE scores.submitted_at END,
+      kitchen = CASE WHEN excluded.score > scores.score THEN excluded.kitchen ELSE scores.kitchen END,
+      shareholder = CASE WHEN excluded.score > scores.score THEN excluded.shareholder ELSE scores.shareholder END,
+      calendar = CASE WHEN excluded.score > scores.score THEN excluded.calendar ELSE scores.calendar END,
+      socio = CASE WHEN excluded.score > scores.score THEN excluded.socio ELSE scores.socio END,
+      sphincter = CASE WHEN excluded.score > scores.score THEN excluded.sphincter ELSE scores.sphincter END,
+      watercooler = CASE WHEN excluded.score > scores.score THEN excluded.watercooler ELSE scores.watercooler END,
       score = MAX(scores.score, excluded.score)
-  `).bind(uuid, mode, name, grade, score, tasks, quota, daysWon, perfectDays, flags.length ? 1 : 0, JSON.stringify(flags), breakdown, Date.now()).run();
+  `).bind(
+    uuid, mode, name, grade, score, tasks, quota, daysWon, perfectDays, flags.length ? 1 : 0, JSON.stringify(flags), breakdown, Date.now(),
+    ratings.kitchen, ratings.shareholder, ratings.calendar, ratings.socio, ratings.sphincter, ratings.watercooler
+  ).run();
 
   // Return the player's rank on this board
   const rankRow = await env.DB.prepare(
@@ -117,7 +133,7 @@ async function handleLeaderboard(url, env) {
   const uuid = url.searchParams.get('uuid');
 
   const rows = await env.DB.prepare(
-    'SELECT name, grade, score, tasks, quota, days_won, perfect_days, flagged, submitted_at FROM scores WHERE mode = ? ORDER BY score DESC, submitted_at ASC LIMIT ?'
+    'SELECT name, grade, score, tasks, quota, days_won, perfect_days, flagged, submitted_at, kitchen, shareholder, calendar, socio, sphincter, watercooler FROM scores WHERE mode = ? ORDER BY score DESC, submitted_at ASC LIMIT ?'
   ).bind(mode, limit).all();
 
   const out = { mode, entries: (rows.results || []).map((r, i) => ({ rank: i + 1, ...r })) };
@@ -136,8 +152,8 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
     if (request.method === 'OPTIONS') return new Response(null, { status: 204, headers: CORS });
-    if (request.method === 'POST' && url.pathname === '/api/score') return handleSubmit(request, env);
-    if (request.method === 'GET' && url.pathname === '/api/leaderboard') return handleLeaderboard(url, env);
+    if (request.method === 'POST' && url.pathname === '/api/cubicle/score') return handleSubmit(request, env);
+    if (request.method === 'GET' && url.pathname === '/api/cubicle/leaderboard') return handleLeaderboard(url, env);
     return json({ error: 'not found' }, 404);
   },
 };
