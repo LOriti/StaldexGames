@@ -49,4 +49,5 @@ dashboard's build log).
 - One best score per player per board (six boards: {week|sprint} × {normal|hungover|openplan}).
 - Identity is a localStorage UUID — clearing browser data = new identity. By design (no accounts).
 - Suspicious scores are accepted but flagged ⚠. Rate limit: 12 submissions/hour per player.
-- Getting fired ends the week without the submit UI — only survived weeks post. Intended.
+- Getting fired or hitting a wellbeing incident (shart/cardiac) still reaches the submit UI —
+  it grades as "DNF" instead of a letter, and posts to the same board as a normal run.

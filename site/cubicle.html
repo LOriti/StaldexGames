@@ -2964,6 +2964,10 @@ function nextWeekOutcome(r, gradeLetter, fired) {
   return "Another week survives you. Or you survive it. The distinction blurs around Thursday. Monday returns, as Mondays do.";
 }
 
+// Set by showWeekEnd() so submitScore() can grade a DNF the same way, instead of
+// silently recomputing a normal S-F letter for a week that didn't finish.
+let weekDnfVerdict = null;
+
 function gradeWeek(dnfVerdict) {
   if (dnfVerdict) return { letter: 'DNF', verdict: dnfVerdict };
   const quotaPct = week.totalTasks / week.totalQuota;
@@ -2984,6 +2988,7 @@ function gradeWeek(dnfVerdict) {
 }
 
 function showWeekEnd(dnfVerdict) {
+  weekDnfVerdict = dnfVerdict || null;
   const g = gradeWeek(dnfVerdict);
   document.getElementById('weekGrade').textContent = g.letter;
   document.getElementById('weekGrade').className = 'grade ' + g.letter;
@@ -3056,8 +3061,7 @@ function showWeekEnd(dnfVerdict) {
   add('TOTAL SCORE', week.weekScore, 'total');
 
   document.getElementById('weekEndModal').classList.add('show');
-  // Getting fired/DNF ends the week without the submit UI — only survived weeks post.
-  if (!dnfVerdict) initLeaderboardSection();
+  initLeaderboardSection();
 }
 
 // ==================== LEADERBOARD (optional) ====================
@@ -3087,7 +3091,7 @@ async function submitScore() {
   document.getElementById('lbSubmitBtn').disabled = true;
   status.textContent = 'Submitting…';
   try {
-    const g = gradeWeek();
+    const g = gradeWeek(weekDnfVerdict);
     const res = await fetch(LEADERBOARD_API + '/score', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

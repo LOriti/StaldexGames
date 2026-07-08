@@ -17,7 +17,7 @@ const VALID_MODES = new Set([
   'week_normal', 'week_hungover', 'week_openplan',
   'sprint_normal', 'sprint_hungover', 'sprint_openplan',
 ]);
-const VALID_GRADES = new Set(['S', 'A', 'B', 'C', 'D', 'F']);
+const VALID_GRADES = new Set(['S', 'A', 'B', 'C', 'D', 'F', 'DNF']);
 
 // Six end-of-week personality ratings — see computeRatings() in cubicle.html.
 const RATING_KEYS = ['kitchen', 'shareholder', 'calendar', 'socio', 'sphincter', 'watercooler'];
