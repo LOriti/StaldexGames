@@ -61,16 +61,7 @@
     display: flex; align-items: center; justify-content: center;
     font-family: var(--mono); font-size: 13px; font-weight: 700; color: white;
   }
-  .nav-links { display: flex; gap: 28px; font-size: 13px; color: var(--sx-muted); }
-  .nav-links a:hover { color: var(--sx-ink); }
-  .nav-cta {
-    font-size: 13px; font-weight: 600;
-    padding: 9px 18px; border-radius: 8px;
-    background: var(--sx-accent); color: white;
-    transition: background 0.2s;
-  }
-  .nav-cta:hover { background: #5A78F0; }
-  @media (max-width: 800px) { .nav-links { display: none; } nav { padding: 14px 20px; } }
+  @media (max-width: 800px) { nav { padding: 14px 20px; } }
 
   /* ════ PAGE HEADER ════ */
   .page-head {
@@ -78,13 +69,6 @@
     padding: 80px 40px 40px;
     text-align: center;
   }
-  .breadcrumb {
-    font-family: var(--mono);
-    font-size: 12px; color: var(--sx-muted);
-    margin-bottom: 24px;
-  }
-  .breadcrumb .sep { margin: 0 8px; opacity: 0.4; }
-  .breadcrumb .current { color: var(--sx-accent-2); }
   .page-head h1 {
     font-size: clamp(36px, 5.5vw, 64px);
     line-height: 1.05;
@@ -102,6 +86,12 @@
     font-size: 17px; line-height: 1.6;
     color: var(--sx-muted);
     max-width: 640px; margin: 0 auto;
+  }
+  .page-head p.econ-line {
+    font-size: 18px; font-weight: 600;
+    color: var(--sx-accent-2);
+    max-width: 560px;
+    margin: 0 auto 16px;
   }
   .head-badges {
     display: flex; justify-content: center; gap: 10px;
@@ -568,6 +558,47 @@
   .chart-bar.last { background: var(--ink); opacity: 1; }
   .chart-axis { display: flex; justify-content: space-between; font-family: var(--sans); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-top: 6px; }
 
+  /* ════ WHY IT WORKS ════ */
+  .why-section {
+    border-top: 1px solid var(--sx-line);
+    padding: 72px 40px;
+  }
+  .why-inner { max-width: 1000px; margin: 0 auto; text-align: center; }
+  .why-kicker {
+    font-family: var(--mono); font-size: 11px; letter-spacing: 0.2em;
+    text-transform: uppercase; color: var(--sx-accent-2);
+    margin-bottom: 14px;
+  }
+  .why-inner h2 {
+    font-size: clamp(26px, 3.5vw, 40px);
+    line-height: 1.15; letter-spacing: -0.02em; font-weight: 700;
+    margin-bottom: 48px;
+  }
+  .why-grid {
+    display: grid; grid-template-columns: 1fr 1fr; gap: 40px;
+    text-align: left;
+  }
+  @media (max-width: 700px) { .why-grid { grid-template-columns: 1fr; } }
+  .why-col {
+    background: var(--sx-bg-2);
+    border: 1px solid var(--sx-line);
+    border-radius: 16px;
+    padding: 28px;
+  }
+  .why-col-head { display: flex; align-items: center; gap: 12px; margin-bottom: 24px; }
+  .why-col-icon {
+    width: 40px; height: 40px; border-radius: 10px;
+    background: linear-gradient(135deg, var(--sx-accent), #4A5FC7);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px; flex-shrink: 0;
+  }
+  .why-col-title { font-size: 17px; font-weight: 700; }
+  .why-col-sub { font-family: var(--mono); font-size: 11px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--sx-accent-2); margin-top: 2px; }
+  .why-point { padding: 14px 0; border-top: 1px solid var(--sx-line); }
+  .why-point:first-of-type { border-top: none; padding-top: 0; }
+  .why-point-title { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+  .why-point-body { font-size: 13px; line-height: 1.6; color: var(--sx-muted); }
+
   /* ════ FOOTER ════ */
   footer {
     border-top: 1px solid var(--sx-line);
@@ -586,23 +617,16 @@
 
 <!-- STALDEX NAV -->
 <nav>
-  <a href="#" class="sx-logo">
+  <a href="/" class="sx-logo">
     <div class="sx-logo-mark">S</div>
     staldex
   </a>
-  <div class="nav-links">
-    <a href="#">Products</a>
-    <a href="#">Case studies</a>
-    <a href="#">About</a>
-    <a href="#">Contact</a>
-  </div>
-  <button class="nav-cta">Work with us</button>
 </nav>
 
 <!-- PAGE HEADER -->
 <header class="page-head">
-  <div class="breadcrumb">staldex.com <span class="sep">/</span> products <span class="sep">/</span> <span class="current">cafepass</span></div>
   <h1>One platform.<br><span class="grad">Both sides of the counter.</span></h1>
+  <p class="econ-line">Guaranteed revenue for cafes, guaranteed savings for members: the subscription pays for itself at four visits a week — every coffee after that is a discount.</p>
   <p>CafePass is a subscription coffee membership built on the Staldex platform — a member app with order-ahead and daily QR redemption, and a zero-training tablet for cafes. Explore both live below.</p>
   <div class="head-badges">
     <span class="badge hl">LIVE INTERACTIVE DEMO</span>
@@ -965,6 +989,58 @@
     </div>
   </div>
 </main>
+
+<!-- WHY IT WORKS -->
+<section class="why-section">
+  <div class="why-inner">
+    <div class="why-kicker">The pitch</div>
+    <h2>Why cafes and members both say yes</h2>
+    <div class="why-grid">
+      <div class="why-col">
+        <div class="why-col-head">
+          <span class="why-col-icon">☕</span>
+          <div>
+            <div class="why-col-title">For cafes</div>
+            <div class="why-col-sub">Guaranteed revenue</div>
+          </div>
+        </div>
+        <div class="why-point">
+          <div class="why-point-title">Cash before the coffee's made</div>
+          <div class="why-point-body">Members pay monthly, upfront. That's predictable revenue on the books instead of hoping the weather's good for walk-ins.</div>
+        </div>
+        <div class="why-point">
+          <div class="why-point-title">Zero setup cost</div>
+          <div class="why-point-body">The tablet ships preconfigured. No POS integration, no training session, no IT callout — plug in and start scanning.</div>
+        </div>
+        <div class="why-point">
+          <div class="why-point-title">New customers, no ad spend</div>
+          <div class="why-point-body">Staldex brings the member base with it. You show up in the app; they show up at your counter.</div>
+        </div>
+      </div>
+      <div class="why-col">
+        <div class="why-col-head">
+          <span class="why-col-icon">💳</span>
+          <div>
+            <div class="why-col-title">For members</div>
+            <div class="why-col-sub">Guaranteed savings</div>
+          </div>
+        </div>
+        <div class="why-point">
+          <div class="why-point-title">Breaks even at four visits a week</div>
+          <div class="why-point-body">Hit your usual coffee run four times and the subscription's already paid for itself. Every visit after that is a discount, not a purchase.</div>
+        </div>
+        <div class="why-point">
+          <div class="why-point-title">One code, every partner cafe</div>
+          <div class="why-point-body">No new app per cafe, no separate loyalty card to lose. The same daily QR works across the whole network.</div>
+        </div>
+        <div class="why-point">
+          <div class="why-point-title">Order ahead, or don't</div>
+          <div class="why-point-body">Send your usual before you arrive and skip the queue, or just walk in and scan. The membership works either way — ordering is optional, the discount isn't.</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
 
 <!-- FOOTER -->
 <footer>
