@@ -1,0 +1,1154 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Staldex — CafePass Membership Platform</title>
+<style>
+  :root {
+    /* Staldex frame — cool, techy, dark */
+    --sx-bg: #0C0E12;
+    --sx-bg-2: #12151C;
+    --sx-ink: #E8EAF0;
+    --sx-muted: #7C8494;
+    --sx-line: #232833;
+    --sx-accent: #6E8BFF;
+    --sx-accent-2: #9DB2FF;
+
+    /* CafePass product palette — warm */
+    --bg: #F4EFE6;
+    --ink: #1A1410;
+    --ink-2: #3D2F22;
+    --muted: #8B7355;
+    --line: #E5DCC9;
+    --gold: #C9A876;
+    --gold-deep: #A8865A;
+    --paper: #FFFFFF;
+    --green: #2D5F3F;
+    --red: #7A2E2E;
+
+    --serif: Georgia, "Times New Roman", serif;
+    --sans: system-ui, -apple-system, "Segoe UI", sans-serif;
+    --mono: "SF Mono", "Cascadia Code", Consolas, monospace;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--sx-bg);
+    color: var(--sx-ink);
+    font-family: var(--sans);
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+  button { cursor: pointer; font-family: inherit; border: none; background: none; }
+  a { color: inherit; text-decoration: none; }
+  .hidden { display: none !important; }
+
+  /* ════ STALDEX NAV ════ */
+  nav {
+    position: sticky; top: 0; z-index: 100;
+    background: rgba(12, 14, 18, 0.85);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border-bottom: 1px solid var(--sx-line);
+    padding: 18px 40px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .sx-logo { display: flex; align-items: center; gap: 10px; font-weight: 700; font-size: 16px; letter-spacing: -0.01em; }
+  .sx-logo-mark {
+    width: 26px; height: 26px; border-radius: 7px;
+    background: linear-gradient(135deg, var(--sx-accent), #4A5FC7);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--mono); font-size: 13px; font-weight: 700; color: white;
+  }
+  .nav-links { display: flex; gap: 28px; font-size: 13px; color: var(--sx-muted); }
+  .nav-links a:hover { color: var(--sx-ink); }
+  .nav-cta {
+    font-size: 13px; font-weight: 600;
+    padding: 9px 18px; border-radius: 8px;
+    background: var(--sx-accent); color: white;
+    transition: background 0.2s;
+  }
+  .nav-cta:hover { background: #5A78F0; }
+  @media (max-width: 800px) { .nav-links { display: none; } nav { padding: 14px 20px; } }
+
+  /* ════ PAGE HEADER ════ */
+  .page-head {
+    max-width: 1200px; margin: 0 auto;
+    padding: 80px 40px 40px;
+    text-align: center;
+  }
+  .breadcrumb {
+    font-family: var(--mono);
+    font-size: 12px; color: var(--sx-muted);
+    margin-bottom: 24px;
+  }
+  .breadcrumb .sep { margin: 0 8px; opacity: 0.4; }
+  .breadcrumb .current { color: var(--sx-accent-2); }
+  .page-head h1 {
+    font-size: clamp(36px, 5.5vw, 64px);
+    line-height: 1.05;
+    letter-spacing: -0.03em;
+    font-weight: 700;
+    margin-bottom: 20px;
+  }
+  .page-head h1 .grad {
+    background: linear-gradient(90deg, var(--sx-accent-2), var(--sx-accent));
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+  .page-head p {
+    font-size: 17px; line-height: 1.6;
+    color: var(--sx-muted);
+    max-width: 640px; margin: 0 auto;
+  }
+  .head-badges {
+    display: flex; justify-content: center; gap: 10px;
+    margin-top: 28px; flex-wrap: wrap;
+  }
+  .badge {
+    font-family: var(--mono); font-size: 11px;
+    padding: 6px 14px; border-radius: 999px;
+    border: 1px solid var(--sx-line);
+    color: var(--sx-muted);
+    background: var(--sx-bg-2);
+  }
+  .badge.hl { border-color: var(--sx-accent); color: var(--sx-accent-2); }
+
+  /* ════ VIEW SWITCHER ════ */
+  .switcher-wrap {
+    display: flex; justify-content: center;
+    padding: 32px 20px 8px;
+    position: sticky; top: 65px; z-index: 90;
+  }
+  .switcher {
+    display: flex; gap: 4px; padding: 5px;
+    background: var(--sx-bg-2);
+    border: 1px solid var(--sx-line);
+    border-radius: 12px;
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
+  }
+  .switcher button {
+    padding: 10px 24px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    color: var(--sx-muted);
+    display: flex; align-items: center; gap: 8px;
+    transition: all 0.2s;
+  }
+  .switcher button.active {
+    background: var(--sx-accent); color: white;
+  }
+  .switcher button:not(.active):hover { color: var(--sx-ink); }
+
+  /* ════ SHOWCASE STAGE ════ */
+  .stage {
+    max-width: 1200px; margin: 0 auto;
+    padding: 32px 40px 80px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 56px;
+    align-items: start;
+  }
+  @media (max-width: 1000px) {
+    .stage { grid-template-columns: 1fr; gap: 40px; padding: 32px 20px 60px; }
+  }
+
+  /* Device glow effect */
+  .device-wrap {
+    position: relative;
+    margin: 0 auto;
+  }
+  .device-wrap::before {
+    content: '';
+    position: absolute;
+    inset: -40px;
+    background: radial-gradient(ellipse at center, rgba(110, 139, 255, 0.15), transparent 70%);
+    z-index: 0;
+    pointer-events: none;
+  }
+
+  /* ── Explainer panel ── */
+  .explain { padding-top: 24px; }
+  .explain-kicker {
+    font-family: var(--mono);
+    font-size: 11px; letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--sx-accent-2);
+    margin-bottom: 14px;
+  }
+  .explain h2 {
+    font-size: clamp(26px, 3vw, 38px);
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 700;
+    margin-bottom: 16px;
+  }
+  .explain > p {
+    font-size: 15px; line-height: 1.65;
+    color: var(--sx-muted);
+    margin-bottom: 28px;
+    max-width: 480px;
+  }
+  .feature-list { display: flex; flex-direction: column; gap: 2px; }
+  .feature {
+    display: flex; gap: 14px;
+    padding: 16px;
+    border-radius: 12px;
+    transition: background 0.2s;
+  }
+  .feature:hover { background: var(--sx-bg-2); }
+  .feature-icon {
+    width: 36px; height: 36px; border-radius: 10px;
+    background: var(--sx-bg-2);
+    border: 1px solid var(--sx-line);
+    display: flex; align-items: center; justify-content: center;
+    color: var(--sx-accent-2);
+    flex-shrink: 0;
+  }
+  .feature-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+  .feature-body { font-size: 13px; line-height: 1.55; color: var(--sx-muted); }
+  .feature-body code {
+    font-family: var(--mono); font-size: 11px;
+    background: var(--sx-bg-2);
+    border: 1px solid var(--sx-line);
+    padding: 1px 6px; border-radius: 4px;
+    color: var(--sx-accent-2);
+  }
+
+  /* ════════════════════════════════════════
+     DAILY GRIND DEVICE MOCKUPS (warm palette)
+     ════════════════════════════════════════ */
+
+  /* ── Phone ── */
+  .phone {
+    width: 350px;
+    background: #06070A;
+    border-radius: 50px;
+    padding: 11px;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+    position: relative; z-index: 1;
+  }
+  .phone-screen {
+    background: var(--bg);
+    border-radius: 40px;
+    height: 730px;
+    overflow: hidden;
+    display: flex; flex-direction: column;
+    font-family: var(--serif);
+    color: var(--ink);
+    position: relative;
+  }
+  .statusbar {
+    display: flex; justify-content: space-between;
+    padding: 13px 26px 4px;
+    font-family: var(--sans); font-size: 11px; font-weight: 600;
+  }
+  .p-content { flex: 1; padding: 10px 22px 16px; display: flex; flex-direction: column; overflow: hidden; }
+
+  .p-header { display: flex; justify-content: space-between; align-items: flex-start; }
+  .p-greet-k { font-family: var(--sans); font-size: 10px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); }
+  .p-greet-n { font-size: 22px; }
+  .p-kicker { font-family: var(--sans); font-size: 9px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); margin-top: 14px; }
+  .p-title { font-size: 22px; font-style: italic; margin-top: 2px; }
+
+  .usual-card {
+    margin-top: 12px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 15px;
+    position: relative;
+  }
+  .usual-badge {
+    position: absolute; top: -8px; left: 15px;
+    background: var(--gold); color: var(--ink);
+    font-family: var(--sans); font-size: 8px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.15em;
+    padding: 3px 9px; border-radius: 999px;
+  }
+  .usual-main { display: flex; align-items: center; gap: 12px; }
+  .usual-icon {
+    width: 44px; height: 44px; border-radius: 50%;
+    background: var(--ink); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .usual-drink { font-size: 18px; font-style: italic; line-height: 1.1; }
+  .usual-detail { font-family: var(--sans); font-size: 10.5px; color: var(--muted); margin-top: 2px; }
+  .edit-btn {
+    margin-left: auto;
+    font-family: var(--sans); font-size: 10px; font-weight: 600;
+    color: var(--gold-deep);
+    padding: 5px 11px;
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    flex-shrink: 0;
+  }
+  .options { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--line); }
+  .opt-label { font-family: var(--sans); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.12em; color: var(--muted); margin-bottom: 5px; }
+  .chip-row { display: flex; gap: 5px; flex-wrap: wrap; margin-bottom: 9px; }
+  .chip {
+    font-family: var(--sans); font-size: 10.5px; font-weight: 500;
+    padding: 6px 11px; border-radius: 999px;
+    border: 1px solid var(--line);
+    color: var(--ink-2); background: var(--bg);
+  }
+  .chip.on { background: var(--ink); color: var(--bg); border-color: var(--ink); font-weight: 600; }
+
+  .cafe-row {
+    margin-top: 10px;
+    display: flex; align-items: center; gap: 9px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 11px 13px;
+  }
+  .cafe-pin { color: var(--gold-deep); flex-shrink: 0; }
+  .cafe-name { font-family: var(--sans); font-size: 11.5px; font-weight: 600; }
+  .cafe-detail { font-family: var(--sans); font-size: 9.5px; color: var(--muted); }
+  .cafe-change { margin-left: auto; font-family: var(--sans); font-size: 10px; font-weight: 600; color: var(--gold-deep); }
+
+  .sent-banner {
+    margin-top: 10px;
+    background: var(--green); color: #F4EFE6;
+    border-radius: 14px;
+    padding: 11px 13px;
+    display: flex; align-items: center; gap: 10px;
+    animation: slideIn 0.4s ease-out;
+  }
+  @keyframes slideIn {
+    from { opacity: 0; transform: translateY(-8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .sent-check {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .sent-title { font-family: var(--sans); font-size: 11px; font-weight: 700; }
+  .sent-sub { font-family: var(--sans); font-size: 9.5px; opacity: 0.85; margin-top: 1px; }
+
+  .submit-btn {
+    margin-top: 12px; width: 100%;
+    padding: 14px; border-radius: 15px;
+    background: var(--ink); color: var(--bg);
+    font-family: var(--sans); font-size: 13px; font-weight: 600;
+    display: flex; align-items: center; justify-content: center; gap: 7px;
+    transition: transform 0.12s;
+  }
+  .submit-btn:active { transform: scale(0.97); }
+
+  .qr-section {
+    flex: 1;
+    display: flex; flex-direction: column;
+    align-items: center; justify-content: center;
+    margin-top: 6px;
+    min-height: 0;
+  }
+  .order-pill {
+    background: var(--paper);
+    border: 1px solid var(--gold);
+    border-radius: 999px;
+    padding: 6px 15px;
+    font-family: var(--sans); font-size: 10.5px; font-weight: 600;
+    color: var(--ink);
+    margin-bottom: 10px;
+    display: flex; align-items: center; gap: 7px;
+    animation: slideIn 0.4s ease-out 0.1s backwards;
+  }
+  .order-pill .dot { color: var(--gold-deep); }
+  .qr-card {
+    background: var(--ink);
+    border-radius: 20px;
+    padding: 20px;
+    transition: opacity 0.3s;
+  }
+  .qr-card.dimmed { opacity: 0.45; }
+  .qr-grid {
+    display: grid; grid-template-columns: repeat(19, 1fr); gap: 1.5px;
+    width: 140px; height: 140px;
+  }
+  .qr-cell { background: var(--bg); border-radius: 1px; }
+  .qr-cell.empty { background: transparent; }
+  .qr-caption {
+    margin-top: 9px;
+    font-family: var(--sans); font-size: 9.5px;
+    color: var(--muted); text-align: center;
+    max-width: 220px;
+  }
+  .qr-caption strong { color: var(--ink); font-weight: 600; }
+
+  .p-nav {
+    display: flex; justify-content: space-around;
+    padding: 11px 0 4px;
+    border-top: 1px solid var(--line);
+  }
+  .p-nav .bn {
+    display: flex; flex-direction: column; align-items: center; gap: 3px;
+    font-family: var(--sans); font-size: 8.5px;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted);
+  }
+  .p-nav .bn.active { color: var(--ink); font-weight: 700; }
+
+  .demo-reset {
+    position: absolute; top: 44px; right: 16px;
+    font-family: var(--sans); font-size: 9px;
+    color: var(--muted);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 4px 9px;
+    background: var(--bg);
+    z-index: 10;
+  }
+
+  /* ── Tablet ── */
+  .tablet {
+    width: 100%; max-width: 620px;
+    background: #06070A;
+    border-radius: 30px;
+    padding: 11px;
+    box-shadow: 0 40px 100px rgba(0,0,0,0.6), 0 0 0 1px rgba(255,255,255,0.06);
+    position: relative; z-index: 1;
+    margin: 0 auto;
+  }
+  .tablet-screen {
+    background: var(--bg);
+    border-radius: 21px;
+    min-height: 540px;
+    overflow: hidden;
+    font-family: var(--serif);
+    color: var(--ink);
+  }
+  .tablet-top {
+    background: var(--paper);
+    border-bottom: 1px solid var(--line);
+    padding: 11px 22px;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  .t-brand { display: flex; align-items: center; gap: 10px; }
+  .t-brand-logo {
+    width: 26px; height: 26px; border-radius: 50%;
+    background: var(--ink); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+  }
+  .t-brand-name { font-family: var(--sans); font-size: 12px; font-weight: 600; }
+  .t-brand-sub { font-family: var(--sans); font-size: 9px; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  .t-tabs { display: flex; gap: 6px; }
+  .t-tab {
+    padding: 7px 14px; border-radius: 999px;
+    font-family: var(--sans); font-size: 10px; font-weight: 600;
+    text-transform: uppercase; letter-spacing: 0.1em;
+    color: var(--muted); border: 1px solid var(--line);
+    transition: all 0.2s;
+  }
+  .t-tab.active { background: var(--ink); color: var(--bg); border-color: var(--ink); }
+  .t-tab .count {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-width: 15px; height: 15px;
+    background: var(--gold); color: var(--ink);
+    border-radius: 999px;
+    font-size: 8.5px; margin-left: 4px;
+  }
+
+  .t-content { padding: 24px; }
+
+  /* Queue */
+  .queue-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 18px; }
+  .q-kicker { font-family: var(--sans); font-size: 10px; text-transform: uppercase; letter-spacing: 0.2em; color: var(--muted); }
+  .q-title { font-size: 24px; font-style: italic; }
+  .queue-list { display: flex; flex-direction: column; gap: 8px; }
+  .q-item {
+    display: flex; align-items: center; gap: 12px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 14px;
+    padding: 13px 15px;
+    transition: all 0.3s;
+  }
+  .q-item.incoming { border-color: var(--gold); box-shadow: 0 0 0 3px rgba(201, 168, 118, 0.15); }
+  .q-item.done { opacity: 0.45; }
+  .q-num {
+    width: 38px; height: 38px; border-radius: 10px;
+    background: var(--ink); color: var(--gold);
+    display: flex; align-items: center; justify-content: center;
+    font-family: var(--sans); font-size: 11px; font-weight: 700;
+    flex-shrink: 0;
+  }
+  .q-drink { font-family: var(--sans); font-size: 13px; font-weight: 600; }
+  .q-meta { font-family: var(--sans); font-size: 10px; color: var(--muted); margin-top: 1px; }
+  .q-action {
+    margin-left: auto;
+    font-family: var(--sans); font-size: 10.5px; font-weight: 700;
+    padding: 8px 15px; border-radius: 999px;
+    flex-shrink: 0;
+    transition: all 0.15s;
+  }
+  .q-action.ready { background: var(--ink); color: var(--bg); }
+  .q-action.ready:active { transform: scale(0.95); }
+  .q-action.waiting { border: 1px solid var(--line); color: var(--muted); cursor: default; }
+  .q-action.collected { color: var(--green); cursor: default; }
+
+  /* Scanner */
+  .scanner-wrap { display: flex; flex-direction: column; align-items: center; }
+  .s-kicker { font-family: var(--sans); font-size: 10px; text-transform: uppercase; letter-spacing: 0.25em; color: var(--muted); margin-bottom: 6px; }
+  .s-title { font-size: 24px; font-style: italic; margin-bottom: 18px; }
+  .scanner-box {
+    position: relative; width: 250px; height: 250px;
+    background: var(--ink);
+    border-radius: 20px;
+    display: flex; align-items: center; justify-content: center;
+    overflow: hidden; margin-bottom: 18px;
+    transition: background 0.3s;
+  }
+  .scanner-box.success { background: var(--green); }
+  .scanner-box.denied { background: var(--red); }
+  .corner { position: absolute; width: 28px; height: 28px; }
+  .corner.tl { top: 16px; left: 16px; border-top: 3px solid var(--gold); border-left: 3px solid var(--gold); }
+  .corner.tr { top: 16px; right: 16px; border-top: 3px solid var(--gold); border-right: 3px solid var(--gold); }
+  .corner.bl { bottom: 16px; left: 16px; border-bottom: 3px solid var(--gold); border-left: 3px solid var(--gold); }
+  .corner.br { bottom: 16px; right: 16px; border-bottom: 3px solid var(--gold); border-right: 3px solid var(--gold); }
+  .s-idle-label { font-family: var(--sans); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); opacity: 0.7; margin-top: 10px; text-align: center; }
+  .spinner {
+    width: 54px; height: 54px; border-radius: 50%;
+    border: 4px solid var(--gold); border-top-color: transparent;
+    animation: spin 0.8s linear infinite;
+    margin: 0 auto;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .result-content { text-align: center; color: white; }
+  .result-circle {
+    width: 68px; height: 68px; border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    margin: 0 auto 6px;
+  }
+  .result-title { font-size: 20px; font-style: italic; }
+  .result-sub { font-family: var(--sans); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; opacity: 0.85; margin-top: 3px; }
+  .result-order {
+    margin-top: 8px;
+    font-family: var(--sans); font-size: 11px; font-weight: 700;
+    background: rgba(255,255,255,0.15);
+    padding: 5px 14px; border-radius: 999px;
+    display: inline-block;
+  }
+  .scanner-buttons { display: flex; gap: 10px; }
+  .btn-dark {
+    padding: 11px 20px; border-radius: 999px;
+    background: var(--ink); color: var(--bg);
+    font-family: var(--sans); font-size: 11.5px; font-weight: 600;
+  }
+  .btn-outline {
+    padding: 11px 20px; border-radius: 999px;
+    border: 1px solid var(--ink); color: var(--ink);
+    font-family: var(--sans); font-size: 11.5px; font-weight: 600;
+  }
+  .s-hint { font-family: var(--sans); font-size: 10px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-top: 4px; }
+
+  /* Insights */
+  .big-stat-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 18px; }
+  .big-stat {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 14px; padding: 14px;
+  }
+  .bs-label { font-family: var(--sans); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-bottom: 3px; }
+  .bs-value { font-size: 20px; font-style: italic; }
+  .bs-delta { font-family: var(--sans); font-size: 10px; font-weight: 600; color: var(--green); margin-top: 3px; }
+  .chart-card {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 14px; padding: 16px;
+  }
+  .chart-head { display: flex; justify-content: space-between; margin-bottom: 12px; }
+  .chart-title { font-family: var(--sans); font-size: 11.5px; font-weight: 600; }
+  .chart-sub { font-family: var(--sans); font-size: 10px; color: var(--muted); }
+  .chart-bars { display: flex; align-items: flex-end; gap: 5px; height: 95px; }
+  .chart-bar { flex: 1; border-radius: 3px 3px 0 0; background: var(--gold); opacity: 0.8; }
+  .chart-bar.last { background: var(--ink); opacity: 1; }
+  .chart-axis { display: flex; justify-content: space-between; font-family: var(--sans); font-size: 8.5px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); margin-top: 6px; }
+
+  /* ════ FOOTER ════ */
+  footer {
+    border-top: 1px solid var(--sx-line);
+    padding: 40px;
+    display: flex; justify-content: space-between; align-items: center;
+    max-width: 1200px; margin: 0 auto;
+    font-size: 13px; color: var(--sx-muted);
+    flex-wrap: wrap; gap: 16px;
+  }
+  .foot-logo { display: flex; align-items: center; gap: 8px; font-weight: 700; color: var(--sx-ink); }
+  .foot-links { display: flex; gap: 24px; }
+  .foot-links a:hover { color: var(--sx-ink); }
+</style>
+</head>
+<body>
+
+<!-- STALDEX NAV -->
+<nav>
+  <a href="#" class="sx-logo">
+    <div class="sx-logo-mark">S</div>
+    staldex
+  </a>
+  <div class="nav-links">
+    <a href="#">Products</a>
+    <a href="#">Case studies</a>
+    <a href="#">About</a>
+    <a href="#">Contact</a>
+  </div>
+  <button class="nav-cta">Work with us</button>
+</nav>
+
+<!-- PAGE HEADER -->
+<header class="page-head">
+  <div class="breadcrumb">staldex.com <span class="sep">/</span> products <span class="sep">/</span> <span class="current">cafepass</span></div>
+  <h1>One platform.<br><span class="grad">Both sides of the counter.</span></h1>
+  <p>CafePass is a subscription coffee membership built on the Staldex platform — a member app with order-ahead and daily QR redemption, and a zero-training tablet for cafes. Explore both live below.</p>
+  <div class="head-badges">
+    <span class="badge hl">LIVE INTERACTIVE DEMO</span>
+    <span class="badge">Single-scan redemption</span>
+    <span class="badge">Order-ahead queue</span>
+    <span class="badge">Monthly settlement</span>
+  </div>
+</header>
+
+<!-- VIEW SWITCHER -->
+<div class="switcher-wrap">
+  <div class="switcher">
+    <button id="sw-member" class="active" onclick="switchView('member')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="5" y="2" width="14" height="20" rx="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg>
+      Member app
+    </button>
+    <button id="sw-cafe" onclick="switchView('cafe')">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="4" width="20" height="16" rx="2"/><line x1="12" y1="20" x2="12.01" y2="20"/></svg>
+      Cafe tablet
+    </button>
+  </div>
+</div>
+
+<!-- ═══════════ MEMBER VIEW ═══════════ -->
+<main id="view-member" class="stage">
+  <div class="device-wrap">
+    <div class="phone">
+      <div class="phone-screen">
+        <div class="statusbar"><span>7:52</span><span>●●●● 5G</span></div>
+        <button class="demo-reset hidden" id="demo-reset" onclick="resetMember()">↺ reset</button>
+
+        <div class="p-content">
+          <div class="p-header">
+            <div>
+              <div class="p-greet-k">Good morning</div>
+              <div class="p-greet-n">Leon</div>
+            </div>
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#8B7355" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg>
+          </div>
+
+          <div class="p-kicker" id="m-kicker">Today's coffee</div>
+          <div class="p-title" id="m-title">The usual?</div>
+
+          <div class="usual-card">
+            <div class="usual-badge">Your usual</div>
+            <div class="usual-main">
+              <div class="usual-icon">
+                <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+              </div>
+              <div>
+                <div class="usual-drink" id="drink-name">Flat white</div>
+                <div class="usual-detail" id="drink-detail">Full cream · Regular · Extra hot</div>
+              </div>
+              <button class="edit-btn" id="edit-btn" onclick="toggleEdit()">Edit</button>
+            </div>
+
+            <div class="options hidden" id="options">
+              <div class="opt-label">Drink</div>
+              <div class="chip-row" data-group="drink">
+                <button class="chip on" onclick="pick(this)">Flat white</button>
+                <button class="chip" onclick="pick(this)">Long black</button>
+                <button class="chip" onclick="pick(this)">Cap</button>
+                <button class="chip" onclick="pick(this)">Latte</button>
+                <button class="chip" onclick="pick(this)">Piccolo</button>
+                <button class="chip" onclick="pick(this)">Magic</button>
+              </div>
+              <div class="opt-label">Milk</div>
+              <div class="chip-row" data-group="milk">
+                <button class="chip on" onclick="pick(this)">Full cream</button>
+                <button class="chip" onclick="pick(this)">Skim</button>
+                <button class="chip" onclick="pick(this)">Oat</button>
+                <button class="chip" onclick="pick(this)">Almond</button>
+              </div>
+              <div class="opt-label">Extras</div>
+              <div class="chip-row" data-group="extras" data-multi="true">
+                <button class="chip on" onclick="pickMulti(this)">Extra hot</button>
+                <button class="chip" onclick="pickMulti(this)">Extra shot</button>
+                <button class="chip" onclick="pickMulti(this)">1 sugar</button>
+              </div>
+            </div>
+          </div>
+
+          <div class="cafe-row">
+            <div class="cafe-pin">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>
+            </div>
+            <div>
+              <div class="cafe-name">Ember &amp; Bean, Leederville</div>
+              <div class="cafe-detail">280m away · Quiet right now</div>
+            </div>
+            <button class="cafe-change">Change</button>
+          </div>
+
+          <div class="sent-banner hidden" id="sent-banner">
+            <div class="sent-check">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+            </div>
+            <div>
+              <div class="sent-title">Order sent to the cafe</div>
+              <div class="sent-sub" id="sent-sub">Flat white · ready in ~4 min</div>
+            </div>
+          </div>
+
+          <button class="submit-btn" id="submit-btn" onclick="submitOrder()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+            Send my order
+          </button>
+
+          <div class="qr-section">
+            <div class="order-pill hidden" id="order-pill">
+              <span id="pill-text">Flat white</span>
+              <span class="dot">●</span>
+              <span>Order #47</span>
+            </div>
+            <div class="qr-card dimmed" id="qr-card">
+              <div class="qr-grid" id="qr-grid-phone"></div>
+            </div>
+            <div class="qr-caption" id="qr-caption">
+              Your CafePass — <strong>works with or without ordering ahead</strong>
+            </div>
+          </div>
+        </div>
+
+        <div class="p-nav">
+          <button class="bn active">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+            Today
+          </button>
+          <button class="bn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
+            Plan
+          </button>
+          <button class="bn">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            History
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="explain">
+    <div class="explain-kicker">Member experience</div>
+    <h2>The usual, remembered. One tap to order, one code to collect.</h2>
+    <p>The app opens to the member's saved order and nearest partner cafe. Sending the order ahead is optional — the daily QR works either way.</p>
+
+    <div class="feature-list">
+      <div class="feature">
+        <div class="feature-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.9 5.8L20 10l-5 4 1.5 6L12 17l-4.5 3L9 14l-5-4 6.1-1.2z"/></svg>
+        </div>
+        <div>
+          <div class="feature-title">Preprogrammed usual order</div>
+          <div class="feature-body">Saved drink, milk, and extras load on open. Chip-based editing — two taps to switch to an oat latte, not a menu tree.</div>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>
+        </div>
+        <div>
+          <div class="feature-title">Order-ahead, optional</div>
+          <div class="feature-body">Submit sends the order to the cafe tablet queue with an order number. Members who'd rather just walk in still can — the QR is independent of ordering.</div>
+        </div>
+      </div>
+      <div class="feature">
+        <div class="feature-icon">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        </div>
+        <div>
+          <div class="feature-title">Single-scan daily credential</div>
+          <div class="feature-body">One QR per member per day, minted at 4am, burned on scan. Rotating signed tokens — screenshots don't work twice. <code>1 scan / 24h</code></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- ═══════════ CAFE VIEW ═══════════ -->
+<main id="view-cafe" class="stage hidden" style="grid-template-columns: 1fr;">
+  <div style="display: grid; grid-template-columns: 1fr auto; gap: 56px; align-items: start;" class="cafe-inner">
+    <div class="device-wrap" style="width: 100%;">
+      <div class="tablet">
+        <div class="tablet-screen">
+          <div class="tablet-top">
+            <div class="t-brand">
+              <div class="t-brand-logo">
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 8h1a4 4 0 1 1 0 8h-1"/><path d="M3 8h14v9a4 4 0 0 1-4 4H7a4 4 0 0 1-4-4Z"/><line x1="6" y1="2" x2="6" y2="4"/><line x1="10" y1="2" x2="10" y2="4"/><line x1="14" y1="2" x2="14" y2="4"/></svg>
+              </div>
+              <div>
+                <div class="t-brand-name">Ember &amp; Bean</div>
+                <div class="t-brand-sub">Leederville · CafePass partner</div>
+              </div>
+            </div>
+            <div class="t-tabs">
+              <button id="t-queue" class="t-tab active" onclick="showTab('queue')">Queue <span class="count" id="queue-count">2</span></button>
+              <button id="t-scanner" class="t-tab" onclick="showTab('scanner')">Scan</button>
+              <button id="t-insights" class="t-tab" onclick="showTab('insights')">Insights</button>
+            </div>
+          </div>
+
+          <!-- QUEUE -->
+          <div id="tab-queue" class="t-content">
+            <div class="queue-header">
+              <div>
+                <div class="q-kicker">Order-ahead</div>
+                <div class="q-title">Incoming</div>
+              </div>
+            </div>
+            <div class="queue-list" id="queue-list">
+              <div class="q-item incoming" id="q-47">
+                <div class="q-num">#47</div>
+                <div>
+                  <div class="q-drink">Flat white · Extra hot</div>
+                  <div class="q-meta">Leon O. · sent just now · walking, ~4 min away</div>
+                </div>
+                <button class="q-action ready" onclick="markReady('q-47')">Mark ready</button>
+              </div>
+              <div class="q-item">
+                <div class="q-num">#46</div>
+                <div>
+                  <div class="q-drink">Oat latte</div>
+                  <div class="q-meta">Priya R. · 2 min ago · in store</div>
+                </div>
+                <button class="q-action waiting">Making…</button>
+              </div>
+              <div class="q-item done">
+                <div class="q-num">#45</div>
+                <div>
+                  <div class="q-drink">Long black</div>
+                  <div class="q-meta">James K. · collected 8:31 am</div>
+                </div>
+                <span class="q-action collected">✓ Collected</span>
+              </div>
+              <div class="q-item done">
+                <div class="q-num">#44</div>
+                <div>
+                  <div class="q-drink">Cappuccino</div>
+                  <div class="q-meta">Sarah M. · collected 8:12 am</div>
+                </div>
+                <span class="q-action collected">✓ Collected</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- SCANNER -->
+          <div id="tab-scanner" class="t-content hidden">
+            <div class="scanner-wrap">
+              <div class="s-kicker">Scanner</div>
+              <div class="s-title">Show me your code</div>
+              <div id="scanner-box" class="scanner-box">
+                <div id="scan-idle">
+                  <div class="corner tl"></div><div class="corner tr"></div>
+                  <div class="corner bl"></div><div class="corner br"></div>
+                  <div style="text-align:center;">
+                    <svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#C9A876" stroke-width="1" opacity="0.6"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+                    <div class="s-idle-label">Ready</div>
+                  </div>
+                </div>
+                <div id="scan-scanning" class="hidden" style="text-align:center;">
+                  <div class="spinner"></div>
+                  <div class="s-idle-label">Verifying…</div>
+                </div>
+                <div id="scan-success" class="hidden">
+                  <div class="result-content">
+                    <div class="result-circle">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+                    </div>
+                    <div class="result-title">Approved</div>
+                    <div class="result-sub">Leon O. · Member since Mar 2025</div>
+                    <div class="result-order">Collecting order #47 · Flat white</div>
+                  </div>
+                </div>
+                <div id="scan-denied" class="hidden">
+                  <div class="result-content">
+                    <div class="result-circle">
+                      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                    </div>
+                    <div class="result-title">Already used today</div>
+                    <div class="result-sub">Redeemed 7:14 am at Sister Roastery</div>
+                  </div>
+                </div>
+              </div>
+              <div id="scanner-controls" class="scanner-buttons">
+                <button class="btn-dark" onclick="simulateScan('success')">Simulate valid scan</button>
+                <button class="btn-outline" onclick="simulateScan('denied')">Simulate denied</button>
+              </div>
+              <div id="scanner-status" class="s-hint hidden">Hold steady</div>
+            </div>
+          </div>
+
+          <!-- INSIGHTS -->
+          <div id="tab-insights" class="t-content hidden">
+            <div class="q-kicker">May 2026</div>
+            <div class="q-title" style="margin-bottom: 18px;">Insights</div>
+            <div class="big-stat-grid">
+              <div class="big-stat">
+                <div class="bs-label">Redemptions</div>
+                <div class="bs-value">287</div>
+                <div class="bs-delta">+18%</div>
+              </div>
+              <div class="big-stat">
+                <div class="bs-label">Active members</div>
+                <div class="bs-value">64</div>
+                <div class="bs-delta">+9</div>
+              </div>
+              <div class="big-stat">
+                <div class="bs-label">Payout (MTD)</div>
+                <div class="bs-value">$1,205</div>
+                <div class="bs-delta">+22%</div>
+              </div>
+            </div>
+            <div class="chart-card">
+              <div class="chart-head">
+                <div class="chart-title">Daily redemptions</div>
+                <div class="chart-sub">Last 14 days</div>
+              </div>
+              <div class="chart-bars" id="chart-bars"></div>
+              <div class="chart-axis"><span>11 May</span><span>Today</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="explain" style="max-width: 380px;">
+      <div class="explain-kicker">Cafe experience</div>
+      <h2>Zero training. The queue, the scan, the numbers.</h2>
+      <p>The tablet ships preconfigured. Baristas see incoming order-ahead drinks, scan daily codes, and owners get their payout numbers — nothing to install, nothing to learn.</p>
+
+      <div class="feature-list">
+        <div class="feature">
+          <div class="feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+          </div>
+          <div>
+            <div class="feature-title">Live order queue</div>
+            <div class="feature-body">Order-ahead drinks land with the member's ETA. Mark ready, and the scan-to-collect ties the cup to the code — no shouted names.</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+          </div>
+          <div>
+            <div class="feature-title">Instant verdicts</div>
+            <div class="feature-body">Green or red in under a second, with the reason. Double-redemption attempts show where and when the code was already used.</div>
+          </div>
+        </div>
+        <div class="feature">
+          <div class="feature-icon">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+          </div>
+          <div>
+            <div class="feature-title">Owner insights</div>
+            <div class="feature-body">Redemption volume, active member count, and payout month-to-date. Settlement lands by direct deposit on the 5th. <code>$/cup × scans</code></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-logo">
+    <div class="sx-logo-mark">S</div>
+    staldex
+  </div>
+  <div class="foot-links">
+    <a href="#">Privacy</a>
+    <a href="#">Terms</a>
+    <a href="#">hello@staldex.com</a>
+  </div>
+  <div>© 2026 Staldex · Perth, WA</div>
+</footer>
+
+<script>
+  /* ── View switching ── */
+  function switchView(v) {
+    document.getElementById('view-member').classList.toggle('hidden', v !== 'member');
+    document.getElementById('view-cafe').classList.toggle('hidden', v !== 'cafe');
+    document.getElementById('sw-member').classList.toggle('active', v === 'member');
+    document.getElementById('sw-cafe').classList.toggle('active', v === 'cafe');
+  }
+
+  /* ── QR render ── */
+  const pattern = [
+    [1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1],
+    [1,0,0,0,0,0,1,0,1,1,0,1,1,0,0,0,0,0,1],
+    [1,0,1,1,1,0,1,0,0,1,1,0,1,0,1,1,1,0,1],
+    [1,0,1,1,1,0,1,1,0,0,1,1,1,0,1,1,1,0,1],
+    [1,0,1,1,1,0,1,0,1,0,0,0,1,0,1,1,1,0,1],
+    [1,0,0,0,0,0,1,0,1,1,1,0,1,0,0,0,0,0,1],
+    [1,1,1,1,1,1,1,0,1,0,1,0,1,1,1,1,1,1,1],
+    [0,0,0,0,0,0,0,0,0,1,0,0,0,0,0,0,0,0,0],
+    [1,0,1,1,0,1,1,1,0,0,1,0,1,1,0,0,1,0,1],
+    [0,1,0,0,1,1,0,1,1,1,0,1,1,0,1,1,0,1,0],
+    [1,0,1,1,0,0,1,0,0,1,1,0,1,0,1,0,1,0,1],
+    [0,1,1,0,1,1,0,1,1,0,0,1,0,1,0,1,0,1,1],
+    [1,0,1,0,1,0,1,0,1,1,1,0,1,1,1,0,1,1,0],
+    [0,0,0,0,0,0,0,0,1,0,0,1,1,0,1,0,0,1,1],
+    [1,1,1,1,1,1,1,0,0,1,0,1,1,1,1,0,1,0,0],
+    [1,0,0,0,0,0,1,0,1,0,1,0,0,1,0,1,1,1,0],
+    [1,0,1,1,1,0,1,0,0,1,1,1,1,0,1,0,1,1,1],
+    [1,0,1,1,1,0,1,0,1,1,0,0,0,1,0,1,0,0,1],
+    [1,1,1,1,1,1,1,0,1,0,1,1,1,0,1,1,1,0,1],
+  ];
+  const grid = document.getElementById('qr-grid-phone');
+  pattern.flat().forEach(c => {
+    const d = document.createElement('div');
+    d.className = 'qr-cell' + (c ? '' : ' empty');
+    grid.appendChild(d);
+  });
+
+  /* ── Member: edit/order flow ── */
+  let editing = false;
+  function currentOrder() {
+    const drink = document.querySelector('[data-group="drink"] .chip.on')?.textContent || 'Flat white';
+    const milk = document.querySelector('[data-group="milk"] .chip.on')?.textContent || 'Full cream';
+    const extras = [...document.querySelectorAll('[data-group="extras"] .chip.on')].map(c => c.textContent);
+    return { drink, milk, extras };
+  }
+  function refreshCard() {
+    const o = currentOrder();
+    document.getElementById('drink-name').textContent = o.drink;
+    document.getElementById('drink-detail').textContent = [o.milk, 'Regular', ...o.extras].join(' · ');
+  }
+  function toggleEdit() {
+    editing = !editing;
+    document.getElementById('options').classList.toggle('hidden', !editing);
+    document.getElementById('edit-btn').textContent = editing ? 'Done' : 'Edit';
+    if (!editing) refreshCard();
+  }
+  function pick(btn) {
+    btn.closest('.chip-row').querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    btn.classList.add('on');
+    refreshCard();
+  }
+  function pickMulti(btn) { btn.classList.toggle('on'); refreshCard(); }
+
+  function submitOrder() {
+    if (editing) toggleEdit();
+    const o = currentOrder();
+    const btn = document.getElementById('submit-btn');
+    btn.innerHTML = 'Sending…';
+    btn.style.opacity = '0.7';
+    setTimeout(() => {
+      btn.classList.add('hidden');
+      document.getElementById('sent-banner').classList.remove('hidden');
+      document.getElementById('sent-sub').textContent = o.drink + ' · ready in ~4 min';
+      document.getElementById('qr-card').classList.remove('dimmed');
+      document.getElementById('order-pill').classList.remove('hidden');
+      document.getElementById('pill-text').textContent = o.drink;
+      document.getElementById('qr-caption').innerHTML = 'Show this at the counter — <strong>scanning collects your order</strong>';
+      document.getElementById('m-kicker').textContent = 'Order in';
+      document.getElementById('m-title').textContent = 'On its way';
+      document.getElementById('edit-btn').classList.add('hidden');
+      document.getElementById('demo-reset').classList.remove('hidden');
+    }, 900);
+  }
+  function resetMember() {
+    const btn = document.getElementById('submit-btn');
+    btn.classList.remove('hidden');
+    btn.style.opacity = '1';
+    btn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/></svg> Send my order`;
+    document.getElementById('sent-banner').classList.add('hidden');
+    document.getElementById('order-pill').classList.add('hidden');
+    document.getElementById('qr-card').classList.add('dimmed');
+    document.getElementById('qr-caption').innerHTML = 'Your CafePass — <strong>works with or without ordering ahead</strong>';
+    document.getElementById('m-kicker').textContent = "Today's coffee";
+    document.getElementById('m-title').textContent = 'The usual?';
+    document.getElementById('edit-btn').classList.remove('hidden');
+    document.getElementById('demo-reset').classList.add('hidden');
+  }
+
+  /* ── Cafe: tab switching ── */
+  function showTab(t) {
+    ['queue','scanner','insights'].forEach(s => {
+      document.getElementById('tab-' + s).classList.toggle('hidden', s !== t);
+      document.getElementById('t-' + s).classList.toggle('active', s === t);
+    });
+  }
+
+  /* ── Cafe: queue actions ── */
+  function markReady(id) {
+    const item = document.getElementById(id);
+    item.classList.remove('incoming');
+    const btn = item.querySelector('.q-action');
+    btn.textContent = 'Ready — awaiting scan';
+    btn.className = 'q-action waiting';
+    const count = document.getElementById('queue-count');
+    count.textContent = Math.max(0, parseInt(count.textContent) - 1);
+  }
+
+  /* ── Cafe: scanner simulation ── */
+  function simulateScan(result) {
+    const box = document.getElementById('scanner-box');
+    document.getElementById('scan-idle').classList.add('hidden');
+    document.getElementById('scan-scanning').classList.remove('hidden');
+    document.getElementById('scanner-controls').classList.add('hidden');
+    const status = document.getElementById('scanner-status');
+    status.classList.remove('hidden');
+    status.textContent = 'Hold steady';
+
+    setTimeout(() => {
+      document.getElementById('scan-scanning').classList.add('hidden');
+      if (result === 'success') {
+        box.classList.add('success');
+        document.getElementById('scan-success').classList.remove('hidden');
+      } else {
+        box.classList.add('denied');
+        document.getElementById('scan-denied').classList.remove('hidden');
+      }
+      status.textContent = 'Returning to scanner…';
+      setTimeout(() => {
+        box.classList.remove('success', 'denied');
+        document.getElementById('scan-success').classList.add('hidden');
+        document.getElementById('scan-denied').classList.add('hidden');
+        document.getElementById('scan-idle').classList.remove('hidden');
+        document.getElementById('scanner-controls').classList.remove('hidden');
+        status.classList.add('hidden');
+      }, 2500);
+    }, 1000);
+  }
+
+  /* ── Insights chart ── */
+  const days = [12, 18, 14, 22, 19, 26, 21, 17, 24, 28, 23, 19, 25, 31];
+  const max = Math.max(...days);
+  const chart = document.getElementById('chart-bars');
+  days.forEach((d, i) => {
+    const bar = document.createElement('div');
+    bar.className = 'chart-bar' + (i === days.length - 1 ? ' last' : '');
+    bar.style.height = ((d / max) * 100) + '%';
+    chart.appendChild(bar);
+  });
+
+  /* Responsive fix for cafe inner grid */
+  const mq = window.matchMedia('(max-width: 1000px)');
+  function fixCafeGrid() {
+    const inner = document.querySelector('.cafe-inner');
+    if (inner) inner.style.gridTemplateColumns = mq.matches ? '1fr' : '1fr auto';
+  }
+  mq.addEventListener('change', fixCafeGrid);
+  fixCafeGrid();
+</script>
+
+</body>
+</html>
