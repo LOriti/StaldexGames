@@ -27,7 +27,12 @@ Current panels:
 - **Cubicle** (`.vitals`): full Vitals 365 skin. Deep purple header bar `#33344a` with white
   V chip, sheet background `#f5f5f5`, white Teams cards (8px radius, soft shadow), Teams
   purple `#6264a7` primary buttons, meter bars, Segoe-first font stack. Leaderboard renders
-  inside this skin. Copy inside the panel uses the game's dashboard voice.
+  inside this skin (top 10 per board, split length/difficulty selectors). Copy inside the
+  panel uses the game's dashboard voice.
+- **CafePass** (`.cafepass`): warm coffee palette lifted from the product — cream sheet
+  `#F4EFE6`, dark ink `#1A1410` header with gold `#C9A876` accents, Georgia serif for
+  drink names, sans for UI chrome. Shows the "usual order" card, feature badges, and a
+  "View brief" CTA through to `cafepass.html`.
 
 ## Quality floor
 Responsive to mobile, visible keyboard focus, reduced-motion respected, no external fonts

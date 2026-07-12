@@ -129,7 +129,8 @@ async function handleSubmit(request, env) {
 
 async function handleLeaderboard(url, env) {
   const mode = VALID_MODES.has(url.searchParams.get('mode')) ? url.searchParams.get('mode') : 'week_normal';
-  const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '20', 10) || 20, 1), 50);
+  // Boards are top-10 only — better weeks push the junk off the bottom.
+  const limit = Math.min(Math.max(parseInt(url.searchParams.get('limit') || '10', 10) || 10, 1), 10);
   const uuid = url.searchParams.get('uuid');
 
   const rows = await env.DB.prepare(

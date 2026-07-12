@@ -4,17 +4,30 @@ A summary of every system change made across the build, from the first prototype
 
 ---
 
-## v1.0.5 (versionCode 6) — UI pass + project moved into GitHub
+## v1.0.5 (versionCode 6) — UI pass, leaderboard, project moved into GitHub
+
+> **Status: web-only.** This version shipped to staldex.com/cubicle but was never built
+> as an Android release — the native app is parked at v1.0.4 for now. If/when Android
+> resumes, this is the pending versionCode 6 build.
 
 - **Desktop phone-frame layout**: the game now renders inside a 480×900px frame,
   centered with a letterboxed background, when opened in a desktop browser (previously
   stretched full-bleed). No change on the native app, which already fills the screen.
-- **Mode-select order**: 3-Day Sprint now listed above Full Week.
+- **Mode-select**: 3-Day Sprint listed above Full Week and pre-selected as the default.
 - **DNF outcome**: a wellbeing incident (shart/cardiac/fired-for-pattern) now runs into
   the full end-of-week summary — ratings, day strip, next-week punchline — with a red
-  "DNF" grade badge, instead of jumping to a separate bare game-over screen. Leaderboard
-  submission still stays hidden on a DNF, per the existing "only survived weeks post"
-  rule in `DEPLOY.md`.
+  "DNF" grade badge, instead of jumping to a separate bare game-over screen. DNF runs
+  CAN submit to the leaderboard (grade shows as "DNF").
+- **Leaderboard live** at `staldex.com/api/cubicle` (Cloudflare Worker + D1): name +
+  best-score-per-board submission, six boards ({week|sprint} × {normal|hungover|openplan}),
+  six personality ratings stored and the standout trait shown per entry. Boards are
+  hard-capped at top 10 — better weeks push the junk off the bottom.
+- **Week-end modal**: Week summary / Leaderboard tab toggle (replaces the stacking
+  "View leaderboard" button that overflowed the screen); board auto-refreshes after
+  submitting; split length/difficulty selectors defaulting to the mode just played;
+  column headers (#, Name, Grade, Trait, Tasks, Days, Score); lock-ins/blackouts/
+  combos/boss-warnings condensed to one icon-chip strip.
+- **Resign button** in the header — abandon the run and return to the mode select.
 - **Project relocated**: the whole Capacitor/Android project moved from a local-only
   folder into `StaldexGames/cubicle-app/` — see the versioning protocol at the top of
   `RELEASE.md`. Everything now lives in git; no more ad-hoc `.bak` copies.

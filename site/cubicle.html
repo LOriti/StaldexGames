@@ -3206,6 +3206,11 @@ async function submitScore() {
       status.textContent = data.flagged
         ? `Rank #${data.rank}. (Flagged for review — HR has questions.)`
         : `You're #${data.rank} on the ${lbMode().replace('_', ' ')} board.`;
+      // Point the viewer at the board just submitted to and refresh it —
+      // otherwise the table below still shows whatever was loaded before submitting.
+      document.getElementById('lbLength').value = MODE.length === 3 ? 'sprint' : 'week';
+      document.getElementById('lbDiff').value = MODE.difficulty;
+      viewLeaderboard();
     } else {
       status.textContent = data.error === 'rate limited — take a walk' ? data.error : 'Submission failed: ' + (data.error || 'unknown');
     }
@@ -3229,10 +3234,21 @@ async function viewLeaderboard() {
   const board = document.getElementById('lbBoard');
   board.innerHTML = '<p class="centered subtle">Loading…</p>';
   try {
-    const res = await fetch(LEADERBOARD_API + '/leaderboard?mode=' + lbViewMode() + '&limit=20&uuid=' + lbPlayerId());
+    // Top 10 only — a hard cutoff that lets better weeks push the junk off the board.
+    const res = await fetch(LEADERBOARD_API + '/leaderboard?mode=' + lbViewMode() + '&limit=10&uuid=' + lbPlayerId());
     const data = await res.json();
     if (!data.entries || !data.entries.length) { board.innerHTML = '<p class="centered subtle">Nobody has survived a week yet. Be first.</p>'; return; }
-    let html = '<table style="width:100%;border-collapse:collapse;font-size:11px;">';
+    const th = 'padding:2px 4px;font-size:9px;font-weight:700;text-transform:uppercase;letter-spacing:0.3px;color:var(--viva-text-soft);border-bottom:1px solid var(--viva-border);';
+    let html = `<table style="width:100%;border-collapse:collapse;font-size:11px;">
+      <tr>
+        <th style="${th}text-align:left;">#</th>
+        <th style="${th}text-align:left;">Name</th>
+        <th style="${th}text-align:center;">Grade</th>
+        <th style="${th}text-align:center;" title="Standout personality trait">Trait</th>
+        <th style="${th}text-align:center;">Tasks</th>
+        <th style="${th}text-align:center;" title="Days won · perfect days">Days</th>
+        <th style="${th}text-align:right;">Score</th>
+      </tr>`;
     for (const e of data.entries) {
       const safe = String(e.name).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c]));
       const days = `${e.days_won}w${e.perfect_days ? '·' + e.perfect_days + '★' : ''}`;

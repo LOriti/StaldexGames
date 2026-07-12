@@ -23,7 +23,8 @@ Full steps: `worker/README.md`. Short version:
 `LEADERBOARD_API` is already set to `https://staldex.com/api/cubicle` in all three
 places that call it — `site/index.html`, `site/cubicle.html`, and
 `cubicle-app/www/index.html` (which is a synced copy of `site/cubicle.html`, not a
-separate source — edit `site/cubicle.html` and copy it over, never hand-edit the app copy).
+separate source — never hand-edit the app copy; after editing `site/cubicle.html`,
+run `powershell -File sync-game.ps1` from the repo root to sync it).
 Nothing to change here once the Worker above is live; it'll just start working.
 
 ## 3. Deploy the site

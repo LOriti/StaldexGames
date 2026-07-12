@@ -146,11 +146,17 @@
   }
   .vitals table.v-lb { width: 100%; border-collapse: collapse; font-size: 12px; }
   .vitals table.v-lb td { padding: 5px 3px; border-bottom: 1px solid #efeeed; }
+  .vitals table.v-lb .v-lb-head th {
+    padding: 2px 3px; font-size: 9px; font-weight: 700; text-transform: uppercase;
+    letter-spacing: 0.3px; color: var(--viva-text-soft); text-align: center;
+    border-bottom: 1px solid var(--viva-border);
+  }
+  .vitals table.v-lb .v-lb-head th:nth-child(2) { text-align: left; }
   .vitals table.v-lb tr:last-child td { border-bottom: none; }
   .vitals table.v-lb .r { color: var(--viva-text-sub); width: 32px; }
   .vitals table.v-lb .n { font-weight: 600; }
   .vitals table.v-lb .g { text-align: center; width: 34px; color: var(--viva-purple); font-weight: 700; }
-  .vitals table.v-lb .t, .vitals table.v-lb .d { text-align: center; color: var(--viva-text-sub); font-size: 11px; white-space: nowrap; }
+  .vitals table.v-lb .tr, .vitals table.v-lb .t, .vitals table.v-lb .d { text-align: center; color: var(--viva-text-sub); font-size: 11px; white-space: nowrap; }
   .vitals table.v-lb .s { text-align: right; width: 60px; font-variant-numeric: tabular-nums; }
   .vitals .v-empty { font-size: 13px; color: var(--viva-text-sub); padding: 4px 0; }
 
@@ -313,6 +319,17 @@ let lbLoadedOnce = false;
 
 function esc(s) { return String(s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
 
+// Same six personality ratings as the in-game leaderboard — see RATING_META in cubicle.html.
+const RATING_ICONS = { kitchen: '☕', shareholder: '📈', calendar: '📅', socio: '🔪', sphincter: '🚽', watercooler: '💬' };
+function standoutTrait(e) {
+  let bestKey = null, bestVal = -1;
+  for (const k of Object.keys(RATING_ICONS)) {
+    const v = e[k];
+    if (typeof v === 'number' && v > bestVal) { bestVal = v; bestKey = k; }
+  }
+  return bestKey ? RATING_ICONS[bestKey] + ' ' + bestVal : '';
+}
+
 async function loadBoard() {
   if (!LEADERBOARD_API) {
     lbContent.textContent = 'Leaderboard coming online soon.';
@@ -327,13 +344,16 @@ async function loadBoard() {
       lbContent.textContent = 'No completed weeks on this board yet.';
       return;
     }
-    let html = '<table class="v-lb">';
+    let html = '<table class="v-lb"><tr class="v-lb-head">'
+      + '<th></th><th>Name</th><th>Grade</th><th title="Standout personality trait">Trait</th>'
+      + '<th>Tasks</th><th title="Days won · perfect days">Days</th><th>Score</th></tr>';
     for (const e of data.entries) {
       const days = e.days_won + 'w' + (e.perfect_days ? '·' + e.perfect_days + '★' : '');
       html += '<tr>'
         + '<td class="r">#' + e.rank + '</td>'
         + '<td class="n">' + esc(e.name) + (e.flagged ? ' ⚠' : '') + '</td>'
         + '<td class="g">' + esc(e.grade) + '</td>'
+        + '<td class="tr">' + standoutTrait(e) + '</td>'
         + '<td class="t">' + e.tasks + '/' + e.quota + '</td>'
         + '<td class="d">' + days + '</td>'
         + '<td class="s">' + e.score + '</td>'
