@@ -319,15 +319,21 @@ let lbLoadedOnce = false;
 
 function esc(s) { return String(s).replace(/[<>&]/g, c => ({'<':'&lt;','>':'&gt;','&':'&amp;'}[c])); }
 
-// Same six personality ratings as the in-game leaderboard — see RATING_META in cubicle.html.
-const RATING_ICONS = { kitchen: '☕', shareholder: '📈', calendar: '📅', socio: '🔪', sphincter: '🚽', watercooler: '💬' };
+// Same six personality ratings as the in-game leaderboard — one-word epithet for
+// whichever dominates; full rating name + value in the tooltip. Matches cubicle.html.
+const TRAIT_META = {
+  kitchen: ['Popular', 'Kitchen Standing'], shareholder: ['Grinder', 'Shareholder Value'],
+  calendar: ['Yes-man', 'Calendar Compliance'], socio: ['Sociopath', 'Sociopath Score'],
+  sphincter: ['Iron gut', 'Sphincter Security'], watercooler: ['Notorious', 'Watercooler Mentions'],
+};
 function standoutTrait(e) {
   let bestKey = null, bestVal = -1;
-  for (const k of Object.keys(RATING_ICONS)) {
+  for (const k of Object.keys(TRAIT_META)) {
     const v = e[k];
     if (typeof v === 'number' && v > bestVal) { bestVal = v; bestKey = k; }
   }
-  return bestKey ? RATING_ICONS[bestKey] + ' ' + bestVal : '';
+  if (!bestKey) return '';
+  return '<span title="' + TRAIT_META[bestKey][1] + ' ' + bestVal + '">' + TRAIT_META[bestKey][0] + '</span>';
 }
 
 async function loadBoard() {

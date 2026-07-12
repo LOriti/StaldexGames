@@ -3219,7 +3219,12 @@ async function submitScore() {
   }
   document.getElementById('lbSubmitBtn').disabled = false;
 }
-// Highest of the six personality ratings on a leaderboard entry — shown as flavour, e.g. "🔪 82"
+// Highest of the six personality ratings on a leaderboard entry — a one-word epithet
+// in the game's voice. Full rating name + value live in the tooltip.
+const TRAIT_EPITHETS = {
+  kitchen: 'Popular', shareholder: 'Grinder', calendar: 'Yes-man',
+  socio: 'Sociopath', sphincter: 'Iron gut', watercooler: 'Notorious',
+};
 function standoutTrait(e) {
   let bestKey = null, bestVal = -1;
   for (const k of ['kitchen', 'shareholder', 'calendar', 'socio', 'sphincter', 'watercooler']) {
@@ -3228,7 +3233,7 @@ function standoutTrait(e) {
   }
   if (!bestKey) return '';
   const meta = RATING_META[bestKey];
-  return `<span title="${meta.name}">${meta.icon} ${bestVal}</span>`;
+  return `<span title="${meta.name} ${bestVal}">${TRAIT_EPITHETS[bestKey]}</span>`;
 }
 async function viewLeaderboard() {
   const board = document.getElementById('lbBoard');
