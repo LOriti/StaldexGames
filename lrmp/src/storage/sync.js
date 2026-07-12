@@ -93,11 +93,11 @@ export async function initSync({ apply, snapshot, onStatus }) {
     if (remote.updatedAt && remote.updatedAt > lastSeen) {
       apply(remote.data);
       await store.set(TS_KEY, remote.updatedAt);
+      setStatus('ok');
     } else {
       // Server is empty or this device is ahead — establish/refresh the server copy.
-      await push(snapshot());
+      await push(snapshot()); // push sets ok/error itself
     }
-    setStatus('ok');
   } catch {
     setStatus('error');
   }

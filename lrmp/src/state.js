@@ -41,6 +41,27 @@ export function commit({ plan = false, freezer = false, favourites = false } = {
   if (plan) store.set(store.KEYS.PLAN, state.plan);
   if (freezer) store.set(store.KEYS.FREEZER, state.freezer);
   if (favourites) store.set(store.KEYS.FAVOURITES, [...state.favourites]);
+  if (plan || freezer || favourites) schedulePush(snapshot());
+  emit();
+}
+
+/** The persisted slices as plain JSON — what remote sync stores and returns. */
+export function snapshot() {
+  return { plan: state.plan, freezer: state.freezer, favourites: [...state.favourites] };
+}
+
+/**
+ * Adopt a newer server-side snapshot (boot-time sync). Persists locally WITHOUT going
+ * through commit() — committing would schedule a push of the state we just pulled.
+ */
+export function applyRemote(data) {
+  if (!data || typeof data !== 'object') return;
+  if (isValidPlan(data.plan)) state.plan = data.plan;
+  if (data.freezer && typeof data.freezer === 'object') state.freezer = data.freezer;
+  if (Array.isArray(data.favourites)) state.favourites = new Set(data.favourites);
+  store.set(store.KEYS.PLAN, state.plan);
+  store.set(store.KEYS.FREEZER, state.freezer);
+  store.set(store.KEYS.FAVOURITES, [...state.favourites]);
   emit();
 }
 

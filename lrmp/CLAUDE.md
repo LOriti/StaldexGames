@@ -3,14 +3,19 @@
 Keto meal planner. Paint a month by cooking mode → dishes drop in → **lunches are derived
 from dinner leftovers** → surplus rolls forward or gets banked in the freezer.
 
-Vanilla JS + Vite. No framework, no backend, no API. All state is client-side.
+Vanilla JS + Vite. No framework. State is client-side first (localStorage via the adapter),
+with **optional** cross-device sync through a tiny Worker (`../worker-lrmp/`, route
+`staldex.com/api/lrmp/*`) — see Gotcha 1b. The app must always work with sync off.
 
 ```bash
 npm install
 npm run dev       # http://localhost:5173
 npm test          # 38 tests, all must stay green
-npm run build     # -> dist/, static, deploy anywhere
+npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
+
+After changing `src/`, rebuild and commit the regenerated `site/lrmp/` output — that's
+what Cloudflare Pages serves (see `../DEPLOY.md`).
 
 ---
 
@@ -44,6 +49,7 @@ src/
     freezer.js    freezer accounting
   storage/
     adapter.js    persistence. See "Gotchas" — do not bypass this.
+    sync.js       optional remote sync layer (Worker in ../worker-lrmp/). See Gotcha 1b.
   ui/         rendering + interaction. Imports from core/, never the reverse.
     dom.js        $ / $$ / toast / beginDrag (pointer-based drag)
     recipesView.js
@@ -124,6 +130,15 @@ then silently loses everything on reload.
 `src/storage/adapter.js` handles this: it detects `window.storage` → `localStorage` →
 in-memory, and exposes one async interface. **Never call `localStorage` or `window.storage`
 directly anywhere else.** If `backend() === 'memory'` the app toasts a warning.
+
+**1b. Remote sync is a layer, not a replacement.**
+`src/storage/sync.js` optionally mirrors the three persisted slices to the Worker in
+`../worker-lrmp/` (single blob, last-write-wins, gated by a shared passphrase — the ☁
+footer button). Rules: local persistence always happens first and must never depend on the
+network; `commit()` schedules a debounced push; boot-time pull goes through
+`applyRemote()` in `state.js`, which persists **without** calling `commit()` (committing
+would push back the state we just pulled). Sync-off is the baseline behaviour, not an
+error state.
 
 **2. Drag uses pointer events, not HTML5 drag-and-drop.**
 HTML5 DnD does not work on touch. This app gets used on a phone, in a kitchen, with one

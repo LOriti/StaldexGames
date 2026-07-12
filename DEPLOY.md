@@ -45,6 +45,21 @@ a browser directly — it should return JSON, not an error page. If that 404s, t
 route isn't live yet (check step 1.4 completed and the deploy succeeded in the Cloudflare
 dashboard's build log).
 
+## LRMP (meal planner, unlisted at staldex.com/lrmp)
+
+The planner's source lives in `lrmp/`; its production build is committed to `site/lrmp/`,
+so it ships with the normal site deploy — nothing extra for Pages. It is deliberately
+unlisted: no links from the homepage and a `noindex` meta tag. After changing `lrmp/src/`,
+run `npm test && npm run build` in `lrmp/` and commit the regenerated `site/lrmp/`.
+
+Cross-device sync needs its own Worker (`worker-lrmp/`, route `staldex.com/api/lrmp/*`):
+same dashboard dance as the leaderboard — D1 database `lrmp-sync`, run `worker-lrmp/schema.sql`,
+paste the `database_id` into `worker-lrmp/wrangler.toml`, connect Git with root directory
+`worker-lrmp/`, and set the `LRMP_TOKEN` secret (your sync passphrase). Full steps:
+`worker-lrmp/README.md`. Until that's done the app still works fine — state just stays
+per-device (localStorage), and the ☁ footer button shows "sync error" if a passphrase is
+entered before the Worker is live.
+
 ## Notes
 
 - One best score per player per board (six boards: {week|sprint} × {normal|hungover|openplan}).
