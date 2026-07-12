@@ -1,6 +1,3 @@
--- Migration: best-score-per-player `scores` -> arcade-style `runs` (every run its own row).
--- Run this ONCE in the D1 console (paste the whole thing, Execute), then push so the
--- Worker that reads/writes `runs` deploys. Old `scores` rows are carried over.
 CREATE TABLE IF NOT EXISTS runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uuid TEXT NOT NULL,

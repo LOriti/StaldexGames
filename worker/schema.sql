@@ -1,6 +1,3 @@
--- Cubicle leaderboard schema (D1 / SQLite)
--- Arcade-style: every submitted run is its own row; boards show the top 10 runs.
--- (The old `scores` table kept one best row per player — superseded; see migrate-runs.sql.)
 CREATE TABLE IF NOT EXISTS runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uuid TEXT NOT NULL,
