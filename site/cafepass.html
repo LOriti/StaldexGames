@@ -118,18 +118,18 @@
   .badge.hl { border-color: var(--sx-accent); color: var(--sx-accent-2); }
 
   /* ════ VIEW SWITCHER ════ */
+  /* In normal document flow — sits between the pitch and the demo and scrolls
+     away with the page. No sticky/fixed: it floating over content reads as broken. */
   .switcher-wrap {
     display: flex; justify-content: center;
-    padding: 14px 20px;
-    position: fixed; top: 65px; left: 0; right: 0;
-    z-index: 90;
+    padding: 32px 20px 8px;
   }
   .switcher {
     display: flex; gap: 4px; padding: 5px;
     background: var(--sx-bg-2);
     border: 1px solid var(--sx-line);
     border-radius: 12px;
-    box-shadow: 0 8px 30px rgba(0,0,0,0.5);
+    box-shadow: 0 8px 30px rgba(0,0,0,0.4);
   }
   .switcher button {
     padding: 10px 24px; border-radius: 8px;
@@ -146,14 +146,14 @@
   /* ════ SHOWCASE STAGE ════ */
   .stage {
     max-width: 1200px; margin: 0 auto;
-    padding: 100px 40px 80px;
+    padding: 32px 40px 80px;
     display: grid;
     grid-template-columns: auto 1fr;
     gap: 56px;
     align-items: start;
   }
   @media (max-width: 1000px) {
-    .stage { grid-template-columns: 1fr; gap: 40px; padding: 100px 20px 60px; }
+    .stage { grid-template-columns: 1fr; gap: 40px; padding: 32px 20px 60px; }
   }
 
   /* Device glow effect */
