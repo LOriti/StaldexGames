@@ -1,10 +1,16 @@
 # LRMP Sync — Cloudflare Worker + D1
 
-Private state sync for the meal planner at `staldex.com/lrmp` (source in `lrmp/`). The
-whole app state (`{plan, freezer, favourites}`) is one JSON blob in one D1 row,
-last-write-wins. Every request needs the shared passphrase — no accounts, no public
-endpoints. The planner works fully offline/standalone without this Worker; sync is
-opt-in via the ☁ button in the app's footer.
+State sync for the meal planner at `staldex.com/lrmp` (source in `lrmp/`). The whole app
+state (`{plan, freezer, favourites}`) is one JSON blob in one D1 row, last-write-wins.
+
+**Deliberately unauthenticated.** The planner is unlisted (never linked from the site,
+`noindex`) and the URL itself is the only gate — everyone who opens the app shares the
+single household slot, which makes cross-device sync zero-friction. If a stranger ever
+finds and vandalises it: D1 **Time Travel** can restore any point in the last 30 days,
+and a passphrase-gated version of `src/index.js` exists in git history, ready to revive.
+
+The planner works fully standalone without this Worker — if it's down or undeployed the
+footer shows "☁ offline" and state stays per-device (localStorage).
 
 Served at `staldex.com/api/lrmp/*` — same domain as the site (see `routes` in
 `wrangler.toml`).
@@ -17,25 +23,23 @@ Builds** (Git integration). One-time setup, all in the dashboard:
 
 1. **Create the D1 database**: Workers & Pages → D1 SQL Database → Create database →
    name it `lrmp-sync`.
-2. **Apply the schema**: open the new database → Console tab → paste in `schema.sql` → run.
-3. **Copy the database_id** shown on the database's page into `wrangler.toml` (replaces
-   `REPLACE_ME`), commit and push.
+2. **Apply the schema**: open the new database → Console tab → run the `CREATE TABLE`
+   from `schema.sql` (paste it as a single line — the console treats newlines poorly and
+   `--` comments swallow everything after them).
+3. **Copy the database_id** from the database's Overview page into `wrangler.toml`.
 4. **Connect the Worker to this repo**: Workers & Pages → Create → Workers → connect to
-   Git → select this repo → set the root directory to `worker-lrmp/`.
-5. **Set the passphrase secret**: the new Worker → Settings → Variables and Secrets →
-   Add → type **Secret** → name `LRMP_TOKEN` → value = your sync passphrase (anything
-   long and private). The Worker rejects everything until this is set (fails closed).
+   Git → select this repo → project name `lrmp-sync` → root directory (Path) `worker-lrmp`.
+   Deploys on every push to `main`.
 
-Then on each device: open `staldex.com/lrmp` → tap **☁ sync off** in the footer → enter
-the same passphrase. The footer flips to **☁ synced** and every change pushes
-automatically (debounced ~1.5s); each app load pulls the newest copy.
+Smoke test: `https://staldex.com/api/lrmp/state` should return `{"data":null,"updatedAt":null}`
+(or your current plan once something has synced). The footer of `staldex.com/lrmp` should
+show **☁ synced**.
 
 ## API
 
 - `GET /api/lrmp/state` → `{data, updatedAt}` (`data: null` if nothing stored yet)
 - `PUT /api/lrmp/state` — `{data: {plan, freezer, favourites}}` → `{ok, updatedAt}`
-- Both require `Authorization: Bearer <passphrase>`; wrong/missing → 401.
-- Snapshot validation: `plan` must be a 28-entry array; >200KB rejected.
+- Write gate is shape + size only: `plan` must be a 28-entry array; >200KB rejected.
 
 ## Design notes
 
@@ -44,4 +48,3 @@ automatically (debounced ~1.5s); each app load pulls the newest copy.
   or a merge is possible later without schema changes (the blob is opaque to D1).
 - The client half lives in `lrmp/src/storage/sync.js`; local storage remains the source
   of truth on-device, so a dead Worker degrades to exactly the old fully-client-side app.
-- Auth compares SHA-256 digests byte-for-byte (constant-time, no length leak).

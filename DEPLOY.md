@@ -52,13 +52,12 @@ so it ships with the normal site deploy — nothing extra for Pages. It is delib
 unlisted: no links from the homepage and a `noindex` meta tag. After changing `lrmp/src/`,
 run `npm test && npm run build` in `lrmp/` and commit the regenerated `site/lrmp/`.
 
-Cross-device sync needs its own Worker (`worker-lrmp/`, route `staldex.com/api/lrmp/*`):
+Cross-device sync runs through its own Worker (`worker-lrmp/`, route `staldex.com/api/lrmp/*`):
 same dashboard dance as the leaderboard — D1 database `lrmp-sync`, run `worker-lrmp/schema.sql`,
 paste the `database_id` into `worker-lrmp/wrangler.toml`, connect Git with root directory
-`worker-lrmp/`, and set the `LRMP_TOKEN` secret (your sync passphrase). Full steps:
-`worker-lrmp/README.md`. Until that's done the app still works fine — state just stays
-per-device (localStorage), and the ☁ footer button shows "sync error" if a passphrase is
-entered before the Worker is live.
+`worker-lrmp/`. No secrets, no accounts — sync is automatic and the unlisted URL is the only
+gate (rationale + recovery options in `worker-lrmp/README.md`). If the Worker is down the
+app still works fine — state stays per-device and the footer shows "☁ offline".
 
 ## Notes
 

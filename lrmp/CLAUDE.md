@@ -4,8 +4,8 @@ Keto meal planner. Paint a month by cooking mode → dishes drop in → **lunche
 from dinner leftovers** → surplus rolls forward or gets banked in the freezer.
 
 Vanilla JS + Vite. No framework. State is client-side first (localStorage via the adapter),
-with **optional** cross-device sync through a tiny Worker (`../worker-lrmp/`, route
-`staldex.com/api/lrmp/*`) — see Gotcha 1b. The app must always work with sync off.
+with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
+`staldex.com/api/lrmp/*`) — see Gotcha 1b. The app must always work with the Worker down.
 
 ```bash
 npm install
@@ -132,13 +132,14 @@ in-memory, and exposes one async interface. **Never call `localStorage` or `wind
 directly anywhere else.** If `backend() === 'memory'` the app toasts a warning.
 
 **1b. Remote sync is a layer, not a replacement.**
-`src/storage/sync.js` optionally mirrors the three persisted slices to the Worker in
-`../worker-lrmp/` (single blob, last-write-wins, gated by a shared passphrase — the ☁
-footer button). Rules: local persistence always happens first and must never depend on the
-network; `commit()` schedules a debounced push; boot-time pull goes through
-`applyRemote()` in `state.js`, which persists **without** calling `commit()` (committing
-would push back the state we just pulled). Sync-off is the baseline behaviour, not an
-error state.
+`src/storage/sync.js` mirrors the three persisted slices to the Worker in
+`../worker-lrmp/` (single shared blob, last-write-wins, deliberately unauthenticated —
+the unlisted URL is the only gate; see that Worker's README). Rules: local persistence
+always happens first and must never depend on the network; `commit()` schedules a
+debounced push; boot-time pull goes through `applyRemote()` in `state.js`, which persists
+**without** calling `commit()` (committing would push back the state we just pulled).
+The Worker being unreachable is a supported state ("☁ offline" in the footer), not an
+error — the app must always work fully client-side.
 
 **2. Drag uses pointer events, not HTML5 drag-and-drop.**
 HTML5 DnD does not work on touch. This app gets used on a phone, in a kitchen, with one

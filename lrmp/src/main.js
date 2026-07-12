@@ -2,7 +2,7 @@ import './styles.css';
 import { NOTES } from './data/notes.js';
 import { hydrate, subscribe, get, setUI, snapshot, applyRemote } from './state.js';
 import { backend } from './storage/adapter.js';
-import { initSync, setPassphrase } from './storage/sync.js';
+import { initSync } from './storage/sync.js';
 import { renderRecipes } from './ui/recipesView.js';
 import { renderMonth } from './ui/monthView.js';
 import { renderWeekly } from './ui/weeklyView.js';
@@ -31,18 +31,12 @@ function renderNotes() {
   ).join('');
 }
 
-const SYNC_LABELS = { off: '☁ sync off', ok: '☁ synced', error: '☁ sync error' };
+// Passive indicator only — sync is automatic, nothing to configure.
+const SYNC_LABELS = { off: '☁ …', ok: '☁ synced', error: '☁ offline' };
 
 function initSyncUI() {
-  const btn = $('#syncBtn');
-  btn.onclick = async () => {
-    const phrase = prompt('Sync passphrase (same on every device; leave empty to turn sync off):');
-    if (phrase === null) return; // cancelled
-    await setPassphrase(phrase);
-    // Simplest correct thing: reboot so initSync runs the pull/push reconcile from scratch.
-    location.reload();
-  };
-  return (status) => { btn.textContent = SYNC_LABELS[status] || SYNC_LABELS.off; };
+  const el = $('#syncStatus');
+  return (status) => { el.textContent = SYNC_LABELS[status] || SYNC_LABELS.off; };
 }
 
 async function init() {
@@ -61,8 +55,8 @@ async function init() {
     toast('Storage unavailable — changes will not be saved');
   }
 
-  // Remote sync (optional, off until a passphrase is set). Runs after first render so a
-  // slow network never blocks the UI; adopting a newer server copy re-renders via emit().
+  // Remote sync. Runs after first render so a slow network never blocks the UI;
+  // adopting a newer server copy re-renders via emit().
   await initSync({ apply: applyRemote, snapshot, onStatus: initSyncUI() });
 }
 

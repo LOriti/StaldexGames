@@ -12,7 +12,3 @@ routes = [
 binding = "DB"
 database_name = "lrmp-sync"
 database_id = "96356ad3-e4ae-4d22-a35a-1b25a425d330"
-
-# Also required, set in the dashboard (Worker → Settings → Variables → add SECRET):
-#   LRMP_TOKEN — the sync passphrase. Anything long and private; the app asks for the
-#   same phrase once per device (☁ button in the footer).

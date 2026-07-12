@@ -192,8 +192,7 @@
   footer .key span{display:inline-flex;align-items:center;gap:5px}
   .swatch{width:9px;height:9px;border-radius:2px;display:inline-block}
   .sync-row{margin-top:10px}
-  #syncBtn{background:none;border:1px solid var(--line);border-radius:6px;color:var(--ink-soft);font:inherit;font-size:10.5px;letter-spacing:.04em;padding:4px 10px;cursor:pointer}
-  #syncBtn:hover{color:var(--cream-dim);border-color:var(--cream-dim)}
+  #syncStatus{color:var(--ink-soft);font-size:10.5px;letter-spacing:.04em}
 
   /* Toast */
   #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--chit);font-size:12px;font-weight:500;padding:11px 18px;border-radius:9px;box-shadow:0 12px 30px -8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:90;letter-spacing:.02em}
