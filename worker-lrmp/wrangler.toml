@@ -1,0 +1,19 @@
+name = "lrmp-sync"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# Same pattern as worker/ (the cubicle leaderboard): served under the main site's
+# domain, deployed via Cloudflare's Git-connected build with root directory `worker-lrmp/`.
+routes = [
+  { pattern = "staldex.com/api/lrmp/*", zone_name = "staldex.com" }
+]
+
+[[d1_databases]]
+binding = "DB"
+database_name = "lrmp-sync"
+# Paste the database_id shown in the dashboard after creating the D1 database:
+database_id = "REPLACE_ME"
+
+# Also required, set in the dashboard (Worker → Settings → Variables → add SECRET):
+#   LRMP_TOKEN — the sync passphrase. Anything long and private; the app asks for the
+#   same phrase once per device (☁ button in the footer).
