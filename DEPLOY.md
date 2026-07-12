@@ -37,7 +37,7 @@ repo to Pages with `site/` as the output directory so every push auto-deploys.
 1. Open the live site → expand Cubicle → board should say "No completed weeks on this board yet."
 2. Play a week (3-day sprint is fastest) → submit with a name → expect "You're #1 …".
 3. Refresh the homepage board → your entry appears.
-4. Submit a worse week → board still shows your best.
+4. Submit a second week → it appears as its own new row (arcade-style, not best-only).
 5. Repeat on the native Android app — same Worker, same boards.
 
 If step 2 errors: open `https://staldex.com/api/cubicle/leaderboard?mode=week_normal` in
@@ -62,7 +62,8 @@ entered before the Worker is live.
 
 ## Notes
 
-- One best score per player per board (six boards: {week|sprint} × {normal|hungover|openplan}).
+- Every submitted run is its own board entry — one player can hold multiple of the 10
+  slots (six boards: {week|sprint} × {normal|hungover|openplan}).
 - Identity is a localStorage UUID — clearing browser data = new identity. By design (no accounts).
 - Suspicious scores are accepted but flagged ⚠. Rate limit: 12 submissions/hour per player.
 - Getting fired or hitting a wellbeing incident (shart/cardiac) still reaches the submit UI —

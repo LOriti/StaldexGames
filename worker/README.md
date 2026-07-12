@@ -1,7 +1,8 @@
 # Cubicle Leaderboard — Cloudflare Worker + D1
 
 Trust-based leaderboard (Option A): submissions accepted, suspicious scores flagged ⚠ not rejected.
-Six boards: `{week|sprint}_{normal|hungover|openplan}`. One best score per player per board.
+Six boards: `{week|sprint}_{normal|hungover|openplan}`. Arcade-style: every submitted run
+is its own entry, one player can hold multiple slots, boards show the top 10 runs.
 Identity: localStorage UUID + display name. No login.
 
 Served at `staldex.com/api/cubicle/*` — same domain as the site, no separate `workers.dev`

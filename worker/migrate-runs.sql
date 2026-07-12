@@ -1,6 +1,6 @@
--- Cubicle leaderboard schema (D1 / SQLite)
--- Arcade-style: every submitted run is its own row; boards show the top 10 runs.
--- (The old `scores` table kept one best row per player — superseded; see migrate-runs.sql.)
+-- Migration: best-score-per-player `scores` -> arcade-style `runs` (every run its own row).
+-- Run this ONCE in the D1 console (paste the whole thing, Execute), then push so the
+-- Worker that reads/writes `runs` deploys. Old `scores` rows are carried over.
 CREATE TABLE IF NOT EXISTS runs (
   id INTEGER PRIMARY KEY AUTOINCREMENT,
   uuid TEXT NOT NULL,
@@ -25,9 +25,5 @@ CREATE TABLE IF NOT EXISTS runs (
 );
 CREATE INDEX IF NOT EXISTS idx_runs_mode_score ON runs(mode, score DESC);
 CREATE INDEX IF NOT EXISTS idx_runs_uuid_mode ON runs(uuid, mode);
-
-CREATE TABLE IF NOT EXISTS submissions_log (
-  uuid TEXT NOT NULL,
-  at INTEGER NOT NULL
-);
-CREATE INDEX IF NOT EXISTS idx_sublog_uuid_at ON submissions_log(uuid, at);
+INSERT INTO runs (uuid, mode, name, grade, score, tasks, quota, days_won, perfect_days, flagged, flags, breakdown, submitted_at, kitchen, shareholder, calendar, socio, sphincter, watercooler)
+SELECT uuid, mode, name, grade, score, tasks, quota, days_won, perfect_days, flagged, flags, breakdown, submitted_at, kitchen, shareholder, calendar, socio, sphincter, watercooler FROM scores;

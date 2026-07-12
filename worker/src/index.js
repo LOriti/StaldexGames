@@ -1,5 +1,6 @@
 // Cubicle Leaderboard — Cloudflare Worker + D1
-// Option A: trust submissions, apply heuristic flags, single best week per player per mode.
+// Trust submissions, apply heuristic flags. Arcade-style: every submitted run is its
+// own board entry (one player can hold multiple slots); boards display the top 10 runs.
 //
 // Routed at staldex.com/api/cubicle/* (see wrangler.toml). Endpoints:
 //   POST /api/cubicle/score        — submit a completed week, body includes {ratings: {kitchen, shareholder, calendar, socio, sphincter, watercooler}}
@@ -92,37 +93,20 @@ async function handleSubmit(request, env) {
   const flags = computeFlags({ ...body, mode, score, tasks, quota, perfectDays });
   const breakdown = JSON.stringify(Array.isArray(body.breakdown) ? body.breakdown.slice(0, 5) : []);
 
-  // Upsert: keep the best score per (uuid, mode). Name always updates to latest.
+  // Arcade-style: every submitted run is its own row. The same player can hold
+  // multiple board slots; the top-10 display cutoff is what filters the junk.
   await env.DB.prepare(`
-    INSERT INTO scores (uuid, mode, name, grade, score, tasks, quota, days_won, perfect_days, flagged, flags, breakdown, submitted_at, kitchen, shareholder, calendar, socio, sphincter, watercooler)
+    INSERT INTO runs (uuid, mode, name, grade, score, tasks, quota, days_won, perfect_days, flagged, flags, breakdown, submitted_at, kitchen, shareholder, calendar, socio, sphincter, watercooler)
     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    ON CONFLICT(uuid, mode) DO UPDATE SET
-      name = excluded.name,
-      grade = CASE WHEN excluded.score > scores.score THEN excluded.grade ELSE scores.grade END,
-      tasks = CASE WHEN excluded.score > scores.score THEN excluded.tasks ELSE scores.tasks END,
-      quota = CASE WHEN excluded.score > scores.score THEN excluded.quota ELSE scores.quota END,
-      days_won = CASE WHEN excluded.score > scores.score THEN excluded.days_won ELSE scores.days_won END,
-      perfect_days = CASE WHEN excluded.score > scores.score THEN excluded.perfect_days ELSE scores.perfect_days END,
-      flagged = CASE WHEN excluded.score > scores.score THEN excluded.flagged ELSE scores.flagged END,
-      flags = CASE WHEN excluded.score > scores.score THEN excluded.flags ELSE scores.flags END,
-      breakdown = CASE WHEN excluded.score > scores.score THEN excluded.breakdown ELSE scores.breakdown END,
-      submitted_at = CASE WHEN excluded.score > scores.score THEN excluded.submitted_at ELSE scores.submitted_at END,
-      kitchen = CASE WHEN excluded.score > scores.score THEN excluded.kitchen ELSE scores.kitchen END,
-      shareholder = CASE WHEN excluded.score > scores.score THEN excluded.shareholder ELSE scores.shareholder END,
-      calendar = CASE WHEN excluded.score > scores.score THEN excluded.calendar ELSE scores.calendar END,
-      socio = CASE WHEN excluded.score > scores.score THEN excluded.socio ELSE scores.socio END,
-      sphincter = CASE WHEN excluded.score > scores.score THEN excluded.sphincter ELSE scores.sphincter END,
-      watercooler = CASE WHEN excluded.score > scores.score THEN excluded.watercooler ELSE scores.watercooler END,
-      score = MAX(scores.score, excluded.score)
   `).bind(
     uuid, mode, name, grade, score, tasks, quota, daysWon, perfectDays, flags.length ? 1 : 0, JSON.stringify(flags), breakdown, Date.now(),
     ratings.kitchen, ratings.shareholder, ratings.calendar, ratings.socio, ratings.sphincter, ratings.watercooler
   ).run();
 
-  // Return the player's rank on this board
+  // This run's rank on the board
   const rankRow = await env.DB.prepare(
-    'SELECT COUNT(*) + 1 AS rank FROM scores WHERE mode = ? AND score > (SELECT score FROM scores WHERE uuid = ? AND mode = ?)'
-  ).bind(mode, uuid, mode).first();
+    'SELECT COUNT(*) + 1 AS rank FROM runs WHERE mode = ? AND score > ?'
+  ).bind(mode, score).first();
 
   return json({ ok: true, rank: rankRow ? rankRow.rank : null, flagged: flags.length > 0, flags });
 }
@@ -134,15 +118,16 @@ async function handleLeaderboard(url, env) {
   const uuid = url.searchParams.get('uuid');
 
   const rows = await env.DB.prepare(
-    'SELECT name, grade, score, tasks, quota, days_won, perfect_days, flagged, submitted_at, kitchen, shareholder, calendar, socio, sphincter, watercooler FROM scores WHERE mode = ? ORDER BY score DESC, submitted_at ASC LIMIT ?'
+    'SELECT name, grade, score, tasks, quota, days_won, perfect_days, flagged, submitted_at, kitchen, shareholder, calendar, socio, sphincter, watercooler FROM runs WHERE mode = ? ORDER BY score DESC, submitted_at ASC LIMIT ?'
   ).bind(mode, limit).all();
 
   const out = { mode, entries: (rows.results || []).map((r, i) => ({ rank: i + 1, ...r })) };
 
   if (uuid) {
-    const me = await env.DB.prepare('SELECT score FROM scores WHERE uuid = ? AND mode = ?').bind(uuid, mode).first();
-    if (me) {
-      const rankRow = await env.DB.prepare('SELECT COUNT(*) + 1 AS rank FROM scores WHERE mode = ? AND score > ?').bind(mode, me.score).first();
+    // "You" = the player's best run on this board
+    const me = await env.DB.prepare('SELECT MAX(score) AS score FROM runs WHERE uuid = ? AND mode = ?').bind(uuid, mode).first();
+    if (me && me.score !== null) {
+      const rankRow = await env.DB.prepare('SELECT COUNT(*) + 1 AS rank FROM runs WHERE mode = ? AND score > ?').bind(mode, me.score).first();
       out.you = { rank: rankRow.rank, score: me.score };
     }
   }
