@@ -382,6 +382,60 @@
   }
   .qr-caption strong { color: var(--ink); font-weight: 600; }
 
+  /* ── Plan & History screens ── */
+  .p-screen-scroll { flex: 1; min-height: 0; overflow-y: auto; }
+  .plan-price { display: flex; align-items: baseline; gap: 6px; margin-top: 10px; }
+  .plan-price .amount { font-size: 30px; font-style: italic; }
+  .plan-price .per { font-family: var(--sans); font-size: 10.5px; color: var(--muted); }
+  .plan-renew { font-family: var(--sans); font-size: 10px; color: var(--muted); margin-top: 4px; }
+  .stat3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 7px; margin-top: 6px; }
+  .stat3 .cell {
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 12px; padding: 9px 10px;
+  }
+  .stat3 .cell-label { font-family: var(--sans); font-size: 8px; text-transform: uppercase; letter-spacing: 0.1em; color: var(--muted); }
+  .stat3 .cell-value { font-size: 17px; font-style: italic; margin-top: 2px; }
+  .stat3 .cell-value.green { color: var(--green); }
+  .tier {
+    width: 100%; display: flex; align-items: center; gap: 10px;
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 13px; padding: 11px 13px; margin-bottom: 7px;
+    text-align: left;
+    transition: border-color 0.15s, box-shadow 0.15s;
+  }
+  .tier.on { border-color: var(--ink); box-shadow: 0 0 0 1px var(--ink); }
+  .tier-name { font-family: var(--sans); font-size: 11.5px; font-weight: 600; color: var(--ink); }
+  .tier-detail { font-family: var(--sans); font-size: 9.5px; color: var(--muted); margin-top: 1px; }
+  .tier-price { margin-left: auto; font-size: 15px; font-style: italic; flex-shrink: 0; }
+  .tier-tag {
+    font-family: var(--sans); font-size: 7.5px; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 0.12em;
+    background: var(--gold); color: var(--ink);
+    border-radius: 999px; padding: 2px 7px; margin-left: 5px;
+    vertical-align: 1px;
+  }
+  .tier-note { font-family: var(--sans); font-size: 9.5px; color: var(--gold-deep); min-height: 14px; }
+  .hist-item {
+    display: flex; align-items: center; gap: 10px;
+    background: var(--paper); border: 1px solid var(--line);
+    border-radius: 13px; padding: 10px 13px; margin-bottom: 7px;
+  }
+  .hist-check {
+    width: 24px; height: 24px; border-radius: 50%;
+    background: var(--green); color: #F4EFE6;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+  }
+  .hist-drink { font-family: var(--sans); font-size: 11.5px; font-weight: 600; }
+  .hist-meta { font-family: var(--sans); font-size: 9.5px; color: var(--muted); margin-top: 1px; }
+  .hist-value { margin-left: auto; font-family: var(--sans); font-size: 10px; color: var(--muted); flex-shrink: 0; }
+  .month-summary {
+    background: var(--ink); color: var(--bg);
+    border-radius: 14px; padding: 12px 14px; margin-top: 3px;
+  }
+  .month-summary .ms-title { font-family: var(--sans); font-size: 9.5px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.1em; color: var(--gold); }
+  .month-summary .ms-body { font-family: var(--sans); font-size: 10.5px; line-height: 1.5; margin-top: 4px; opacity: 0.9; }
+
   .p-nav {
     display: flex; justify-content: space-around;
     padding: 11px 0 4px;
@@ -726,7 +780,7 @@
         <div class="statusbar"><span>7:52</span><span>●●●● 5G</span></div>
         <button class="demo-reset hidden" id="demo-reset" onclick="resetMember()">↺ reset</button>
 
-        <div class="p-content">
+        <div class="p-content" id="screen-today">
           <div class="p-header">
             <div>
               <div class="p-greet-k">Good morning</div>
@@ -818,16 +872,169 @@
           </div>
         </div>
 
+        <!-- PLAN SCREEN -->
+        <div class="p-content hidden" id="screen-plan">
+          <div class="p-header">
+            <div>
+              <div class="p-greet-k">Membership</div>
+              <div class="p-greet-n">Your plan</div>
+            </div>
+          </div>
+
+          <div class="usual-card" style="margin-top: 18px;">
+            <div class="usual-badge">Current plan</div>
+            <div class="usual-drink" style="font-size: 20px;">Daily Grind</div>
+            <div class="usual-detail">One coffee a day · every partner cafe</div>
+            <div class="plan-price"><span class="amount">$84</span><span class="per">/ month</span></div>
+            <div class="plan-renew">Renews 1 June · Visa ···· 4921</div>
+          </div>
+
+          <div class="p-kicker">This month</div>
+          <div class="stat3">
+            <div class="cell">
+              <div class="cell-label">Coffees</div>
+              <div class="cell-value">23</div>
+            </div>
+            <div class="cell">
+              <div class="cell-label">Counter value</div>
+              <div class="cell-value">$126</div>
+            </div>
+            <div class="cell">
+              <div class="cell-label">Saved</div>
+              <div class="cell-value green">$42</div>
+            </div>
+          </div>
+
+          <div class="p-kicker">Change plan</div>
+          <div class="p-screen-scroll" style="margin-top: 6px;">
+            <button class="tier" onclick="pickTier(this)">
+              <div>
+                <div class="tier-name">Weekday</div>
+                <div class="tier-detail">One coffee a day, Mon–Fri</div>
+              </div>
+              <div class="tier-price">$64</div>
+            </button>
+            <button class="tier on" onclick="pickTier(this)" data-current="true">
+              <div>
+                <div class="tier-name">Daily Grind<span class="tier-tag">Current</span></div>
+                <div class="tier-detail">One coffee a day, seven days</div>
+              </div>
+              <div class="tier-price">$84</div>
+            </button>
+            <button class="tier" onclick="pickTier(this)">
+              <div>
+                <div class="tier-name">Double Shot</div>
+                <div class="tier-detail">Two coffees a day, seven days</div>
+              </div>
+              <div class="tier-price">$149</div>
+            </button>
+            <div class="tier-note" id="tier-note"></div>
+          </div>
+        </div>
+
+        <!-- HISTORY SCREEN -->
+        <div class="p-content hidden" id="screen-history">
+          <div class="p-header">
+            <div>
+              <div class="p-greet-k">Your visits</div>
+              <div class="p-greet-n">History</div>
+            </div>
+          </div>
+
+          <div class="stat3" style="margin-top: 18px;">
+            <div class="cell">
+              <div class="cell-label">This month</div>
+              <div class="cell-value">23</div>
+            </div>
+            <div class="cell">
+              <div class="cell-label">Streak</div>
+              <div class="cell-value">6 days</div>
+            </div>
+            <div class="cell">
+              <div class="cell-label">Saved</div>
+              <div class="cell-value green">$42</div>
+            </div>
+          </div>
+
+          <div class="p-kicker">May 2026</div>
+          <div class="p-screen-scroll" style="margin-top: 6px;">
+            <div class="hist-item">
+              <div class="hist-check">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="hist-drink">Flat white</div>
+                <div class="hist-meta">Ember &amp; Bean, Leederville · yesterday 7:48 am</div>
+              </div>
+              <div class="hist-value">$5.50</div>
+            </div>
+            <div class="hist-item">
+              <div class="hist-check">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="hist-drink">Flat white</div>
+                <div class="hist-meta">Ember &amp; Bean, Leederville · Thu 8:04 am</div>
+              </div>
+              <div class="hist-value">$5.50</div>
+            </div>
+            <div class="hist-item">
+              <div class="hist-check">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="hist-drink">Long black</div>
+                <div class="hist-meta">Sister Roastery, Northbridge · Wed 7:31 am</div>
+              </div>
+              <div class="hist-value">$5.00</div>
+            </div>
+            <div class="hist-item">
+              <div class="hist-check">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="hist-drink">Flat white</div>
+                <div class="hist-meta">Ember &amp; Bean, Leederville · Tue 7:55 am</div>
+              </div>
+              <div class="hist-value">$5.50</div>
+            </div>
+            <div class="hist-item">
+              <div class="hist-check">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="hist-drink">Oat latte</div>
+                <div class="hist-meta">Little Sparrow, Mt Lawley · Mon 9:42 am</div>
+              </div>
+              <div class="hist-value">$6.00</div>
+            </div>
+            <div class="hist-item">
+              <div class="hist-check">
+                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+              </div>
+              <div>
+                <div class="hist-drink">Flat white</div>
+                <div class="hist-meta">Ember &amp; Bean, Leederville · Sun 8:20 am</div>
+              </div>
+              <div class="hist-value">$5.50</div>
+            </div>
+          </div>
+          <div class="month-summary">
+            <div class="ms-title">May so far</div>
+            <div class="ms-body">23 coffees · $126.50 at counter prices · $84 membership. You're $42.50 ahead with a week to go.</div>
+          </div>
+        </div>
+
         <div class="p-nav">
-          <button class="bn active">
+          <button class="bn active" id="nav-today" onclick="showScreen('today')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
             Today
           </button>
-          <button class="bn">
+          <button class="bn" id="nav-plan" onclick="showScreen('plan')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="5" width="20" height="14" rx="2"/><line x1="2" y1="10" x2="22" y2="10"/></svg>
             Plan
           </button>
-          <button class="bn">
+          <button class="bn" id="nav-history" onclick="showScreen('history')">
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
             History
           </button>
@@ -1110,6 +1317,24 @@
     grid.appendChild(d);
   });
 
+  /* ── Member: bottom nav ── */
+  let orderSent = false;
+  function showScreen(s) {
+    ['today', 'plan', 'history'].forEach(k => {
+      document.getElementById('screen-' + k).classList.toggle('hidden', k !== s);
+      document.getElementById('nav-' + k).classList.toggle('active', k === s);
+    });
+    document.getElementById('demo-reset').classList.toggle('hidden', !(s === 'today' && orderSent));
+  }
+
+  /* ── Member: plan tiers ── */
+  function pickTier(btn) {
+    document.querySelectorAll('.tier').forEach(t => t.classList.remove('on'));
+    btn.classList.add('on');
+    document.getElementById('tier-note').textContent =
+      btn.dataset.current ? '' : 'Switches at your next renewal, 1 June — your daily QR keeps working.';
+  }
+
   /* ── Member: edit/order flow ── */
   let editing = false;
   function currentOrder() {
@@ -1154,9 +1379,11 @@
       document.getElementById('m-title').textContent = 'On its way';
       document.getElementById('edit-btn').classList.add('hidden');
       document.getElementById('demo-reset').classList.remove('hidden');
+      orderSent = true;
     }, 900);
   }
   function resetMember() {
+    orderSent = false;
     const btn = document.getElementById('submit-btn');
     btn.classList.remove('hidden');
     btn.style.opacity = '1';
