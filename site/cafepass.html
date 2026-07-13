@@ -857,7 +857,7 @@
             Send my order
           </button>
 
-          <div class="qr-section">
+          <div class="qr-section" id="qr-section">
             <div class="order-pill hidden" id="order-pill">
               <span id="pill-text">Flat white</span>
               <span class="dot">●</span>
@@ -1352,6 +1352,8 @@
     editing = !editing;
     document.getElementById('options').classList.toggle('hidden', !editing);
     document.getElementById('edit-btn').textContent = editing ? 'Done' : 'Edit';
+    // The expanded chips need the QR section's room — hide it so they don't collide.
+    document.getElementById('qr-section').classList.toggle('hidden', editing);
     if (!editing) refreshCard();
   }
   function pick(btn) {
