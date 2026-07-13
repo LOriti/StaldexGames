@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Projects</title>
-<meta name="description" content="A repository of projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard. CafePass: a subscription coffee membership platform.">
+<meta name="description" content="A repository of projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard. CafePass: a subscription coffee membership platform. Starman Shaman: star chart readings and guidance from Travis.">
 <style>
   /* ============ SHELL — the neutral container ============ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -207,6 +207,48 @@
   .cafepass .cp-cta:hover, .cafepass .cp-cta:focus-visible { background: #3D2F22; }
   .cafepass .cp-cta .meta { display: block; font-weight: 400; color: rgba(244,239,230,0.75); margin-top: 2px; font-size: 10px; }
   .cafepass a:focus-visible { outline: 2px solid var(--cp-gold); outline-offset: 2px; }
+
+  /* ============ STARMAN SHAMAN PANEL — night-sky palette, lifted from the site ============ */
+  .starman {
+    --sm-void: #0a0918; --sm-nebula: #191540; --sm-starlight: #efebff; --sm-lilac: #9c8fd9; --sm-aurum: #e3b457; --sm-line: #2b2452;
+    background-color: var(--sm-void);
+    background-image:
+      radial-gradient(1.2px 1.2px at 15% 22%, #dcd6ff 50%, transparent 51%),
+      radial-gradient(1px 1px at 78% 12%, #dcd6ff 50%, transparent 51%),
+      radial-gradient(1.4px 1.4px at 62% 38%, #e3b457 50%, transparent 51%),
+      radial-gradient(1px 1px at 32% 58%, #dcd6ff 50%, transparent 51%),
+      radial-gradient(1.2px 1.2px at 88% 52%, #dcd6ff 50%, transparent 51%),
+      radial-gradient(1px 1px at 8% 78%, #dcd6ff 50%, transparent 51%),
+      radial-gradient(1.3px 1.3px at 48% 86%, #e3b457 50%, transparent 51%),
+      radial-gradient(1px 1px at 70% 72%, #dcd6ff 50%, transparent 51%),
+      linear-gradient(165deg, var(--sm-nebula) 0%, var(--sm-void) 72%);
+    border: 1px solid var(--sm-line);
+    border-radius: 8px;
+    overflow: hidden;
+    padding: 24px 16px 16px;
+    font-family: Georgia, "Times New Roman", serif;
+    color: var(--sm-starlight);
+    text-align: center;
+  }
+  .starman .sm-over { font-size: 11px; letter-spacing: 0.5em; text-transform: uppercase; color: var(--sm-lilac); }
+  .starman .sm-title { font-size: 24px; letter-spacing: 0.06em; margin: 4px 0 2px; text-shadow: 0 0 24px rgba(140,120,255,0.45); }
+  .starman .sm-title .gold { color: var(--sm-aurum); }
+  .starman .sm-tag { font-style: italic; font-size: 13px; color: var(--sm-lilac); max-width: 34em; margin: 6px auto 16px; }
+  .starman .sm-badges { display: flex; gap: 6px; flex-wrap: wrap; justify-content: center; margin-bottom: 16px; }
+  .starman .sm-badge {
+    font-size: 10.5px; letter-spacing: 0.04em; color: var(--sm-starlight);
+    border: 1px solid rgba(156,143,217,0.4); background: rgba(25,21,64,0.55);
+    padding: 4px 10px; border-radius: 999px;
+  }
+  .starman .sm-cta {
+    display: block; text-align: center; text-decoration: none;
+    background: var(--sm-aurum); color: var(--sm-void);
+    font-size: 12px; font-weight: 600; letter-spacing: 0.25em; text-transform: uppercase;
+    padding: 12px; border-radius: 2px;
+  }
+  .starman .sm-cta:hover, .starman .sm-cta:focus-visible { box-shadow: 0 0 24px rgba(227,180,87,0.45); }
+  .starman .sm-cta .meta { display: block; font-weight: 400; letter-spacing: 0.08em; text-transform: none; color: rgba(10,9,24,0.7); margin-top: 2px; font-size: 10px; }
+  .starman a:focus-visible { outline: 2px solid var(--sm-aurum); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -300,6 +342,30 @@
           </div>
           <a class="cp-cta" href="./cafepass.html">View brief<span class="meta">member app · cafe tablet · both interactive</span></a>
         </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ============ STARMAN SHAMAN ============ -->
+  <details class="project" id="starman">
+    <summary class="row">
+      <span class="row-name">Starman Shaman</span>
+      <span class="row-meta">Site · browser <span class="chev">＋</span></span>
+    </summary>
+    <p class="row-line">A one-page site for Travis, a star-chart reader — four readings, how a sitting unfolds, and bookings, all under an animated night sky.</p>
+
+    <div class="panel">
+      <div class="starman">
+        <div class="sm-over" aria-hidden="true">Travis</div>
+        <div class="sm-title" aria-hidden="true">The Shaman <span class="gold">Starman</span></div>
+        <p class="sm-tag" aria-hidden="true">You were born under a particular sky. It's been trying to get a word in ever since.</p>
+        <div class="sm-badges" aria-hidden="true">
+          <span class="sm-badge">The Full Chart · 90 min</span>
+          <span class="sm-badge">The Crossroads · 45 min</span>
+          <span class="sm-badge">Hearts &amp; Charts · 75 min</span>
+          <span class="sm-badge">The Season Ahead · 60 min</span>
+        </div>
+        <a class="sm-cta" href="./starman.html">Enter the site<span class="meta">star chart readings · consultations &amp; guidance</span></a>
       </div>
     </div>
   </details>

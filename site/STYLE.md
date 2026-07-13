@@ -33,6 +33,10 @@ Current panels:
   `#F4EFE6`, dark ink `#1A1410` header with gold `#C9A876` accents, Georgia serif for
   drink names, sans for UI chrome. Shows the "usual order" card, feature badges, and a
   "View brief" CTA through to `cafepass.html`.
+- **Starman Shaman** (`.starman`): night-sky palette lifted from the site — void `#0a0918`
+  with CSS-gradient star specks, nebula gradient, lilac `#9c8fd9` copy, gold `#e3b457`
+  uppercase CTA. Georgia stands in for the site's Cinzel/Spectral (no external fonts in
+  the shell). Shows the reading badges and an "Enter the site" CTA through to `starman.html`.
 
 ## Quality floor
 Responsive to mobile, visible keyboard focus, reduced-motion respected, no external fonts
