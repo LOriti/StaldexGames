@@ -25,9 +25,9 @@ export function renderMonth(root) {
       const dinner = plan[idx].dinner;
       const mode = dinner.cat ? MODE_BY_KEY[dinner.cat] : null;
       row.push(`
-        <div class="mcell ${dinner.cat ? 'on' : ''}" data-idx="${idx}" ${mode ? `style="--gc:${mode.color}"` : ''}>
+        <div class="mcell ${dinner.cat ? 'on' : ''} ${!dinner.dish && dinner.note ? 'noted' : ''}" data-idx="${idx}" ${mode ? `style="--gc:${mode.color}"` : ''}>
           ${mode ? `<div class="mc-ico">${mode.ico}</div>` : ''}
-          <div class="mc-dish">${dinner.dish ?? ''}</div>
+          <div class="mc-dish">${dinner.dish ?? (dinner.note ? `✎ ${dinner.note}` : '')}</div>
         </div>`);
     }
     cells.push(`<div class="mrow">${row.join('')}</div>`);
@@ -61,7 +61,9 @@ export function renderMonth(root) {
       if (cmd.dataset.cmd === 'shuffle') shuffleAll(s.plan);
       else if (cmd.dataset.cmd === 'reset') s.plan = seedPlan();
       else if (cmd.dataset.cmd === 'clear') clearPlan(s.plan);
-      return commit({ plan: true });
+      // All three change which dishes exist where — lunch pins would point at ghosts.
+      s.lunchPins = {};
+      return commit({ plan: true, pins: true });
     }
 
     const cell = e.target.closest('.mcell');

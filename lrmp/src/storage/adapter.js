@@ -95,4 +95,5 @@ export const KEYS = {
   PLAN: 'plan',
   FREEZER: 'freezer',
   FAVOURITES: 'favourites',
+  PINS: 'pins',
 };

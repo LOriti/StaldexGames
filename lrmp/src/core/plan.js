@@ -13,6 +13,9 @@
  *       dish:  string|null   // dish name, must exist in DISH_INDEX
  *       src:   'cook' | 'freezer' | null
  *       extra: number        // leftover portions this dinner yields
+ *       note:  string        // OPTIONAL free-text day note ("dinner out"). A note day
+ *                            // has cat/dish/src null and extra 0 — it cooks nothing,
+ *                            // yields nothing, and the allocator ignores it.
  *     }
  *   }
  *
@@ -140,6 +143,38 @@ export function shuffleAll(plan, rng = Math.random) {
 export function clearPlan(plan) {
   for (let i = 0; i < DAYS; i++) plan[i].dinner = emptyDinner();
   return plan;
+}
+
+/**
+ * Push a dinner out of its week into the NEXT week (the drag-onto-the-surplus-strip
+ * action). Lands on the same weekday if that's free, otherwise the first empty day of
+ * the target week. Week 3 wraps to week 0 — the board is reused month to month, so
+ * "next week" after Wk 4 is next month's Wk 1.
+ *
+ * @returns {{ ok: boolean, idx?: number, wrapped?: boolean, reason?: string }}
+ */
+export function deferDinner(plan, idx) {
+  const d = plan[idx].dinner;
+  if (!d.dish && !d.note) return { ok: false, reason: 'empty' };
+
+  const week = Math.floor(idx / 7);
+  const targetWeek = (week + 1) % 4;
+  const isFree = (gi) => !plan[gi].dinner.dish && !plan[gi].dinner.note;
+
+  let target = -1;
+  const sameDay = targetWeek * 7 + (idx % 7);
+  if (isFree(sameDay)) target = sameDay;
+  else {
+    for (let dd = 0; dd < 7; dd++) {
+      const gi = targetWeek * 7 + dd;
+      if (isFree(gi)) { target = gi; break; }
+    }
+  }
+  if (target === -1) return { ok: false, reason: 'full' };
+
+  plan[target].dinner = d;
+  plan[idx].dinner = emptyDinner();
+  return { ok: true, idx: target, wrapped: targetWeek < week };
 }
 
 /** Swap two days' dinners (the drag-to-reorder action). */

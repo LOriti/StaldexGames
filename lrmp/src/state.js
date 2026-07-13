@@ -16,6 +16,7 @@ const state = {
   plan: null,
   freezer: {},
   favourites: new Set(),
+  lunchPins: {}, // sparse { dayIndex: dishName } — lunch overrides, see core/allocate.js
   tab: 'weekly', // 'recipes' | 'month' | 'weekly'
   week: 0, // 0-3, which week the Weekly view is showing
   brush: 'curry', // active Month-view brush, or 'erase'
@@ -37,17 +38,23 @@ function emit() {
 }
 
 /** Mutate + persist + re-render. Pass which slices changed so we only write those. */
-export function commit({ plan = false, freezer = false, favourites = false } = {}) {
+export function commit({ plan = false, freezer = false, favourites = false, pins = false } = {}) {
   if (plan) store.set(store.KEYS.PLAN, state.plan);
   if (freezer) store.set(store.KEYS.FREEZER, state.freezer);
   if (favourites) store.set(store.KEYS.FAVOURITES, [...state.favourites]);
-  if (plan || freezer || favourites) schedulePush(snapshot());
+  if (pins) store.set(store.KEYS.PINS, state.lunchPins);
+  if (plan || freezer || favourites || pins) schedulePush(snapshot());
   emit();
 }
 
 /** The persisted slices as plain JSON — what remote sync stores and returns. */
 export function snapshot() {
-  return { plan: state.plan, freezer: state.freezer, favourites: [...state.favourites] };
+  return {
+    plan: state.plan,
+    freezer: state.freezer,
+    favourites: [...state.favourites],
+    pins: state.lunchPins,
+  };
 }
 
 /**
@@ -59,9 +66,11 @@ export function applyRemote(data) {
   if (isValidPlan(data.plan)) state.plan = data.plan;
   if (data.freezer && typeof data.freezer === 'object') state.freezer = data.freezer;
   if (Array.isArray(data.favourites)) state.favourites = new Set(data.favourites);
+  if (data.pins && typeof data.pins === 'object') state.lunchPins = data.pins;
   store.set(store.KEYS.PLAN, state.plan);
   store.set(store.KEYS.FREEZER, state.freezer);
   store.set(store.KEYS.FAVOURITES, [...state.favourites]);
+  store.set(store.KEYS.PINS, state.lunchPins);
   emit();
 }
 
@@ -72,15 +81,17 @@ export function setUI(patch) {
 }
 
 export async function hydrate() {
-  const [plan, freezer, favourites] = await Promise.all([
+  const [plan, freezer, favourites, pins] = await Promise.all([
     store.get(store.KEYS.PLAN, null),
     store.get(store.KEYS.FREEZER, {}),
     store.get(store.KEYS.FAVOURITES, []),
+    store.get(store.KEYS.PINS, {}),
   ]);
 
   state.plan = isValidPlan(plan) ? plan : seedPlan();
   state.freezer = freezer && typeof freezer === 'object' ? freezer : {};
   state.favourites = new Set(Array.isArray(favourites) ? favourites : []);
+  state.lunchPins = pins && typeof pins === 'object' ? pins : {};
 
   // First run (or recovered from corrupt state): persist the seed immediately.
   if (!isValidPlan(plan)) store.set(store.KEYS.PLAN, state.plan);
@@ -90,7 +101,8 @@ export async function hydrate() {
 
 export function resetPlan() {
   state.plan = seedPlan();
-  commit({ plan: true });
+  state.lunchPins = {}; // pins reference the old plan's dishes — stale, drop them
+  commit({ plan: true, pins: true });
 }
 
 export function toggleFavourite(dish) {

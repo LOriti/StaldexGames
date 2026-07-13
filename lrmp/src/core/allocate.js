@@ -27,45 +27,90 @@
  *     the queue at that crossing. Week 3's surplus has no week to roll into — that's
  *     the terminal surplus, and it's freeze-it-or-lose-it.
  *
- * Pure function: same plan in, same result out. No DOM, no mutation of `plan`.
+ *  6. PINS are the one user override. `pins` is a sparse map { dayIndex: dishName } —
+ *     "I want THIS dish for lunch on THIS day". A pin RESERVES the earliest-cooked
+ *     portion of that dish that exists by the pinned day, so ordinary FIFO days can't
+ *     eat it first. If no such portion can exist by then (not cooked yet, or none
+ *     left), the pin is reported `unfulfilled: true` — honest, not auto-filled.
+ *     Days without a pin stay 100% derived. Lunches never become a second source of
+ *     truth: delete the pin and the day re-derives.
+ *
+ * Pure function: same plan in, same result out. No DOM, no mutation of `plan` or `pins`.
  *
  * @param {Array} plan  28-day plan (see core/plan.js)
- * @returns {{ lunch: Array<{dish:string, from:number}|null>, weekSurplus: Array<Array<{dish:string, from:number}>> }}
+ * @param {Object<number,string>} pins  sparse { dayIndex: dishName } lunch overrides
+ * @returns {{ lunch: Array<{dish:string, from:number, pinned?:true, unfulfilled?:true}|null>, weekSurplus: Array<Array<{dish:string, from:number}>> }}
  *          lunch[i]        = the lunch on day i, or null for a gap
  *          weekSurplus[w]  = portions rolling OUT of week w (into week w+1)
  */
-export function allocate(plan) {
+export function allocate(plan, pins = {}) {
   const DAYS = 28;
+
+  // Every leftover portion as a token, in cook order (which IS the FIFO order).
+  // A dinner cooked on day D releases from day D+1; day 27's tokens release "day 28",
+  // i.e. never inside this plan — they can only be terminal surplus.
+  const tokens = [];
+  for (let d = 0; d < DAYS; d++) {
+    const din = plan[d].dinner;
+    if (din.dish && din.src === 'cook' && din.extra > 0) {
+      for (let k = 0; k < din.extra; k++) tokens.push({ dish: din.dish, from: d, release: d + 1 });
+    }
+  }
+
+  // Reserve a token for each pin (earliest pinned day first) so plain FIFO days
+  // can't eat a portion the user has promised to a later lunch.
+  const reserved = new Set();
+  const reservedFor = new Map(); // dayIndex -> token
+  const pinDays = Object.keys(pins)
+    .map(Number)
+    .filter((d) => Number.isInteger(d) && d >= 0 && d < DAYS && pins[d])
+    .sort((a, b) => a - b);
+  for (const day of pinDays) {
+    const t = tokens.find((tok) => !reserved.has(tok) && tok.dish === pins[day] && tok.release <= day);
+    if (t) {
+      reserved.add(t);
+      reservedFor.set(day, t);
+    }
+  }
+
   const queue = [];
+  let next = 0;
   const lunch = new Array(DAYS).fill(null);
   const weekSurplus = [[], [], [], []];
 
   for (let day = 0; day < DAYS; day++) {
-    // (a) yesterday's leftovers become available today
-    if (day > 0) {
-      const prev = plan[day - 1].dinner;
-      if (prev.dish && prev.src === 'cook' && prev.extra > 0) {
-        for (let k = 0; k < prev.extra; k++) queue.push({ dish: prev.dish, from: day - 1 });
-      }
-    }
+    // (a) release everything cooked before today
+    while (next < tokens.length && tokens[next].release <= day) queue.push(tokens[next++]);
 
     // (b) snapshot the queue as we cross a week boundary — this is what rolls forward.
     //     Order matters: the release above must happen first, so Sunday's dinner counts
-    //     toward the surplus rolling into Monday.
+    //     toward the surplus rolling into Monday. Reserved tokens are still physically
+    //     in the queue (they exist, they roll), so they appear here too.
     if (day > 0 && day % 7 === 0) {
-      weekSurplus[day / 7 - 1] = queue.map((t) => ({ ...t }));
+      weekSurplus[day / 7 - 1] = queue.map((t) => ({ dish: t.dish, from: t.from }));
     }
 
-    // (c) eat the oldest available portion
-    if (queue.length) lunch[day] = queue.shift();
+    // (c) eat: the pinned portion if this day has one, else the oldest unreserved one
+    if (pins[day]) {
+      const t = reservedFor.get(day);
+      if (t) {
+        queue.splice(queue.indexOf(t), 1);
+        lunch[day] = { dish: t.dish, from: t.from, pinned: true };
+      } else {
+        lunch[day] = { dish: pins[day], from: -1, pinned: true, unfulfilled: true };
+      }
+    } else {
+      const i = queue.findIndex((t) => !reserved.has(t));
+      if (i !== -1) {
+        const t = queue.splice(i, 1)[0];
+        lunch[day] = { dish: t.dish, from: t.from };
+      }
+    }
   }
 
   // Day 27 (final Sunday) still releases its leftovers — they have nowhere to go.
-  const last = plan[DAYS - 1].dinner;
-  if (last.dish && last.src === 'cook' && last.extra > 0) {
-    for (let k = 0; k < last.extra; k++) queue.push({ dish: last.dish, from: DAYS - 1 });
-  }
-  weekSurplus[3] = queue.map((t) => ({ ...t }));
+  while (next < tokens.length) queue.push(tokens[next++]);
+  weekSurplus[3] = queue.map((t) => ({ dish: t.dish, from: t.from }));
 
   return { lunch, weekSurplus };
 }

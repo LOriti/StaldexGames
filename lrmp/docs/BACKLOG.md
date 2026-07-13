@@ -4,26 +4,13 @@ Ordered by value. Each item notes the trap, because most of these have one.
 
 ---
 
-## 1. Lunch pinning ⭐ next
+## ~~1. Lunch pinning~~ ✅ shipped
 
-**Why:** lunches are currently 100% derived — you can't say "no, I want Tuesday's lunch to
-be the chilli." This was asked for explicitly ("most earliest meal scheduled for lunches
-sooner *unless shuffled*").
-
-**The trap:** the naive fix — letting the user drag lunch tiles freely — creates a second
-source of truth and the sync bugs come straight back.
-
-**How to do it right:** keep derivation as the default, add a sparse *override* layer.
-
-```js
-// state.lunchPins = { [dayIndex]: dishName }
-// allocate(plan, pins) — pins are honoured first, then FIFO fills the rest
-```
-
-`allocate()` stays pure; it just takes a second argument. A pinned lunch consumes a portion
-of that dish from the queue if one is available (otherwise show the pin as unfulfilled —
-that's honest, and it tells the user to cook more). Un-pinning returns the day to derived.
-Show pinned lunches with a 📌 so the distinction is visible.
+Built exactly as designed here: `state.lunchPins` sparse override layer,
+`allocate(plan, pins)` stays pure, pins *reserve* a queue portion (FIFO can't eat a
+promised one first), unfulfillable pins render honestly with 📌, un-pinning returns the
+day to derived. Set by dragging a lunch tile onto another day. Covered in
+`tests/allocate.test.js`.
 
 ---
 

@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { seedPlan, paintDay, shuffleAll, clearPlan, swapDinners, sameWeekDishes, isValidPlan, DAYS, DEFAULT_EXTRA } from '../src/core/plan.js';
+import { seedPlan, paintDay, shuffleAll, clearPlan, swapDinners, deferDinner, sameWeekDishes, isValidPlan, emptyDinner, DAYS, DEFAULT_EXTRA } from '../src/core/plan.js';
 import { metaOf } from '../src/data/dishes.js';
 import { MODES } from '../src/data/modes.js';
 
@@ -95,5 +95,63 @@ describe('plan — moving dinners', () => {
     expect(names.has(plan[0].dinner.dish)).toBe(false);
     expect(names.has(plan[1].dinner.dish)).toBe(true);
     expect(names.has(plan[7].dinner.dish)).toBe(false); // next week
+  });
+});
+
+describe('plan — deferDinner (push to next week)', () => {
+  it('prefers the same weekday of the next week when it is free', () => {
+    const plan = seedPlan(); // Sat/Sun free in every week
+    // move week 0 Monday somewhere free: Sat of week 1? No — same weekday (Mon wk1) is taken.
+    // Use a Saturday note-free plan: defer wk0 Monday; Mon wk1 occupied -> first empty is Sat wk1.
+    const moved = { ...plan[0].dinner };
+    const res = deferDinner(plan, 0);
+    expect(res.ok).toBe(true);
+    expect(res.idx).toBe(7 + 5); // Mon wk1 taken, Sat wk1 is the first empty day
+    expect(plan[res.idx].dinner).toEqual(moved);
+    expect(plan[0].dinner).toEqual(emptyDinner());
+  });
+
+  it('lands on the same weekday when that day is empty', () => {
+    const plan = seedPlan();
+    const moved = { ...plan[5].dinner, cat: 'curry', dish: 'Keema', src: 'cook', extra: 2 };
+    plan[5].dinner = moved; // Sat wk0 now cooked; Sat wk1 still empty
+    const res = deferDinner(plan, 5);
+    expect(res.ok).toBe(true);
+    expect(res.idx).toBe(7 + 5); // same weekday, next week
+    expect(res.wrapped).toBe(false);
+  });
+
+  it('wraps week 4 into week 1 (next month)', () => {
+    const plan = seedPlan();
+    expect(deferDinner(plan, 26).ok).toBe(false); // Sat wk3 is empty — nothing to defer
+    plan[26].dinner = { cat: 'curry', dish: 'Keema', src: 'cook', extra: 2 }; // Sat wk3
+    plan[5].dinner = { cat: 'fry', dish: 'Steak', src: 'cook', extra: 0 }; // Sat wk0 occupied
+    const res2 = deferDinner(plan, 26);
+    expect(res2.ok).toBe(true);
+    expect(res2.idx).toBe(6); // Sat wk0 taken -> first empty in wk0 is Sun (day 6)
+    expect(res2.wrapped).toBe(true);
+  });
+
+  it('refuses when the next week has no empty day', () => {
+    const plan = seedPlan();
+    for (let d = 0; d < 7; d++) plan[7 + d].dinner = { cat: 'curry', dish: 'D' + d, src: 'cook', extra: 0 };
+    const res = deferDinner(plan, 0);
+    expect(res.ok).toBe(false);
+    expect(plan[0].dinner.dish).not.toBeNull(); // nothing moved
+  });
+
+  it('refuses to defer an empty day', () => {
+    const plan = seedPlan();
+    expect(deferDinner(plan, 5).ok).toBe(false); // Sat wk0 is empty
+  });
+
+  it('treats note days as occupied targets and movable sources', () => {
+    const plan = seedPlan();
+    plan[7 + 5].dinner = { ...emptyDinner(), note: 'dinner out' }; // Sat wk1 has a note
+    const res = deferDinner(plan, 0); // Mon wk1 taken, Sat wk1 noted -> Sun wk1
+    expect(res.idx).toBe(7 + 6);
+    const res2 = deferDinner(plan, 7 + 5); // the note itself can be pushed to wk2
+    expect(res2.ok).toBe(true);
+    expect(plan[res2.idx].dinner.note).toBe('dinner out');
   });
 });

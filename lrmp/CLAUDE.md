@@ -28,9 +28,12 @@ slots. Move a dinner and every lunch downstream of it re-derives automatically. 
 one source of truth (`state.plan`, a 28-day array) and everything else is computed from it.
 
 If you find yourself adding a "lunch" field that the user sets directly, stop — you're
-about to introduce a second source of truth and a sync bug. (The one legitimate exception
-is lunch *pinning*, which is a real backlog item — see `docs/BACKLOG.md` for how to do it
-without breaking this.)
+about to introduce a second source of truth and a sync bug. The one exception is lunch
+*pinning* (now built): `state.lunchPins` is a sparse `{ dayIndex: dishName }` override
+layer passed to `allocate(plan, pins)`. A pin **reserves** a portion from the queue —
+it never invents one — and deleting the pin returns the day to fully derived. That's
+the pattern for any future user override: sparse layer over derivation, never a
+parallel lunch array.
 
 ---
 
@@ -77,7 +80,9 @@ plan[i].dinner = {
   cat:   'curry' | 'fry' | 'assembly' | 'soup' | 'bake' | null,
   dish:  string | null,        // must exist in DISH_INDEX
   src:   'cook' | 'freezer' | null,
-  extra: number                // leftover portions this dinner yields
+  extra: number,               // leftover portions this dinner yields
+  note:  string                // OPTIONAL free-text day note ("dinner out") — a note day
+                               // cooks nothing and the allocator ignores it
 }
 ```
 
@@ -94,7 +99,7 @@ is nothing to sync. Edit either, both update.
    dinner's `extra`. Nothing is created or destroyed by a freezer op.
 
 ### The allocator (`core/allocate.js`)
-Pure: `plan → { lunch[28], weekSurplus[4] }`.
+Pure: `(plan, lunchPins) → { lunch[28], weekSurplus[4] }`.
 
 - A dinner cooked on day D releases leftovers **from day D+1**. Never same-day — you ate it.
 - **FIFO**: earliest-cooked is eaten first. Walk days in order; each day, release
@@ -104,7 +109,16 @@ Pure: `plan → { lunch[28], weekSurplus[4] }`.
   information: cook more, or accept it.
 - **Rolling surplus.** Leftovers don't expire at week boundaries. Whatever is still queued
   when we cross into week W+1 is week W's surplus — it rolls forward. `weekSurplus[3]` is
-  terminal (nothing to roll into), so the UI labels it *freeze-it-or-lose-it*.
+  terminal (a new month starts fresh — no wrap-feeding into Wk 1's lunches, that would be
+  eating this month's food before it's cooked), so the UI nudges freezing it.
+- **Pins.** `allocate(plan, pins)` honours sparse `{ dayIndex: dishName }` overrides.
+  A pin reserves the earliest-cooked portion of that dish that exists by the pinned day,
+  so plain FIFO days can't eat it first. No portion available by then → the pin renders
+  as *unfulfilled* (honest), never auto-filled. The UI sets pins by dragging lunch tiles
+  between days; unpinning returns the day to derived.
+- **The surplus strip is also a drop zone.** Dropping a dinner tile on it defers that
+  dinner to the next week (`deferDinner` in `core/plan.js`) — same weekday if free, else
+  first empty day. Wk 4 wraps to Wk 1, framed as "next month" (the board is reused).
 
 The default of **2 leftovers per `keeps` dish deliberately over-produces** relative to 7
 lunch slots. That's why surplus and the freezer exist. `DEFAULT_EXTRA` in `core/plan.js` is
@@ -114,8 +128,10 @@ a one-line change if it turns out to be too generous in practice.
 `{ [dishName]: portionCount }`. Zero-count keys are **deleted**, not kept at 0, so
 `Object.keys(freezer)` is always the true inventory.
 
-Three ways in: ❄ button (one portion), drag a dinner tile onto the freezer (all its
-leftovers), drag a surplus batch onto the freezer (that batch, decrementing source days).
+Three ways in, all drags onto the freezer panel: a dinner tile (all its leftovers),
+a lunch tile (that single portion — this replaced the old per-dinner ❄ button), or a
+surplus batch (decrementing its source days). `core/freezer.js#freezeOne` still exists —
+it's what the lunch-tile drag calls.
 One way out: `Use ▸` → fills the first empty dinner slot in the current week.
 
 ---
@@ -132,7 +148,8 @@ in-memory, and exposes one async interface. **Never call `localStorage` or `wind
 directly anywhere else.** If `backend() === 'memory'` the app toasts a warning.
 
 **1b. Remote sync is a layer, not a replacement.**
-`src/storage/sync.js` mirrors the three persisted slices to the Worker in
+`src/storage/sync.js` mirrors the four persisted slices (plan, freezer, favourites,
+lunch pins) to the Worker in
 `../worker-lrmp/` (single shared blob, last-write-wins, deliberately unauthenticated —
 the unlisted URL is the only gate; see that Worker's README). Rules: local persistence
 always happens first and must never depend on the network; `commit()` schedules a
@@ -181,11 +198,13 @@ controls to a tile.
 ## State of play
 
 **Works:** month painting + auto-dish-selection, week board with derived lunches, leftover
-steppers, FIFO allocation with gaps, rolling weekly surplus, freezer (bank/use/remove,
-drag-to-freeze), all 40 recipes, persistence, mobile drag.
+steppers, FIFO allocation with gaps, rolling weekly surplus, lunch pinning (drag a lunch to
+another day), freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
+to next week (drop it on the surplus strip; Wk 4 wraps to Wk 1), free-text day notes
+("dinner out") on empty days, all 40 recipes, persistence, mobile drag.
 
-**Not built yet:** see `docs/BACKLOG.md`. The top three are lunch pinning, drag-from-freezer
-onto a specific day, and per-dish net carbs.
+**Not built yet:** see `docs/BACKLOG.md`. The top three are drag-from-freezer onto a
+specific day, per-dish net carbs, and the shopping list.
 
-**Tests:** 38 passing, covering `core/` and data integrity. `ui/` is untested — if you add
+**Tests:** 52 passing, covering `core/` and data integrity. `ui/` is untested — if you add
 a headless-DOM test setup, that's a genuine improvement, but don't let it block feature work.
