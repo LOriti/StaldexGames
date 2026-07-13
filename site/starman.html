@@ -288,6 +288,74 @@ dialog.book-modal::backdrop{background:rgba(10,9,24,.82);backdrop-filter:blur(3p
   letter-spacing:.2em;text-transform:uppercase;cursor:pointer;padding:.7rem .6rem;
 }
 .book-modal .bm-cancel:hover,.book-modal .bm-cancel:focus-visible{color:var(--starlight)}
+
+a.plain{color:var(--aurum);text-decoration:none;border-bottom:1px solid var(--aurum-soft)}
+@media (max-width:560px){
+  .ver-toggle button{font-size:.56rem;letter-spacing:.16em;padding:.6rem .7rem .6rem .86rem}
+}
+
+/* ---------- ORACLE VERSION — instant personal taste, then the invitation ---------- */
+.oracle{max-width:680px;margin:0 auto;padding:3.4rem 1.5rem 0;text-align:center}
+.oracle h1{font-size:clamp(2rem,5.5vw,3.1rem);margin:.4rem 0 .6rem;text-shadow:0 0 40px rgba(140,120,255,.5)}
+.oracle h1 .gold,.stories h1 .gold{color:var(--aurum)}
+.oracle .o-tag{color:var(--lilac);font-style:italic;font-size:1.05rem;max-width:30em;margin:0 auto 2.4rem}
+.oracle .o-form label{
+  display:block;font-family:'Cinzel',serif;font-size:.7rem;letter-spacing:.3em;
+  text-transform:uppercase;color:var(--aurum);margin-bottom:.7rem;
+}
+.oracle .o-row{display:flex;gap:.7rem;justify-content:center;flex-wrap:wrap}
+.oracle input[type=date]{
+  background:rgba(25,21,64,.55);border:1px solid rgba(156,143,217,.4);border-radius:4px;
+  color:var(--starlight);font-family:'Spectral',serif;font-size:1.05rem;padding:.7rem .9rem;color-scheme:dark;
+}
+.oracle input[type=date]:focus-visible{outline:2px solid var(--aurum);outline-offset:1px}
+.oracle .o-row .cta{border:0;cursor:pointer}
+.oracle .o-card{
+  margin:3rem auto 0;max-width:520px;padding:2rem 1.8rem;
+  border:1px solid rgba(227,180,87,.35);border-radius:8px;
+  background:linear-gradient(165deg,var(--nebula-soft) 0%,var(--nebula) 80%);
+  box-shadow:0 0 60px rgba(120,100,220,.25);
+}
+.oracle .o-sym{font-size:2.6rem;line-height:1;color:var(--aurum)}
+.oracle .o-card h2{font-size:1.5rem;letter-spacing:.14em;margin:.5rem 0 .9rem}
+.oracle .o-card p{font-size:1.02rem}
+.oracle .o-moon{color:var(--lilac);font-style:italic;margin-top:1.1rem;font-size:.95rem}
+.oracle .o-disc{font-size:.78rem;color:#6f68a0;margin-top:1rem}
+.oracle .o-more{color:var(--lilac);max-width:32em;margin:2.4rem auto 1.7rem;font-style:italic}
+.oracle .o-meta{font-size:.85rem;color:#6f68a0;margin-top:1.3rem;padding-bottom:1rem}
+
+/* ---------- STORIES VERSION — proof, objections answered, soft scarcity ---------- */
+.stories{max-width:760px;margin:0 auto;padding:3.4rem 1.5rem 0}
+.stories .s-head{text-align:center}
+.stories h1{font-size:clamp(2rem,5.5vw,3rem);margin:.4rem 0 .6rem;text-shadow:0 0 40px rgba(140,120,255,.5)}
+.stories .s-tag{color:var(--lilac);font-style:italic;font-size:1.05rem;max-width:32em;margin:0 auto}
+.stories .s-quotes{display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;margin-top:2.8rem}
+.stories .s-quote{
+  border:1px solid rgba(156,143,217,.25);border-radius:8px;
+  padding:1.5rem 1.4rem;background:rgba(25,21,64,.45);margin:0;
+}
+.stories .s-quote blockquote{font-style:italic;font-size:1rem;line-height:1.7}
+.stories .s-quote figcaption{
+  margin-top:1rem;font-family:'Cinzel',serif;font-size:.7rem;
+  letter-spacing:.2em;text-transform:uppercase;color:var(--aurum);
+}
+.stories .s-stars{color:var(--aurum);letter-spacing:.3em;margin-top:.45rem;font-size:.78rem}
+.stories section{max-width:none;padding:3.2rem 0 0}
+.stories h2{font-size:1rem;letter-spacing:.18em;text-transform:uppercase;color:var(--aurum);margin-bottom:1rem;text-align:center;font-family:'Cinzel',serif}
+.stories .s-faq details{border-bottom:1px solid rgba(156,143,217,.16)}
+.stories .s-faq summary{
+  cursor:pointer;padding:1.05rem 0;font-family:'Cinzel',serif;font-size:.95rem;
+  letter-spacing:.05em;list-style:none;display:flex;justify-content:space-between;gap:1rem;
+}
+.stories .s-faq summary::-webkit-details-marker{display:none}
+.stories .s-faq summary::after{content:"+";color:var(--aurum)}
+.stories .s-faq details[open] summary::after{content:"–"}
+.stories .s-faq summary:focus-visible{outline:2px solid var(--aurum);outline-offset:2px}
+.stories .s-faq p{color:#d5cff0;padding:0 0 1.2rem;font-size:.98rem;max-width:56ch}
+.stories .s-book{text-align:center;padding:3.4rem 0 1rem}
+.stories .s-slots{color:var(--lilac);font-style:italic;margin-bottom:1.7rem}
+.stories .s-book .contact-line{margin-top:1.4rem;font-size:.95rem;color:#c9c2ea}
+@media (max-width:600px){.stories .s-quotes{grid-template-columns:1fr}}
 @media (max-width:600px){
   .direct .d-rate{grid-template-columns:1fr}
   .direct .d-rate .price{grid-column:1;grid-row:auto;text-align:left;margin-top:.15rem}
@@ -301,6 +369,8 @@ dialog.book-modal::backdrop{background:rgba(10,9,24,.82);backdrop-filter:blur(3p
   <div class="inner">
     <button type="button" data-ver="mystic" aria-pressed="true">Mystic</button>
     <button type="button" data-ver="direct" aria-pressed="false">Direct</button>
+    <button type="button" data-ver="oracle" aria-pressed="false">Oracle</button>
+    <button type="button" data-ver="stories" aria-pressed="false">Stories</button>
   </div>
 </nav>
 
@@ -565,6 +635,111 @@ dialog.book-modal::backdrop{background:rgba(10,9,24,.82);backdrop-filter:blur(3p
   </footer>
 </div>
 
+<!-- ============ ORACLE VERSION — personalization hook: instant taste, then the invitation ============ -->
+<div class="wrap oracle" id="ver-oracle" hidden>
+
+  <header class="o-head">
+    <div class="eyebrow" style="text-align:center">Travis · The Shaman Starman</div>
+    <h1>The sky already <span class="gold">knows you</span>.</h1>
+    <p class="o-tag">Don't take that on faith — test it. One date is enough for a first whisper.</p>
+    <form id="oracleForm" class="o-form">
+      <label for="oDate">Your date of birth</label>
+      <div class="o-row">
+        <input type="date" id="oDate" required>
+        <button type="submit" class="cta">Ask the Sky</button>
+      </div>
+    </form>
+  </header>
+
+  <section class="o-result" id="oracleResult" hidden>
+    <div class="o-card">
+      <div class="o-sym" id="oSym" aria-hidden="true"></div>
+      <h2 id="oSignName"></h2>
+      <p id="oSignLine"></p>
+      <p class="o-moon" id="oMoonLine"></p>
+      <p class="o-disc">Sun sign and moon phase only — the two loudest notes of a chart that has dozens.</p>
+    </div>
+    <p class="o-more">That much was read from a single date. Add a birth time and place, and it stops being your sign and starts being <em>you</em>.</p>
+    <a class="cta" href="mailto:travis@shamanstarman.com?subject=Booking%20a%20reading">Hear the Rest — Book a Reading</a>
+    <div class="o-meta">Readings from $85 · online worldwide · written summary included</div>
+  </section>
+
+  <footer>
+    <div class="stars-line">✦ ✧ ✦</div>
+    Travis · The Shaman Starman — readings offered in the spirit of guidance, not guarantee.
+  </footer>
+</div>
+
+<!-- ============ STORIES VERSION — social-proof hook: testimonials, objections, soft scarcity ============ -->
+<div class="wrap stories" id="ver-stories" hidden>
+
+  <header class="s-head">
+    <div class="eyebrow" style="text-align:center">Travis · The Shaman Starman</div>
+    <h1>Don't take the <span class="gold">sky's</span> word for it.</h1>
+    <p class="s-tag">What people carry out of a reading — in their own words.</p>
+  </header>
+
+  <!-- PLACEHOLDER QUOTES — replace with real client testimonials (with permission) before promoting this version -->
+  <section class="s-quotes">
+    <figure class="s-quote">
+      <blockquote>I booked as a joke for my birthday. He described a pattern in my relationships that took my therapist two years to reach.</blockquote>
+      <figcaption>Jess · Hearts &amp; Charts</figcaption>
+      <div class="s-stars" aria-label="Five stars">★★★★★</div>
+    </figure>
+    <figure class="s-quote">
+      <blockquote>I don't believe in any of this. Technically I still don't. I have also re-read the summary he sent me four times.</blockquote>
+      <figcaption>Mark · The Full Chart</figcaption>
+      <div class="s-stars" aria-label="Five stars">★★★★★</div>
+    </figure>
+    <figure class="s-quote">
+      <blockquote>The Crossroads reading paid for itself. I took the leap, and the window he flagged was exactly when everything moved.</blockquote>
+      <figcaption>Priya · The Crossroads</figcaption>
+      <div class="s-stars" aria-label="Five stars">★★★★★</div>
+    </figure>
+    <figure class="s-quote">
+      <blockquote>Warm, funny, zero doom. Less like a prediction, more like being handed an honest map of myself — with good company.</blockquote>
+      <figcaption>Tom · The Season Ahead</figcaption>
+      <div class="s-stars" aria-label="Five stars">★★★★★</div>
+    </figure>
+  </section>
+
+  <section class="s-faq">
+    <h2>Fair questions</h2>
+    <details>
+      <summary>Is this fortune-telling?</summary>
+      <p>No. A chart reading is exploration, not prophecy — you bring the questions you've been circling, and the chart gives us somewhere real to stand while we look at them. No doom, no theatre.</p>
+    </details>
+    <details>
+      <summary>I don't know my exact birth time.</summary>
+      <p>A reading can still be done — your date and place carry most of the map. The more specific the time, the more precise the reading; even a rough window ("early morning") sharpens it.</p>
+    </details>
+    <details>
+      <summary>I'm a skeptic.</summary>
+      <p>Welcome — bring the skepticism, it's good company. Travis's approach is warm, direct and unprecious: an honest map of the sky you were born under, and a human conversation about what's actually going on.</p>
+    </details>
+    <details>
+      <summary>What do I actually receive?</summary>
+      <p>A sitting of 45–90 minutes depending on the reading, prepared in advance from your chart — nothing improvised — and a written summary afterward, so nothing said under the stars is lost.</p>
+    </details>
+    <details>
+      <summary>Where do readings happen?</summary>
+      <p>Online worldwide, or in person by arrangement. Readings start from $85.</p>
+    </details>
+  </section>
+
+  <section class="s-book">
+    <h2>Begin</h2>
+    <p class="s-slots">Travis holds a limited number of sittings each month. If the timing matters, don't sit on it.</p>
+    <a class="cta" href="mailto:travis@shamanstarman.com?subject=Booking%20a%20reading">Book a Reading</a>
+    <div class="contact-line">or write to <a class="plain" href="mailto:travis@shamanstarman.com">travis@shamanstarman.com</a></div>
+  </section>
+
+  <footer>
+    <div class="stars-line">✦ ✧ ✦</div>
+    Travis · The Shaman Starman — readings offered in the spirit of guidance, not guarantee.
+  </footer>
+</div>
+
 <!-- ============ BOOKING MODAL ============ -->
 <dialog class="book-modal" id="bookDialog" aria-labelledby="bookTitle">
   <form id="bookForm" novalidate>
@@ -628,7 +803,12 @@ if(reduced){ draw(0); } else { requestAnimationFrame(draw); }
 
 // ---------- version toggle ----------
 const verButtons = document.querySelectorAll('.ver-toggle button');
-const verPanels = { mystic: document.getElementById('ver-mystic'), direct: document.getElementById('ver-direct') };
+const verPanels = {
+  mystic: document.getElementById('ver-mystic'),
+  direct: document.getElementById('ver-direct'),
+  oracle: document.getElementById('ver-oracle'),
+  stories: document.getElementById('ver-stories'),
+};
 function setVersion(v, scroll){
   if (!verPanels[v]) v = 'mystic';
   for (const k in verPanels) verPanels[k].hidden = (k !== v);
@@ -649,7 +829,14 @@ if (initialVer === 'direct') setVersion('direct', false);
 const bookDialog = document.getElementById('bookDialog');
 const bookForm = document.getElementById('bookForm');
 document.querySelectorAll('a.cta[href*="Booking"]').forEach(a => {
-  a.addEventListener('click', e => { e.preventDefault(); bookDialog.showModal(); });
+  a.addEventListener('click', e => {
+    e.preventDefault();
+    // If the visitor already told the oracle their birth date, carry it into the form
+    const oDate = document.getElementById('oDate');
+    const bDate = document.getElementById('bDate');
+    if (oDate.value && !bDate.value) bDate.value = oDate.value;
+    bookDialog.showModal();
+  });
 });
 document.getElementById('bookCancel').addEventListener('click', () => bookDialog.close());
 // Clicking outside the dialog (on the backdrop) closes it
@@ -679,6 +866,61 @@ bookForm.addEventListener('submit', e => {
   bookDialog.close();
   location.href = 'mailto:travis@shamanstarman.com?subject=' + encodeURIComponent('Booking a reading')
     + '&body=' + encodeURIComponent(body);
+});
+
+// ---------- oracle: sun sign + birth moon phase from a single date ----------
+const SIGNS = {
+  Aries: ['♈', "First in, all in — you've been called 'too much' by people who were secretly taking notes. A chart usually shows where that fire is armour, and what it's protecting."],
+  Taurus: ['♉', "You build slowly and hold on hard — comfort isn't laziness, it's your architecture. The interesting question is what you're refusing to let change."],
+  Gemini: ['♊', "Two minds, both busy. You collect people, ideas and exit routes. A chart usually shows what all that motion is circling — and it's rarely boredom."],
+  Cancer: ['♋', "You feel a room before you enter it, and you remember everything. The chart tends to show where the shell ends and the tide begins."],
+  Leo: ['♌', "Warmth is your currency and attention is your weather. The chart usually shows who the performance is really for — and it's rarely the audience."],
+  Virgo: ['♍', "You see the flaw in everything, yourself most of all. That precision is a gift wearing a disguise; the chart shows what it's actually in service of."],
+  Libra: ['♎', "You keep everyone's peace but your own. Somewhere under all that balance sits a preference you've never said out loud. The chart tends to find it."],
+  Scorpio: ['♏', "You read people for a living, whatever your job title says. Depth isn't a mood for you — it's a requirement. The chart shows what you're guarding at the bottom."],
+  Sagittarius: ['♐', "The horizon keeps promising and you keep believing it. Freedom is your first language. The chart usually shows what you're running toward — or from."],
+  Capricorn: ['♑', "You climb because the climb makes sense, and rest feels suspicious. The chart tends to show who you were before the ambition arrived."],
+  Aquarius: ['♒', "You love humanity and keep humans at arm's length. Original was never a choice for you. The chart shows where the outsider first decided to stand outside."],
+  Pisces: ['♓', "The membrane between you and everything else is thin — that's the gift and the bill. The chart usually shows where the dreaming is actually navigation."],
+};
+function sunSign(m, d) {
+  const bounds = [[1,19,'Capricorn'],[2,18,'Aquarius'],[3,20,'Pisces'],[4,19,'Aries'],[5,20,'Taurus'],[6,20,'Gemini'],
+    [7,22,'Cancer'],[8,22,'Leo'],[9,22,'Virgo'],[10,22,'Libra'],[11,21,'Scorpio'],[12,21,'Sagittarius'],[12,31,'Capricorn']];
+  for (const [bm, bd, name] of bounds) {
+    if (m < bm || (m === bm && d <= bd)) return name;
+  }
+}
+const MOONS = [
+  ['a new moon', "born on a dark sky. Beginnings are your element, even when they frighten you."],
+  ['a waxing crescent', "a sliver of light gaining. You were born mid-reach, and you've been reaching since."],
+  ['a first-quarter moon', "half-lit and climbing. Friction is where you do your best work."],
+  ['a waxing gibbous', "nearly full. Almost-there is your habitat; refinement is your lifelong theme."],
+  ['a full moon', "the whole face lit. Feelings arrive at full volume, and hiding them has never once worked."],
+  ['a waning gibbous', "just past full. You digest what others only experience — and then you teach it."],
+  ['a last-quarter moon', "half-lit and letting go. Your life keeps asking you to release what you've outgrown."],
+  ['a waning crescent', "the last of the light. An old soul's moon — rest is productive for you, whatever the world says."],
+];
+function moonAt(y, m, d) {
+  const synodic = 29.53058867;
+  const epoch = Date.UTC(2000, 0, 6, 18, 14); // known new moon
+  const days = (Date.UTC(y, m - 1, d, 12) - epoch) / 86400000;
+  const phase = ((days % synodic) + synodic) % synodic;
+  return MOONS[Math.round(phase / synodic * 8) % 8];
+}
+document.getElementById('oracleForm').addEventListener('submit', e => {
+  e.preventDefault();
+  const oDate = document.getElementById('oDate');
+  if (!oDate.value) { oDate.focus(); oDate.reportValidity(); return; }
+  const [y, m, d] = oDate.value.split('-').map(Number);
+  const sign = sunSign(m, d);
+  const moon = moonAt(y, m, d);
+  document.getElementById('oSym').textContent = SIGNS[sign][0];
+  document.getElementById('oSignName').textContent = sign;
+  document.getElementById('oSignLine').textContent = SIGNS[sign][1];
+  document.getElementById('oMoonLine').textContent = 'The moon over your birthday was ' + moon[0] + ' — ' + moon[1];
+  const result = document.getElementById('oracleResult');
+  result.hidden = false;
+  result.scrollIntoView({ behavior: 'smooth', block: 'start' });
 });
 </script>
 </body>
