@@ -258,6 +258,8 @@ footer .stars-line{letter-spacing:.6em;color:var(--aurum);margin-bottom:.6rem}
 
 /* ---------- BOOKING MODAL ---------- */
 dialog.book-modal{
+  position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);margin:0;
+  max-height:calc(100vh - 2.4rem);overflow-y:auto;
   background:linear-gradient(165deg,var(--nebula) 0%,var(--void) 80%);
   color:var(--starlight);border:1px solid rgba(156,143,217,.35);border-radius:8px;
   padding:2.2rem 2rem;max-width:420px;width:calc(100% - 2.4rem);
@@ -650,6 +652,12 @@ document.querySelectorAll('a.cta[href*="Booking"]').forEach(a => {
   a.addEventListener('click', e => { e.preventDefault(); bookDialog.showModal(); });
 });
 document.getElementById('bookCancel').addEventListener('click', () => bookDialog.close());
+// Clicking outside the dialog (on the backdrop) closes it
+bookDialog.addEventListener('click', e => {
+  const r = bookDialog.getBoundingClientRect();
+  const inside = e.clientX >= r.left && e.clientX <= r.right && e.clientY >= r.top && e.clientY <= r.bottom;
+  if (!inside) bookDialog.close();
+});
 bookForm.addEventListener('submit', e => {
   e.preventDefault();
   const place = document.getElementById('bPlace');
