@@ -8,7 +8,7 @@ No wordmark, no taglines, no label copy. The domain is the only identifier.
 - **Background** `#FAFAF8` · **Text** `#1A1A1A` · **Secondary** `#6B6B6B` · **Hairlines** `#E4E4E0`
 - **No accent colour.** Links are underlined text in the text colour.
 - **Type:** system font stack only. Body 16px/1.55. Project names 20px semibold. Row metadata 13px secondary.
-- **Layout:** single centred column, max 640px, generous whitespace. Projects are rows divided by hairlines.
+- **Layout:** single centred column, max 640px, generous whitespace. Two sections — "Games" first, then "Projects" — each a 13px secondary heading over rows divided by hairlines. Games holds the playable games (Cubicle, then Jaryd's Last Day); Projects holds CafePass and Shaman Starman.
 - **Motion:** expand/collapse only (native `<details>`). Nothing else moves.
 - **Copy:** plain and factual. A row is: name · type · one factual line.
 
@@ -29,6 +29,12 @@ Current panels:
   purple `#6264a7` primary buttons, meter bars, Segoe-first font stack. Leaderboard renders
   inside this skin (top 10 per board, split length/difficulty selectors). Copy inside the
   panel uses the game's dashboard voice.
+- **Jaryd's Last Day** (`.offboard`): OFFBOARD™ enterprise-suite skin lifted from the game —
+  navy `#10243f` topbar with gold `#c9a227` accents and the dog brandmark SVG, grey-green
+  sheet `#d6d7d1`, paper cards with a 4px ink top rule, gradient meter bars (Mayhem, Heat,
+  Legend, Severance), tier chips (safe/petty/crime), teal `#0e6b63` CTA with hard-shadow
+  press. System sans stands in for the game's Archivo; system mono for JetBrains Mono
+  (no external fonts in the shell). Copy uses the suite's HR-software voice.
 - **CafePass** (`.cafepass`): warm coffee palette lifted from the product — cream sheet
   `#F4EFE6`, dark ink `#1A1410` header with gold `#C9A876` accents, Georgia serif for
   drink names, sans for UI chrome. Shows the "usual order" card, feature badges, and a

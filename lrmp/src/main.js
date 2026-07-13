@@ -6,6 +6,7 @@ import { initSync } from './storage/sync.js';
 import { renderRecipes } from './ui/recipesView.js';
 import { renderMonth } from './ui/monthView.js';
 import { renderWeekly } from './ui/weeklyView.js';
+import { renderShopping } from './ui/shoppingView.js';
 import { initModal } from './ui/recipeModal.js';
 import { $, $$, toast } from './ui/dom.js';
 
@@ -13,6 +14,7 @@ const VIEWS = {
   recipes: { el: () => $('#recipesView'), render: renderRecipes },
   month: { el: () => $('#monthView'), render: renderMonth },
   weekly: { el: () => $('#weeklyView'), render: renderWeekly },
+  shopping: { el: () => $('#shoppingView'), render: renderShopping },
 };
 
 function render() {

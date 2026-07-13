@@ -3,8 +3,8 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Projects</title>
-<meta name="description" content="A repository of projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard. CafePass: a subscription coffee membership platform. Shaman Starman: star chart readings and guidance from Travis.">
+<title>Games & Projects</title>
+<meta name="description" content="A repository of games and projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard. Jaryd's Last Day: a last-day-at-the-office decision game of graceful exits, petty acts, and workplace crimes. CafePass: a subscription coffee membership platform. Shaman Starman: star chart readings and guidance from Travis.">
 <style>
   /* ============ SHELL — the neutral container ============ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -19,10 +19,11 @@
   }
   .wrap { max-width: 640px; margin: 0 auto; padding: 72px 20px 96px; }
 
-  h1 { font-size: 13px; font-weight: 400; color: #6B6B6B; letter-spacing: 0.02em; margin-bottom: 28px; }
+  h1, h2 { font-size: 13px; font-weight: 400; color: #6B6B6B; letter-spacing: 0.02em; margin-bottom: 28px; }
+  section + section { margin-top: 56px; }
 
   details.project { border-top: 1px solid #E4E4E0; }
-  details.project:last-of-type { border-bottom: 1px solid #E4E4E0; }
+  section details.project:last-of-type { border-bottom: 1px solid #E4E4E0; }
 
   summary.row {
     list-style: none; cursor: pointer; padding: 20px 2px;
@@ -160,6 +161,75 @@
   .vitals table.v-lb .s { text-align: right; width: 60px; font-variant-numeric: tabular-nums; }
   .vitals .v-empty { font-size: 13px; color: var(--viva-text-sub); padding: 4px 0; }
 
+  /* ============ JARYD'S LAST DAY PANEL — OFFBOARD™ suite, styles lifted from the game ============ */
+  .offboard {
+    --ob-bg: #d6d7d1; --ob-paper: #f8f7f2; --ob-paper-2: #efeee7; --ob-ink: #15171c; --ob-ink-soft: #5a5e66; --ob-line: #c9c9c0;
+    --ob-brand: #0e6b63; --ob-brand-deep: #094a44; --ob-amber: #d98a1f; --ob-blood: #c0392b; --ob-blood-deep: #8e2018;
+    --ob-good: #2f7d4f; --ob-gold: #c9a227; --ob-navy: #10243f;
+    --ob-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+    background: var(--ob-bg);
+    border: 1px solid var(--ob-line);
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color: var(--ob-ink);
+  }
+  /* Topbar — as in the game */
+  .offboard .ob-top {
+    background: var(--ob-navy); color: #eee;
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 9px 14px;
+  }
+  .offboard .ob-brand { display: flex; align-items: center; gap: 10px; font-weight: 800; font-size: 13.5px; letter-spacing: 0.02em; }
+  .offboard .ob-brand svg { width: 28px; height: 28px; display: block; flex: none; }
+  .offboard .ob-brand small { font-family: var(--ob-mono); font-weight: 400; font-size: 9px; opacity: 0.62; display: block; color: #cdd6e0; letter-spacing: 0; }
+  .offboard .ob-sess { font-family: var(--ob-mono); font-size: 10.5px; color: #92a0b2; text-align: right; line-height: 1.4; }
+  .offboard .ob-sess b { color: var(--ob-gold); font-weight: 500; }
+  .offboard .ob-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
+  /* Meters — as in the game */
+  .offboard .ob-dash { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+  .offboard .ob-meter { background: var(--ob-paper); border: 1px solid var(--ob-line); border-radius: 4px; padding: 8px 10px; }
+  .offboard .ob-meter .lab { font-family: var(--ob-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ob-ink-soft); }
+  .offboard .ob-meter .val { font-weight: 800; line-height: 1; margin-top: 3px; font-size: 21px; }
+  .offboard .ob-meter .val small { font-family: var(--ob-mono); font-size: 10px; font-weight: 400; color: var(--ob-ink-soft); }
+  .offboard .ob-meter.legend .val { color: var(--ob-brand-deep); }
+  .offboard .ob-bar { height: 7px; background: var(--ob-paper-2); border: 1px solid var(--ob-line); border-radius: 20px; margin-top: 6px; overflow: hidden; }
+  .offboard .ob-bar i { display: block; height: 100%; border-radius: 20px; }
+  .offboard .ob-bar.mayhem i { background: linear-gradient(90deg, var(--ob-amber), var(--ob-blood)); }
+  .offboard .ob-bar.heat i { background: linear-gradient(90deg, #e3a93b, var(--ob-blood-deep)); }
+  .offboard .ob-bar.legend i { background: linear-gradient(90deg, #37a892, var(--ob-brand)); }
+  .offboard .ob-bar.sev i { background: linear-gradient(90deg, #3a9d63, var(--ob-good)); }
+  /* Scene card — as in the game */
+  .offboard .ob-card {
+    background: var(--ob-paper); border: 1px solid var(--ob-line); border-top: 4px solid var(--ob-ink);
+    border-radius: 4px; padding: 13px 14px;
+  }
+  .offboard .ob-timechip {
+    display: inline-flex; align-items: center; gap: 7px; font-family: var(--ob-mono); font-size: 11px;
+    background: var(--ob-navy); color: var(--ob-gold); padding: 3px 9px; border-radius: 20px; letter-spacing: 0.05em;
+  }
+  .offboard .ob-timechip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ob-gold); box-shadow: 0 0 8px var(--ob-gold); }
+  .offboard .ob-title { font-weight: 800; font-size: 18px; line-height: 1.1; margin: 9px 0 4px; letter-spacing: -0.01em; }
+  .offboard .ob-desc { font-size: 13.5px; color: #2c2f36; line-height: 1.45; }
+  .offboard .ob-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+  .offboard .ob-chip {
+    font-family: var(--ob-mono); font-size: 10.5px; font-weight: 500;
+    padding: 4px 10px; border-radius: 20px; border: 1px solid; white-space: nowrap;
+  }
+  .offboard .ob-chip.neutral { color: var(--ob-ink-soft); border-color: var(--ob-line); }
+  .offboard .ob-chip.warn { color: #9a6a14; border-color: var(--ob-amber); }
+  .offboard .ob-chip.bad { color: var(--ob-blood); border-color: var(--ob-blood); }
+  /* Primary action — as in the game */
+  .offboard .ob-cta {
+    display: block; text-align: center; text-decoration: none;
+    background: var(--ob-brand); color: #fff; border-radius: 4px;
+    font-weight: 800; font-size: 14px; letter-spacing: 0.03em; padding: 12px;
+    box-shadow: 0 4px 0 var(--ob-brand-deep); margin-bottom: 4px;
+  }
+  .offboard .ob-cta:hover, .offboard .ob-cta:focus-visible { transform: translateY(-1px); box-shadow: 0 5px 0 var(--ob-brand-deep); }
+  .offboard .ob-cta .meta { display: block; font-weight: 400; color: rgba(255,255,255,0.85); margin-top: 2px; font-size: 10px; letter-spacing: 0; }
+  .offboard a:focus-visible { outline: 2px solid var(--ob-gold); outline-offset: 2px; }
+
   /* ============ CAFEPASS PANEL — warm coffee palette, lifted from the product ============ */
   .cafepass {
     --cp-bg: #F4EFE6; --cp-ink: #1A1410; --cp-muted: #8B7355; --cp-line: #E5DCC9; --cp-gold: #C9A876; --cp-paper: #ffffff;
@@ -254,7 +324,9 @@
 <body>
 
 <div class="wrap">
-  <h1>Projects</h1>
+
+  <section id="games">
+  <h1>Games</h1>
 
   <!-- ============ CUBICLE ============ -->
   <details class="project" id="cubicle">
@@ -315,6 +387,67 @@
     </div>
   </details>
 
+  <!-- ============ JARYD'S LAST DAY ============ -->
+  <details class="project" id="jaryd">
+    <summary class="row">
+      <span class="row-name">Jaryd's Last Day</span>
+      <span class="row-meta">Game · browser <span class="chev">＋</span></span>
+    </summary>
+    <p class="row-line">A last-day-at-the-office decision game. Ten scenes, three tiers of mischief each — leave gracefully, get petty, or commit crimes. Keep the Heat down or get marched out before five.</p>
+
+    <div class="panel">
+      <div class="offboard">
+        <div class="ob-top">
+          <div class="ob-brand" aria-hidden="true">
+            <svg viewBox="0 0 64 64" xmlns="http://www.w3.org/2000/svg">
+              <path d="M28 13 L26 7 M32 12 L32 6 M36 13 L38 7" stroke="#0a1830" stroke-width="1.8" stroke-linecap="round"/>
+              <path d="M19 20 L11 5 L26 15 Z" fill="#c79f4c" stroke="#0a1830" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M45 16 Q57 13 55 31 Q49 27 43 23 Z" fill="#b78f3c" stroke="#0a1830" stroke-width="2" stroke-linejoin="round"/>
+              <path d="M15 27 Q15 13 32 13 Q49 13 49 27 Q49 39 41 45 L36 52 Q32 57 28 52 L23 45 Q15 39 15 27 Z" fill="#d9b25e" stroke="#0a1830" stroke-width="2.4" stroke-linejoin="round"/>
+              <path d="M21 24 L29 28" stroke="#0a1830" stroke-width="2.2" stroke-linecap="round"/>
+              <path d="M43 24 L35 28" stroke="#0a1830" stroke-width="2.2" stroke-linecap="round"/>
+              <circle cx="39" cy="32" r="4.2" fill="#fff" stroke="#0a1830" stroke-width="1.6"/>
+              <circle cx="40.6" cy="33.6" r="1.6" fill="#0a1830"/>
+              <ellipse cx="32" cy="45" rx="3.2" ry="2.4" fill="#0a1830"/>
+              <path d="M25 48 Q32 53 39 48 Q34 51 32 51 Q30 51 25 48 Z" fill="#3a1d16"/>
+              <path d="M33 50 Q41 51 39 58 Q37 61 33 58 Q31 54 33 50 Z" fill="#e8748a" stroke="#0a1830" stroke-width="1.3" stroke-linejoin="round"/>
+            </svg>
+            <span>OFFBOARD™ · DOGS<small>Workforce Lifecycle Suite</small></span>
+          </div>
+          <div class="ob-sess" aria-hidden="true">USER: <b>Jazza</b><br>STATUS: OFFBOARDING</div>
+        </div>
+        <div class="ob-body">
+
+          <div class="ob-dash" aria-hidden="true">
+            <div class="ob-meter"><div class="lab">Mayhem · total damage</div><div class="val">34<small> pts</small></div><div class="ob-bar mayhem"><i style="width:34%"></i></div></div>
+            <div class="ob-meter"><div class="lab">Heat ⚠</div><div class="val">41<small>%</small></div><div class="ob-bar heat"><i style="width:41%"></i></div></div>
+            <div class="ob-meter legend"><div class="lab">Legend ★</div><div class="val">22</div><div class="ob-bar legend"><i style="width:22%"></i></div></div>
+            <div class="ob-meter"><div class="lab">Severance</div><div class="val">$7,300</div><div class="ob-bar sev"><i style="width:91%"></i></div></div>
+          </div>
+
+          <div class="ob-card" aria-hidden="true">
+            <span class="ob-timechip"><span class="dot"></span> 04:12 PM</span>
+            <div class="ob-title">The Security Gates</div>
+            <p class="ob-desc">Your building pass works for two more minutes. The lobby. The gates. The car park beyond. One last gesture remains.</p>
+            <div class="ob-chips">
+              <span class="ob-chip neutral">Pass Returned</span>
+              <span class="ob-chip warn">Souvenir Access Card</span>
+              <span class="ob-chip bad">Fourteen Printers Scream</span>
+            </div>
+          </div>
+
+          <a class="ob-cta" href="./jaryds-last-day.html">🪪 Play Jaryd's Last Day<span class="meta">free · runs in this browser</span></a>
+
+        </div>
+      </div>
+    </div>
+  </details>
+
+  </section>
+
+  <section id="projects">
+  <h2>Projects</h2>
+
   <!-- ============ CAFEPASS ============ -->
   <details class="project" id="cafepass">
     <summary class="row">
@@ -369,6 +502,8 @@
       </div>
     </div>
   </details>
+
+  </section>
 
 </div>
 

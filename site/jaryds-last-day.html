@@ -1,0 +1,711 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>OFFBOARD™ — Jaryd's Last Day · DOGS</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600;700;800;900&family=Archivo+Expanded:wght@600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#d6d7d1;--paper:#f8f7f2;--paper-2:#efeee7;--ink:#15171c;--ink-soft:#5a5e66;--line:#c9c9c0;
+    --brand:#0e6b63;--brand-deep:#094a44;--amber:#d98a1f;--amber-deep:#9a6a14;--blood:#c0392b;--blood-deep:#8e2018;--good:#2f7d4f;--gold:#c9a227;--navy:#10243f;
+    --corruption:0;--shake:0px;--radius:4px;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{font-family:'Archivo',sans-serif;background:var(--bg);color:var(--ink);line-height:1.4;-webkit-font-smoothing:antialiased;overflow-x:hidden;position:relative;min-height:100%}
+  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1;mix-blend-mode:multiply;opacity:.5;
+    background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E")}
+  #corrupt{position:fixed;inset:0;pointer-events:none;z-index:55;opacity:var(--corruption);
+    background:repeating-linear-gradient(0deg,rgba(192,57,43,.10) 0 1px,transparent 1px 3px),
+      radial-gradient(120% 80% at 50% 120%,rgba(142,32,24,.55),transparent 60%),
+      radial-gradient(90% 60% at 50% -10%,rgba(192,57,43,.35),transparent 55%);transition:opacity .6s ease}
+  #corrupt::after{content:"";position:absolute;inset:0;box-shadow:inset 0 0 calc(var(--corruption)*220px) rgba(142,32,24,.8)}
+  .wrap{position:relative;z-index:10;max-width:760px;margin:0 auto;padding:14px 14px 32px;transform:translateX(var(--shake))}
+
+  .topbar{display:flex;align-items:center;justify-content:space-between;gap:12px;background:var(--navy);color:#eee;border:1px solid #000;border-radius:var(--radius);padding:8px 14px;box-shadow:0 5px 0 rgba(0,0,0,.18)}
+  .brand{display:flex;align-items:center;gap:10px;font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:14.5px}
+  .brandmark{width:30px;height:30px;flex:none;display:block;line-height:0}.brandmark svg{width:100%;height:100%;display:block}
+  .brand small{font-family:'JetBrains Mono',monospace;font-weight:400;font-size:9px;opacity:.62;display:block;color:#cdd6e0}
+  .sess{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#92a0b2;text-align:right;line-height:1.4}
+  .sess b{color:var(--gold);font-weight:500}
+  .mute{background:none;border:1px solid #2c3c52;color:#9fb0c4;border-radius:4px;padding:4px 7px;font-family:'JetBrains Mono',monospace;font-size:10.5px;cursor:pointer}
+
+  .dash{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+  .meter{background:var(--paper);border:1px solid var(--line);border-radius:var(--radius);padding:8px 10px;position:relative;overflow:hidden}
+  .meter .lab{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+  .meter .val{font-family:'Archivo Expanded',sans-serif;font-weight:800;line-height:1;margin-top:2px;font-size:23px}
+  .meter .val small{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:400;color:var(--ink-soft)}
+  .meter.sev.gone .val{color:var(--blood);text-decoration:line-through}
+  .meter.legend .val{color:var(--brand-deep)}
+  .bar{height:7px;background:var(--paper-2);border:1px solid var(--line);border-radius:20px;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;width:0;border-radius:20px;transition:width .5s cubic-bezier(.2,.8,.2,1)}
+  .bar.mayhem i{background:linear-gradient(90deg,var(--amber),var(--blood))}
+  .bar.heat i{background:linear-gradient(90deg,#e3a93b,var(--blood-deep))}
+  .bar.legend i{background:linear-gradient(90deg,#37a892,var(--brand))}
+  .bar.sev i{background:linear-gradient(90deg,#3a9d63,var(--good))}
+  .meter.sev.gone .bar.sev i{background:var(--blood)}
+
+  .card{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--ink);border-radius:var(--radius);padding:18px;box-shadow:0 12px 26px -20px rgba(0,0,0,.5);animation:rise .35s ease both}
+  @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+  .timechip{display:inline-flex;align-items:center;gap:7px;font-family:'JetBrains Mono',monospace;font-size:11.5px;background:var(--navy);color:var(--gold);padding:3px 9px;border-radius:20px;letter-spacing:.05em}
+  .timechip .dot{width:6px;height:6px;border-radius:50%;background:var(--gold);box-shadow:0 0 8px var(--gold);animation:blink 1.4s infinite}
+  @keyframes blink{50%{opacity:.25}}
+  h1.title{font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:23px;line-height:1.06;margin:11px 0 5px;letter-spacing:-.01em}
+  .desc{font-size:15px;color:#2c2f36}
+  .desc em{font-style:normal;background:linear-gradient(transparent 60%,#c9a22744 0);padding:0 2px;font-family:'JetBrains Mono',monospace;font-size:13.5px}
+  .choices{display:grid;gap:8px;margin-top:16px}
+  .choice{display:flex;align-items:flex-start;gap:11px;width:100%;text-align:left;cursor:pointer;background:var(--paper-2);border:1px solid var(--line);border-radius:var(--radius);padding:12px 14px;font-family:'Archivo',sans-serif;font-size:15px;font-weight:500;color:var(--ink);transition:transform .12s ease,border-color .12s ease,background .12s ease}
+  .choice:hover{transform:translateX(4px);border-color:var(--ink);background:#fff}
+  .choice .bullet{flex:none;margin-top:2px;width:7px;height:7px;border-radius:50%;background:var(--ink-soft)}
+  .choice:hover .bullet{background:var(--ink)}
+  .choice .ctext{flex:1}
+
+  .modal-bg{position:fixed;inset:0;background:rgba(8,12,20,.55);backdrop-filter:blur(2px);z-index:70;display:grid;place-items:center;padding:18px;animation:fade .3s ease;overflow:auto}
+  .modal-bg.out{animation:fade .3s ease reverse forwards}
+  @keyframes fade{from{opacity:0}to{opacity:1}}
+  .modal{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--brand);border-radius:6px;max-width:400px;width:100%;padding:22px;box-shadow:0 24px 50px -18px rgba(0,0,0,.65);animation:rise .35s ease both}
+  .modal .mhead{display:flex;align-items:center;gap:8px;font-family:'JetBrains Mono',monospace;font-size:10.5px;color:var(--ink-soft);letter-spacing:.08em;text-transform:uppercase}
+  .modal .mdot{width:8px;height:8px;border-radius:2px;background:linear-gradient(135deg,var(--brand),var(--brand-deep))}
+  .modal h3{font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:20px;margin:11px 0 9px;line-height:1.12}
+  .modal p{font-size:14.5px;color:#2c2f36;margin-bottom:7px;line-height:1.45}
+  .modal .startbtn{margin-top:14px;width:100%}
+  .dogbadge{width:84px;height:84px;margin:0 auto 8px;background:var(--navy);border:2.5px solid var(--gold);border-radius:50%;display:grid;place-items:center;box-shadow:0 6px 16px -8px rgba(0,0,0,.5)}
+  .dogbadge svg{width:64px;height:64px;display:block}
+  .rmodal{text-align:center;border-top-width:4px}
+  .rmodal.r-safe{border-top-color:var(--ink-soft)}.rmodal.r-petty{border-top-color:var(--amber)}.rmodal.r-crime{border-top-color:var(--blood)}
+  .rmodal .ricon{font-size:32px;line-height:1;margin-bottom:4px}
+  .rmodal .rtitle{font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:19px;margin:2px 0 9px;line-height:1.12}
+  .rmodal.r-safe .rtitle{color:var(--ink)}.rmodal.r-petty .rtitle{color:var(--amber-deep)}.rmodal.r-crime .rtitle{color:var(--blood-deep)}
+  .rmodal .rbody{font-size:14px;color:#2c2f36;margin-bottom:13px;line-height:1.5}.rmodal .rbody b{color:var(--blood-deep)}
+  .arcflag{font-family:'JetBrains Mono',monospace;font-size:10px;letter-spacing:.1em;color:var(--brand-deep);margin-bottom:8px}
+  .chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-bottom:6px}
+  .chip{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:500;padding:5px 11px;border-radius:20px;border:1px solid;white-space:nowrap}
+  .chip.good{color:var(--good);border-color:var(--good)}.chip.bad{color:var(--blood);border-color:var(--blood)}
+  .chip.warn{color:var(--amber-deep);border-color:var(--amber)}.chip.neutral{color:var(--ink-soft);border-color:var(--line)}
+  .chip.mayhem{color:var(--blood-deep);border-color:var(--blood);background:rgba(192,57,43,.08)}.chip.legend{color:var(--brand-deep);border-color:var(--brand)}
+  .contbtn{margin-top:14px;width:100%;background:linear-gradient(180deg,#dcae3c,#b8860b);color:#241a02;border:none;border-radius:6px;padding:13px;font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:14px;letter-spacing:.06em;cursor:pointer;box-shadow:0 4px 0 #846207;transition:transform .1s,box-shadow .1s}
+  .contbtn:hover{transform:translateY(-1px);box-shadow:0 5px 0 #846207}.contbtn:active{transform:translateY(3px);box-shadow:0 1px 0 #846207}
+
+  #toasts{position:fixed;right:12px;bottom:12px;z-index:80;display:flex;flex-direction:column;gap:7px;max-width:320px}
+  .toast{background:var(--navy);color:#fff;border-left:4px solid var(--blood);border-radius:4px;padding:10px 13px;font-family:'JetBrains Mono',monospace;font-size:11.5px;box-shadow:0 10px 24px -10px rgba(0,0,0,.6);animation:slidein .4s ease both;display:flex;gap:8px}
+  .toast .ic{color:var(--gold);font-weight:700}
+  @keyframes slidein{from{opacity:0;transform:translateX(40px)}to{opacity:1;transform:translateX(0)}}
+  .toast.out{animation:slideout .5s ease forwards}@keyframes slideout{to{opacity:0;transform:translateX(40px)}}
+
+  .screen{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--brand);border-radius:var(--radius);padding:22px;box-shadow:0 12px 26px -20px rgba(0,0,0,.5)}
+  .kicker{font-family:'JetBrains Mono',monospace;font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--brand-deep)}
+  .screen h2{font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:24px;line-height:1.05;margin:7px 0 12px}
+  .screen p{font-size:15px;color:#2c2f36;margin-bottom:10px}
+  .startbtn{margin-top:6px;background:var(--brand);color:#fff;border:none;border-radius:var(--radius);padding:13px 24px;font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:14.5px;letter-spacing:.03em;cursor:pointer;box-shadow:0 4px 0 var(--brand-deep);transition:transform .1s,box-shadow .1s}
+  .persona{display:block;width:100%;margin:9px 0;padding:12px 14px;text-align:left;background:var(--paper-2);border:1.5px solid var(--line);border-radius:var(--radius);cursor:pointer;transition:transform .08s,border-color .08s}
+  .persona:hover{border-color:var(--brand);transform:translateY(-1px)}
+  .persona .pt{display:block;font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:13.5px;letter-spacing:.04em;color:var(--ink)}
+  .persona .pd{display:block;margin-top:3px;font-size:12.5px;color:var(--ink-soft);line-height:1.35}
+  .persona:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .startbtn:hover{transform:translateY(-1px);box-shadow:0 5px 0 var(--brand-deep)}.startbtn:active{transform:translateY(3px);box-shadow:0 1px 0 var(--brand-deep)}
+
+  /* end screen (redesigned) */
+  .endscreen{background:var(--paper);border:1px solid var(--line);border-top:4px solid var(--blood);border-radius:var(--radius);padding:20px;box-shadow:0 12px 26px -20px rgba(0,0,0,.5);text-align:center}
+  .endscreen.clean{border-top-color:var(--brand)}
+  .depttitle{font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:11px;letter-spacing:.14em;color:var(--ink)}
+  .divider{height:1px;background:var(--line);margin:12px 0 6px}
+  .verdict-rank{font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:clamp(30px,8.5vw,46px);line-height:.95;letter-spacing:-.02em;color:var(--blood-deep);margin:4px 0 4px}
+  .verdict-rank.clean{color:var(--brand-deep)}
+  .gauge{font-family:'JetBrains Mono',monospace;font-size:11px;color:var(--ink-soft);margin-bottom:10px}.gauge b{color:var(--ink)}
+  .flavour{font-size:13.5px;color:#2c2f36;line-height:1.5;margin-bottom:6px}
+  .endgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:14px 0;text-align:left}
+  .endstat{background:var(--paper-2);border:1px solid var(--line);border-radius:4px;padding:10px 12px}
+  .endstat .k{font-family:'JetBrains Mono',monospace;font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft)}
+  .endstat .v{font-family:'Archivo Expanded',sans-serif;font-weight:800;font-size:18px;margin-top:3px}
+  .fieldnotes{background:var(--navy);color:#dfe5ec;border-radius:4px;padding:13px 15px;margin:12px 0;font-size:12.5px;line-height:1.6;text-align:left}
+  .fieldnotes .fh{font-family:'JetBrains Mono',monospace;font-size:9.5px;letter-spacing:.12em;color:var(--gold);text-transform:uppercase;margin-bottom:7px}
+  .fieldnotes .fn{display:flex;gap:8px;margin-bottom:4px}.fieldnotes .fn .b{color:var(--gold);flex:none}
+  .achv{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:10px 0 4px}
+  .pill{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:700;color:#241a02;background:linear-gradient(180deg,#e6c155,#c9a227);border-radius:20px;padding:5px 11px;letter-spacing:.03em}
+  .endbtns{display:flex;gap:9px;margin-top:8px}
+  .ghostbtn{flex:none;background:none;border:1px solid var(--ink);color:var(--ink);border-radius:var(--radius);padding:13px 18px;font-family:'Archivo Expanded',sans-serif;font-weight:700;font-size:12.5px;cursor:pointer}
+  .ghostbtn:hover{background:var(--ink);color:#fff}
+  .endscreen .startbtn{flex:1}
+  .endbtns{align-items:stretch}
+  .endbtns .startbtn,.endbtns .ghostbtn{margin:0;box-shadow:none;padding:14px;display:flex;align-items:center;justify-content:center;line-height:1}
+  .endscreen{padding:18px}
+  .endscreen .dogbadge{width:60px;height:60px;margin:0 auto 6px}
+  .endscreen .dogbadge svg{width:46px;height:46px}
+  .endscreen .verdict-rank{font-size:clamp(26px,7vw,38px);margin:2px 0}
+  .endscreen .endgrid{margin:10px 0}
+  .endscreen .fieldnotes{margin:10px 0;padding:12px 14px}
+  .endscreen .flavour{margin-bottom:6px}
+  .wire{border:1.5px dashed var(--line);border-radius:var(--radius);padding:10px 13px;margin:10px 0 12px;text-align:left;background:var(--paper-2)}
+  .wire .wh{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.14em;color:var(--brand-deep);margin-bottom:6px}
+  .wire .wi{font-family:'JetBrains Mono',monospace;font-size:11.5px;color:var(--ink-soft);margin:4px 0;line-height:1.45}
+
+  .caught-flash{position:fixed;inset:0;background:var(--blood);z-index:90;opacity:0;pointer-events:none}
+  .caught-flash.go{animation:flash .9s ease}@keyframes flash{0%{opacity:0}20%{opacity:.85}100%{opacity:0}}
+  .glitch{animation:gl .18s steps(2) 2}@keyframes gl{50%{transform:translate(-2px,1px);filter:hue-rotate(20deg)}}
+  @media(max-width:600px){.dash{grid-template-columns:1fr 1fr}}
+  @media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}.wrap{transform:none!important}.timechip .dot{animation:none}}
+  .choice:focus-visible,.startbtn:focus-visible,.contbtn:focus-visible,.ghostbtn:focus-visible,.mute:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+</style>
+</head>
+<body>
+<div id="corrupt"></div>
+<div class="caught-flash" id="flash"></div>
+<div id="toasts"></div>
+<div class="wrap">
+  <div class="topbar" id="topbar">
+    <div class="brand"><span class="brandmark" id="brandmark"></span>
+      <span>OFFBOARD™ · DOGS<small>Workforce Lifecycle Suite</small></span></div>
+    <div style="display:flex;align-items:center;gap:10px">
+      <div class="sess" id="sess">USER: <b>Jazza</b><br>STATUS: OFFBOARDING</div>
+      <button class="mute" id="mute">🔊</button>
+    </div>
+  </div>
+  <div id="app"></div>
+</div>
+
+<script>
+"use strict";
+const DOG=`<svg viewBox='0 0 64 64' xmlns='http://www.w3.org/2000/svg' aria-hidden='true'>
+  <path d='M28 13 L26 7 M32 12 L32 6 M36 13 L38 7' stroke='#0a1830' stroke-width='1.8' stroke-linecap='round'/>
+  <path d='M19 20 L11 5 L26 15 Z' fill='#c79f4c' stroke='#0a1830' stroke-width='2' stroke-linejoin='round'/>
+  <path d='M45 16 Q57 13 55 31 Q49 27 43 23 Z' fill='#b78f3c' stroke='#0a1830' stroke-width='2' stroke-linejoin='round'/>
+  <path d='M15 27 Q15 13 32 13 Q49 13 49 27 Q49 39 41 45 L36 52 Q32 57 28 52 L23 45 Q15 39 15 27 Z' fill='#d9b25e' stroke='#0a1830' stroke-width='2.4' stroke-linejoin='round'/>
+  <path d='M21 24 L29 28' stroke='#0a1830' stroke-width='2.2' stroke-linecap='round'/>
+  <path d='M43 24 L35 28' stroke='#0a1830' stroke-width='2.2' stroke-linecap='round'/>
+  <path d='M25 33 m0 -1 a1.3 1.3 0 1 1 -1.3 1.3 a2.6 2.6 0 1 1 2.6 -2.6 a3.9 3.9 0 1 1 -3.9 3.9' fill='none' stroke='#0a1830' stroke-width='1.5' stroke-linecap='round'/>
+  <circle cx='39' cy='32' r='4.2' fill='#fff' stroke='#0a1830' stroke-width='1.6'/>
+  <circle cx='40.6' cy='33.6' r='1.6' fill='#0a1830'/>
+  <path d='M35 30 L37 31 M43 30 L41 31' stroke='#c0392b' stroke-width='1' stroke-linecap='round'/>
+  <path d='M22 37 Q25 39 28 37' fill='none' stroke='#0a1830' stroke-width='1' opacity='.5'/>
+  <path d='M35 37 Q39 39 43 37' fill='none' stroke='#0a1830' stroke-width='1' opacity='.5'/>
+  <ellipse cx='32' cy='45' rx='3.2' ry='2.4' fill='#0a1830'/>
+  <path d='M25 48 Q32 53 39 48 Q34 51 32 51 Q30 51 25 48 Z' fill='#3a1d16'/>
+  <path d='M33 50 Q41 51 39 58 Q37 61 33 58 Q31 54 33 50 Z' fill='#e8748a' stroke='#0a1830' stroke-width='1.3' stroke-linejoin='round'/>
+  <path d='M48 29 Q51 34 48 36 Q45 34 48 29 Z' fill='#6fb7e8' stroke='#0a1830' stroke-width='1'/>
+</svg>`;
+
+/* ---- flavour levers (the random "4th levers") ---- */
+const LEVERS={
+  karen:{l:"Karen's Annoyance",sign:1,tone:"warn"},
+  bp:{l:"Director's Blood Pressure",sign:1,tone:"warn"},
+  units:{l:"Billable Units Lost",sign:1,tone:"warn"},
+  dignity:{l:"Government Dignity",sign:-1,tone:"bad"},
+  tea:{l:"Tea-Room Standing",sign:1,tone:"good"},
+  disclosure:{l:"Disclosure Risk",sign:1,tone:"bad"},
+  minister:{l:"Minister's Office",sign:1,tone:"bad"},
+  tickets:{l:"IT Tickets",sign:1,tone:"neutral"},
+  shred:{l:"Documents Shredded",sign:1,tone:"neutral"},
+  linda:{l:"Linda's Tears",sign:1,tone:"warn"},
+  greg:{l:"Greg's Anxiety",sign:1,tone:"warn"},
+  whisper:{l:"The Whisper Network",sign:1,tone:"neutral"},
+  plant:{l:"Office Plant's Will To Live",sign:-1,tone:"warn"},
+  coffee:{l:"Coffee Fund",sign:-1,tone:"neutral"},
+  audit:{l:"Audit Trail",sign:1,tone:"bad"},
+  lift:{l:"Lift Awkwardness",sign:1,tone:"neutral"}
+};
+
+/* ---- scenes ---- */
+const CARPARK={id:"carpark",ic:"🅿️",title:"The Secure Car Park",themes:["dignity","whisper"],
+  desc:`The reserved bay marked <em>DEPUTY HEAD — D. CASTELLANO</em> sits empty and gleaming. It is your last day at the Department of Government Solicitors. Where do you park?`,
+  ch:[
+   {r:"safe",rt:"Parked. Unremarkable.",l:"In your usual spot, like a coward.",m:0,h:0,s:0,lg:0,res:"You park between the lines. The bitumen does not know what is coming."},
+   {r:"petty",rt:"Bold Park, No Notes",l:"In Castellano's bay. He's never in before 10.",m:6,h:4,s:0,lg:5,res:"The whole floor watches your 2014 Corolla settle into power. Best parallel park of your life."},
+   {r:"crime",rt:"Tactical Tyre Deflation",l:"In Castellano's bay — then let one tyre down 'for visibility'.",m:13,h:12,s:0,lg:8,res:"Building Services will log it as <b>suspected sabotage</b>. They'll be right. They'll never prove it."}
+  ]};
+const GATES={id:"gates",ic:"🚪",title:"The Security Gates",themes:["dignity","whisper"],
+  desc:`Your building pass works for two more minutes. The lobby. The gates. The car park beyond. One last gesture remains.`,
+  ch:[
+   {r:"safe",rt:"Pass Returned",l:"Drop the pass in the returns tray. Walk out. Head high.",m:0,h:0,s:0,lg:3,res:"You step into the sun a free and unremarkable person."},
+   {r:"petty",rt:"Souvenir Access Card",l:"Keep the pass 'as a souvenir.' (It still works.)",m:9,h:8,s:0,lg:8,fx:[{k:"disclosure",d:1}],res:"You walk out with a live access card and a private smile. Security won't deactivate it for eleven months."},
+   {r:"crime",rt:"Fourteen Printers Scream",l:"Set every printer to print 'I QUIT' until the toner dies.",m:24,h:16,s:0,lg:20,fx:[{k:"tickets",d:1}],res:"As the gates close, 14 printers begin, in unison, to scream <b>I QUIT</b> in 72pt bold."}
+  ]};
+const EXITINT={id:"exitint",ic:"📋",title:"The Exit Interview",time:1000,themes:["karen","dignity","disclosure"],
+  desc:`A People & Capability meeting room that smells of whiteboard marker. Karen slides a feedback form across the table. "Be honest," she says, in a tone that means don't.`,
+  ch:[
+   {r:"safe",rt:"Constructively Vague",l:"\"Great culture. Room to grow in comms.\"",m:0,h:0,s:200,lg:2,res:"Karen nods and ticks a box marked <b>no further action</b>. A $200 goodwill adjustment is minuted. You are, officially, fine."},
+   {r:"petty",rt:"The Annotated Years",l:"Produce your own nine-page feedback document. Read it aloud.",m:9,h:7,s:0,lg:9,fx:[{k:"karen",d:1},{k:"dignity",d:1}],res:"You reach page four before Karen stops writing. Page seven is titled <b>The Microwave: A Timeline</b>. It will be scanned, filed, and feared."},
+   {r:"crime",rt:"On The Record",l:"\"Am I being recorded? Good.\" Lean into the laptop mic. Name names.",m:22,h:15,s:0,lg:16,fx:[{k:"disclosure",d:2},{k:"karen",d:1}],res:"Karen's pen stops mid-word. Somewhere upstairs a records officer feels a disturbance. Your testimony is now an <b>asset of the Commonwealth</b>."}
+  ]};
+const THEBOX={id:"thebox",ic:"📦",title:"The Box",time:1010,themes:["audit","dignity","karen"],
+  desc:`One cardboard box, eleven years of accumulation. Reception watches you pack with the neutral face of a witness. What goes in the box?`,
+  ch:[
+   {r:"safe",rt:"A Mug And A Photo",l:"Your mug, a photo, the succulent you actually own.",m:0,h:0,s:0,lg:1,res:"A modest box. Reception nods. Eleven years, and one kilogram of it truly yours."},
+   {r:"petty",rt:"Supplies For The Road",l:"The good scissors, 400 pens, a stapler-adjacent quantity of Post-its.",m:8,h:6,s:20,lg:7,fx:[{k:"audit",d:1}],res:"Stationery for a lifetime. The cupboard will be audited in August and found <b>quietly devastated</b>."},
+   {r:"crime",rt:"The Chair Comes Too",l:"Wheel the $1,900 ergonomic chair out with the confidence of ownership.",m:21,h:16,s:300,lg:15,fx:[{k:"audit",d:2},{k:"dignity",d:1}],res:"You roll it past reception at a stately pace. Nobody stops a person who moves like Facilities. The chair retires with you."}
+  ]};
+const CLOSERS=[GATES,EXITINT,THEBOX];
+
+const LIFT={id:"lift",ic:"🛗",title:"The Morning Lift",themes:["whisper","lift","dignity"],
+  desc:`You ride up with three colleagues who don't know it's your last day. Someone mentions the weather. The lift smells of instant coffee and quiet ambition.`,
+  ch:[
+   {r:"safe",rt:"Small Talk Endured",l:"Nod along about the weather. Reveal nothing.",m:0,h:0,s:0,lg:0,res:"You discuss rain for eleven floors. It is the most you will ever have in common with these people."},
+   {r:"petty",rt:"Every Button, Lit",l:"On the way out, press all eleven floor buttons.",m:6,h:4,s:0,lg:6,res:"The doors close on three colleagues now committed to an eleven-stop pilgrimage. A parting gift."},
+   {r:"crime",rt:"A Cursed Inheritance",l:"Tell the new grad the 'Friday 4pm fire-drill chant' is mandatory.",m:12,h:8,s:0,lg:9,fx:[{k:"whisper",d:1}],res:"The grad writes it down. He will perform it, alone, this Friday. The legend will outlive you."}
+  ]};
+const BADGE={id:"badge",ic:"🪪",title:"Badging In, One Last Time",themes:["dignity","audit","whisper"],
+  desc:`The morning gates. You badge in for the last time; your reflection in the glass looks tired but free. A colleague fumbles for their pass behind you.`,
+  ch:[
+   {r:"safe",rt:"In You Go",l:"Badge in. Hold the gate for the person behind you.",m:0,h:0,s:0,lg:1,res:"A small courtesy on your way out. The gate beeps its indifferent farewell."},
+   {r:"petty",rt:"Tailgate Enabler",l:"Wave three strangers through on your single badge.",m:7,h:5,s:0,lg:7,fx:[{k:"audit",d:1}],res:"Three unbadged souls now roam Floor 4. Security will review the footage. You will be gone."},
+   {r:"crime",rt:"Propped For 'Ventilation'",l:"Badge in, then prop the secure door open with a fire extinguisher.",m:13,h:11,s:0,lg:9,fx:[{k:"dignity",d:1}],res:"The secure zone is now ventilated, accessible, and a formal incident waiting to be written."}
+  ]};
+const OPENERS=[CARPARK,LIFT,BADGE];
+const POOL=[
+ {id:"asset",ic:"💻",title:"Asset Recovery",themes:["tickets","units"],
+  desc:`Devandra from IT appears with a clipboard and tired eyes. "Just need the laptop and your token back, mate." On it: four years of matters, and the bookmarks.`,
+  ch:[
+   {r:"safe",rt:"Cleanly Surrendered",l:"Hand it over, wiped and labelled.",m:0,h:-3,s:0,lg:1,res:"Devandra thanks you sincerely. You are, on paper, a credit to the offboarding funnel."},
+   {r:"petty",rt:"The Undisclosed Folder",l:"Hand it over. Say nothing about /matters/final_FINAL_v7.",m:8,h:6,s:0,lg:6,res:"IT will open that folder and find 4,000 photos of the same office plant, named sequentially."},
+   {r:"crime",rt:"Scheduled Self-Destruct",l:"Schedule it to factory-reset itself tomorrow at 3pm.",m:20,h:20,s:0,lg:11,fx:[{k:"tickets",d:2}],res:"At 3:01pm tomorrow, a half-finished brief will <b>cease to have ever existed</b>."}
+  ]},
+ {id:"channel",ic:"💬",title:"The All-Staff Channel",themes:["whisper","karen","dignity"],
+  desc:`The all-staff channel. 412 members. The cursor blinks. This is your farewell post.`,
+  ch:[
+   {r:"safe",rt:"Gracious Mulch",l:"\"It's been a privilege. Stay in touch! 🙏\"",m:0,h:0,s:0,lg:1,res:"Sixteen 'all the best!' replies. You are now organisational mulch. It is peaceful here."},
+   {r:"petty",rt:"The Annotated Org Chart",l:"Post the org chart with everyone's private nickname.",m:10,h:7,s:0,lg:9,res:"\"The Director ('The Circle-Backer')\" does not enjoy seeing it in writing."},
+   {r:"crime",rt:"The Spreadsheet of Truth",l:"Post who does the work vs who takes the credit.",m:19,h:16,s:0,lg:15,res:"Four colleagues DM you within ninety seconds. Two are crying. It is <b>already screenshotted</b>."}
+  ]},
+ {id:"matter",ic:"📄",title:"The Matter Only You Understand",themes:["units","audit","tickets"],
+  desc:`You alone understand matter <em>M-2019/4471</em>. It hinges on a macro named <em>LEDGER_FINAL_v3.xlsm</em> and one original signed deed. They want "thorough documentation."`,
+  ch:[
+   {r:"safe",rt:"Genuinely Useful",l:"Write a clear, generous handover.",m:-2,h:-2,s:500,lg:4,res:"Diane pushes through a $500 goodwill payment. Future generations will speak your name. Boring of you."},
+   {r:"petty",rt:"Everything But The Password",l:"Document it all except the one password.",m:12,h:5,s:0,lg:8,res:"Immaculate documentation. A locked car with the keys visible on the seat."},
+   {r:"crime",rt:"Confidently, Catastrophically Wrong",l:"Write a handover that is confident and 100% wrong.",m:23,h:11,s:0,lg:13,fx:[{k:"audit",d:1}],res:"A masterpiece of fiction. Your successor will trust it for <b>nine catastrophic weeks</b>."}
+  ]},
+ {id:"tea",ic:"🍰",title:"Your Morning Tea",themes:["tea","linda","dignity"],
+  desc:`The team booked the boardroom. A Coles mudcake. A card signed in a collective four seconds. "Say a few words."`,
+  ch:[
+   {r:"safe",rt:"A Few Kind Words",l:"Give a short, gracious speech.",m:0,h:0,s:0,lg:5,fx:[{k:"linda",d:1}],res:"Linda cries. You're not sure why. The cake is good. You are forgotten by Tuesday."},
+   {r:"petty",rt:"40% Inside Jokes",l:"A speech that's 40% inside jokes, 60% subtweet.",m:9,h:5,s:0,lg:11,res:"Three people laugh nervously. The Director laughs loudest, then slowly stops."},
+   {r:"crime",rt:"The Toast From Hell",l:"Use the toast to air four years of grievances.",m:18,h:14,s:0,lg:14,fx:[{k:"linda",d:1}],res:"The cake stays uncut. Linda has stopped crying out of sheer shock."}
+  ]},
+ {id:"survey",ic:"📋",title:"The Exit Survey",themes:["minister","dignity","karen"],
+  desc:`Diane from People & Capability has a form and a candle that smells like "Accountability." "What could we have done better?"`,
+  ch:[
+   {r:"safe",rt:"Balanced & Forgettable",l:"Offer constructive, forgettable feedback.",m:0,h:-2,s:300,lg:2,res:"\"Wonderful, very actionable.\" None of it will be actioned. She signs off $300 of unused leave."},
+   {r:"petty",rt:"Grievances, Timestamped",l:"List every grievance since 2021. With timestamps.",m:11,h:6,s:0,lg:9,res:"Diane's pen runs out on page two. You brought a spare. You always bring a spare now."},
+   {r:"crime",rt:"CC: The Minister",l:"Read the manifesto, then CC the Department Head and the Minister's office.",m:26,h:26,s:0,lg:16,fx:[{k:"minister",d:2},{k:"disclosure",d:1}],res:"One adviser replies 'who is Jaryd.' <b>Now they know.</b>"}
+  ]},
+ {id:"reply",ic:"📧",title:"Reply All",themes:["tickets","whisper"],
+  desc:`An all-staff email: "REMINDER: Clear Desk Policy is now mandatory." 900 recipients. The 'Reply All' button glows like a small sun.`,
+  ch:[
+   {r:"safe",rt:"You Are An Adult",l:"Don't. You are a functioning adult.",m:0,h:0,s:0,lg:0,res:"You close the email. Nobody will ever know how close it came."},
+   {r:"petty",rt:"\"Seen My Stapler?\"",l:"Reply All: \"Has anyone seen my stapler?\"",m:8,h:5,s:0,lg:9,res:"Forty people reply all to ask you to stop replying all. The thread is now immortal."},
+   {r:"crime",rt:"The Reply-All Cascade",l:"Start a chain engineered to take down the mail system.",m:28,h:24,s:0,lg:18,fx:[{k:"tickets",d:2}],res:"At 15:04 the server folds like a deck chair. IT declares a <b>critical incident</b>."}
+  ]},
+ {id:"cron",ic:"⏰",title:"The 3 A.M. Reconciliation",themes:["units","audit","dignity"],
+  desc:`There's an overnight job only you know about. At 3am it reconciles the ledger so the dashboards aren't lies. If it stops, the numbers drift — beautifully — into fiction.`,
+  ch:[
+   {r:"safe",rt:"Keys Handed Over",l:"Document it and hand over the keys.",m:-2,h:-2,s:0,lg:3,res:"An ops officer literally exhales. You've saved a future you'll never meet."},
+   {r:"petty",rt:"Mentioned, Vaguely",l:"Mention it, vaguely, in a meeting nobody attends.",m:10,h:5,s:0,lg:7,res:"You said 'the 3am thing' to two people on mute. Technically you told them."},
+   {r:"crime",rt:"Let The Numbers Drift",l:"Delete it. Let the dashboards drift into fiction.",m:30,h:18,s:0,lg:15,fx:[{k:"dignity",d:2}],res:"In six weeks the dashboards will show <b>impossible productivity</b>. Then an auditor will frown."}
+  ]},
+ {id:"director",ic:"🧑‍💼",title:"The Director's Office",themes:["bp","whisper"],
+  desc:`The Director wants "a proper goodbye." He has a Funko Pop of himself. He calls you "champ." He has called you "champ" 1,100 times.`,
+  ch:[
+   {r:"safe",rt:"A Clean Handshake",l:"Shake his hand. Wish him well. Mean it, mostly.",m:0,h:-1,s:200,lg:2,res:"\"Stay hungry, champ.\" He signs off a final reimbursement out of relief. You are free."},
+   {r:"petty",rt:"On 'Circling Back'",l:"Tell him what 'let's circle back' did to your soul.",m:10,h:6,s:0,lg:10,fx:[{k:"bp",d:1}],res:"He nods and says \"let's circle back on that.\" He is not joking. You are."},
+   {r:"crime",rt:"Funko Hostage Situation",l:"Take the Funko Pop hostage. Leave a ransom note.",m:18,h:13,s:0,lg:16,fx:[{k:"bp",d:2}],res:"The note demands \"one (1) meeting that could've been an email, ABOLISHED.\" He thinks it's <b>about him</b>. It is."}
+  ]},
+ {id:"plant",ic:"🪴",title:"The Office Plant",themes:["plant","tea"],
+  desc:`In the corner: a pot-plant you have kept improbably alive for four years. It has no idea anything is wrong. It is thriving. It is, arguably, your finest work here.`,
+  ch:[
+   {r:"safe",rt:"Rehomed With Care",l:"Take it home. It deserves a future.",m:0,h:0,s:0,lg:3,fx:[{k:"tea",d:1}],res:"You carry it to the car like a fern-shaped child. The desk looks emptier than you expected."},
+   {r:"petty",rt:"Bequeathed To No One",l:"Leave it with a note: 'water me or face consequences.'",m:6,h:2,s:0,lg:6,res:"The note will be ignored. The plant will be dead by the next quarterly. Everyone will feel vaguely guilty."},
+   {r:"crime",rt:"Salted Earth",l:"Water it with the last of the bad office coffee. One final act.",m:12,h:5,s:0,lg:8,fx:[{k:"plant",d:2}],res:"It will not survive the week. Nothing of yours will outlive you here. That's the point."}
+  ]},
+ {id:"coffee",ic:"☕",title:"The Coffee Honesty Box",themes:["coffee","karen","tea"],
+  desc:`The tea-room coffee fund. An ice-cream container, a slot in the lid, and roughly $40 in gold coins held together by trust and Karen's vigilance.`,
+  ch:[
+   {r:"safe",rt:"Exact Change",l:"Drop in a final $2. Leave it as you found it.",m:0,h:0,s:0,lg:1,res:"The fund balances. Karen will never know. The trust economy survives another day."},
+   {r:"petty",rt:"Shrinkflation",l:"Take your 'overpayment' back. You've done the maths.",m:7,h:4,s:0,lg:6,fx:[{k:"coffee",d:1}],res:"You are owed this, spiritually. The container is now $11 short and someone will be blamed."},
+   {r:"crime",rt:"The Great Coffee Heist",l:"Take the lot 'for safekeeping during the transition'.",m:15,h:10,s:0,lg:10,fx:[{k:"coffee",d:2}],res:"Forty dollars of communal gold, gone. The tea-room enters a cold war that outlasts you."}
+  ]},
+
+ /* ---- arc beat-1 scenes (look normal; live in the pool) ---- */
+ {id:"karen_b1",arc:"karen",beat:1,ic:"🍵",title:"Karen's Sacred Mug",themes:["karen","tea"],
+  desc:`On the drying rack: Karen's mug. World's Okayest Records Officer. It has a designated spot. It has, in some sense, a designated life.`,
+  ch:[
+   {r:"safe",rt:"Left Untouched",l:"Leave it exactly where it lives. You're not a monster.",m:0,h:0,s:0,lg:1,res:"The mug remains in its ordained position. Karen senses nothing. Peace holds."},
+   {r:"petty",rt:"Two Centimetres Left",adv:true,l:"Move it two centimetres to the left. Just to see.",m:6,h:3,s:0,lg:7,fx:[{k:"karen",d:1}],res:"A small thing. A seismic thing. Karen will notice within the hour. Something has begun."},
+   {r:"crime",rt:"Reassigned To The Bin",adv:true,l:"'Accidentally' put it in the charity box.",m:12,h:8,s:0,lg:9,fx:[{k:"karen",d:2}],res:"The mug is gone. Karen does not yet know. When she does, there will be a spreadsheet."}
+  ]},
+ {id:"conflict_b1",arc:"conflict",beat:1,ic:"🤫",title:"Greg's Quiet Word",themes:["greg","whisper"],
+  desc:`Greg corners you by the printer. "Mate. The thing on the big matter — the conflict I, uh, didn't quite declare. You're leaving anyway. We're sweet, yeah?"`,
+  ch:[
+   {r:"safe",rt:"Not Your Circus",l:"\"Wasn't my matter, Greg. Good luck.\" Walk off.",m:0,h:0,s:0,lg:2,res:"Greg exhales. You owe this place nothing, including its secrets. You leave it alone."},
+   {r:"petty",rt:"Noted, For Later",adv:true,l:"\"Sure, Greg.\" (You are already composing the email.)",m:7,h:5,s:0,lg:6,fx:[{k:"greg",d:1},{k:"whisper",d:1}],res:"You smile. Greg relaxes. He should not have relaxed."},
+   {r:"crime",rt:"Wired For Sound",adv:true,l:"Agree warmly. Leave your phone recording on the desk.",m:14,h:11,s:0,lg:10,fx:[{k:"greg",d:2},{k:"disclosure",d:1}],res:"Greg confesses, fully, to a phone he thinks is asleep. It is not asleep."}
+  ]},
+ {id:"stapler_b1",arc:"stapler",beat:1,ic:"🗄️",title:"The Good Stapler",themes:["dignity","audit"],
+  desc:`The stationery cupboard. Reams of A3. A label maker. And the good stapler — heavy, chrome, the one the whole floor fights over. The door clicks shut behind you.`,
+  ch:[
+   {r:"safe",rt:"One Modest Pen",l:"Take a single pen. A keepsake.",m:0,h:0,s:0,lg:2,res:"One pen. It writes in blue. It will outlive your memory here by years."},
+   {r:"petty",rt:"It's Mine Now",adv:true,l:"Take the good stapler. It was always yours, spiritually.",m:8,h:4,s:-100,lg:7,fx:[{k:"audit",d:1}],res:"$100 of taxpayer chrome, zero guilt. The stapler war is over. There were no winners but you."},
+   {r:"crime",rt:"Everything Is 'EVIDENCE'",adv:true,l:"Take the label maker. Mark everything 'EVIDENCE'.",m:17,h:11,s:0,lg:13,fx:[{k:"audit",d:1}],res:"By 2pm the photocopier, the fern, and the Director's chair are all marked <b>EVIDENCE</b>. Nobody dares peel them off."}
+  ]}
+];
+
+/* ---- arc beats 2 & 3 (injected only if the arc advances) ---- */
+const ARCS={
+ karen:{name:"The Karen Saga",ach:"THE KAREN CINEMATIC UNIVERSE",
+  b2:{id:"karen_b2",arc:"karen",beat:2,ic:"🛗",title:"Karen Intercepts You At The Lift",themes:["karen","lift"],
+   desc:`The lift doors open. Karen is already inside. She has clearly Been Looking For You. "Funny thing happened to my mug," she says. The doors close. Eleven floors.`,
+   ch:[
+    {r:"safe",rt:"Full Confession",l:"Apologise immediately and completely.",m:2,h:0,s:0,lg:3,res:"You grovel for eleven floors. Karen accepts it with the grace of a woman filing it anyway."},
+    {r:"petty",rt:"Plausible Deniability",adv:true,l:"\"What mug?\" Hold eye contact. Do not blink.",m:9,h:7,s:0,lg:10,fx:[{k:"karen",d:1},{k:"lift",d:1}],res:"The temperature in the lift drops four degrees. War is now formally declared."},
+    {r:"crime",rt:"Escalate In A Confined Space",adv:true,l:"\"Maybe the mug declared its own conflict of interest.\"",m:15,h:12,s:0,lg:13,fx:[{k:"karen",d:2},{k:"lift",d:1}],res:"Eleven floors of silence so total you can hear her mentally drafting. She gets out one floor early. To start."}
+   ]},
+  b3:{id:"karen_b3",arc:"karen",beat:3,ic:"📎",title:"Karen's Dossier",themes:["karen","minister"],
+   desc:`Reception. Karen blocks the gates with a manila folder thicker than your entire tenure. "Before you go," she says, "I'd love your comment on a few... discrepancies."`,
+   ch:[
+    {r:"safe",rt:"Take The L",l:"Sign whatever she wants. Leave with your dignity in a carry bag.",m:3,h:2,s:0,lg:5,res:"You sign. Karen wins. Karen always wins. The folder goes into a cabinet with your name on the tab."},
+    {r:"petty",rt:"Decline To Comment",adv:true,l:"\"I'll take that on notice.\" Walk past her.",m:14,h:10,s:0,lg:16,fx:[{k:"karen",d:1}],res:"You said the most powerful words in the public service. Karen's eye twitches. The folder grows a sequel."},
+    {r:"crime",rt:"Burn The Dossier",adv:true,l:"Take the folder. Feed it, page by page, into the shredder.",m:26,h:20,s:0,lg:22,fx:[{k:"karen",d:2},{k:"shred",d:3}],res:"Eighteen months of Karen's work, confetti. She watches. She will rebuild. She will <b>remember</b>."}
+   ]}},
+ conflict:{name:"The Conflict Arc",ach:"THE LEAK",
+  b2:{id:"conflict_b2",arc:"conflict",beat:2,ic:"❓",title:"A Direct Question",themes:["greg","minister","audit"],
+   desc:`An integrity officer you've never met finds your desk. "We're doing a light-touch review of the big matter. You wouldn't know anything about a... conflict, would you?"`,
+   ch:[
+    {r:"safe",rt:"Know Nothing",l:"\"Nothing comes to mind.\" Smile blandly.",m:1,h:0,s:0,lg:2,res:"You know nothing. You are a sealed vault of nothing. The officer moves on, unsatisfied."},
+    {r:"petty",rt:"A Helpful Hint",adv:true,l:"\"You should probably check who signed off, is all I'll say.\"",m:11,h:9,s:0,lg:10,fx:[{k:"greg",d:1},{k:"audit",d:1}],res:"You said nothing and everything. The officer writes one word and underlines it twice."},
+    {r:"crime",rt:"Hand Over The Recording",adv:true,l:"\"Funny you should ask. I have audio.\"",m:18,h:15,s:0,lg:14,fx:[{k:"disclosure",d:2},{k:"minister",d:1}],res:"You email the file. The review is no longer light-touch. Greg's name is now load-bearing."}
+   ]},
+  b3:{id:"conflict_b3",arc:"conflict",beat:3,ic:"🏛️",title:"The Review Lands",themes:["minister","disclosure","dignity"],
+   desc:`As you pack your one box, an email thread balloons in real time. Subject line: the matter. CC list: growing. Someone, somewhere, types "escalate to the Minister's office."`,
+   ch:[
+    {r:"safe",rt:"Let It Lie",l:"Close the laptop. Not your problem now.",m:2,h:0,s:0,lg:3,res:"You let the thread breathe without you. Whatever happens, happens off your conscience."},
+    {r:"petty",rt:"One Last Reply",adv:true,l:"Reply once, with a single damning attachment.",m:16,h:12,s:0,lg:15,fx:[{k:"disclosure",d:1}],res:"You hit send and log off forever. The attachment does the rest."},
+    {r:"crime",rt:"Forward To The Press Gallery",adv:true,l:"BCC a journalist you 'happen' to know.",m:28,h:22,s:0,lg:20,fx:[{k:"minister",d:2},{k:"disclosure",d:2},{k:"dignity",d:2}],res:"By Monday it has a headline. By Tuesday it has a hashtag. By Wednesday it has an inquiry."}
+   ]}},
+ stapler:{name:"The Stapler Arc",ach:"STAPLER KINGPIN",
+  b2:{id:"stapler_b2",arc:"stapler",beat:2,ic:"🤝",title:"A Buyer Emerges",themes:["audit","whisper"],
+   desc:`Word travels. A grad from Floor 2 sidles up. "Heard you've got... the stapler. I'll give you forty bucks and a parmy. No questions." His eyes dart. This is a deal.`,
+   ch:[
+    {r:"safe",rt:"Return To Sender",l:"\"It belongs to the floor.\" Put it back.",m:0,h:0,s:0,lg:3,res:"You return the chrome to its cradle. The grad looks heartbroken. The black market closes."},
+    {r:"petty",rt:"Open A Tab",adv:true,l:"\"Forty-five and we never spoke.\"",m:9,h:6,s:45,lg:9,fx:[{k:"audit",d:1},{k:"whisper",d:1}],res:"Cash changes hands behind the comms room. You are now, technically, a fence."},
+    {r:"crime",rt:"Vertical Integration",adv:true,l:"\"I can get you three more by Friday.\"",m:16,h:12,s:135,lg:13,fx:[{k:"audit",d:2},{k:"whisper",d:1}],res:"You have founded a stationery cartel on your last day. The grad now calls you 'boss'."}
+   ]},
+  b3:{id:"stapler_b3",arc:"stapler",beat:3,ic:"📦",title:"Asset Reconciliation",themes:["audit","dignity"],
+   desc:`Facilities arrives with a barcode scanner and a list. "Just reconciling the asset register before you sign out. You wouldn't know where asset #STP-0001 went?"`,
+   ch:[
+    {r:"safe",rt:"Come Clean",l:"Produce the stapler. Apologise to the barcode.",m:2,h:0,s:0,lg:4,res:"You surrender the chrome. Facilities ticks a box. The register, and your soul, balance."},
+    {r:"petty",rt:"Creative Accounting",adv:true,l:"\"Pretty sure it was written off in 2019.\"",m:12,h:9,s:0,lg:12,fx:[{k:"audit",d:1}],res:"You gaslight an entire asset register. Facilities leaves doubting their own paperwork."},
+    {r:"crime",rt:"Deny Everything, Forever",adv:true,l:"\"I've never seen a stapler in my life.\"",m:22,h:16,s:0,lg:18,fx:[{k:"audit",d:2},{k:"dignity",d:1}],res:"You walk out a free man and a kingpin. Asset #STP-0001 is now a <b>ghost</b>, and so are you."}
+   ]}}
+};
+
+/* ---- state ---- */
+const S={mayhem:0,heat:0,sev:8000,legend:0,idx:0,clock:527,log:[],muted:false,caught:false,ended:false,fl:{},arcs:{karen:0,conflict:0,stapler:0},queue:[]};
+
+/* audio */
+let actx=null;
+function beep(f,d,t="square",v=.05){if(S.muted)return;try{actx=actx||new(window.AudioContext||window.webkitAudioContext)();
+  const o=actx.createOscillator(),g=actx.createGain();o.type=t;o.frequency.value=f;o.connect(g);g.connect(actx.destination);
+  g.gain.value=v;o.start();g.gain.exponentialRampToValueAtTime(.0001,actx.currentTime+d);o.stop(actx.currentTime+d);}catch(e){}}
+const sTick=()=>beep(520,.05,"square",.04);
+const sThud=()=>{beep(120,.18,"sawtooth",.07);setTimeout(()=>beep(80,.22,"sawtooth",.06),60);};
+const sBad=()=>{beep(180,.1,"square",.05);setTimeout(()=>beep(90,.3,"sawtooth",.07),90);};
+
+const app=document.getElementById('app');
+const $=id=>document.getElementById(id);
+function shuffle(a){for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+function pickN(a,n){return shuffle(a.slice()).slice(0,n);}
+
+function buildRun(){
+  const opener=pickN(OPENERS,1)[0];
+  const mids=pickN(POOL,7);
+  S.queue=[opener,...mids,pickN(CLOSERS,1)[0]];
+}
+function injectBeat(arc,beat){
+  const sc=ARCS[arc]["b"+beat];
+  if(!sc||S.queue.some(q=>q.id===sc.id))return;
+  // replace an upcoming non-arc filler so the run stays tight and the tiers stay meaningful
+  const fillers=[];
+  for(let i=S.idx+1;i<S.queue.length-1;i++){if(!S.queue[i].arc)fillers.push(i);}
+  if(fillers.length)S.queue[fillers[Math.floor(Math.random()*fillers.length)]]=sc;
+  else S.queue.splice(S.queue.length-1,0,sc); // no filler left: append so the thread still pays off
+}
+
+function fmtClock(m){const h=Math.floor(m/60),mm=m%60;return (h<10?'0':'')+h+":"+(mm<10?'0':'')+mm;}
+function clock12(m){let h=Math.floor(m/60),mm=m%60;const ap=h>=12?'PM':'AM';h=h%12||12;return h+":"+(mm<10?'0':'')+mm+" "+ap;}
+function sceneTime(){
+  const sc=S.queue[S.idx];
+  if(S.idx===0)S.clock=527;
+  else if(S.idx===S.queue.length-1)S.clock=sc.time||1018;
+  else S.clock=Math.min(1000,S.clock+38+Math.floor(Math.random()*24));
+  return fmtClock(S.clock);
+}
+
+function boot(){
+  const bm=$('brandmark');if(bm)bm.innerHTML=DOG;
+  const tb=$('topbar');if(tb)tb.style.display='';
+  buildRun();S.idx=0;S.ended=false;
+  renderScene();showOpening();
+}
+function showOpening(){
+  const m=document.createElement('div');m.className='modal-bg';m.id='opening';
+  m.innerHTML=`<div class="modal" style="text-align:center">
+      <div class="dogbadge">${DOG}</div>
+      <div class="mhead" style="justify-content:center"><span class="mdot"></span>OFFBOARD™ · System Notice</div>
+      <h3>It's your last day, Jazza.</h3>
+      <p>Today is Jaryd's final day at the <b>Department of Government Solicitors</b>. Your building pass expires at <b>5:00 PM</b>.</p>
+      <p style="color:var(--brand-deep);font-weight:600">Who have you been here, all these years?</p>
+      <button class="persona" data-p="disgruntled"><span class="pt">😤 THE DISGRUNTLED</span><span class="pd">You have history. P&C has a folder. It has tabs.</span></button>
+      <button class="persona" data-p="beloved"><span class="pt">🏆 THE BELOVED</span><span class="pd">Adored, trusted, above suspicion. A perfect cover.</span></button>
+      <button class="persona" data-p="checkedout"><span class="pt">🚬 THE CHECKED OUT</span><span class="pd">You stopped trying in March. It shows.</span></button>
+    </div>`;
+  document.body.appendChild(m);
+  const start=p=>{
+    if(p==='disgruntled'){S.heat=8;S.legend=8;S.fl.karen=(S.fl.karen||0)+1;}
+    else if(p==='beloved'){S.sev=8500;S.legend=12;S.fl.tea=(S.fl.tea||0)+1;}
+    else if(p==='checkedout'){S.mayhem=6;S.legend=4;S.fl.dignity=(S.fl.dignity||0)+1;}
+    renderScene();
+    if(!actx){try{actx=new(window.AudioContext||window.webkitAudioContext)();}catch(e){}}sTick();
+    m.classList.add('out');setTimeout(()=>m.remove(),300);};
+  m.querySelectorAll('.persona').forEach(b=>b.onclick=()=>start(b.dataset.p));
+}
+
+function dashHTML(){
+  const mPct=Math.min(100,S.mayhem),hPct=Math.min(100,S.heat),lPct=Math.min(100,S.legend),sPct=Math.max(0,Math.min(100,S.sev/8000*100));
+  return `<div class="dash">
+    <div class="meter big mayhem"><div class="lab">Mayhem · ${S.mayhem>100?'OFF THE CHART':'total damage'}</div>
+      <div class="val" id="m-val">${S.mayhem}<small> pts</small></div><div class="bar mayhem"><i id="m-bar" style="width:${mPct}%"></i></div></div>
+    <div class="meter heat"><div class="lab">Heat ${hPct>=70?'⚠':''}</div><div class="val" id="h-val">${S.heat}<small>%</small></div><div class="bar heat"><i id="h-bar" style="width:${hPct}%"></i></div></div>
+    <div class="meter legend"><div class="lab">Legend ★</div><div class="val" id="l-val">${S.legend}</div><div class="bar legend"><i id="l-bar" style="width:${lPct}%"></i></div></div>
+    <div class="meter sev ${S.sev<=0||S.heat>=60?'gone':''}" id="s-meter"><div class="lab">Entitlements</div><div class="val" id="s-val">${S.heat>=60?'AT RISK ⚠':'$'+Math.max(0,S.sev).toLocaleString()}</div><div class="bar sev"><i id="s-bar" style="width:${sPct}%"></i></div></div>
+  </div>`;
+}
+function renderScene(){
+  const sc=S.queue[S.idx];const t=sceneTime();
+  const order=shuffle(sc.ch.map((_,i)=>i));
+  app.innerHTML=dashHTML()+`<div class="card" id="card">
+     <span class="timechip"><span class="dot"></span>${t}</span>
+     <h1 class="title">${sc.title}</h1><p class="desc">${sc.desc}</p>
+     <div class="choices" id="choices">${order.map(i=>`<button class="choice" data-i="${i}"><span class="bullet"></span><span class="ctext">${sc.ch[i].l}</span></button>`).join('')}</div>
+   </div>`;
+  setCorruption();
+  document.querySelectorAll('.choice').forEach(b=>b.onclick=()=>choose(parseInt(b.dataset.i)));
+}
+
+function primaryChips(c){
+  const out=[];
+  if(c.m>0)out.push({txt:`Mayhem +${c.m}`,tone:"mayhem"});else if(c.m<0)out.push({txt:`Mayhem ${c.m}`,tone:"good"});
+  if(c.h>0)out.push({txt:`Heat +${c.h}%`,tone:"bad"});else if(c.h<0)out.push({txt:`Heat ${c.h}%`,tone:"good"});
+  if(c.s>0)out.push({txt:`Entitlements +$${c.s}`,tone:"good"});else if(c.s<0)out.push({txt:`Entitlements −$${Math.abs(c.s)}`,tone:"bad"});
+  if(c.lg>0)out.push({txt:`Legend +${c.lg}`,tone:"legend"});
+  return out;
+}
+function applyLever(k,amt){S.fl[k]=(S.fl[k]||0)+amt;const L=LEVERS[k];return {txt:`${L.l} ${L.sign>0?'+':'−'}${amt}`,tone:L.tone};}
+function rollFlavour(sc,c,chips){
+  const used=new Set();
+  // authored, context-correct levers (merge any duplicate keys into one chip)
+  const acc={};(c.fx||[]).forEach(f=>{if(f.d)acc[f.k]=(acc[f.k]||0)+f.d;});
+  Object.keys(acc).forEach(k=>{used.add(k);chips.push(applyLever(k,acc[k]));});
+  const themes=(sc.themes||[]);
+  if(c.r==='safe'){
+    // a behaving choice only earns a benign point-chip where it actually fits
+    if(themes.includes('tea')&&!used.has('tea')&&Math.random()<0.6)chips.push(applyLever('tea',1));
+    return;
+  }
+  // petty/crime: only roll SPECIFIC point-bearing levers that fit a damaging act.
+  // whisper is intentionally excluded here — it only appears where authored as fx (genuine gossip moments).
+  const cand=themes.filter(k=>LEVERS[k]&&!used.has(k)&&LEVERS[k].tone!=='good'&&k!=='whisper');
+  const n=Math.min(c.r==='crime'?2:1,cand.length);
+  pickN(cand,n).forEach(k=>{used.add(k);chips.push(applyLever(k,c.r==='crime'&&Math.random()<0.5?2:1));});
+}
+
+function choose(i){
+  const sc=S.queue[S.idx],c=sc.ch[i];
+  S.mayhem=Math.max(0,S.mayhem+c.m);
+  S.heat=Math.max(0,Math.min(120,S.heat+c.h));
+  S.sev=S.sev+c.s;
+  S.legend=Math.max(0,S.legend+c.lg);
+  S.log.push({t:fmtClock(S.clock),txt:c.rt});
+  if(c.r==='crime')sThud();else if(c.r==='petty')beep(360,.08,"square",.05);else sTick();
+
+  const chips=primaryChips(c);
+  rollFlavour(sc,c,chips);
+
+  // arc advancement
+  let arcMsg=null;
+  if(sc.arc&&c.adv&&S.arcs[sc.arc]===sc.beat-1){
+    S.arcs[sc.arc]=sc.beat;
+    if(sc.beat<3){injectBeat(sc.arc,sc.beat+1);arcMsg=`✦ ${ARCS[sc.arc].name.toUpperCase()} — A THREAD IS PULLED`;}
+    else arcMsg=`✦ ${ARCS[sc.arc].name.toUpperCase()} — STORYLINE COMPLETE`;
+  }
+
+  // settle dashboard behind popup
+  if($('m-bar'))$('m-bar').style.width=Math.min(100,S.mayhem)+'%';
+  if($('h-bar'))$('h-bar').style.width=Math.min(100,S.heat)+'%';
+  if($('l-bar'))$('l-bar').style.width=Math.min(100,S.legend)+'%';
+  if($('s-bar'))$('s-bar').style.width=Math.max(0,Math.min(100,S.sev/8000*100))+'%';
+  if($('m-val'))$('m-val').innerHTML=`${S.mayhem}<small> pts</small>`;
+  if($('h-val'))$('h-val').innerHTML=`${S.heat}<small>%</small>`;
+  if($('l-val'))$('l-val').textContent=S.legend;
+  const atRisk=S.heat>=60||S.sev<=0;
+  if($('s-val'))$('s-val').textContent=S.heat>=60?'AT RISK ⚠':'$'+Math.max(0,S.sev).toLocaleString();
+  if($('s-meter'))$('s-meter').classList[atRisk?'add':'remove']('gone');
+  setCorruption();checkToasts();
+  if(c.m>=15&&$('card')){$('card').classList.add('glitch');setTimeout(()=>$('card')&&$('card').classList.remove('glitch'),400);}
+  if(S.heat>=100&&!S.caught)S.caught=true;
+
+  showResult(sc,c,chips,arcMsg);
+}
+function showResult(sc,c,chips,arcMsg){
+  const m=document.createElement('div');m.className='modal-bg';m.id='result';
+  m.innerHTML=`<div class="modal rmodal r-${c.r}">
+      <div class="ricon">${sc.ic}</div>
+      ${arcMsg?`<div class="arcflag">${arcMsg}</div>`:''}
+      <div class="rtitle">${c.rt}</div>
+      <div class="rbody">${c.res}</div>
+      <div class="chips">${chips.map(ch=>`<span class="chip ${ch.tone}">${ch.txt}</span>`).join('')}</div>
+      <button class="contbtn" id="cont">CONTINUE →</button>
+    </div>`;
+  document.body.appendChild(m);
+  $('cont').onclick=()=>{sTick();m.classList.add('out');setTimeout(()=>m.remove(),240);advance();};
+}
+function advance(){
+  if(S.caught)return endGame('caught');
+  S.idx++;
+  if(S.idx>=S.queue.length)return endGame(S.mayhem<=4?'clean':'verdict');
+  renderScene();
+}
+
+function setCorruption(){
+  const c=Math.min(1,S.mayhem/100);
+  document.documentElement.style.setProperty('--corruption',c.toFixed(2));
+  document.documentElement.style.setProperty('--shake',S.mayhem>80?(Math.random()*2-1).toFixed(1)+'px':'0px');
+  const s=$('sess');if(s){
+    if(S.heat>=100)s.innerHTML='USER: <b style="color:#ff6b5e">Jazza</b><br>STATUS: ⚠ FLAGGED';
+    else if(S.mayhem>=60)s.innerHTML='USER: <b>J4ZZ4</b><br>STATUS: OFFB04RD1NG';
+    else s.innerHTML='USER: <b>Jazza</b><br>STATUS: OFFBOARDING';}
+}
+let fired={};
+function checkToasts(){
+  [{at:25,ic:'⚠',m:'FACILITIES: minor anomaly logged, Floor 3.'},
+   {at:50,ic:'⚠',m:'IT: ticket #44120 opened. Assignee: (none).'},
+   {at:75,ic:'☣',m:'GOVERNANCE: dashboard integrity 61% and falling.'},
+   {at:100,ic:'🔥',m:'INCIDENT MGMT: a critical incident now bears your name.'}]
+   .forEach(k=>{if(S.mayhem>=k.at&&!fired[k.at]){fired[k.at]=1;toast(k.ic,k.m);}});
+  if(S.heat>=60&&!fired.h60){fired.h60=1;toast('💰','PAYROLL: exit entitlements flagged for review.');}
+  if(S.heat>=70&&!fired.h70){fired.h70=1;toast('👁','SECURITY: reviewing pass activity for Jazza.');}
+  if((S.fl.karen||0)>=4&&!fired.karen){fired.karen=1;toast('📎','PEOPLE & CAPABILITY: Karen has opened a spreadsheet about you.');}
+  if((S.fl.minister||0)>=2&&!fired.min){fired.min=1;toast('🏛️',"MINISTER'S OFFICE: requests a brief on 'the Jaryd matter'.");}
+}
+function toast(ic,msg){const el=document.createElement('div');el.className='toast';el.innerHTML=`<span class="ic">${ic}</span><span>${msg}</span>`;$('toasts').appendChild(el);sBad();
+  setTimeout(()=>{el.classList.add('out');setTimeout(()=>el.remove(),500);},4200);}
+
+/* ---- endings ---- */
+function verdictFor(m){
+  if(m<=22)return{r:"THE PASSIVE-AGGRESSOR",k:"Faint Lingering Pettiness",d:"A vague unease settles over the tea-room. A few relabelled lunches, a missing stapler, a speech people are still decoding. Just... a vibe. Your vibe."};
+  if(m<=48)return{r:"THE IRRITANT",k:"IT Has Opened A Ticket",d:"There is now a ticket. It has your name on it. Three people have asked 'wait, did Jaryd set this up?' this week. The answer is yes. The answer is always yes."};
+  if(m<=78)return{r:"SCORCHED EARTH",k:"Meetings About The Meetings",d:"They've scheduled meetings to discuss the meetings about you. The matter ledger is making a sound it has never made before. You are, truly, a known issue."};
+  if(m<=110)return{r:"THE RECKONING",k:"A Review Has Been Commissioned",d:"The reviewer is also scared. Two senior executives have 'stepped back to spend time with family.' Your handover is being read aloud in a war room. Nobody understands it. That was the point."};
+  return{r:"THE JARYD PROTOCOL",k:"Total Institutional Collapse",d:"DOGS has quietly restructured. New starters are told a cautionary tale. They assume it's a legend. It is not. There is a folder named after you. The folder is stamped CONFIDENTIAL — DO NOT OPEN."};
+}
+function newsWire(kind){
+  const f=S.fl,hits=[];
+  if(kind==='caught')hits.push("SECURITY: gate response time praised. Response time was four hours.");
+  if(kind==='clean')hits.push("P&C: exit survey returns first recorded 10/10. Result framed.");
+  if(S.mayhem>110)hits.push("GOVERNANCE: review finds root cause 'was a person'.");
+  else if(S.mayhem>=80)hits.push("FACILITIES: Level 3 reclassified as 'a learning environment'.");
+  if(S.arcs.stapler>=3)hits.push("PROCUREMENT: stapler futures volatile. Cause unknown.");
+  if(S.arcs.karen>=3||(f.karen||0)>=2)hits.push("P&C: Karen books 'structured debrief'. Brings own binder.");
+  if((f.plant||0)>=2)hits.push("FACILITIES: pot plant memorial Friday. Gold coin donation.");
+  if((f.coffee||0)>=2)hits.push("TEA-ROOM: honesty box now 'a concept', sign concedes.");
+  if((f.minister||0)>=2)hits.push("MINISTER'S OFFICE: has requested one (1) name. Has it.");
+  if((f.tickets||0)>=3)hits.push("IT: change freeze extended 'indefinitely, emotionally'.");
+  if((f.greg||0)>=2)hits.push("WELLBEING: Greg enrols in lunchtime mindfulness. All of them.");
+  const generic=["COMMS: all-staff reply-all privileges under review.","CANTEEN: soup of the day remains 'the same soup'.","RECORDS: nothing to report. Records is thriving.","FLEET: Bay 1 bitumen described as 'resting'."];
+  return pickN(hits,Math.min(hits.length,3)).concat(pickN(generic,3)).slice(0,3);
+}
+function flavourNotes(){
+  const f=S.fl,out=[];
+  if(S.arcs.karen>=3)out.push("Karen has lost a dossier but not the war. She is already rebuilding. With tabs.");
+  if(S.arcs.conflict>=3)out.push("The conflict matter is now 'the Jaryd disclosures'. There is a hashtag. There may be an inquiry.");
+  if(S.arcs.stapler>=3)out.push("Asset #STP-0001 is officially unaccounted for. You are its kingpin and its ghost.");
+  if(S.arcs.karen<3&&(f.karen||0)>=5)out.push("Karen from People & Capability has filed a 17-page formal complaint. With appendices.");
+  else if(S.arcs.karen<3&&(f.karen||0)>=2)out.push("Karen is aware of what you did, and deeply unimpressed.");
+  if((f.bp||0)>=2)out.push("The Director has been signed off on stress leave. He still says 'champ' in his sleep.");
+  if(S.arcs.conflict<3&&(f.disclosure||0)>=3)out.push("A Freedom of Information request for 'all records relating to Jaryd' has already been lodged.");
+  if((f.minister||0)>=2)out.push("The Minister's office now knows your name. This is not a good thing for a name to be.");
+  if((f.tea||0)>=3)out.push("You are, in the tea-room, a legend whispered over instant coffee.");
+  if((f.plant||0)>=2)out.push("The office plant did not make it. A small, green tragedy with your fingerprints on it.");
+  if((f.coffee||0)>=2)out.push("The coffee fund never recovered. Trust, like the float, is gone.");
+  if((f.units||0)>=4)out.push(`You leave ${((f.units||0)*0.6).toFixed(1)} billable units unrecorded. Finance weeps in six-minute increments.`);
+  if(S.arcs.stapler<3&&(f.audit||0)>=3)out.push("The asset register no longer reconciles. Somewhere, a barcode scanner beeps in mourning.");
+  if((f.dignity||0)>=4)out.push("The dignity of the Department has been... adjusted downward.");
+  if((f.tickets||0)>=3)out.push("IT has escalated you internally. There is a runbook now. It has your photo.");
+  if((f.greg||0)>=2)out.push("Greg has not slept. Greg will not sleep. Greg knows what he did, and now so does everyone.");
+  return out;
+}
+function achievements(kind,finalSev){
+  const f=S.fl,a=[];
+  if(kind==='clean')a.push("THE GHOST");
+  if(kind==='caught')a.push("CAUGHT RED-HANDED");
+  if(S.legend>=55&&finalSev===0)a.push("FOLK HERO, BROKE");
+  if(S.mayhem>=56&&S.heat<60&&kind!=='caught')a.push("GOT AWAY WITH IT");
+  if(S.mayhem>110)a.push("INSTITUTIONAL COLLAPSE");
+  if((f.karen||0)>=5)a.push("PUBLIC ENEMY OF P&C");
+  if((f.bp||0)>=2)a.push("CARDIAC EVENT");
+  if((f.disclosure||0)>=3)a.push("MASS DISCLOSURE");
+  if((f.tea||0)>=3)a.push("TEA-ROOM LEGEND");
+  if((f.plant||0)>=2)a.push("PLANT KILLER");
+  if(S.arcs.karen>=3)a.push(ARCS.karen.ach);
+  if(S.arcs.conflict>=3)a.push(ARCS.conflict.ach);
+  if(S.arcs.stapler>=3)a.push(ARCS.stapler.ach);
+  return a;
+}
+
+function endGame(kind){
+  S.ended=true;
+  const tb=$('topbar');if(tb)tb.style.display='none';
+  const damageEst=(S.mayhem*437+S.heat*120).toLocaleString();
+  const days=Math.max(0,120-S.mayhem);
+  const noticed=days<=0?'They noticed before you reached the car park.':`~${days} day${days===1?'':'s'} until they grasp the full scope.`;
+  const legendStatus=S.legend>=90?'CARVED INTO THE DESK':S.legend>=55?'TOLD AT INDUCTION':S.legend>=25?'WHISPERED IN THE TEA-ROOM':'BARELY A RUMOUR';
+  let rank,sevGone,cls='';
+  if(kind==='caught'){$('flash').classList.add('go');sBad();rank=verdictFor(S.mayhem);sevGone=true;}
+  else if(kind==='clean'){cls='clean';sevGone=false;rank={r:"OFFBOARDED.",k:"Standard Exit · No Incidents",d:"You left like a professional. No enemy, no incident, no impression. By Tuesday no one remembers your name — including the Director, especially the Director. It is, technically, the saddest possible outcome.",clean:true};}
+  else{sevGone=S.heat>=60||S.sev<=0;rank=verdictFor(S.mayhem);}
+  const finalSev=sevGone?0:Math.max(0,S.sev);
+  const notes=flavourNotes();
+  const ach=achievements(kind,finalSev);
+  const notesHTML=`<div class="fieldnotes"><div class="fh">⎯ Field Report · Incidental Damage</div>${(notes.length?notes:['No incidental damage detected. Suspicious.']).slice(0,3).map(n=>`<div class="fn"><span class="b">›</span><span>${n}</span></div>`).join('')}</div>`;
+  const achHTML=ach.length?`<div class="achv">${ach.slice(0,4).map(x=>`<span class="pill">🏅 ${x}</span>`).join('')}</div>`:'';
+  const subhead=kind==='caught'?`${clock12(S.clock)} · EARLY TERMINATION`:(kind==='clean'?'PROCESS COMPLETE · 5:00 PM':'5:00 PM · FORMER EMPLOYEE');
+
+  app.innerHTML=`<div class="endscreen ${cls}">
+    <div class="dogbadge">${DOG}</div>
+    <div class="depttitle">DEPARTMENT OF GOVERNMENT SOLICITORS</div>
+    <div class="kicker" style="margin-top:6px;color:${kind==='clean'?'var(--brand-deep)':'var(--blood)'}">${subhead}</div>
+    <div class="divider"></div>
+    <div class="verdict-rank ${cls}">${rank.r}</div>
+    <div class="gauge">DAMAGE RATING: <b>${S.mayhem} MAYHEM</b> · ${rank.k}</div>
+    <div class="flavour">${rank.d}</div>
+    <div class="endgrid">
+      <div class="endstat"><div class="k">Facilities Damage Est.</div><div class="v">$${damageEst}</div></div>
+      <div class="endstat"><div class="k">Final Entitlements</div><div class="v" style="color:${finalSev>0?'var(--good)':'var(--blood)'}">${finalSev>0?'$'+finalSev.toLocaleString():'UNDER REVIEW'}</div></div>
+      <div class="endstat"><div class="k">Legend Status</div><div class="v" style="font-size:14px;color:var(--brand-deep)">${legendStatus}</div></div>
+      <div class="endstat"><div class="k">Time To Discovery</div><div class="v" style="font-size:13px">${noticed}</div></div>
+    </div>
+    ${notesHTML}${achHTML}
+    <div class="wire"><div class="wh">⎯ INTERNAL BULLETIN · 5:12 PM</div>${newsWire(kind).map(w=>`<div class="wi">▸ ${w}</div>`).join('')}</div>
+    <div class="endbtns">
+      <button class="startbtn" id="again">▸ NEW LAST DAY</button>
+    </div>
+  </div>`;
+  document.documentElement.style.setProperty('--corruption','0');
+  document.documentElement.style.setProperty('--shake','0px');
+  if($('again'))$('again').onclick=()=>{Object.assign(S,{mayhem:0,heat:0,sev:8000,legend:0,idx:0,clock:527,log:[],caught:false,ended:false,fl:{},arcs:{karen:0,conflict:0,stapler:0},queue:[]});fired={};document.documentElement.style.setProperty('--corruption','0');sTick();boot();};
+}
+
+$('mute').onclick=()=>{S.muted=!S.muted;$('mute').textContent=S.muted?'🔇':'🔊';if(!S.muted)sTick();};
+boot();
+</script>
+</body>
+</html>

@@ -96,4 +96,5 @@ export const KEYS = {
   FREEZER: 'freezer',
   FAVOURITES: 'favourites',
   PINS: 'pins',
+  SHOPPING: 'shopping',
 };

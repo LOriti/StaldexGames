@@ -214,6 +214,35 @@
   .sync-row{margin-top:10px}
   #syncStatus{color:var(--ink-soft);font-size:10.5px;letter-spacing:.04em}
 
+  /* Shopping list */
+  .shop{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;align-items:start}
+  .shop-dish{background:var(--chit);color:var(--ink);border-left:4px solid var(--gc);border-radius:8px;padding:11px 13px;box-shadow:0 3px 8px -6px rgba(0,0,0,.6)}
+  .shop-dish.out{background:none;border:1px dashed var(--line);border-left:4px solid var(--line);box-shadow:none}
+  .shop-head{display:flex;align-items:center;gap:9px}
+  .shop-head .rbtn{position:static;flex:0 0 auto}
+  .shop-name{font-family:"Fraunces",Georgia,serif;font-weight:600;font-size:16px;flex:1 1 auto;min-width:0}
+  .shop-dish.out .shop-name{color:var(--cream-dim);font-weight:400}
+  .shop-x{font-family:"JetBrains Mono",monospace;font-size:11px;font-weight:700;color:var(--ink-soft)}
+  .shop-skip{font-family:inherit;font-size:10px;letter-spacing:.03em;color:var(--ink-soft);background:none;border:1px solid rgba(42,36,29,.25);border-radius:6px;padding:4px 8px;cursor:pointer;flex:0 0 auto}
+  .shop-skip:hover{color:var(--ink);border-color:var(--ink-soft)}
+  .shop-dish.out .shop-skip{color:var(--cream-dim);border-color:var(--line)}
+  .shop-dish.out .shop-skip:hover{color:var(--cream);border-color:var(--cream-dim)}
+  .shop-ings{margin-top:9px;display:flex;flex-direction:column}
+  .shop-ing{display:flex;align-items:baseline;gap:9px;text-align:left;font-family:inherit;font-size:11.5px;color:var(--ink);background:none;border:none;border-top:1px dashed rgba(42,36,29,.18);padding:6px 1px;cursor:pointer;line-height:1.45}
+  .shop-ing:hover .shop-txt{color:#000}
+  .shop-tick{flex:0 0 auto;width:15px;height:15px;border:1.5px solid rgba(42,36,29,.4);border-radius:4px;font-size:10px;font-weight:700;line-height:12px;text-align:center;color:var(--ink);align-self:center}
+  .shop-ing.got .shop-tick{background:var(--gc);border-color:var(--gc);color:#fff}
+  .shop-ing.got .shop-txt{text-decoration:line-through;color:var(--ink-soft)}
+  .shop-count{font-size:10.5px;letter-spacing:.06em;color:var(--cream-dim)}
+  .shop-empty{grid-column:1/-1;font-size:12px;color:var(--cream-dim);border:1px dashed var(--line);border-radius:8px;padding:18px;line-height:1.6}
+  .shop-actions{display:flex;gap:10px;margin-top:14px;flex-wrap:wrap}
+  .shop-copy{font-family:inherit;font-size:12px;font-weight:700;color:var(--ink);background:var(--chit);border:none;border-radius:8px;padding:10px 16px;cursor:pointer;letter-spacing:.02em}
+  .shop-copy:hover{background:var(--cream)}
+  .shop-copy:disabled{opacity:.45;cursor:default}
+  .shop-copy:focus-visible,.shop-skip:focus-visible,.shop-ing:focus-visible,.shop-reset:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  .shop-reset{font-family:inherit;font-size:11px;color:var(--cream-dim);background:none;border:1px solid var(--line);border-radius:8px;padding:10px 13px;cursor:pointer;letter-spacing:.03em}
+  .shop-reset:hover{border-color:var(--fry);color:var(--cream)}
+
   /* Toast */
   #toast{position:fixed;left:50%;bottom:24px;transform:translateX(-50%) translateY(20px);background:var(--ink);color:var(--chit);font-size:12px;font-weight:500;padding:11px 18px;border-radius:9px;box-shadow:0 12px 30px -8px rgba(0,0,0,.7);opacity:0;pointer-events:none;transition:opacity .2s,transform .2s;z-index:90;letter-spacing:.02em}
   #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}

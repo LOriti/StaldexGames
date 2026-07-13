@@ -50,6 +50,7 @@ src/
     plan.js       plan shape, seeding, painting, shuffling, swapping
     allocate.js   *** the FIFO leftover→lunch allocator. Read this first. ***
     freezer.js    freezer accounting
+    shopping.js   weekly shopping list derived from the plan; week-scoped ticks
   storage/
     adapter.js    persistence. See "Gotchas" — do not bypass this.
     sync.js       optional remote sync layer (Worker in ../worker-lrmp/). See Gotcha 1b.
@@ -58,6 +59,7 @@ src/
     recipesView.js
     monthView.js
     weeklyView.js   the complex one
+    shoppingView.js weekly list: tick off ingredients, skip dishes, copy as text
     recipeModal.js
   state.js    tiny observable store; hydrate / commit / subscribe
   main.js     entry, tab switching
