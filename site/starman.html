@@ -195,11 +195,65 @@ footer .stars-line{letter-spacing:.6em;color:var(--aurum);margin-bottom:.6rem}
   section{padding:4.2rem 1.3rem}
   .polaroid{width:200px}
 }
+
+/* ---------- VERSION TOGGLE ---------- */
+.ver-toggle{position:relative;z-index:5;display:flex;justify-content:center;padding:1.3rem 1rem 0}
+.ver-toggle .inner{display:flex;border:1px solid var(--aurum-soft);border-radius:999px;overflow:hidden;background:rgba(25,21,64,.6)}
+.ver-toggle button{
+  font-family:'Cinzel',serif;font-size:.66rem;letter-spacing:.3em;text-transform:uppercase;
+  color:var(--lilac);background:transparent;border:0;padding:.65rem 1.3rem .65rem 1.6rem;
+  cursor:pointer;transition:background .25s,color .25s;
+}
+.ver-toggle button[aria-pressed="true"]{background:var(--aurum);color:var(--void)}
+.ver-toggle button:focus-visible{outline:2px solid var(--aurum);outline-offset:-2px}
+
+/* ---------- DIRECT VERSION ---------- */
+.direct{max-width:720px;margin:0 auto;padding:3rem 1.5rem 0}
+.direct .d-head{text-align:center;padding-bottom:2.8rem;border-bottom:1px solid rgba(156,143,217,.22)}
+.direct .d-head .over{font-family:'Cinzel',serif;font-size:.75rem;letter-spacing:.5em;text-transform:uppercase;color:var(--lilac)}
+.direct h1{font-size:clamp(1.9rem,5vw,2.8rem);margin:.35rem 0 .5rem;text-shadow:0 0 40px rgba(140,120,255,.5)}
+.direct h1 .gold{color:var(--aurum)}
+.direct .d-tag{color:var(--lilac);font-size:1.02rem;max-width:34em;margin:0 auto 1.8rem}
+.direct section{max-width:none;margin:0;padding:2.8rem 0 0}
+.direct h2{font-size:1rem;letter-spacing:.18em;text-transform:uppercase;color:var(--aurum);margin-bottom:1.1rem}
+.direct .d-points{list-style:none}
+.direct .d-points li{padding:.5rem 0 .5rem 1.5rem;position:relative}
+.direct .d-points li::before{content:"✶";position:absolute;left:0;top:.62rem;color:var(--aurum);font-size:.75rem}
+.direct .d-points strong{font-weight:400;font-family:'Cinzel',serif;font-size:.92rem;letter-spacing:.04em}
+.direct .d-rate{
+  display:grid;grid-template-columns:1fr auto;gap:.15rem 1.2rem;align-items:baseline;
+  padding:1rem 0;border-bottom:1px solid rgba(156,143,217,.16);
+}
+.direct .d-rate h3{grid-column:1;font-size:1.02rem;letter-spacing:.06em}
+.direct .d-rate .use{grid-column:1;color:var(--lilac);font-size:.92rem}
+.direct .d-rate .price{grid-column:2;grid-row:1 / span 2;text-align:right;font-family:'Cinzel',serif;font-size:.85rem;color:var(--aurum);white-space:nowrap}
+.direct .d-note{color:var(--lilac);font-size:.88rem;font-style:italic;margin-top:1.1rem}
+.direct ol.d-steps{list-style:none;counter-reset:step}
+.direct ol.d-steps li{counter-increment:step;padding:.6rem 0 .6rem 2.4rem;position:relative}
+.direct ol.d-steps li::before{
+  content:counter(step);position:absolute;left:0;top:.68rem;width:1.5rem;height:1.5rem;
+  border:1px solid var(--aurum-soft);border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-family:'Cinzel',serif;font-size:.72rem;color:var(--aurum);
+}
+.direct .d-book{text-align:center;padding:3.2rem 0 4rem}
+.direct .d-book .contact-line{margin-top:1.2rem;font-size:.95rem;color:#c9c2ea}
+@media (max-width:600px){
+  .direct .d-rate{grid-template-columns:1fr}
+  .direct .d-rate .price{grid-column:1;grid-row:auto;text-align:left;margin-top:.15rem}
+}
 </style>
 </head>
 <body>
 <canvas id="stars"></canvas>
-<div class="wrap">
+
+<nav class="ver-toggle" aria-label="Site version">
+  <div class="inner">
+    <button type="button" data-ver="mystic" aria-pressed="true">Mystic</button>
+    <button type="button" data-ver="direct" aria-pressed="false">Direct</button>
+  </div>
+</nav>
+
+<div class="wrap" id="ver-mystic">
 
   <!-- HERO -->
   <section class="hero">
@@ -379,6 +433,70 @@ footer .stars-line{letter-spacing:.6em;color:var(--aurum);margin-bottom:.6rem}
   </footer>
 </div>
 
+<!-- ============ DIRECT VERSION ============ -->
+<div class="wrap direct" id="ver-direct" hidden>
+
+  <header class="d-head">
+    <div class="over">Travis</div>
+    <h1>The Shaman <span class="gold">Starman</span></h1>
+    <p class="d-tag">Star chart readings for people with real questions. Online worldwide, in person by arrangement.</p>
+    <a class="cta" href="mailto:travis@shamanstarman.com?subject=Booking%20a%20reading">Book a Reading</a>
+  </header>
+
+  <section>
+    <h2>What you get</h2>
+    <ul class="d-points">
+      <li><strong>A prepared reading.</strong> Your natal chart is drawn and studied before you arrive — nothing is improvised.</li>
+      <li><strong>A working session.</strong> Bring a decision, a pattern, a relationship, a year to plan. The chart is the map; the conversation is practical.</li>
+      <li><strong>A written record.</strong> After every sitting you receive a written summary of what was covered.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>Readings &amp; rates</h2>
+    <div class="d-rate">
+      <h3>The Full Chart</h3>
+      <div class="use">Complete natal reading — the one to start with.</div>
+      <div class="price">90 min · from $140</div>
+    </div>
+    <div class="d-rate">
+      <h3>Hearts &amp; Charts</h3>
+      <div class="use">Relationship reading — two charts side by side, or yours alone.</div>
+      <div class="price">75 min · from $130</div>
+    </div>
+    <div class="d-rate">
+      <h3>The Season Ahead</h3>
+      <div class="use">Your next twelve months, mapped by transit.</div>
+      <div class="price">60 min · from $110</div>
+    </div>
+    <div class="d-rate">
+      <h3>The Crossroads</h3>
+      <div class="use">One real decision, weighed against current transits.</div>
+      <div class="price">45 min · from $85</div>
+    </div>
+    <p class="d-note">Returning clients can arrange ongoing monthly guidance.</p>
+  </section>
+
+  <section>
+    <h2>How it works</h2>
+    <ol class="d-steps">
+      <li>Email your birth date, time and place, plus the question on your mind.</li>
+      <li>Travis draws and studies your chart, then confirms a time that suits you.</li>
+      <li>You meet — online or in person — and receive a written summary afterward.</li>
+    </ol>
+  </section>
+
+  <section class="d-book">
+    <a class="cta" href="mailto:travis@shamanstarman.com?subject=Booking%20a%20reading">Book a Reading</a>
+    <div class="contact-line">or write to <a class="plain" href="mailto:travis@shamanstarman.com">travis@shamanstarman.com</a></div>
+  </section>
+
+  <footer>
+    <div class="stars-line">✦ ✧ ✦</div>
+    Travis · The Shaman Starman — readings offered in the spirit of guidance, not guarantee.
+  </footer>
+</div>
+
 <script>
 const cv = document.getElementById('stars');
 const ctx = cv.getContext('2d');
@@ -416,6 +534,21 @@ function draw(t){
   if(!reduced) requestAnimationFrame(draw);
 }
 if(reduced){ draw(0); } else { requestAnimationFrame(draw); }
+
+// ---------- version toggle ----------
+const verButtons = document.querySelectorAll('.ver-toggle button');
+const verPanels = { mystic: document.getElementById('ver-mystic'), direct: document.getElementById('ver-direct') };
+function setVersion(v, scroll){
+  if (!verPanels[v]) v = 'mystic';
+  for (const k in verPanels) verPanels[k].hidden = (k !== v);
+  verButtons.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.ver === v)));
+  try { localStorage.setItem('ssVersion', v); } catch(e) {}
+  if (scroll) window.scrollTo({ top: 0, behavior: 'instant' });
+}
+verButtons.forEach(b => b.addEventListener('click', () => setVersion(b.dataset.ver, true)));
+let initialVer = new URLSearchParams(location.search).get('v');
+if (!initialVer) { try { initialVer = localStorage.getItem('ssVersion'); } catch(e) {} }
+if (initialVer === 'direct') setVersion('direct', false);
 </script>
 </body>
 </html>
