@@ -4,11 +4,11 @@ import {
 } from '../src/core/shopping.js';
 import { emptyPlan } from '../src/core/plan.js';
 
-/** Build a 28-day plan from a sparse spec: { dayIndex: [dish, src?] } */
+/** Build a 28-day plan from a sparse spec: { dayIndex: [dish, extra?, src?] } */
 function planWith(spec) {
   const plan = emptyPlan();
-  for (const [idx, [dish, src = 'cook']] of Object.entries(spec)) {
-    plan[Number(idx)].dinner = { cat: 'curry', dish, src, extra: 2 };
+  for (const [idx, [dish, extra = 0, src = 'cook']] of Object.entries(spec)) {
+    plan[Number(idx)].dinner = { cat: 'curry', dish, src, extra };
   }
   return plan;
 }
@@ -17,15 +17,21 @@ const empty = () => ({ excluded: {}, have: {} });
 
 describe('weekCooked — which dishes need shopping', () => {
   it('lists only src:cook dinners; freezer and empty days shop nothing', () => {
-    const plan = planWith({ 0: ['Butter chicken'], 2: ['Beef keema', 'freezer'] });
+    const plan = planWith({ 0: ['Butter chicken'], 2: ['Beef keema', 0, 'freezer'] });
     const dishes = weekCooked(plan, 0);
     expect(dishes).toHaveLength(1);
-    expect(dishes[0]).toMatchObject({ dish: 'Butter chicken', count: 1 });
+    expect(dishes[0]).toMatchObject({ dish: 'Butter chicken', count: 1, serves: 1 });
   });
 
   it('dedupes a dish cooked twice in one week and counts it', () => {
     const plan = planWith({ 0: ['Beef keema'], 4: ['Beef keema'] });
-    expect(weekCooked(plan, 0)).toEqual([{ dish: 'Beef keema', cat: 'curry', count: 2 }]);
+    expect(weekCooked(plan, 0)).toEqual([{ dish: 'Beef keema', cat: 'curry', count: 2, serves: 2 }]);
+  });
+
+  it('leftover portions add half a serve each (1 serve = 2 portions)', () => {
+    const plan = planWith({ 0: ['Beef keema', 2], 3: ['Beef keema', 1] });
+    // (1 + 2/2) + (1 + 1/2) = 3.5 serves
+    expect(weekCooked(plan, 0)[0].serves).toBe(3.5);
   });
 
   it('is scoped to the requested week only', () => {
@@ -35,12 +41,29 @@ describe('weekCooked — which dishes need shopping', () => {
   });
 });
 
-describe('buildList / remainingCount — tick state', () => {
+describe('buildList / remainingCount — tick state and scaling', () => {
   it('pulls real ingredients from the recipe data', () => {
     const plan = planWith({ 0: ['Butter chicken'] });
     const [d] = buildList(plan, 0, empty());
     expect(d.ing.length).toBeGreaterThan(3);
-    expect(d.ing[0]).toMatchObject({ i: 0, have: false });
+    expect(d.ing[0]).toMatchObject({ i: 0, have: false, text: '700g chicken thigh, chunked' });
+  });
+
+  it('scales leading quantities by serves; staple lines stay as written', () => {
+    const plan = planWith({ 0: ['Beef keema', 2] }); // 2 serves
+    const [d] = buildList(plan, 0, empty());
+    expect(d.ing[0].text).toBe('1000g beef mince');       // 500g × 2
+    expect(d.ing[1].text).toBe('2 onion, diced');         // 1 × 2
+    const staple = d.ing.find((x) => x.text.startsWith('Ghee'));
+    expect(staple.text).toBe('Ghee, salt, coriander');    // no leading number — untouched
+  });
+
+  it('uses edited ingredient lists when recipeEdits has an override', () => {
+    const plan = planWith({ 0: ['Beef keema'] });
+    const edits = { 'Beef keema': ['600g beef mince', 'Frozen veg'] };
+    const [d] = buildList(plan, 0, empty(), edits);
+    expect(d.ing).toHaveLength(2);
+    expect(d.ing[0].text).toBe('600g beef mince');
   });
 
   it('marks ticked ingredients and excluded dishes', () => {
@@ -89,9 +112,11 @@ describe('listText — the paste-anywhere export', () => {
     expect(txt).toContain('- 2 tbsp garam masala');
   });
 
-  it('shows ×N when a dish is cooked twice', () => {
-    const plan = planWith({ 0: ['Beef keema'], 3: ['Beef keema'] });
-    expect(listText(plan, 0, empty())).toContain('Beef keema ×2');
+  it('shows total serves and scales quantities when a dish repeats or has leftovers', () => {
+    const plan = planWith({ 0: ['Beef keema', 2], 3: ['Beef keema'] }); // 2 + 1 = 3 serves
+    const txt = listText(plan, 0, empty());
+    expect(txt).toContain('Beef keema — 3 serves');
+    expect(txt).toContain('- 1500g beef mince');
   });
 
   it('a fully-shopped week exports just the header', () => {

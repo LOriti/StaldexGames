@@ -1,7 +1,7 @@
-# LRMP
+# L&R Meal Planner (LRMP)
 
-*Leftover Rotation Meal Planner* — a keto meal planner where **lunches are derived from
-dinner leftovers**, not planned separately.
+A keto meal planner for two where **lunches are derived from dinner leftovers**, not
+planned separately. Recipe quantities are per serve, and 1 serve = 2 portions.
 
 Paint a month by cooking mode → dishes drop in automatically → leftovers flow forward into
 lunch slots (earliest-cooked first) → whatever isn't eaten rolls into next week or gets

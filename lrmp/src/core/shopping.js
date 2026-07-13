@@ -14,24 +14,31 @@
  *
  * Only `src: 'cook'` dinners shop. Freezer nights are already cooked, and empty/leftover
  * days need nothing — that's the whole point of the rotation.
+ *
+ * QUANTITIES scale with serves (see core/recipes.js): each cooked dinner needs
+ * 1 serve + extra/2, so bumping leftovers on the weekly board grows the shopping list.
+ * Ingredient lines resolve through recipeEdits so user-edited recipes shop correctly.
  */
 
-import { RECIPES } from '../data/recipes.js';
+import { ingredientsOf, servesFor, scaleQty, formatServes } from './recipes.js';
 
 export const dishKey = (week, dish) => `${week}|${dish}`;
 export const ingKey = (week, dish, i) => `${week}|${dish}|${i}`;
 
-/** Unique cooked dishes in a week, with how many times each is cooked. */
+/** Unique cooked dishes in a week, with cook count and total serves needed. */
 export function weekCooked(plan, week) {
   const out = [];
   const seen = new Map();
   for (let d = 0; d < 7; d++) {
     const dinner = plan[week * 7 + d].dinner;
     if (!dinner.dish || dinner.src !== 'cook') continue;
+    const serves = servesFor(dinner.extra);
     const entry = seen.get(dinner.dish);
-    if (entry) entry.count += 1;
-    else {
-      const fresh = { dish: dinner.dish, cat: dinner.cat, count: 1 };
+    if (entry) {
+      entry.count += 1;
+      entry.serves += serves;
+    } else {
+      const fresh = { dish: dinner.dish, cat: dinner.cat, count: 1, serves };
       seen.set(dinner.dish, fresh);
       out.push(fresh);
     }
@@ -39,13 +46,13 @@ export function weekCooked(plan, week) {
   return out;
 }
 
-/** The full render model: every cooked dish with its ingredients and tick state. */
-export function buildList(plan, week, shopping = { excluded: {}, have: {} }) {
+/** The full render model: every cooked dish with scaled ingredients and tick state. */
+export function buildList(plan, week, shopping = { excluded: {}, have: {} }, edits = {}) {
   return weekCooked(plan, week).map((e) => ({
     ...e,
     excluded: Boolean(shopping.excluded[dishKey(week, e.dish)]),
-    ing: (RECIPES[e.dish]?.ing ?? []).map((text, i) => ({
-      text,
+    ing: ingredientsOf(e.dish, edits).map((text, i) => ({
+      text: scaleQty(text, e.serves),
       i,
       have: Boolean(shopping.have[ingKey(week, e.dish, i)]),
     })),
@@ -53,8 +60,8 @@ export function buildList(plan, week, shopping = { excluded: {}, have: {} }) {
 }
 
 /** Count of ingredients still to buy (excluded dishes contribute nothing). */
-export function remainingCount(plan, week, shopping) {
-  return buildList(plan, week, shopping).reduce(
+export function remainingCount(plan, week, shopping, edits = {}) {
+  return buildList(plan, week, shopping, edits).reduce(
     (n, d) => (d.excluded ? n : n + d.ing.filter((x) => !x.have).length),
     0
   );
@@ -64,13 +71,14 @@ export function remainingCount(plan, week, shopping) {
  * Plain-text export of what's still to buy — grouped by dish, ready to paste into
  * a message or notes app. Excluded dishes and ticked ingredients are left out.
  */
-export function listText(plan, week, shopping) {
+export function listText(plan, week, shopping, edits = {}) {
   const lines = [`Shopping — Wk ${week + 1}`];
-  for (const d of buildList(plan, week, shopping)) {
+  for (const d of buildList(plan, week, shopping, edits)) {
     if (d.excluded) continue;
     const remaining = d.ing.filter((x) => !x.have);
     if (!remaining.length) continue;
-    lines.push('', d.count > 1 ? `${d.dish} ×${d.count}` : d.dish);
+    const serves = d.serves === 1 ? '' : ` — ${formatServes(d.serves)} serves`;
+    lines.push('', `${d.dish}${serves}`);
     for (const x of remaining) lines.push(`- ${x.text}`);
   }
   return lines.join('\n');

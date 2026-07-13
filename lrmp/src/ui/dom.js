@@ -31,8 +31,11 @@ export function clearDropHighlights() {
  * @param {(x:number,y:number,payload:object)=>HTMLElement|null} findTarget
  * @param {(target:HTMLElement, payload:object)=>void} onDrop
  * @param {()=>void} onEnd        always called (re-render)
+ * @param {()=>void} [onTap]      called instead of onDrop when the pointer never moved
+ *                                past the threshold — lets a draggable element keep a
+ *                                tap action (pointerdown+capture can swallow the click)
  */
-export function beginDrag(e, tile, payload, { findTarget, onDrop, onEnd }) {
+export function beginDrag(e, tile, payload, { findTarget, onDrop, onEnd, onTap }) {
   e.preventDefault();
   try { tile.setPointerCapture(e.pointerId); } catch { /* ignore */ }
 
@@ -73,6 +76,8 @@ export function beginDrag(e, tile, payload, { findTarget, onDrop, onEnd }) {
     if (st.moved) {
       const target = findTarget(ev.clientX, ev.clientY, payload);
       if (target) onDrop(target, payload);
+    } else if (onTap) {
+      onTap();
     }
     onEnd();
   };

@@ -97,4 +97,5 @@ export const KEYS = {
   FAVOURITES: 'favourites',
   PINS: 'pins',
   SHOPPING: 'shopping',
+  RECIPE_EDITS: 'recipeEdits',
 };

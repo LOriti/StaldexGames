@@ -1,5 +1,5 @@
 import { MODE_BY_KEY } from '../data/modes.js';
-import { metaOf } from '../data/dishes.js';
+import { metaOf, DISHES } from '../data/dishes.js';
 import { DAY_NAMES, swapDinners, deferDinner, emptyDinner } from '../core/plan.js';
 import { allocate, groupSurplus } from '../core/allocate.js';
 import * as fz from '../core/freezer.js';
@@ -79,10 +79,20 @@ function freezerPanel(freezer) {
         </div>`).join('')
     : `<div class="fz-empty">Freezer is empty — drag a dinner in here to bank all its leftovers, or a single lunch to bank that portion.</div>`;
 
+  const dishOptions = Object.values(DISHES).flat()
+    .map((d) => `<option value="${escapeAttr(d.n)}"></option>`).join('');
+
   return `<details class="freezer" open>
             <summary>❄ Freezer <span class="fz-count">${total} portion${total === 1 ? '' : 's'}</span>
               <span class="fz-drop-hint">drop here to freeze</span></summary>
-            <div class="fz-body">${items}</div>
+            <div class="fz-body">${items}
+              <div class="fz-add">
+                <input class="fz-in" list="dishOptions" placeholder="Add what's in there — a dish or e.g. “Bought lasagne”" maxlength="40" aria-label="Meal name">
+                <datalist id="dishOptions">${dishOptions}</datalist>
+                <input class="fz-num" type="number" min="1" max="30" value="1" aria-label="Portions">
+                <button class="fz-addbtn">+ Add</button>
+              </div>
+            </div>
           </details>`;
 }
 
@@ -177,6 +187,27 @@ function openNoteEditor(root, slot, idx) {
   };
 }
 
+/**
+ * Manual freezer additions ("as-built" inventory / bought meals). These portions come
+ * from OUTSIDE the plan, so the conservation rule doesn't apply — nothing is decremented.
+ * Unknown names are fine: they get a neutral colour, and `Use ▸` still fills a dinner
+ * slot (with no recipe card behind it).
+ */
+function addToFreezer(root) {
+  const s = get();
+  const nameEl = root.querySelector('.fz-in');
+  const numEl = root.querySelector('.fz-num');
+  const name = nameEl.value.trim();
+  const n = Math.max(1, Math.min(30, Number(numEl.value) || 1));
+  if (!name) {
+    nameEl.focus();
+    return toast('Name the meal first');
+  }
+  fz.bank(s.freezer, name, n);
+  toast(`${name} ×${n} added to the freezer`);
+  commit({ freezer: true });
+}
+
 /* ---------- interaction ---------- */
 
 function wire(root) {
@@ -213,6 +244,9 @@ function wire(root) {
       s.plan[Number(cn.dataset.clearnote)].dinner = emptyDinner();
       return commit({ plan: true });
     }
+
+    const addBtn = e.target.closest('.fz-addbtn');
+    if (addBtn) return addToFreezer(root);
 
     const f = e.target.closest('[data-fz]');
     if (f) {

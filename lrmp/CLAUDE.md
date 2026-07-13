@@ -1,7 +1,11 @@
-# LRMP — working notes for Claude Code
+# L&R Meal Planner (LRMP) — working notes for Claude Code
 
-Keto meal planner. Paint a month by cooking mode → dishes drop in → **lunches are derived
-from dinner leftovers** → surplus rolls forward or gets banked in the freezer.
+Keto meal planner for two. Paint a month by cooking mode → dishes drop in → **lunches are
+derived from dinner leftovers** → surplus rolls forward or gets banked in the freezer.
+
+**The serving model:** recipe quantities are for 1 serve, and **1 serve = 2 portions**
+(dinner for two). A cooked dinner = 1 serve + extra/2 (each leftover portion is half a
+serve). `core/recipes.js` owns this; the shopping list scales quantities with it.
 
 Vanilla JS + Vite. No framework. State is client-side first (localStorage via the adapter),
 with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
@@ -51,6 +55,7 @@ src/
     allocate.js   *** the FIFO leftover→lunch allocator. Read this first. ***
     freezer.js    freezer accounting
     shopping.js   weekly shopping list derived from the plan; week-scoped ticks
+    recipes.js    serving maths (1 serve = 2 portions) + recipeEdits resolution/scaling
   storage/
     adapter.js    persistence. See "Gotchas" — do not bypass this.
     sync.js       optional remote sync layer (Worker in ../worker-lrmp/). See Gotcha 1b.
@@ -192,8 +197,13 @@ controls to a tile.
 - CSS: one stylesheet, CSS custom properties. **Mode colour is set once** in `:root`
   (`--curry`, `--fry`, …) and read everywhere via `--gc`, set inline per element. Adding a
   6th cooking mode = add a var + an entry in `modes.js` + a dish pool. Nothing else.
+- The theme is minimal light (warm paper, white cards, one dark ink). Var-name gotcha
+  from its dark-theme past: `--cream` is the dark page text and `--chit` the white card —
+  semantics moved, names stayed. Don't "fix" the names without touching every rule.
 - Fraunces for dish names (the human/edible layer), JetBrains Mono for chrome (the system
   layer). That split is deliberate — it's what stops it reading like a generic dashboard.
+- User-editable data (recipeEdits, freezer free-text names) must never assume a dish
+  exists in DISH_INDEX — unknown names get neutral colour and "No recipe yet".
 
 ---
 

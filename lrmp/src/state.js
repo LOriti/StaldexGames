@@ -18,6 +18,7 @@ const state = {
   favourites: new Set(),
   lunchPins: {}, // sparse { dayIndex: dishName } — lunch overrides, see core/allocate.js
   shopping: { excluded: {}, have: {} }, // week-scoped ticks, see core/shopping.js
+  recipeEdits: {}, // { dishName: [ingredient lines, per serve] } — see core/recipes.js
   tab: 'weekly', // 'recipes' | 'month' | 'weekly' | 'shopping'
   week: 0, // 0-3, which week the Weekly view is showing
   brush: 'curry', // active Month-view brush, or 'erase'
@@ -39,13 +40,14 @@ function emit() {
 }
 
 /** Mutate + persist + re-render. Pass which slices changed so we only write those. */
-export function commit({ plan = false, freezer = false, favourites = false, pins = false, shopping = false } = {}) {
+export function commit({ plan = false, freezer = false, favourites = false, pins = false, shopping = false, recipes = false } = {}) {
   if (plan) store.set(store.KEYS.PLAN, state.plan);
   if (freezer) store.set(store.KEYS.FREEZER, state.freezer);
   if (favourites) store.set(store.KEYS.FAVOURITES, [...state.favourites]);
   if (pins) store.set(store.KEYS.PINS, state.lunchPins);
   if (shopping) store.set(store.KEYS.SHOPPING, state.shopping);
-  if (plan || freezer || favourites || pins || shopping) schedulePush(snapshot());
+  if (recipes) store.set(store.KEYS.RECIPE_EDITS, state.recipeEdits);
+  if (plan || freezer || favourites || pins || shopping || recipes) schedulePush(snapshot());
   emit();
 }
 
@@ -57,6 +59,7 @@ export function snapshot() {
     favourites: [...state.favourites],
     pins: state.lunchPins,
     shopping: state.shopping,
+    recipeEdits: state.recipeEdits,
   };
 }
 
@@ -71,12 +74,18 @@ export function applyRemote(data) {
   if (Array.isArray(data.favourites)) state.favourites = new Set(data.favourites);
   if (data.pins && typeof data.pins === 'object') state.lunchPins = data.pins;
   if (isValidShopping(data.shopping)) state.shopping = data.shopping;
+  if (isValidEdits(data.recipeEdits)) state.recipeEdits = data.recipeEdits;
   store.set(store.KEYS.PLAN, state.plan);
   store.set(store.KEYS.FREEZER, state.freezer);
   store.set(store.KEYS.FAVOURITES, [...state.favourites]);
   store.set(store.KEYS.PINS, state.lunchPins);
   store.set(store.KEYS.SHOPPING, state.shopping);
+  store.set(store.KEYS.RECIPE_EDITS, state.recipeEdits);
   emit();
+}
+
+function isValidEdits(e) {
+  return Boolean(e && typeof e === 'object' && Object.values(e).every(Array.isArray));
 }
 
 function isValidShopping(s) {
@@ -94,12 +103,13 @@ export function setUI(patch) {
 }
 
 export async function hydrate() {
-  const [plan, freezer, favourites, pins, shopping] = await Promise.all([
+  const [plan, freezer, favourites, pins, shopping, recipeEdits] = await Promise.all([
     store.get(store.KEYS.PLAN, null),
     store.get(store.KEYS.FREEZER, {}),
     store.get(store.KEYS.FAVOURITES, []),
     store.get(store.KEYS.PINS, {}),
     store.get(store.KEYS.SHOPPING, null),
+    store.get(store.KEYS.RECIPE_EDITS, null),
   ]);
 
   state.plan = isValidPlan(plan) ? plan : seedPlan();
@@ -107,6 +117,7 @@ export async function hydrate() {
   state.favourites = new Set(Array.isArray(favourites) ? favourites : []);
   state.lunchPins = pins && typeof pins === 'object' ? pins : {};
   state.shopping = isValidShopping(shopping) ? shopping : { excluded: {}, have: {} };
+  state.recipeEdits = isValidEdits(recipeEdits) ? recipeEdits : {};
 
   // First run (or recovered from corrupt state): persist the seed immediately.
   if (!isValidPlan(plan)) store.set(store.KEYS.PLAN, state.plan);

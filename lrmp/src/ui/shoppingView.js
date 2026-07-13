@@ -1,12 +1,13 @@
 import { MODE_BY_KEY } from '../data/modes.js';
 import { buildList, remainingCount, listText, clearWeek, dishKey, ingKey } from '../core/shopping.js';
+import { formatServes } from '../core/recipes.js';
 import { get, commit, setUI } from '../state.js';
 import { escapeAttr, toast } from './dom.js';
 import { openRecipe } from './recipeModal.js';
 
 function dishCard(d, week) {
   const colour = d.cat ? MODE_BY_KEY[d.cat].color : '#888';
-  const name = `${d.dish}${d.count > 1 ? ` <span class="shop-x">×${d.count}</span>` : ''}`;
+  const name = `${d.dish} <span class="shop-x">${formatServes(d.serves)} serve${d.serves === 1 ? '' : 's'}</span>`;
 
   if (d.excluded) {
     return `<div class="shop-dish out" style="--gc:${colour}">
@@ -34,9 +35,9 @@ function dishCard(d, week) {
 }
 
 export function renderShopping(root) {
-  const { plan, week, shopping } = get();
-  const list = buildList(plan, week, shopping);
-  const remaining = remainingCount(plan, week, shopping);
+  const { plan, week, shopping, recipeEdits } = get();
+  const list = buildList(plan, week, shopping, recipeEdits);
+  const remaining = remainingCount(plan, week, shopping, recipeEdits);
 
   const weekBtns = [0, 1, 2, 3]
     .map((i) => `<button class="wk-btn ${i === week ? 'on' : ''}" data-wk="${i}">Wk ${i + 1}</button>`)
@@ -59,8 +60,10 @@ export function renderShopping(root) {
         <button class="shop-reset">Clear ticks for this week</button>
       </div>` : ''}
     <p class="board-note">Tap an ingredient to tick it off (already bought / in the pantry) ·
-      skip a dish to leave it off the list entirely · Copy grabs only what's left, grouped by dish,
-      ready to paste anywhere · ticks are per-week and sync across devices.</p>`;
+      skip a dish to leave it off the list entirely · quantities scale with serves
+      (1 serve = 2 portions, so a dinner with 2 leftovers shops as 2 serves) ·
+      Copy grabs only what's left, grouped by dish, ready to paste anywhere ·
+      ticks are per-week and sync across devices.</p>`;
 
   wire(root);
 }
@@ -118,7 +121,7 @@ function wire(root) {
     }
 
     if (e.target.closest('.shop-copy')) {
-      const ok = await copyText(listText(s.plan, s.week, s.shopping));
+      const ok = await copyText(listText(s.plan, s.week, s.shopping, s.recipeEdits));
       toast(ok ? 'List copied — paste it anywhere' : 'Copy failed — try long-pressing to select');
     }
   };

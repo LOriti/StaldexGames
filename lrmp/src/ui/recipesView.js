@@ -3,6 +3,7 @@ import { DISHES } from '../data/dishes.js';
 import { get, toggleFavourite } from '../state.js';
 import { escapeAttr } from './dom.js';
 import { openRecipe } from './recipeModal.js';
+import { isEdited } from '../core/recipes.js';
 
 const LEFTOVER_TAG = {
   keeps: ['keeps', 'lo'],
@@ -11,7 +12,12 @@ const LEFTOVER_TAG = {
 };
 
 export function renderRecipes(root) {
-  const { favourites } = get();
+  const s = get();
+  const { favourites, recipeEdits } = s;
+
+  // Which groups are expanded is per-session UI state. Kept on the store (not persisted)
+  // so the nuke-and-rebuild render doesn't snap groups shut when a star is toggled.
+  s.openGroups ??= new Set(MODES.map((m) => m.key));
 
   root.innerHTML = MODES.map((mode) => {
     const dishes = DISHES[mode.key] ?? [];
@@ -29,6 +35,7 @@ export function renderRecipes(root) {
             <span class="tag">${d.p}</span>
             <span class="tag">${d.t}</span>
             <span class="tag ${cls}">${label}</span>
+            ${isEdited(d.n, recipeEdits) ? '<span class="tag ed">edited</span>' : ''}
           </div>
           <div class="dk-engine">${d.e}</div>
           <button class="rec-link" data-rec="${escapeAttr(d.n)}">📖 Recipe</button>
@@ -36,14 +43,15 @@ export function renderRecipes(root) {
     }).join('');
 
     return `
-      <section class="group" style="--gc:${mode.color}">
-        <div class="group-head" style="--gc:${mode.color}">
+      <details class="group" data-group="${mode.key}" style="--gc:${mode.color}" ${s.openGroups.has(mode.key) ? 'open' : ''}>
+        <summary class="group-head" style="--gc:${mode.color}">
           <span class="group-name">${mode.name}</span>
           <span class="group-desc">${mode.ico} ${mode.desc}</span>
           <span class="group-count">${dishes.length} recipes</span>
-        </div>
+          <span class="group-arr">▸</span>
+        </summary>
         <div class="dockets">${cards}</div>
-      </section>`;
+      </details>`;
   }).join('');
 
   root.onclick = (e) => {
@@ -52,4 +60,12 @@ export function renderRecipes(root) {
     const rec = e.target.closest('[data-rec]');
     if (rec) openRecipe(rec.dataset.rec);
   };
+
+  // Remember expand/collapse directly on the store — no emit, the DOM already shows it.
+  root.querySelectorAll('details.group').forEach((det) => {
+    det.addEventListener('toggle', () => {
+      if (det.open) s.openGroups.add(det.dataset.group);
+      else s.openGroups.delete(det.dataset.group);
+    });
+  });
 }
