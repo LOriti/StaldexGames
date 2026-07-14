@@ -88,6 +88,16 @@ Live file: `jaryds-last-day.html` (62KB, self-contained, no dependencies).
 - **3 start personas**: 😤 Disgruntled (Heat 8, Karen pre-annoyed — 70% more likely caught) / 🏆 Beloved ($8,500, tea standing) / 🚬 Checked Out (Mayhem 6 — clean exit must be earned back via good works).
 - Validated: 18,000 runs, zero errors; closers split evenly; personas mechanically distinct.
 
+## v1.1 — Manila dossier reskin (14 Jul 2026)
+- Full visual reskin, chosen from 3 mocked skins (manila dossier / enterprise cloud / after hours)
+  and 5 type treatments: **manila dossier, Arial everywhere**.
+- Manila folder ground `#d3c29b`, ledger-paper cards, navy ink `#1f2a3a`, stamp red `#b3372c`;
+  squared corners; solid meter bars; rotated red **FINAL DAY** stamp on scene cards (CSS-only);
+  choice bullets became checkboxes (☐ → ☑ on hover).
+- Google Fonts (Archivo / JetBrains Mono) dropped — zero external requests; Arial system-wide.
+- Homepage panel (`site/index.html` `.offboard`) and `site/STYLE.md` updated to match.
+- Mechanics, copy, and markup untouched — CSS and the font `<link>` tags only.
+
 ---
 
 ### File lineage

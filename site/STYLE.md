@@ -29,12 +29,12 @@ Current panels:
   purple `#6264a7` primary buttons, meter bars, Segoe-first font stack. Leaderboard renders
   inside this skin (top 10 per board, split length/difficulty selectors). Copy inside the
   panel uses the game's dashboard voice.
-- **Jaryd's Last Day** (`.offboard`): OFFBOARD™ enterprise-suite skin lifted from the game —
-  navy `#10243f` topbar with gold `#c9a227` accents and the dog brandmark SVG, grey-green
-  sheet `#d6d7d1`, paper cards with a 4px ink top rule, gradient meter bars (Mayhem, Heat,
-  Legend, Severance), tier chips (safe/petty/crime), teal `#0e6b63` CTA with hard-shadow
-  press. System sans stands in for the game's Archivo; system mono for JetBrains Mono
-  (no external fonts in the shell). Copy uses the suite's HR-software voice.
+- **Jaryd's Last Day** (`.offboard`): manila dossier skin lifted from the game — manila
+  folder ground `#d3c29b`, ledger-paper cards `#fdfaf1`, navy ink `#1f2a3a` topbar with
+  gold `#c9a227` accents and the dog brandmark SVG, squared corners throughout, solid
+  meter bars (Mayhem red, Heat amber, Legend navy, Severance green), a rotated red
+  `#b3372c` "FINAL DAY" stamp on the scene card, tier chips. Arial for everything, by
+  design — the document nobody chose a font for. Copy uses the suite's HR-software voice.
 - **CafePass** (`.cafepass`): warm coffee palette lifted from the product — cream sheet
   `#F4EFE6`, dark ink `#1A1410` header with gold `#C9A876` accents, Georgia serif for
   drink names, sans for UI chrome. Shows the "usual order" card, feature badges, and a

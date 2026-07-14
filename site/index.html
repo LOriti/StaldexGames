@@ -161,17 +161,17 @@
   .vitals table.v-lb .s { text-align: right; width: 60px; font-variant-numeric: tabular-nums; }
   .vitals .v-empty { font-size: 13px; color: var(--viva-text-sub); padding: 4px 0; }
 
-  /* ============ JARYD'S LAST DAY PANEL — OFFBOARD™ suite, styles lifted from the game ============ */
+  /* ============ JARYD'S LAST DAY PANEL — manila dossier skin, styles lifted from the game ============ */
   .offboard {
-    --ob-bg: #d6d7d1; --ob-paper: #f8f7f2; --ob-paper-2: #efeee7; --ob-ink: #15171c; --ob-ink-soft: #5a5e66; --ob-line: #c9c9c0;
-    --ob-brand: #0e6b63; --ob-brand-deep: #094a44; --ob-amber: #d98a1f; --ob-blood: #c0392b; --ob-blood-deep: #8e2018;
-    --ob-good: #2f7d4f; --ob-gold: #c9a227; --ob-navy: #10243f;
-    --ob-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, monospace;
+    --ob-bg: #d3c29b; --ob-paper: #fdfaf1; --ob-paper-2: #f6f1e4; --ob-ink: #1f2a3a; --ob-ink-soft: #6d6248; --ob-line: #cfc3a0;
+    --ob-brand: #1f2a3a; --ob-brand-deep: #141d2b; --ob-amber: #d98a1f; --ob-blood: #b3372c; --ob-blood-deep: #8e2018;
+    --ob-good: #2f7d4f; --ob-gold: #c9a227; --ob-navy: #1f2a3a;
+    --ob-mono: Arial, Helvetica, sans-serif;
     background: var(--ob-bg);
-    border: 1px solid var(--ob-line);
+    border: 1px solid #b9a87f;
     border-radius: 8px;
     overflow: hidden;
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    font-family: Arial, Helvetica, sans-serif;
     color: var(--ob-ink);
   }
   /* Topbar — as in the game */
@@ -188,33 +188,38 @@
   .offboard .ob-body { padding: 10px; display: flex; flex-direction: column; gap: 8px; }
   /* Meters — as in the game */
   .offboard .ob-dash { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-  .offboard .ob-meter { background: var(--ob-paper); border: 1px solid var(--ob-line); border-radius: 4px; padding: 8px 10px; }
+  .offboard .ob-meter { background: var(--ob-paper); border: 1px solid var(--ob-line); padding: 8px 10px; }
   .offboard .ob-meter .lab { font-family: var(--ob-mono); font-size: 9px; letter-spacing: 0.08em; text-transform: uppercase; color: var(--ob-ink-soft); }
   .offboard .ob-meter .val { font-weight: 800; line-height: 1; margin-top: 3px; font-size: 21px; }
   .offboard .ob-meter .val small { font-family: var(--ob-mono); font-size: 10px; font-weight: 400; color: var(--ob-ink-soft); }
   .offboard .ob-meter.legend .val { color: var(--ob-brand-deep); }
-  .offboard .ob-bar { height: 7px; background: var(--ob-paper-2); border: 1px solid var(--ob-line); border-radius: 20px; margin-top: 6px; overflow: hidden; }
-  .offboard .ob-bar i { display: block; height: 100%; border-radius: 20px; }
-  .offboard .ob-bar.mayhem i { background: linear-gradient(90deg, var(--ob-amber), var(--ob-blood)); }
-  .offboard .ob-bar.heat i { background: linear-gradient(90deg, #e3a93b, var(--ob-blood-deep)); }
-  .offboard .ob-bar.legend i { background: linear-gradient(90deg, #37a892, var(--ob-brand)); }
-  .offboard .ob-bar.sev i { background: linear-gradient(90deg, #3a9d63, var(--ob-good)); }
+  .offboard .ob-bar { height: 7px; background: var(--ob-paper-2); border: 1px solid var(--ob-line); margin-top: 6px; overflow: hidden; }
+  .offboard .ob-bar i { display: block; height: 100%; }
+  .offboard .ob-bar.mayhem i { background: var(--ob-blood); }
+  .offboard .ob-bar.heat i { background: var(--ob-amber); }
+  .offboard .ob-bar.legend i { background: var(--ob-navy); }
+  .offboard .ob-bar.sev i { background: var(--ob-good); }
   /* Scene card — as in the game */
   .offboard .ob-card {
-    background: var(--ob-paper); border: 1px solid var(--ob-line); border-top: 4px solid var(--ob-ink);
-    border-radius: 4px; padding: 13px 14px;
+    background: var(--ob-paper); border: 1px solid var(--ob-line);
+    padding: 13px 14px; position: relative;
+  }
+  .offboard .ob-card::after {
+    content: "FINAL DAY"; position: absolute; top: 10px; right: 10px;
+    font-weight: 700; font-size: 9px; letter-spacing: 0.14em; color: var(--ob-blood);
+    border: 2px solid var(--ob-blood); padding: 2px 7px; transform: rotate(4deg); opacity: 0.85; pointer-events: none;
   }
   .offboard .ob-timechip {
-    display: inline-flex; align-items: center; gap: 7px; font-family: var(--ob-mono); font-size: 11px;
-    background: var(--ob-navy); color: var(--ob-gold); padding: 3px 9px; border-radius: 20px; letter-spacing: 0.05em;
+    display: inline-flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 700;
+    color: var(--ob-ink-soft); letter-spacing: 0.06em; text-transform: uppercase;
   }
-  .offboard .ob-timechip .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--ob-gold); box-shadow: 0 0 8px var(--ob-gold); }
+  .offboard .ob-timechip .dot { width: 7px; height: 7px; background: var(--ob-blood); }
   .offboard .ob-title { font-weight: 800; font-size: 18px; line-height: 1.1; margin: 9px 0 4px; letter-spacing: -0.01em; }
-  .offboard .ob-desc { font-size: 13.5px; color: #2c2f36; line-height: 1.45; }
+  .offboard .ob-desc { font-size: 13.5px; color: #3a4150; line-height: 1.45; }
   .offboard .ob-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
   .offboard .ob-chip {
-    font-family: var(--ob-mono); font-size: 10.5px; font-weight: 500;
-    padding: 4px 10px; border-radius: 20px; border: 1px solid; white-space: nowrap;
+    font-size: 10.5px; font-weight: 500;
+    padding: 4px 10px; border-radius: 2px; border: 1px solid; white-space: nowrap;
   }
   .offboard .ob-chip.neutral { color: var(--ob-ink-soft); border-color: var(--ob-line); }
   .offboard .ob-chip.warn { color: #9a6a14; border-color: var(--ob-amber); }
@@ -222,7 +227,7 @@
   /* Primary action — as in the game */
   .offboard .ob-cta {
     display: block; text-align: center; text-decoration: none;
-    background: var(--ob-brand); color: #fff; border-radius: 4px;
+    background: var(--ob-brand); color: #fff;
     font-weight: 800; font-size: 14px; letter-spacing: 0.03em; padding: 12px;
     box-shadow: 0 4px 0 var(--ob-brand-deep); margin-bottom: 4px;
   }
