@@ -40,7 +40,7 @@
     font-size: 14px;
     line-height: 1.5;
     min-height: 100vh;
-    padding-bottom: 78px;
+    padding-bottom: 108px;
     background-image:
       repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,0.14) 2px 4px),
       radial-gradient(ellipse 90% 60% at 50% -10%, rgba(184,243,78,0.05), transparent);
@@ -202,10 +202,21 @@
   .list-foot { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; gap: 16px; flex-wrap: wrap; }
 
   /* ============ TAB 2 · PLAN ============ */
-  .plan-grid { display: grid; grid-template-columns: 1fr 330px; gap: 28px; align-items: start; }
+  .plan-controls {
+    display: flex; flex-wrap: wrap; gap: 22px 36px; align-items: flex-start;
+    margin-bottom: 26px; padding-bottom: 24px; border-bottom: 1px solid var(--line-strong);
+  }
+  .plan-controls .ctrl-block { margin-bottom: 0; }
+  .plan-controls .ctrl-block:first-child { flex: 1 1 440px; }
+  .plan-controls .store-toggles { flex-direction: row; flex-wrap: wrap; }
+  .plan-controls .st-tog { flex: 1 1 170px; }
+  .plan-controls .stops-radio { min-width: 220px; }
+  @media (max-width: 560px) { .plan-controls .st-tog { flex-basis: 100%; } }
+
+  .plan-grid { display: grid; grid-template-columns: 1fr 330px; gap: 32px; align-items: start; }
 
   .ctrl-block { margin-bottom: 20px; }
-  .ctrl-label { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; }
+  .ctrl-label { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin-bottom: 10px; }
   .store-toggles { display: flex; flex-direction: column; gap: 6px; }
   .st-tog {
     display: flex; align-items: center; justify-content: space-between; gap: 10px;
@@ -230,22 +241,22 @@
   .stops-radio button:hover { border-color: var(--dim); }
   .stops-radio button.on { background: var(--acid-dark); border-color: var(--acid-deep); color: var(--acid); font-weight: 600; }
 
-  .ptable { width: 100%; border-collapse: collapse; }
+  .ptable { width: 100%; border-collapse: collapse; table-layout: fixed; }
   .ptable th {
     text-align: right; font-size: 10px; letter-spacing: .14em; text-transform: uppercase;
     color: var(--faint); font-weight: 500; padding: 10px 8px;
     border-bottom: 1px solid var(--line-strong);
   }
-  .ptable th:first-child { text-align: left; padding-left: 4px; }
+  .ptable th:first-child { text-align: left; padding-left: 4px; width: 32%; }
   .ptable th.col-off { opacity: .35; text-decoration: line-through; }
   .ptable td { padding: 11px 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
   .ptable tbody tr { transition: background .12s; }
   .ptable tbody tr:hover { background: var(--panel); }
   .ptable td:first-child { padding-left: 4px; }
 
-  .pt-item .n { font-size: 13.5px; display: block; }
-  .pt-item .s { font-size: 10.5px; color: var(--faint); margin-top: 1px; }
-  .pt-item .qty-tag { color: var(--acid); font-size: 10.5px; margin-left: 6px; }
+  .pt-item .n { font-size: 13px; display: block; overflow-wrap: anywhere; }
+  .pt-item .s { font-size: 10px; color: var(--faint); margin-top: 1px; overflow-wrap: anywhere; }
+  .pt-item .qty-tag { color: var(--acid); font-size: 10px; margin-left: 6px; }
   .moved-tag {
     display: inline-block; font-size: 9px; letter-spacing: .08em; text-transform: uppercase;
     color: var(--amber); border: 1px solid var(--amber-dark); background: rgba(255,176,58,.08);
@@ -256,12 +267,12 @@
   .moved-tag .delta-down { color: var(--acid); }
 
   .pcell {
-    text-align: right; font-size: 13.5px; color: var(--dim);
+    text-align: right; font-size: 13px; color: var(--dim);
     font-variant-numeric: tabular-nums; position: relative; cursor: pointer; white-space: nowrap;
   }
   .pcell .val { display: inline-block; padding-bottom: 1px; }
   .pcell.low .val { border-bottom: 1px dotted var(--acid-deep); }
-  .pcell .u { display: block; font-size: 9.5px; color: var(--faint); font-weight: 400; margin-top: 2px; }
+  .pcell .u { display: block; font-size: 9px; color: var(--faint); font-weight: 400; margin-top: 2px; }
   .pcell .pin { opacity: 0; font-size: 10px; margin-right: 5px; color: var(--faint); transition: opacity .12s; }
   .pcell:hover .pin { opacity: 1; }
   .pcell.pinned .pin { opacity: 1; color: var(--amber); }
@@ -277,14 +288,14 @@
   .ptable tfoot td:first-child { font-family: var(--serif); font-weight: 460; font-style: italic; font-size: 16px; }
   .ptable tfoot .col-off { opacity: .35; text-decoration: line-through; }
 
-  .legend { display: flex; gap: 18px; margin-top: 10px; font-size: 10px; color: var(--faint); letter-spacing: .05em; flex-wrap: wrap; }
+  .legend { display: flex; gap: 14px 20px; margin-top: 14px; font-size: 10px; color: var(--faint); letter-spacing: .05em; flex-wrap: wrap; }
   .legend .lg-pick { color: var(--acid); }
   .legend .lg-low { border-bottom: 1px dotted var(--acid-deep); }
   .legend .lg-pin { color: var(--amber); }
 
-  .flag-strip { display: flex; gap: 10px; margin-top: 14px; flex-wrap: wrap; }
+  .flag-strip { display: flex; gap: 12px; margin-top: 20px; flex-wrap: wrap; }
   .flag {
-    flex: 1; min-width: 240px; font-size: 11.5px; line-height: 1.55;
+    flex: 1; min-width: 240px; font-size: 11px; line-height: 1.55;
     border: 1px solid var(--line-strong); background: var(--panel);
     padding: 10px 12px; color: var(--dim);
   }
@@ -304,7 +315,7 @@
   .v-sub .pos { color: var(--acid); }
   .v-sub .neg { color: var(--red); }
   .v-stops { border-top: 1px solid var(--line); margin-top: 12px; padding-top: 10px; }
-  .v-stop-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; font-size: 12.5px; }
+  .v-stop-row { display: flex; justify-content: space-between; align-items: baseline; padding: 6px 0; font-size: 12px; }
   .v-stop-row .num { color: var(--acid); font-size: 10px; letter-spacing: .14em; margin-right: 8px; }
   .v-stop-row .amt { font-weight: 600; }
   .v-stop-row .cnt { color: var(--faint); font-size: 10px; margin-left: 6px; }
@@ -322,7 +333,7 @@
 
   .alts { border: 1px solid var(--line-strong); background: var(--panel); padding: 14px 16px; margin-bottom: 14px; }
   .alts-h { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; color: var(--faint); margin-bottom: 8px; }
-  .alt-line { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12.5px; }
+  .alt-line { display: flex; justify-content: space-between; align-items: baseline; padding: 7px 0; border-bottom: 1px solid var(--line); font-size: 12px; }
   .alt-line:last-child { border-bottom: none; }
   .alt-line .a-name { color: var(--dim); }
   .alt-line .a-name i { font-style: normal; color: var(--faint); font-size: 10px; margin-left: 6px; }
@@ -387,9 +398,9 @@
   .chk-row.done .chk-box { background: var(--acid); border-color: var(--acid); }
   .chk-main { flex: 1; min-width: 0; }
   .chk-name { font-size: 14px; transition: color .15s; }
-  .chk-spec { font-size: 10.5px; color: var(--faint); }
+  .chk-spec { font-size: 10px; color: var(--faint); }
   .chk-row.done .chk-name { color: var(--faint); text-decoration: line-through; }
-  .chk-price { font-variant-numeric: tabular-nums; font-size: 13.5px; }
+  .chk-price { font-variant-numeric: tabular-nums; font-size: 13px; }
   .chk-row.done .chk-price { color: var(--faint); text-decoration: line-through; }
   .unpriced-card .sc-head { background: var(--amber-dark); border-color: var(--amber-dark); }
   .unpriced-card .sc-title { color: var(--amber); }
@@ -513,6 +524,22 @@
     <div class="eyebrow">Step 02 · the price war</div>
     <h2 class="h-serif">Toggle a shop out — everything <em>reshuffles to next cheapest.</em></h2>
 
+    <div class="plan-controls">
+      <div class="ctrl-block">
+        <div class="ctrl-label">Shops in play</div>
+        <div class="store-toggles" id="storeToggles"></div>
+      </div>
+      <div class="ctrl-block">
+        <div class="ctrl-label">Max stops</div>
+        <div class="stops-radio" id="stopsRadio">
+          <button data-n="1">1</button>
+          <button data-n="2" class="on">2</button>
+          <button data-n="3">3</button>
+          <button data-n="4">4</button>
+        </div>
+      </div>
+    </div>
+
     <div class="plan-grid">
       <div>
         <table class="ptable">
@@ -530,19 +557,6 @@
       </div>
 
       <aside>
-        <div class="ctrl-block">
-          <div class="ctrl-label">Shops in play</div>
-          <div class="store-toggles" id="storeToggles"></div>
-        </div>
-        <div class="ctrl-block">
-          <div class="ctrl-label">Max stops</div>
-          <div class="stops-radio" id="stopsRadio">
-            <button data-n="1">1</button>
-            <button data-n="2" class="on">2</button>
-            <button data-n="3">3</button>
-            <button data-n="4">4</button>
-          </div>
-        </div>
         <div class="verdict" id="verdictCard"></div>
         <div class="alts" id="altsCard"></div>
         <div class="route-box" id="routeBox"></div>
