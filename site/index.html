@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Games & Projects</title>
-<meta name="description" content="A repository of games and projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard. Jaryd's Last Day: a last-day-at-the-office decision game of graceful exits, petty acts, and workplace crimes. CafePass: a subscription coffee membership platform. Shaman Starman: star chart readings and guidance from Travis.">
+<meta name="description" content="A repository of games and projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard. Jaryd's Last Day: a last-day-at-the-office decision game of graceful exits, petty acts, and workplace crimes. CafePass: a subscription coffee membership platform. Shaman Starman: star chart readings and guidance from Travis. Trolley: a price terminal for the weekly shop.">
 <style>
   /* ============ SHELL — the neutral container ============ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -324,6 +324,69 @@
   .starman .sm-cta:hover, .starman .sm-cta:focus-visible { box-shadow: 0 0 24px rgba(227,180,87,0.45); }
   .starman .sm-cta .meta { display: block; font-weight: 400; letter-spacing: 0.08em; text-transform: none; color: rgba(10,9,24,0.7); margin-top: 2px; font-size: 10px; }
   .starman a:focus-visible { outline: 2px solid var(--sm-aurum); outline-offset: 2px; }
+
+  /* ============ TROLLEY PANEL — acid terminal palette, lifted from the app ============ */
+  .trolley {
+    --tr-bg: #0d0f0c; --tr-panel: #141810; --tr-panel-2: #1a1f14;
+    --tr-line: rgba(214,238,178,0.10); --tr-line-strong: rgba(214,238,178,0.26);
+    --tr-text: #e9f1da; --tr-dim: #a4b192; --tr-faint: #66725a;
+    --tr-acid: #b8f34e; --tr-acid-deep: #86bb2e; --tr-amber: #ffb03a; --tr-on-acid: #0d0f0c;
+    --tr-mono: ui-monospace, "Cascadia Mono", Consolas, Menlo, monospace;
+    background-color: var(--tr-bg);
+    background-image: repeating-linear-gradient(0deg, transparent 0 2px, rgba(0,0,0,0.14) 2px 4px);
+    border: 1px solid #2a3220;
+    border-radius: 8px;
+    overflow: hidden;
+    font-family: var(--tr-mono);
+    color: var(--tr-text);
+  }
+  .trolley .tr-mast {
+    display: flex; align-items: center; justify-content: space-between; gap: 12px;
+    padding: 12px 14px; border-bottom: 1px solid var(--tr-line-strong);
+  }
+  .trolley .tr-brand { display: flex; align-items: center; gap: 10px; }
+  .trolley .tr-barcode { display: flex; align-items: flex-end; gap: 2px; height: 22px; }
+  .trolley .tr-barcode i { display: block; background: var(--tr-acid); width: 2px; height: 100%; }
+  .trolley .tr-barcode i:nth-child(2n) { height: 70%; width: 1px; opacity: .7; }
+  .trolley .tr-barcode i:nth-child(3n) { height: 88%; width: 3px; }
+  .trolley .tr-barcode i:nth-child(5n) { height: 55%; opacity: .5; }
+  .trolley .tr-name { font-family: Georgia, "Times New Roman", serif; font-size: 20px; line-height: 1; }
+  .trolley .tr-name em { color: var(--tr-acid); font-style: italic; font-weight: 400; }
+  .trolley .tr-scan { font-size: 9.5px; color: var(--tr-faint); letter-spacing: .1em; text-transform: uppercase; text-align: right; line-height: 1.6; }
+  .trolley .tr-scan b { color: var(--tr-dim); font-weight: 500; }
+  .trolley .tr-body { padding: 12px 14px 14px; display: flex; flex-direction: column; gap: 10px; }
+  .trolley table.tr-war { width: 100%; border-collapse: collapse; font-size: 11.5px; font-variant-numeric: tabular-nums; }
+  .trolley table.tr-war th {
+    font-size: 9px; font-weight: 500; letter-spacing: .18em; text-transform: uppercase;
+    color: var(--tr-faint); text-align: right; padding: 3px 6px; border-bottom: 1px solid var(--tr-line-strong);
+  }
+  .trolley table.tr-war th:first-child { text-align: left; }
+  .trolley table.tr-war td { padding: 6px; text-align: right; color: var(--tr-dim); border-bottom: 1px solid var(--tr-line); }
+  .trolley table.tr-war td:first-child { text-align: left; color: var(--tr-text); }
+  .trolley table.tr-war tr:last-child td { border-bottom: none; }
+  .trolley table.tr-war td.pick { color: var(--tr-acid); font-weight: 600; background: var(--tr-panel-2); }
+  .trolley table.tr-war td.out { text-decoration: line-through; opacity: .45; }
+  .trolley .tr-chips { display: flex; flex-wrap: wrap; gap: 6px; font-size: 10px; letter-spacing: .06em; }
+  .trolley .tr-chip { border: 1px solid var(--tr-line-strong); background: var(--tr-panel); color: var(--tr-dim); padding: 4px 10px; }
+  .trolley .tr-chip::before { content: '■ '; color: var(--tr-acid); }
+  .trolley .tr-chip.off { color: var(--tr-faint); text-decoration: line-through; }
+  .trolley .tr-chip.off::before { color: var(--tr-faint); }
+  .trolley .tr-verdict {
+    display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline;
+    background: var(--tr-panel); border: 1px solid var(--tr-line-strong); padding: 9px 12px;
+  }
+  .trolley .tr-verdict span { font-size: 9px; letter-spacing: .18em; text-transform: uppercase; color: var(--tr-faint); }
+  .trolley .tr-verdict b { font-size: 14px; font-weight: 600; color: var(--tr-text); margin-left: 6px; font-variant-numeric: tabular-nums; }
+  .trolley .tr-verdict b.acid { color: var(--tr-acid); }
+  .trolley .tr-cta {
+    display: block; text-align: center; text-decoration: none;
+    background: var(--tr-acid); color: var(--tr-on-acid);
+    font-size: 12px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase;
+    padding: 12px;
+  }
+  .trolley .tr-cta:hover, .trolley .tr-cta:focus-visible { background: var(--tr-acid-deep); }
+  .trolley .tr-cta .meta { display: block; font-weight: 400; text-transform: none; letter-spacing: .02em; color: rgba(13,15,12,0.7); margin-top: 2px; font-size: 10px; }
+  .trolley a:focus-visible { outline: 2px solid var(--tr-acid); outline-offset: 2px; }
 </style>
 </head>
 <body>
@@ -504,6 +567,53 @@
           <span class="sm-badge">The Season Ahead · 60 min</span>
         </div>
         <a class="sm-cta" href="./starman.html">Enter the site<span class="meta">star chart readings · consultations &amp; guidance</span></a>
+      </div>
+    </div>
+  </details>
+
+  <!-- ============ TROLLEY ============ -->
+  <details class="project" id="trolley">
+    <summary class="row">
+      <span class="row-name">Trolley</span>
+      <span class="row-meta">App · browser demo <span class="chev">＋</span></span>
+    </summary>
+    <p class="row-line">A price terminal for the weekly shop — photograph or paste your list, let four supermarkets fight over every line, then tick it off in the aisles.</p>
+
+    <div class="panel">
+      <div class="trolley">
+        <div class="tr-mast">
+          <div class="tr-brand" aria-hidden="true">
+            <span class="tr-barcode"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+            <span class="tr-name">Trolley<em>.</em></span>
+          </div>
+          <div class="tr-scan" aria-hidden="true">Last price scan<br><b>6 min ago</b></div>
+        </div>
+        <div class="tr-body">
+
+          <table class="tr-war" aria-hidden="true">
+            <tr><th>Item</th><th>Aldi</th><th>Woolies</th><th>Coles</th><th>IGA</th></tr>
+            <tr><td>Eggs · 12pk</td><td class="pick">4.89</td><td>5.90</td><td class="out">5.80</td><td>6.50</td></tr>
+            <tr><td>Milk · 2L</td><td>3.09</td><td class="pick">3.05</td><td class="out">3.10</td><td>3.75</td></tr>
+            <tr><td>Chicken breast · 1kg</td><td class="pick">9.90</td><td>11.50</td><td class="out">11.00</td><td>12.99</td></tr>
+          </table>
+
+          <div class="tr-chips" aria-hidden="true">
+            <span class="tr-chip">Aldi</span>
+            <span class="tr-chip">Woolies</span>
+            <span class="tr-chip off">Coles</span>
+            <span class="tr-chip">IGA</span>
+          </div>
+
+          <div class="tr-verdict" aria-hidden="true">
+            <span>Basket<b>$87.40</b></span>
+            <span>Net save<b class="acid">$12.35</b></span>
+            <span>Stops<b>2</b></span>
+            <span>Loop<b>6.1 km</b></span>
+          </div>
+
+          <a class="tr-cta" href="./trolley.html">🛒 Open Trolley<span class="meta">demo · runs in this browser</span></a>
+
+        </div>
       </div>
     </div>
   </details>

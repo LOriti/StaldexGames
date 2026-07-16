@@ -8,7 +8,7 @@ No wordmark, no taglines, no label copy. The domain is the only identifier.
 - **Background** `#FAFAF8` · **Text** `#1A1A1A` · **Secondary** `#6B6B6B` · **Hairlines** `#E4E4E0`
 - **No accent colour.** Links are underlined text in the text colour.
 - **Type:** system font stack only. Body 16px/1.55. Project names 20px semibold. Row metadata 13px secondary.
-- **Layout:** single centred column, max 640px, generous whitespace. Two sections — "Games" first, then "Projects" — each a 13px secondary heading over rows divided by hairlines. Games holds the playable games (Cubicle, then Jaryd's Last Day); Projects holds CafePass and Shaman Starman.
+- **Layout:** single centred column, max 640px, generous whitespace. Two sections — "Games" first, then "Projects" — each a 13px secondary heading over rows divided by hairlines. Games holds the playable games (Cubicle, then Jaryd's Last Day); Projects holds CafePass, Shaman Starman, and Trolley.
 - **Motion:** expand/collapse only (native `<details>`). Nothing else moves.
 - **Copy:** plain and factual. A row is: name · type · one factual line.
 
@@ -43,6 +43,12 @@ Current panels:
   with CSS-gradient star specks, nebula gradient, lilac `#9c8fd9` copy, gold `#e3b457`
   uppercase CTA. Georgia stands in for the site's Cinzel/Spectral (no external fonts in
   the shell). Shows the reading badges and an "Enter the site" CTA through to `starman.html`.
+- **Trolley** (`.trolley`): acid terminal palette lifted from the app — near-black ground
+  `#0d0f0c` with a faint scanline gradient, acid green `#b8f34e` accents and CTA, panel
+  cards `#141810`, monospace stack standing in for IBM Plex Mono and Georgia for Fraunces
+  (no external fonts in the shell). Shows the barcode wordmark, a three-item price-war
+  table (cheapest cell acid, toggled-out shop struck through), shop chips, and the
+  basket/save/stops/loop verdict strip, with an "Open Trolley" CTA through to `trolley.html`.
 
 ## Quality floor
 Responsive to mobile, visible keyboard focus, reduced-motion respected, no external fonts
