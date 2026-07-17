@@ -57,27 +57,35 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .boy.wait{opacity:.55;border-style:dashed}
 .boy.gone{opacity:.28;filter:grayscale(1)}
 
-.venues{display:grid;grid-template-columns:repeat(3,1fr);gap:5px}
-.venue{background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:6px 4px;font-size:11px;font-weight:600;color:var(--dim);cursor:pointer;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:center}
-.venue.here{color:var(--ink);background:var(--neon);border-color:var(--neon)}
-.venue:disabled{opacity:.4;cursor:default}
+.spot{display:flex;align-items:center;gap:8px;background:var(--panel);border:1px solid var(--line);border-radius:999px;padding:7px 14px}
+.spot .dot{width:8px;height:8px;border-radius:50%;background:var(--neon);box-shadow:0 0 8px var(--neon);flex:none}
+.spot .nm{font-weight:700;font-size:13px;color:var(--text)}
+.spot .tag{font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.spot .vibe{margin-left:auto;font-size:10px;color:var(--dim);text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 
-.logBox{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 10px;flex:1;min-height:60px;overflow-y:auto;font-size:11.5px;line-height:1.45}
-.logBox p{margin-bottom:3px;color:var(--dim)}
+/* Feed: newest line on top, older lines clipped — never scrolls. */
+.logBox{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:9px 12px;flex:1;min-height:60px;overflow:hidden;display:flex;flex-direction:column;font-size:12.5px;line-height:1.5;-webkit-mask-image:linear-gradient(to bottom,#000 62%,transparent);mask-image:linear-gradient(to bottom,#000 62%,transparent)}
+.logBox p{margin-bottom:4px;color:var(--dim);flex:none}
+.logBox p:first-child{color:var(--text)}
 .logBox p.hot{color:var(--text)}
 .logBox p.leg{color:var(--amber)}
 .logBox p.bad{color:var(--danger)}
 .logBox p.gd{color:var(--zone)}
 
-.acts{display:grid;grid-template-columns:repeat(5,1fr);gap:5px}
-.act{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:6px 3px 5px;cursor:pointer;text-align:center;color:var(--text);overflow:hidden}
+.acts{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.act{position:relative;background:var(--panel2);border:1px solid var(--line);border-radius:11px;padding:11px 3px 9px;cursor:pointer;text-align:center;color:var(--text);overflow:hidden}
+.act:active{transform:scale(.96)}
 .act:disabled{opacity:.4;cursor:default}
-.act .ico{font-size:16px;line-height:1.2}
-.act .nm{font-size:10px;font-weight:700}
-.act .pr{font-size:9px;color:var(--dim)}
+.act .ico{font-size:22px;line-height:1.1}
+.act .nm{font-size:11px;font-weight:700;margin-top:2px}
+.act .pr{font-size:9.5px;color:var(--dim)}
 .act .cd{position:absolute;left:0;bottom:0;height:3px;background:var(--neon);width:0%}
 .act.gear{border-color:#3a2c66}
 .act.gear .pr{color:var(--klr)}
+.card button.menu{display:flex;justify-content:space-between;align-items:center;gap:10px}
+.card button.menu .mpr{color:var(--dim);font-weight:600;font-size:12px}
+.card button.menu.gearItem .mpr{color:var(--klr)}
+.card button:disabled{opacity:.4;cursor:default}
 
 .overlay{position:fixed;inset:0;background:rgba(6,4,12,.85);display:none;align-items:center;justify-content:center;padding:16px;z-index:50}
 .overlay.show{display:flex}
@@ -119,7 +127,7 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 
 <div class="boys" id="boysRow"></div>
 
-<div class="venues" id="venueRow"></div>
+<div class="spot" id="spotRow"></div>
 
 <div class="logBox" id="logBox"></div>
 
@@ -136,9 +144,9 @@ const S = {
   tick:0, ticksTotal:120, running:false, over:false, kickon:false,
   buzz:0, heat:0, bill:0, billMark:0, legend:0, streak:0,
   seated:0, dexTicks:0, mdTicks:0, cokeCrash:0, soakTicks:0,
-  venue:0, walking:0,
+  venue:0, walking:0, arcPos:0, moveCd:13, ambientCd:0, started:false,
   kCount:0, travisHole:0, rayDone:false, sandyCd:0,
-  jezCd:14, robinCd:11, leroyCd:17, whiteyCd:9,
+  jezCd:14, robinCd:11, leroyCd:17, picklesCd:9,
   reel:[],
   flags:{cone:false,deano:false,tattoo:false,bruce:false,rivals:false,rivalAlly:false,squad:false},
   boys:[
@@ -149,7 +157,7 @@ const S = {
     {id:"robin",  n:"Robin",  up:true, st:"the joker"},
     {id:"ray",    n:"Ray",    up:true, st:"mingling"},
     {id:"leroy",  n:"Leroy",  up:true, st:"scheming"},
-    {id:"whitey", n:"Whitey", up:true, st:"LOUD (10yr visa)"},
+    {id:"pickles", n:"Pickles", up:true, st:"LOUD (10yr visa)"},
   ],
   cds:{}, eventCd:8
 };
@@ -170,7 +178,7 @@ const VENUES=[
 const $=id=>document.getElementById(id);
 function say(t,cls){
   const p=document.createElement("p"); if(cls)p.className=cls; p.textContent=t;
-  const b=$("logBox"); b.prepend(p); while(b.children.length>44)b.lastChild.remove();
+  const b=$("logBox"); b.prepend(p); while(b.children.length>7)b.lastChild.remove();
   if((cls==="leg"||cls==="bad") && S.reel.length<60) S.reel.push([clockStr(),t,cls]);
 }
 function buzz(d){ S.buzz=Math.min(100,Math.max(0,S.buzz+d)); }
@@ -241,7 +249,7 @@ const EVENTS=[
   o:[["Drink it anyway, show no fear",()=>{leg(15);say("It WAS soy sauce. You finish it deadpan. Robin is furious and delighted. Psychological victory.","leg");}],
      ["Swap glasses while he's distracted",()=>{if(Math.random()<.6){leg(20);say("Robin drinks his own soy sauce. The table erupts. Reverse-prank of the year.","leg");}else{buzz(10);say("He saw you swap. Yours was the real one all along. Robin is playing 4D chess.","hot");}}]]},
  {t:"Walk-through",p:"Two coppers are doing a slow lap of the venue, hands on belts, vibes at zero.",
-  o:[["Act natural",()=>{ if(S.buzz>85){heat(22);say("Your version of 'natural' is a slow-motion wink. They clock you instantly.","bad");} else if(boy("whitey").up&&Math.random()<.4){heat(10);say("Whitey greets them with 'OFFICERS! Love the outfits!' at 110 decibels.","bad");} else say("You examine a beer coaster with academic interest. They move on.","gd"); }],
+  o:[["Act natural",()=>{ if(S.buzz>85){heat(22);say("Your version of 'natural' is a slow-motion wink. They clock you instantly.","bad");} else if(boy("pickles").up&&Math.random()<.4){heat(10);say("Pickles greets them with 'OFFICERS! Love the outfits!' at 110 decibels.","bad");} else say("You examine a beer coaster with academic interest. They move on.","gd"); }],
      ["Tactical smoko outside",()=>{heat(5);buzz(-3);say("You stand outside not smoking. Slightly suspicious, mostly fine.","hot");}]]},
  {t:"Nang proposal",c:()=>boy("travis").up,p:"Someone Travis befriended in the smoking area — of course it was Travis — has a box of nangs and a car park in mind.",
   o:[["Absolutely not, we have standards",()=>{leg(8);say("Growth. The boys nod. Even Travis's new mate respects it.","gd");}],
@@ -256,17 +264,17 @@ const EVENTS=[
   o:[["Send it",()=>{if(Math.random()<.6){leg(8);say("Frogger complete. First in line.","leg");}else{heat(12);say("A traffic cop materialises from thin air with a notepad.","bad");}}],
      ["Use the crossing",()=>{say("You wait for the green man like absolute legends of civic order.","gd");leg(3);}]]},
  {t:"The guest list",c:()=>boy("leroy").up,p:"At the door, Leroy steps forward and announces — with total conviction — that you are 'the visiting under-23s development squad' and should be on the list. The bouncer looks at Travis. Travis waves.",
-  o:[["Commit to the bit",()=>{if(Math.random()<.6){S.flags.squad=true;leg(30);say("The bouncer WAVES YOU THROUGH. You are now, officially, an elite sporting organisation. Leroy signs something on the way in.","leg");}else{heat(8);leg(-5);say("The bouncer asks which position Whitey plays. Whitey says 'quarterback'. The bit collapses instantly.","bad");}}],
+  o:[["Commit to the bit",()=>{if(Math.random()<.6){S.flags.squad=true;leg(30);say("The bouncer WAVES YOU THROUGH. You are now, officially, an elite sporting organisation. Leroy signs something on the way in.","leg");}else{heat(8);leg(-5);say("The bouncer asks which position Pickles plays. Pickles says 'quarterback'. The bit collapses instantly.","bad");}}],
      ["Abort the bit",()=>{say("You physically steer Leroy away from the door mid-sentence. He finishes the pitch to a parked car.","hot");}]]},
  {t:"The Leroy pivot",c:()=>boy("leroy").up,p:"Leroy has cornered a nightclub promoter and is pitching him a 'bucks-night-as-a-service' startup. The promoter is nodding. This is getting out of hand.",
   o:[["Play the co-founder",()=>{leg(20);say("You improvise a revenue model on a napkin. The promoter shouts your drinks 'as an angel round'. Leroy names you CFO on the spot.","leg");buzz(6);}],
      ["Extract Leroy before he signs something",()=>{say("You drag Leroy away mid-valuation. He's already texting the promoter a deck.","hot");leg(5);}]]},
- {t:"The allegiance audit",c:()=>boy("whitey").up,p:"A backpacker hears Whitey's accent and calls him 'a yank'. Whitey goes silent. Ten years. TEN YEARS in this country. He has a Bunnings PowerPass and a preferred kebab order.",
-  o:[["Back your man",()=>{leg(15);say("The table erupts in Whitey's defence, citing his snag technique and his hatred of daylight saving. The backpacker formally apologises. Whitey buys him a beer anyway, at volume.","leg");}],
-     ["Let Whitey handle it",()=>{leg(10);buzz(3);say("Whitey delivers a five-minute TED talk on the superiority of the Australian meat pie. The backpacker leaves a changed man.","leg");}]]},
- {t:"The expat summit",c:()=>boy("whitey").up,p:"Whitey has encountered a group of actual American tourists. They're delighted by him. He looks trapped — and, for the first time in a decade, his accent is fully relapsing in real time.",
-  o:[["Extract him",()=>{leg(10);say("You pull Whitey out mid-'y'all'. He shakes it off like a wet dog. 'Cheers, that was close.'","leg");}],
-     ["Let the relapse run",()=>{leg(14);buzz(4);say("Whitey goes FULL American for one glorious hour of his countrymen's shouts, then returns to the table saying 'yeah nah' with the relief of a man removing a costume.","leg");}]]},
+ {t:"The allegiance audit",c:()=>boy("pickles").up,p:"A backpacker hears Pickles's accent and calls him 'a yank'. Pickles goes silent. Ten years. TEN YEARS in this country. He has a Bunnings PowerPass and a preferred kebab order.",
+  o:[["Back your man",()=>{leg(15);say("The table erupts in Pickles's defence, citing his snag technique and his hatred of daylight saving. The backpacker formally apologises. Pickles buys him a beer anyway, at volume.","leg");}],
+     ["Let Pickles handle it",()=>{leg(10);buzz(3);say("Pickles delivers a five-minute TED talk on the superiority of the Australian meat pie. The backpacker leaves a changed man.","leg");}]]},
+ {t:"The expat summit",c:()=>boy("pickles").up,p:"Pickles has encountered a group of actual American tourists. They're delighted by him. He looks trapped — and, for the first time in a decade, his accent is fully relapsing in real time.",
+  o:[["Extract him",()=>{leg(10);say("You pull Pickles out mid-'y'all'. He shakes it off like a wet dog. 'Cheers, that was close.'","leg");}],
+     ["Let the relapse run",()=>{leg(14);buzz(4);say("Pickles goes FULL American for one glorious hour of his countrymen's shouts, then returns to the table saying 'yeah nah' with the relief of a man removing a costume.","leg");}]]},
  {t:"The tattoo window",p:"A late-night tattoo parlour glows across the street. Bucko is staring at it. 'It's my last night of freedom, boys.'",
   o:[["Talk him into something small",()=>{S.flags.tattoo=true;spend(120);leg(28);say("Bucko now has a tiny cocktail glass on his ankle ($120). The bride will find it eventually.","leg");}],
      ["Full veto, best-man privilege",()=>{leg(6);say("You invoke best-man veto powers. Bucko sulks for one song, then forgets entirely.","gd");}]]},
@@ -275,7 +283,7 @@ const EVENTS=[
      ["Walk like it's 1997",()=>{buzz(-3);say("You walk. Robin rides beside you at 2km/h making seagull noises.","hot");}]]},
  {t:"The bride calls",p:"Bucko's phone lights up: it's the bride. Bucko is currently wearing a traffic cone as a hat.",
   o:[["Coach him through it",()=>{S.flags.cone=true;leg(15);say("You mouth 'CONE OFF' and conduct him through a flawless 'yeah quiet one, love you'. Oscar-worthy. The cone goes back on immediately after.","leg");}],
-     ["Answer it yourself",()=>{S.flags.cone=true;if(Math.random()<.5){leg(20);say("You deliver a glowing welfare report. The bride laughs and says 'keep him alive'. Trust: earned. Bucko keeps the cone.","leg");}else{buzz(-4);say("She hears Whitey scream 'SHOTS' mid-sentence. The call goes long. Buzz leaks away. The cone remains.","bad");}}]]},
+     ["Answer it yourself",()=>{S.flags.cone=true;if(Math.random()<.5){leg(20);say("You deliver a glowing welfare report. The bride laughs and says 'keep him alive'. Trust: earned. Bucko keeps the cone.","leg");}else{buzz(-4);say("She hears Pickles scream 'SHOTS' mid-sentence. The call goes long. Buzz leaks away. The cone remains.","bad");}}]]},
  {t:"3am philosophy",c:()=>boy("sandy").up,p:"Sandy, suddenly lucid, grabs your shoulder: 'Do you reckon Bucko's actually ready? Like, REALLY ready?'",
   o:[["Engage sincerely",()=>{buzz(-4);leg(18);say("Ten minutes of genuine heart-to-heart on a kerb. The boys will deny it ever happened. Legend points regardless.","leg");}],
      ["'Sandy it's 3am'",()=>{say("Sandy nods slowly. 'Yeah. Yeah, fair.' Then orders another round.","hot");buzz(3);}]]},
@@ -283,8 +291,8 @@ const EVENTS=[
   o:[["Hype the collab",()=>{if(Math.random()<.7){leg(25);say("The busker leans in. Robin's beatbox is... actually good? The crowd triples. Coins rain.","leg");}else{leg(-5);say("The busker stops the loop pedal and just stares. Longest silence of the night.","bad");}}],
      ["Apologise on his behalf",()=>{say("You drop $10 in the case as a diplomatic settlement.","hot");spend(10);}]]},
  {t:"The police horse",p:"A mounted officer is parked outside the club. The horse is majestic. The boys are transfixed.",
-  o:[["Politely ask for a photo",()=>{if(S.buzz>85){heat(12);say("The officer looks at the state of you and says 'move along'. The horse agrees.","bad");}else{S.flags.bruce=true;leg(15);say("Photo granted. The horse is named Bruce. This is the best thing that has ever happened to Whitey.","leg");}}],
-     ["Keep the boys moving",()=>{say("You herd the boys past. Whitey whispers 'goodbye Bruce' to a horse he never met.","gd");}]]},
+  o:[["Politely ask for a photo",()=>{if(S.buzz>85){heat(12);say("The officer looks at the state of you and says 'move along'. The horse agrees.","bad");}else{S.flags.bruce=true;leg(15);say("Photo granted. The horse is named Bruce. This is the best thing that has ever happened to Pickles.","leg");}}],
+     ["Keep the boys moving",()=>{say("You herd the boys past. Pickles whispers 'goodbye Bruce' to a horse he never met.","gd");}]]},
  {t:"Maccas schism",p:"The party has split into two factions: Kebab Loyalists and Maccas Revisionists. Voices are being raised.",
   o:[["Rule for the kebab",()=>{leg(8);say("Tradition holds. The Revisionists grumble but comply. Garlic sauce unites all.","gd");}],
      ["Democratic vote",()=>{buzz(-2);say("The vote ties. Twenty minutes are lost to constitutional debate outside a 7-Eleven.","hot");}]]},
@@ -315,27 +323,27 @@ const EVENTS=[
   o:[["Backtrack for the shoe",()=>{buzz(-4);if(Math.random()<.6){leg(10);say("The shoe is found upright in the middle of the dance floor, untouched, like Excalibur.","leg");}else{say("The shoe is gone. The shoe has started a new life. Bucko commits to the asymmetric look.","hot");}}],
      ["Servo thongs, $12, move on",()=>{spend(12);leg(8);say("Bucko now wears one dress shoe and one servo thong, and honestly? It works.","leg");}]]},
  {t:"The photo booth",p:"An unattended photo booth glows in the corner. It fits four. There are however-many-of-you-are-left of you.",
-  o:[["All in ($15)",()=>{spend(15);leg(18);say("The strip prints: four frames of escalating structural failure, Whitey's face filling 60% of each. Framed at the wedding, guaranteed.","leg");}],
+  o:[["All in ($15)",()=>{spend(15);leg(18);say("The strip prints: four frames of escalating structural failure, Pickles's face filling 60% of each. Framed at the wedding, guaranteed.","leg");}],
      ["Dignity intact",()=>{say("You skip it. Robin does a solo session and slides the strip into your pocket later. All four frames are just his face, deadpan.","hot");}]]},
- {t:"The rival bucks",p:"Another bucks party has entered the venue — matching shirts, inflatable sheep, their own Whitey-equivalent. Eye contact is made across the room. The energy shifts.",
+ {t:"The rival bucks",p:"Another bucks party has entered the venue — matching shirts, inflatable sheep, their own Pickles-equivalent. Eye contact is made across the room. The energy shifts.",
   o:[["Challenge them to a boat race",()=>{S.flags.rivals=true;buzz(8);if(Math.random()<.6){leg(28);say("Your table WINS the boat race. The rivals salute. Their buck buys your buck a drink. Ancient rites observed.","leg");}else{leg(5);heat(6);say("You lose the boat race but win the moral victory when their best man chunders mid-anchor leg.","bad");}}],
      ["Form an alliance",()=>{S.flags.rivals=true;S.flags.rivalAlly=true;leg(15);say("The two parties merge into one mega-bucks. Sixteen men, two inflatable sheep, one purpose.","leg");}]]},
  {t:"Goon of fortune",c:()=>S.kickon,p:"A Hills Hoist has been located in the courtyard of Leroy's flat. A goon sack has been pegged to it. You know the rules. Everybody knows the rules.",
-  o:[["Spin the Hoist",()=>{buzz(10);leg(20);say("The sack of destiny rotates. Whitey takes three consecutive hits and declares it 'the finest game ever devised'. He's not wrong.","leg");}],
+  o:[["Spin the Hoist",()=>{buzz(10);leg(20);say("The sack of destiny rotates. Pickles takes three consecutive hits and declares it 'the finest game ever devised'. He's not wrong.","leg");}],
      ["Retire undefeated",()=>{say("You watch from the step, wise and warm, as the Hoist claims victim after victim.","gd");}]]},
  /* ---- follow-up chains (f:true, unlocked by flags) ---- */
  {t:"The cone tax",f:true,c:()=>S.flags.cone,p:"At the next door, the bouncer points at Bucko's traffic cone hat. 'The cone stays outside.' Bucko clutches it. He's grown attached. He's named it Gary.",
   o:[["Surrender Gary with honours",()=>{leg(12);say("Gary is placed gently on the kerb, facing the road he came from. A moment of silence. The bouncer, moved, waves you in.","leg");}],
-     ["Smuggle Gary",()=>{if(Math.random()<.5){leg(20);say("Gary enters the venue under Whitey's shirt, making Whitey briefly cone-shaped. Nobody questions it. Legendary.","leg");}else{heat(10);say("Gary is confiscated at the door. Bucko watches through the window as the bouncer puts Gary on his own head. Devastating.","bad");}}]]},
+     ["Smuggle Gary",()=>{if(Math.random()<.5){leg(20);say("Gary enters the venue under Pickles's shirt, making Pickles briefly cone-shaped. Nobody questions it. Legendary.","leg");}else{heat(10);say("Gary is confiscated at the door. Bucko watches through the window as the bouncer puts Gary on his own head. Devastating.","bad");}}]]},
  {t:"Deano rises",f:true,c:()=>S.flags.deano,p:"Deano is BACK. Different venue, same Deano. 'Bro. BRO. Forget the warehouse. There's a rooftop thing. Invite only. I can get us in.' He appears to have acquired a lanyard from somewhere.",
   o:[["The lanyard changes everything",()=>{buzz(-3);if(Math.random()<.5){leg(30);say("THE ROOFTOP IS REAL. Fairy lights, a view of the city, someone's playing vinyl. Deano, you beautiful mirage. Deano is gone by the time you turn around.","leg");}else{say("The lanyard says 'HELLO MY NAME IS' with nothing written on it. The rooftop is a Wilson car park. Deano remains at large.","bad");}}],
      ["Not falling for Deano twice",()=>{leg(8);say("'Respect,' says Deano, meaning it, and walks directly into the night to find a group with weaker convictions.","gd");}]]},
  {t:"The tattoo reveal",f:true,c:()=>S.flags.tattoo,p:"Bucko's phone erupts. The tattoo artist posted his work to Instagram and tagged the shop's location. The bride's sister follows the shop. The clock is ticking.",
   o:[["Get ahead of it",()=>{leg(20);say("You draft Bucko's confession text personally: 'funny story, love you.' The bride replies with the skull emoji, then 'it better be small'. Crisis converted to marriage-strengthening anecdote.","leg");}],
      ["Deny everything",()=>{if(Math.random()<.5){say("The sister doesn't check her feed tonight. You've bought Bucko six days. He spends them poorly.","hot");}else{buzz(-5);leg(-5);say("Screenshot received. Bucko spends forty minutes on the phone outside. The boys hold a vigil through the window.","bad");}}]]},
- {t:"Bruce's last patrol",f:true,c:()=>S.flags.bruce,p:"3am-ish. You round a corner and there he is: BRUCE. The police horse. End of his shift. The officer recognises you. Whitey has already started walking toward the horse with his arms out.",
-  o:[["Formal farewell ceremony",()=>{leg(18);say("The officer permits one (1) respectful pat each. Whitey goes last and whispers something to Bruce that makes the officer look away, emotional.","leg");}],
-     ["Whitey cannot be stopped",()=>{if(Math.random()<.6){leg(25);say("Whitey hugs the horse. The horse LEANS IN. The officer takes a photo FOR you. Bruce has chosen his people.","leg");}else{heat(12);say("'Sir, step away from the horse.' Whitey complies at 4km/h, maintaining eye contact with Bruce the entire time.","bad");}}]]},
+ {t:"Bruce's last patrol",f:true,c:()=>S.flags.bruce,p:"3am-ish. You round a corner and there he is: BRUCE. The police horse. End of his shift. The officer recognises you. Pickles has already started walking toward the horse with his arms out.",
+  o:[["Formal farewell ceremony",()=>{leg(18);say("The officer permits one (1) respectful pat each. Pickles goes last and whispers something to Bruce that makes the officer look away, emotional.","leg");}],
+     ["Pickles cannot be stopped",()=>{if(Math.random()<.6){leg(25);say("Pickles hugs the horse. The horse LEANS IN. The officer takes a photo FOR you. Bruce has chosen his people.","leg");}else{heat(12);say("'Sir, step away from the horse.' Pickles complies at 4km/h, maintaining eye contact with Bruce the entire time.","bad");}}]]},
  {t:"The mega-bucks reunion",f:true,c:()=>S.flags.rivalAlly,p:"The allied bucks party has found you again at the kebab shop. Their buck and your buck are now arm in arm, planning to attend each other's weddings. The two best men lock eyes: this must be managed.",
   o:[["Sanction the brotherhood",()=>{leg(22);say("The two parties share one enormous mixed kebab order. Numbers are exchanged. A WhatsApp group called 'THE BOYS (EXTENDED UNIVERSE)' is created. It will outlive us all.","leg");}],
      ["Gently separate the bucks",()=>{leg(8);say("The bucks are peeled apart like velcro, both promising to 'defs catch up'. They will never see each other again. It was beautiful while it lasted.","gd");}]]},
@@ -358,22 +366,51 @@ function renderBoys(){
   $("boysRow").innerHTML=S.boys.map(b=>
     `<div class="boy ${b.buck?"buck":""} ${b.up?"":(b.outTicks>0?"wait":"gone")} ${(b.id==="travis"&&S.travisHole>0)?"warn":""}"><div class="nm">${b.n}</div><div class="st">${b.st}</div></div>`).join("");
 }
-function renderVenues(){
-  $("venueRow").innerHTML=VENUES.map((v,i)=>{
-    if(v.hidden&&!S.kickon)return "";
-    if(S.kickon&&!v.hidden&&i!==KEBAB)return `<button class="venue" disabled>${v.n} · shut</button>`;
-    return `<button class="venue ${i===S.venue?"here":""}" data-v="${i}" ${ (v.opens&&S.tick<v.opens)?"disabled":"" }>${v.n}</button>`;
-  }).join("");
-  document.querySelectorAll(".venue[data-v]").forEach(el=>el.onclick=()=>moveVenue(+el.dataset.v));
+function renderSpot(){
+  const v=VENUES[S.venue];
+  let vibe;
+  if(S.kickon) vibe="kick-ons · goon o'clock";
+  else if(S.walking>0) vibe="on the move…";
+  else vibe=v.door?"door · mind the heat":"easy in";
+  $("spotRow").innerHTML=`<span class="dot"></span><span class="nm">${v.n}</span><span class="tag">${v.tag}</span><span class="vibe">${vibe}</span>`;
 }
-function renderActs(){
-  $("actsRow").innerHTML=ACTS.map(a=>{
-    const price=Math.round(a.base*(a.gear?1:VENUES[S.venue].price));
-    return `<button class="act ${a.gear?"gear":""}" data-a="${a.id}">
-      <div class="ico">${a.ico}</div><div class="nm">${a.nm}</div>
-      <div class="pr">${price?("$"+price):"free"}</div><div class="cd"></div></button>`;
+/* Slim bar: five big buttons. "Bar" and "Gear" open a quick pick-list. */
+const BAR=[
+  {id:"beer",  ico:"🍺", nm:"Schooner"},
+  {id:"water", ico:"💧", nm:"Water"},
+  {menu:true,  ico:"🍸", nm:"Bar",   ids:["wine","cock","shot"], title:"At the bar"},
+  {id:"kebab", ico:"🥙", nm:"Kebab"},
+  {menu:true,  ico:"💊", nm:"Gear",  gear:true, ids:["coke","md","k","dex"], title:"Round the back"},
+];
+function actPrice(id){ const a=ACTS.find(x=>x.id===id); return Math.round(a.base*(a.gear?1:VENUES[S.venue].price)); }
+function renderBar(){
+  $("actsRow").innerHTML=BAR.map((b,i)=>{
+    const sub=b.menu?"pick":(actPrice(b.id)?("$"+actPrice(b.id)):"free");
+    return `<button class="act ${b.gear?"gear":""}" data-b="${i}">
+      <div class="ico">${b.ico}</div><div class="nm">${b.nm}</div>
+      <div class="pr">${sub}</div><div class="cd"></div></button>`;
   }).join("");
-  document.querySelectorAll(".act").forEach(el=>el.onclick=()=>useAct(el.dataset.a));
+  document.querySelectorAll(".act").forEach(el=>el.onclick=()=>{
+    const b=BAR[+el.dataset.b];
+    if(b.menu) showActMenu(b); else useAct(b.id);
+  });
+}
+function showActMenu(group){
+  if(S.over||S.walking>0||S.seated>0)return;
+  S.running=false;
+  const c=$("card"); c.innerHTML=`<h2>${group.title}</h2>`;
+  group.ids.forEach(id=>{
+    const a=ACTS.find(x=>x.id===id), cd=S.cds[id]||0, price=actPrice(id);
+    const btn=document.createElement("button"); btn.className="menu"+(group.gear?" gearItem":"");
+    btn.innerHTML=`<span>${a.ico} ${a.nm}</span><span class="mpr">${cd>0?"cooling…":(price?("$"+price):"free")}</span>`;
+    btn.disabled=cd>0;
+    btn.onclick=()=>{ $("overlay").classList.remove("show"); useAct(id); S.running=true; paint(); };
+    c.appendChild(btn);
+  });
+  const back=document.createElement("button"); back.className="big"; back.textContent="Back";
+  back.onclick=()=>{ $("overlay").classList.remove("show"); S.running=true; paint(); };
+  c.appendChild(back);
+  $("overlay").classList.add("show");
 }
 function paint(){
   $("clockVal").textContent=clockStr();
@@ -392,15 +429,17 @@ function paint(){
   else if(S.buzz<90){bs="Past the zone. Volume rising. Doors getting harder.";bc="var(--amber)";}
   else {bs="ABSOLUTELY MAGGOT. You are a police matter waiting to happen.";bc="var(--danger)";}
   $("buzzState").textContent=bs; $("buzzState").style.color=bc;
+  const blocked=S.over||S.walking>0||S.seated>0;
   document.querySelectorAll(".act").forEach(el=>{
-    const a=ACTS.find(x=>x.id===el.dataset.a);
-    const cd=S.cds[a.id]||0;
-    el.querySelector(".cd").style.width=cd>0?(cd/a.cd*100)+"%":"0%";
-    el.disabled=S.over||S.walking>0||S.seated>0||cd>0;
-  });
-  document.querySelectorAll(".venue[data-v]").forEach(el=>{
-    const v=VENUES[+el.dataset.v];
-    el.disabled=S.over||S.walking>0||S.seated>0||(v.opens&&S.tick<v.opens);
+    const b=BAR[+el.dataset.b];
+    if(b.menu){
+      el.querySelector(".cd").style.width="0%";
+      el.disabled=blocked||b.ids.every(id=>(S.cds[id]||0)>0);
+    } else {
+      const a=ACTS.find(x=>x.id===b.id), cd=S.cds[b.id]||0;
+      el.querySelector(".cd").style.width=cd>0?(cd/a.cd*100)+"%":"0%";
+      el.disabled=blocked||cd>0;
+    }
   });
 }
 
@@ -411,8 +450,18 @@ function useAct(id){
   const price=Math.round(a.base*(a.gear?1:VENUES[S.venue].price));
   spend(price); S.cds[id]=a.cd; a.do(); paint();
 }
+/* Venue moves are no longer free-roam — the night rolls forward through this arc,
+   and a "move on" event offers each next spot. moveVenue keeps the door logic. */
+const ARC=[0,1,2,3,4]; // Grass Monkey → Mustard → Sneaky Terry's → Retro Shitty → Connies
+function nextArcVenue(){
+  for(let p=S.arcPos+1;p<ARC.length;p++){
+    const i=ARC[p];
+    if(!VENUES[i].opens || S.tick>=VENUES[i].opens) return {p,i};
+  }
+  return null;
+}
 function moveVenue(i){
-  if(i===S.venue||S.walking>0)return;
+  if(i===S.venue){ S.walking=2; renderSpot(); renderBar(); paint(); return; }
   const from=VENUES[S.venue], to=VENUES[i];
   from.left=true;
   const jezUp=boy("jez").up;
@@ -420,22 +469,43 @@ function moveVenue(i){
     const refuse=jezUp?.28:.45;
     if(Math.random()<refuse){
       say("The bouncer at "+to.n+" holds up a hand. 'Not tonight fellas. You LEFT.' The door is a one-way valve and you have learned this the hard way.","bad");
-      S.walking=2; S.venue=KEBAB; renderVenues(); renderActs(); paint(); return;
+      S.walking=2; S.venue=KEBAB; renderSpot(); renderBar(); paint(); return;
     } else say(jezUp?"Jez greets the bouncer by name — old hospo mates. You're waved back in like royalty.":"The bouncer squints... and waves you back in. Miracle.","gd");
   }
   if(to.door && S.buzz>75){
     S.boys.filter(b=>b.up).forEach(b=>{
-      let chance=.2 + (b.id==="whitey"?.12:0) - (jezUp?.05:0);
+      let chance=.2 + (b.id==="pickles"?.12:0) - (jezUp?.05:0);
       if(Math.random()<chance) benchBoy(b.id,8,"knocked back","The bouncer takes one look at "+b.n+" and shakes his head. "+b.n+" is now negotiating from the wrong side of a velvet rope.");
     });
     if(S.buzz>90 && Math.random()<(jezUp?.35:.5)){
       say("The bouncer assesses the group's collective condition and refuses the LOT of you. 'Have a water, come back never.'","bad");
-      heat(6); S.walking=2; S.venue=KEBAB; renderVenues(); renderActs(); paint(); return;
+      heat(6); S.walking=2; S.venue=KEBAB; renderSpot(); renderBar(); paint(); return;
     }
   }
   S.walking=3; S.venue=i;
   say("The boys migrate toward "+to.n+". "+to.blurb,"hot");
-  renderVenues(); renderActs(); paint();
+  renderSpot(); renderBar(); paint();
+}
+function fireMoveEvent(){
+  const nxt=nextArcVenue(); if(!nxt)return false;
+  const to=VENUES[nxt.i];
+  const doorLine=to.door?" Word is the door's picky.":"";
+  showEvent({t:"Time to move on?",
+    p:"The vibe here is thinning. "+to.n+" is the call — "+to.blurb.toLowerCase()+doorLine+" Do we send it, or milk this one a bit longer?",
+    o:[
+      ["Send it to "+to.n,()=>{ S.arcPos=nxt.p; S.moveCd=11+Math.floor(Math.random()*5); moveVenue(nxt.i); }],
+      ["One more here",()=>{ S.moveCd=6+Math.floor(Math.random()*4); buzz(2); say("You stay put and sink another. No one's in a hurry — the night'll come to you.","hot"); }]
+    ]});
+  return true;
+}
+function kickoffEvent(){
+  showEvent({t:"Crack the first one",
+    p:"8pm at the Grass Monkey. Eight polos, one buck, sticky carpet underfoot. The first tray lands and the entire night forks off this single sip. How do we open?",
+    o:[
+      ["Schooners all round",()=>{ spend(boysUp()*9); buzz(10); say("Eight schooners hit the table. Bucko makes a speech nobody can hear. The night is officially airborne.","gd"); }],
+      ["Shots for the buck first",()=>{ spend(boysUp()*10); buzz(15); leg(8); say("Tequila for the whole table before anyone's even sat down. Bucko bites the lime skin-side. Unhinged. Legend behaviour from the jump.","leg"); }],
+      ["Pace it — water first, then in (elite)",()=>{ buzz(4); heat(-3); leg(4); say("A pint of water before the first beer. The boys jeer. The boys are wrong. Future You sends thanks from 4am.","gd"); }]
+    ]});
 }
 
 /* ---------------- modal ---------------- */
@@ -486,7 +556,7 @@ function startKickons(){
   S.kickon=true; S.over=false; S.ticksTotal=156; S.venue=KICKON;
   S.buzz=Math.max(S.buzz,30); S.heat=Math.max(0,S.heat-20);
   $("overlay").classList.remove("show");
-  renderVenues(); renderActs();
+  renderSpot(); renderBar();
   say("KICK-ONS. The survivors pile into two Ubers to Leroy's flat. Someone is already on aux. The sun is a rumour. Northbridge is shut — it's the flat and the kebab run only.","leg");
   say("New rules: goon-priced drinks, neighbours instead of bouncers. Heat now means noise complaints. Make it to 9am.","hot");
   S.running=true; paint();
@@ -499,7 +569,7 @@ function step(){
   for(const k in S.cds) if(S.cds[k]>0)S.cds[k]--;
   if(S.walking>0){S.walking--; buzz(-2); if(S.walking===0)say("Arrived at "+VENUES[S.venue].n+".","gd");}
   if(S.seated>0){S.seated--; if(S.seated===0)say("You have risen from the seat. The seat will be missed.","gd");}
-  S.boys.forEach(b=>{ if(!b.up && b.outTicks>0){ b.outTicks--; if(b.outTicks===0){ b.up=true; b.st=b.id==="whitey"?"LOUD (10yr visa)":"back in"; say(b.n+" has snuck back in through the smokers' area like it never happened.","gd"); renderBoys(); } } });
+  S.boys.forEach(b=>{ if(!b.up && b.outTicks>0){ b.outTicks--; if(b.outTicks===0){ b.up=true; b.st=b.id==="pickles"?"LOUD (10yr visa)":"back in"; say(b.n+" has snuck back in through the smokers' area like it never happened.","gd"); renderBoys(); } } });
   let decay = S.kickon?2.8:2.2;
   if(S.dexTicks>0){decay*=.45;S.dexTicks--;}
   if(S.soakTicks>0){decay*=.5;S.soakTicks--;}
@@ -525,9 +595,12 @@ function step(){
   }
   if(S.sandyCd>0)S.sandyCd--;
   if(boy("sandy").up && S.buzz>82 && S.sandyCd===0 && Math.random()<.25){ S.sandyCd=18; sandyEvent(); paint(); return; }
+  /* Ambient character chatter is throttled to at most one line every couple of ticks,
+     so the feed stays readable and the pop-up events carry the night. */
+  if(S.ambientCd>0)S.ambientCd--;
   S.jezCd--;
-  if(boy("jez").up && S.jezCd<=0){
-    S.jezCd=13+Math.floor(Math.random()*8);
+  if(boy("jez").up && S.jezCd<=0 && S.ambientCd<=0){
+    S.jezCd=13+Math.floor(Math.random()*8); S.ambientCd=2;
     const roll=Math.random();
     if(roll<.3){relieve(15);say(S.kickon?"Jez has established a fully-stocked cocktail station in Leroy's kitchen, garnishes and all. Nobody knows where the mint came from.":"Jez gets a round at 'mates rates' from a bartender he trained in 2019. The bill breathes.","leg");leg(6);}
     else if(roll<.55){heat(-8);say(S.kickon?"Jez de-escalates the neighbour with a flawless customer-service voice and a peace offering of garlic bread.":"Jez calms an agitated bouncer with the weary nod of a fellow tradesman. Heat dissipates.","gd");}
@@ -535,38 +608,43 @@ function step(){
     else {say("Jez is telling hospo war stories. The one about the wedding, the seafood tower and the fire alarm has the table in ruins.","hot");leg(8);}
   }
   S.robinCd--;
-  if(boy("robin").up && S.robinCd<=0){
-    S.robinCd=12+Math.floor(Math.random()*8);
+  if(boy("robin").up && S.robinCd<=0 && S.ambientCd<=0){
+    S.robinCd=12+Math.floor(Math.random()*8); S.ambientCd=2;
     const roll=Math.random();
-    if(roll<.35){leg(14);say(S.kickon?"Robin has convinced Whitey the toaster is voice-activated. Whitey has been talking to it for ten minutes.":"Robin has convinced a table of strangers it's ALSO their mate's bucks night. The two parties merge. Legendary chaos.","leg");}
+    if(roll<.35){leg(14);say(S.kickon?"Robin has convinced Pickles the toaster is voice-activated. Pickles has been talking to it for ten minutes.":"Robin has convinced a table of strangers it's ALSO their mate's bucks night. The two parties merge. Legendary chaos.","leg");}
     else if(roll<.6){say("Robin has changed Bucko's phone background to a photo of Robin. Bucko won't notice for days.","hot");}
     else if(roll<.85){leg(10);say(S.kickon?"Robin is doing a flawless impression of every boy in sequence. It's a one-man play. It's beautiful.":"Robin is doing a flawless impression of the bouncer, TO the bouncer, who is trying very hard not to laugh.","leg");}
     else {heat(6);say(S.kickon?"Robin's 3am doorbell prank wakes the neighbour with the clipboard energy.":"Robin's 'fake fire drill' bit lands poorly with the venue manager.","bad");}
   }
   S.leroyCd--;
-  if(boy("leroy").up && S.leroyCd<=0){
-    S.leroyCd=15+Math.floor(Math.random()*8);
+  if(boy("leroy").up && S.leroyCd<=0 && S.ambientCd<=0){
+    S.leroyCd=15+Math.floor(Math.random()*8); S.ambientCd=2;
     const roll=Math.random();
     if(roll<.35){leg(16);say(S.kickon?"Leroy is hosting. Leroy has PLANNED for this. There are mixers. There is ice. Legend.":"Leroy has talked the group two spots up the bar queue through sheer force of personality.","leg");}
     else if(roll<.6){say("Leroy is explaining his five-year plan to whoever's nearest. They're genuinely considering investing.","hot");}
     else if(roll<.85){buzz(5);say("Leroy produces a bottle he 'negotiated' earlier. Nobody asks follow-up questions.","hot");}
     else {heat(5);say(S.kickon?"Leroy is trying to sell the neighbour a stake in the party to settle the noise dispute.":"Leroy's attempt to 'network' with the venue owner has been flagged as suspicious activity.","bad");}
   }
-  S.whiteyCd--;
-  if(boy("whitey").up && S.whiteyCd<=0){
-    S.whiteyCd=9+Math.floor(Math.random()*7);
+  S.picklesCd--;
+  if(boy("pickles").up && S.picklesCd<=0 && S.ambientCd<=0){
+    S.picklesCd=9+Math.floor(Math.random()*7); S.ambientCd=2;
     const roll=Math.random();
-    if(roll<.4){leg(12);say(S.kickon?"Whitey's 'LET'S GOOO' rattles the windows. A neighbour's light turns on. Worth it.":"Whitey's 'LET'S GOOO' has activated the entire venue. Strangers are chanting. Legend points for everyone.","leg");}
-    else if(roll<.65){say("Whitey is explaining the entire history of the West Coast Eagles to a group of backpackers at maximum volume. They think he's the tour guide.","hot");}
-    else if(roll<.85){leg(8);say("Whitey calls the bartender 'maggot' with deep affection and receives a free schooner. Ten years of cultural immersion, paying off.","leg");}
-    else {heat(7);say(S.kickon?"Whitey's volume registers a formal noise complaint. He apologises at the same volume.":"Whitey's volume has been formally noise-complained by a venue that plays music at 105dB.","bad");}
+    if(roll<.4){leg(12);say(S.kickon?"Pickles's 'LET'S GOOO' rattles the windows. A neighbour's light turns on. Worth it.":"Pickles's 'LET'S GOOO' has activated the entire venue. Strangers are chanting. Legend points for everyone.","leg");}
+    else if(roll<.65){say("Pickles is explaining the entire history of the West Coast Eagles to a group of backpackers at maximum volume. They think he's the tour guide.","hot");}
+    else if(roll<.85){leg(8);say("Pickles calls the bartender 'maggot' with deep affection and receives a free schooner. Ten years of cultural immersion, paying off.","leg");}
+    else {heat(7);say(S.kickon?"Pickles's volume registers a formal noise complaint. He apologises at the same volume.":"Pickles's volume has been formally noise-complained by a venue that plays music at 105dB.","bad");}
   }
   if(!S.rayDone && boy("ray").up && S.tick>=60){ S.rayDone=true; rayEvent(); paint(); return; }
-  if(S.buzz>90 && Math.random()<.30){
-    heat(8*VENUES[S.venue].heat);
-    say(["Someone attempts a bin surf.","A pot plant is adopted and named.","Robin convinces you to challenge a parking meter to a fight. You lose.","Bucko tries to pay for a kebab with a Medicare card.","Whitey attempts a British accent. Publicly. At volume. It is somehow American."][Math.floor(Math.random()*5)],"bad");
+  if(S.buzz>90 && S.ambientCd<=0 && Math.random()<.30){
+    S.ambientCd=2; heat(8*VENUES[S.venue].heat);
+    say(["Someone attempts a bin surf.","A pot plant is adopted and named.","Robin convinces you to challenge a parking meter to a fight. You lose.","Bucko tries to pay for a kebab with a Medicare card.","Pickles attempts a British accent. Publicly. At volume. It is somehow American."][Math.floor(Math.random()*5)],"bad");
   }
   if(S.heat>0 && Math.random()<.5)heat(-1);
+  // venue moves — the night rolls forward through the arc, offered as an event
+  S.moveCd--;
+  if(!S.kickon && S.walking===0 && S.seated===0 && S.buzz>=12 && S.moveCd<=0 && S.tick<S.ticksTotal-6){
+    if(fireMoveEvent()){ paint(); return; } else S.moveCd=8;
+  }
   // random events — no repeats, follow-ups favoured once unlocked
   S.eventCd--;
   if(S.eventCd<=0 && S.tick<S.ticksTotal-4){
@@ -598,13 +676,13 @@ function step(){
 
 /* ---------------- boot ---------------- */
 function boot(){
-  renderBoys(); renderVenues(); renderActs(); paint();
+  renderBoys(); renderSpot(); renderBar(); paint();
   const c=$("card");
   c.innerHTML=`<h2>SEND IT</h2>
   <p>Bucko's getting married. Eight of you. One night in Northbridge. Ten hours until sunrise — then, if you're still standing, the kick-ons.</p>
-  <p>Keep the buzz in <strong style="color:var(--zone)">THE ZONE</strong> to bank legend points. <strong>Buzz hits zero, the night dies on the spot.</strong> Go too hard and bouncers knock the boys back, cops circle, and heat 100 is the watch house. Everything goes on the card — Future You's problem.</p>`;
-  const b=document.createElement("button"); b.className="big"; b.textContent="Crack the first one";
-  b.onclick=()=>{ $("overlay").classList.remove("show"); S.running=true; say("8pm at the Grass Monkey. First schooners hit the table. Bucko makes a speech nobody can hear. Whitey is already the loudest person in the state, and Jez has already assessed the bar staff's pour technique.","hot"); };
+  <p>Keep the buzz in <strong style="color:var(--zone)">THE ZONE</strong> to bank legend points. <strong>Buzz hits zero, the night dies on the spot.</strong> Go too hard and bouncers knock the boys back, cops circle, and heat 100 is the watch house. Tap the boys' handles below to drink, kebab and gear up — the night moves the group from spot to spot on its own. Everything goes on the card — Future You's problem.</p>`;
+  const b=document.createElement("button"); b.className="big"; b.textContent="Into the Grass Monkey →";
+  b.onclick=()=>{ S.started=true; S.running=true; say("8pm at the Grass Monkey. Pickles is already the loudest person in the state, and Jez has quietly assessed the bar staff's pour technique.","hot"); kickoffEvent(); };
   c.appendChild(b);
   $("overlay").classList.add("show");
   setInterval(step,1500);
