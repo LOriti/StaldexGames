@@ -418,6 +418,17 @@
 
   /* ============ RESPONSIVE ============ */
   @media (max-width: 900px) {
+    /* App-shell: the inner pane scrolls, not the page root. Chrome only
+       auto-hides its address bar when the ROOT scrolls, so this keeps the
+       viewport a constant height and the basket bar dead still. */
+    html { height: 100%; overflow: hidden; }
+    body {
+      height: 100dvh; min-height: 0; overflow: hidden;
+      display: flex; flex-direction: column; padding-bottom: 0;
+    }
+    .app-scroll { flex: 1 1 auto; overflow-y: auto; overscroll-behavior: contain; }
+    .vbar { position: static; flex: none; }
+
     .plan-grid { grid-template-columns: 1fr; }
     .input-grid { grid-template-columns: 1fr; }
     .tab .t-name { font-size: 16px; }
@@ -434,6 +445,11 @@
 </style>
 </head>
 <body>
+
+<!-- Everything that scrolls lives in here. On mobile this becomes the scroll
+     container instead of the page root, which stops Chrome's address bar from
+     auto-hiding and dragging the fixed basket bar around. -->
+<div class="app-scroll">
 
 <!-- ============ MASTHEAD ============ -->
 <header class="wrap masthead">
@@ -586,6 +602,8 @@
   </section>
 
 </main>
+
+</div><!-- /.app-scroll -->
 
 <!-- ============ STICKY VERDICT BAR ============ -->
 <div class="vbar">
@@ -1279,7 +1297,12 @@ function setTab(t) {
   });
   document.querySelectorAll('.pane').forEach(p => p.classList.toggle('active', p.id === 'pane-' + t));
   renderVbar();
-  try { window.scrollTo({ top: 0, behavior: 'smooth' }); } catch (e) {}
+  // On mobile the .app-scroll pane scrolls; on desktop the window does.
+  try {
+    const pane = document.querySelector('.app-scroll');
+    if (pane && pane.scrollTop > 0) pane.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } catch (e) {}
 }
 document.querySelectorAll('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
 document.querySelectorAll('.tmpl-chip').forEach(c => c.addEventListener('click', () => loadRecipe(c.dataset.tmpl)));
