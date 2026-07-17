@@ -59,6 +59,14 @@ paste the `database_id` into `worker-lrmp/wrangler.toml`, connect Git with root 
 gate (rationale + recovery options in `worker-lrmp/README.md`). If the Worker is down the
 app still works fine — state stays per-device and the footer shows "☁ offline".
 
+## SEND IT (bucks night game, unlisted at staldex.com/send)
+
+Single self-contained file, `site/send.html` — no build step, no Worker, no leaderboard;
+it ships with the normal site deploy. Unlisted on the same terms as LRMP: no links from
+the homepage and a `noindex` meta tag. It loads Fraunces and Inter from Google Fonts,
+which is fine here — the no-external-fonts rule in `site/STYLE.md` binds the shell, not a
+standalone project page.
+
 ## Notes
 
 - Every submitted run is its own board entry — one player can hold multiple of the 10
