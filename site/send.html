@@ -331,7 +331,8 @@ const EVENTS=[
      ["Keep the boys moving",()=>{say("You herd the boys past. Pickles whispers 'goodbye Bruce' to a horse he never met.","gd");}]]},
  {t:"Maccas schism",p:"The party has split into two factions: Kebab Loyalists and Maccas Revisionists. Voices are being raised.",
   o:[["Rule for the kebab",()=>{leg(8);say("Tradition holds. The Revisionists grumble but comply. Garlic sauce unites all.","gd");}],
-     ["Democratic vote",()=>{buzz(-2);say("The vote ties. Twenty minutes are lost to constitutional debate outside a 7-Eleven.","hot");}]]},
+     ["Democratic vote",()=>{buzz(-2);say("The vote ties. Twenty minutes are lost to constitutional debate outside a 7-Eleven.","hot");}],
+     ["No food, we push on",()=>{say("You veto food entirely. The boys are appalled but fall in line. No soakage tonight — the night rolls on, hungrier and a touch more dangerous for it.","hot");}]]},
  {t:"Leroy's trivia hustle",at:"sports",c:()=>boy("leroy").up,p:"Leroy has found the pub's trivia machine and claims he's 'memorised the question bank from the TAB near work'. He wants a $20 float.",
   o:[["Fund the operation ($20)",()=>{spend(20);if(Math.random()<.55){leg(20);relieve(40);say("Leroy WAS telling the truth. He clears the machine and puts his winnings against the tab like a returning king.","leg");buzz(6);}else{say("Leroy loses it all on a question about rivers. 'Rigged,' he says, already planning phase two.","bad");}}],
      ["Cut off the funding",()=>{say("Leroy funds it himself and refuses to share the winnings on principle.","hot");}]]},
@@ -636,12 +637,14 @@ function fireShadow(){
   const idx=idxs[Math.floor(Math.random()*idxs.length)]; S.usedShadow.add(idx);
   say(SHADOW[idx],"hot");
 }
-/* The pinger drop — fires when the come-up finishes. How hard it hits is a roll of the dice. */
+/* The pinger drop — fires when the come-up finishes. Most land well; a few dud;
+   a slightly larger few come up FAR too strong (an overdose you have to ride out). */
 function pingerLands(){
   const r=Math.random();
-  if(r<0.2){ buzz(+18); leg(20); say("The pinger comes up like a freight train — colours have flavours, the bassline is a warm bath, and you love every person in this room, structurally. Enormous one.","leg"); }
-  else if(r<0.4){ buzz(-2); say("...and it's a dud. A faint chemical tingle and the dawning certainty you were sold a crushed-up Berocca. Tragic scenes.","bad"); }
-  else { buzz(+8); say("There it is — it lands. The song is perfect, the floor is perfect, and you are, briefly and chemically, perfect.","hot"); }
+  if(r<0.10){ buzz(-2); say("...and it's a dud. A faint chemical tingle and the dawning certainty you were sold a crushed-up Berocca. Tragic scenes.","bad"); }
+  else if(r<0.62){ buzz(+9); say("There it is — it lands clean. The song is perfect, the floor is perfect, and you are, briefly and chemically, perfect.","hot"); }
+  else if(r<0.84){ buzz(+16); leg(20); say("The pinger comes up like a freight train — colours have flavours, the bassline is a warm bath, you love every person in this room, structurally. Enormous one.","leg"); }
+  else { S.mdOD=true; buzz(+24); heat(10); leg(10); say("This one is FAR too strong. The room smears, your jaw could chew through a bus, and you are — magnificently, unmanageably — cooked. Ride it out. The comedown is going to be biblical.","bad"); }
 }
 
 /* ---------------- endings ---------------- */
@@ -971,8 +974,8 @@ function step(){
   if(S.seated>0){S.seated--; if(S.seated===0)say("You have risen from the seat. The seat will be missed.","gd");}
   S.boys.forEach(b=>{ if(!b.up && b.outTicks>0){ b.outTicks--; if(b.outTicks===0){ b.up=true; b.st=b.id==="pickles"?"loud American":"back in"; say(b.n+" has snuck back in through the smokers' area like it never happened.","gd"); renderBoys(); } } });
   let decay = S.kickon?2.8:2.2;
-  if(S.dexTicks>0){decay*=.45;S.dexTicks--;}
-  if(S.soakTicks>0){decay*=.5;S.soakTicks--;}
+  if(S.dexTicks>0){decay*=.45;S.dexTicks--; if(S.dexTicks===0){buzz(-6);say("The dexie focus evaporates. Your genius business idea suddenly looks completely unhinged on the back of the coaster.","bad");}}
+  if(S.soakTicks>0){decay*=.5;S.soakTicks--; if(S.soakTicks===0) say("The kebab's protective magic wears off. The slide resumes at full speed.","hot");}
   if(S.ketTicks>0){decay*=.6;}                    // ket is potent — it holds your buzz right up
   const combo = S.cokeTicks>0 && S.ketTicks>0;    // coke + ket in tandem: pays legend and kills the seat
   if(combo){ leg(2); }
@@ -981,10 +984,13 @@ function step(){
     if(S.mdTicks>10) buzz(+3);
     S.mdTicks--;
     if(S.mdTicks===10) pingerLands();
-    if(S.mdTicks===0){ buzz(-18); say("The comedown arrives like a tax invoice. Jaw finally relaxes.","bad"); }
+    if(S.mdTicks===0){
+      if(S.mdOD){ S.mdOD=false; buzz(-28); if(S.buzz>55 && Math.random()<.5) S.seated=5; say("The comedown off that monster lands like a repossession order — jaw unclenches, soul briefly departs. You need to sit down. You are, in fact, already sitting down.","bad"); }
+      else { buzz(-18); say("The comedown arrives like a tax invoice. Jaw finally relaxes.","bad"); }
+    }
   }
-  if(S.cokeTicks>0){S.cokeTicks--; if(S.cokeTicks===0){buzz(-14);say("The rack wears off mid-sentence. The sentence was about crypto.","bad");}}
-  if(S.ketTicks>0){S.ketTicks--; if(S.ketTicks===0){buzz(-8);say("The K-hole releases you back into the room, blinking. Everything's very loud again.","bad");}}
+  if(S.cokeTicks>0){S.cokeTicks--; if(S.cokeTicks===0){buzz(-14);heat(-2);say("The rack wears off mid-sentence — the sentence was about crypto — and a thin grey craving slides in behind it. You check the time. It is not later than you think.","bad");}}
+  if(S.ketTicks>0){S.ketTicks--; if(S.ketTicks===0){buzz(-8);say("The K-hole spits you back into the room, blinking and somehow taller. Everything is very loud and very close again.","bad");}}
   buzz(-decay);
   if(S.buzz<=0 && S.tick>6){
     const e=SOBER_ENDINGS[Math.floor(Math.random()*SOBER_ENDINGS.length)];
