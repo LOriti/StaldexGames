@@ -112,7 +112,7 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 </header>
 
 <div class="stats" id="statsRow">
-  <div class="stat"><div class="lbl">Time</div><div class="val" id="clockVal">8:00pm</div></div>
+  <div class="stat"><div class="lbl">Time</div><div class="val" id="clockVal">7:00pm</div></div>
   <div class="stat"><div class="lbl">Legend</div><div class="val" id="legendVal">0</div></div>
   <div class="stat"><div class="lbl">Card Bill</div><div class="val" id="billVal">$0</div></div>
   <div class="stat hidden" id="degenStat"><div class="lbl">Degen</div><div class="val" id="degenVal">0</div></div>
@@ -145,7 +145,7 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 "use strict";
 /* ---------------- state ---------------- */
 const S = {
-  tick:0, ticksTotal:120, running:false, over:false, kickon:false,
+  tick:0, ticksTotal:132, running:false, over:false, kickon:false,
   buzz:0, heat:0, bill:0, billMark:0, legend:0, streak:0,
   seated:0, dexTicks:0, mdTicks:0, cokeTicks:0, ketTicks:0, soakTicks:0,
   venue:0, walking:0, arcPos:0, moveCd:13, ambientCd:0, started:false,
@@ -174,8 +174,8 @@ const VENUES=[
   {n:"Grass Monkey", tag:"pub", price:1.0, legend:1.0, heat:.5, door:false, blurb:"Sticky carpet. Honest schooners.", left:false},
   {n:"Mustard Bar", tag:"live", price:1.15, legend:1.4, heat:.8, door:false, blurb:"A cover band doing Barnesy. Again.", left:false},
   {n:"Sneaky Terry's", tag:"speakeasy", price:1.5, legend:1.6, heat:.6, door:true, blurb:"You knock on a fridge to get in. The fridge is judgemental.", left:false},
-  {n:"Retro Shitty", tag:"club", price:1.7, legend:2.4, heat:1.5, door:true, opens:24, blurb:"Doof doof. The bouncer remembers faces.", left:false},
-  {n:"Connies", tag:"late club", price:1.6, legend:2.0, heat:1.2, door:true, opens:48, blurb:"Opens midnight. Best dance floor in the hemisphere.", left:false},
+  {n:"Retro Shitty", tag:"club", price:1.7, legend:2.4, heat:1.5, door:true, opens:36, blurb:"Doof doof. The bouncer remembers faces.", left:false},
+  {n:"Connies", tag:"late club", price:1.6, legend:2.0, heat:1.2, door:true, opens:60, blurb:"Opens midnight. Best dance floor in the hemisphere.", left:false},
   {n:"Kebab Alley", tag:"street", price:1.0, legend:.4, heat:.3, door:false, blurb:"Garlic sauce fixes most things.", left:false},
   {n:"Leroy's Flat", tag:"kick-ons", price:.4, legend:1.8, heat:.9, door:false, blurb:"Someone's already on aux. The neighbours are already awake.", left:false, hidden:true},
 ];
@@ -203,7 +203,7 @@ function boy(id){ return S.boys.find(b=>b.id===id); }
 function boysUp(){ return S.boys.filter(b=>b.up).length; }
 function downBoy(id,status,msg){ const b=boy(id); if(!b||!b.up)return; b.up=false; b.outTicks=0; b.st=status; say(msg,"bad"); renderBoys(); }
 function benchBoy(id,ticks,status,msg){ const b=boy(id); if(!b||!b.up)return; b.up=false; b.outTicks=ticks; b.st=status; say(msg,"bad"); renderBoys(); }
-function clockStr(){ const m=8*60 + S.tick*5; const h24=Math.floor(m/60)%24; const mm=(m%60).toString().padStart(2,"0"); const ap=h24>=12&&h24<24?"pm":"am"; let h=h24%12; if(h===0)h=12; return h+":"+mm+ap; }
+function clockStr(){ const m=19*60 + S.tick*5; const h24=Math.floor(m/60)%24; const mm=(m%60).toString().padStart(2,"0"); const ap=h24>=12&&h24<24?"pm":"am"; let h=h24%12; if(h===0)h=12; return h+":"+mm+ap; }
 
 /* ---------------- consumables ---------------- */
 const ACTS=[
@@ -217,10 +217,10 @@ const ACTS=[
       if(S.ketTicks>0){ leg(10); say("The rack lands on the ket and the whole night snaps into balance. Calibrated. Untouchable. This is the good stuff.","leg"); }
       else say("Everyone in the cubicle is now an expert on cryptocurrency.","hot"); }},
   {id:"md",   ico:"💊", nm:"Pinger",   base:30, cd:14, gear:true,  do:()=>{ S.mdTicks=16; buzz(+2); say("Pinger down. Nothing yet... but it's on its way up. Legend ×2 once it lands.","hot"); }},
-  {id:"k",    ico:"🐴", nm:"K",        base:35, cd:12, gear:true,  do:()=>{ buzz(+10); S.ketTicks=8; S.kCount++;
+  {id:"k",    ico:"🐴", nm:"K",        base:35, cd:12, gear:true,  do:()=>{ buzz(+16); S.ketTicks=12; S.kCount++;
       if(S.cokeTicks>0){ leg(10); say("The ket settles onto the coke like a saddle on a horse. You are, briefly, a functioning superbeing — no seat for you tonight.","leg"); }
-      else if(S.buzz>70 && Math.random()<.5){ S.seated=5; say("You have taken a seat. The seat is now your entire universe.","bad"); }
-      else say("The room goes pleasantly diagonal.","hot");
+      else if(S.buzz>70 && Math.random()<.5){ S.seated=5; say("The K takes full hold and the seat becomes your entire universe. You will be here a while.","bad"); }
+      else say("The room tips a hard, warm diagonal and simply stays there. This is the good stuff.","hot");
       if(boy("travis").up && S.travisHole===0 && S.kCount>=4 && Math.random() < .25*(S.kCount-3)) travisEvent();
   }},
   {id:"dex",  ico:"⚡", nm:"Dexie",    base:12, cd:12, gear:true,  do:()=>{ S.dexTicks=16; say("Laser focus acquired. Buzz decay slowed. You explain your business idea to Leroy, who immediately improves it.","hot"); }},
@@ -551,6 +551,13 @@ function fireChaos(){
   const idx=idxs[Math.floor(Math.random()*idxs.length)]; S.usedChaos.add(idx);
   say(CHAOS[idx],"bad");
 }
+/* The pinger drop — fires when the come-up finishes. How hard it hits is a roll of the dice. */
+function pingerLands(){
+  const r=Math.random();
+  if(r<0.2){ buzz(+18); leg(20); say("The pinger comes up like a freight train — colours have flavours, the bassline is a warm bath, and you love every person in this room, structurally. Enormous one.","leg"); }
+  else if(r<0.4){ buzz(-2); say("...and it's a dud. A faint chemical tingle and the dawning certainty you were sold a crushed-up Berocca. Tragic scenes.","bad"); }
+  else { buzz(+8); say("There it is — it lands. The song is perfect, the floor is perfect, and you are, briefly and chemically, perfect.","hot"); }
+}
 
 /* ---------------- endings ---------------- */
 const SOBER_ENDINGS=[
@@ -674,7 +681,7 @@ function fireMoveEvent(){
 }
 function kickoffEvent(){
   showEvent({t:"Crack the first one",
-    p:"8pm at the Grass Monkey. Eight polos, one buck, sticky carpet underfoot. The first tray lands and the entire night forks off this single sip. How do we open?",
+    p:"7pm at the Grass Monkey. Eight polos, one buck, sticky carpet underfoot. The first tray lands and the entire night forks off this single sip. How do we open?",
     o:[
       ["Schooners all round",()=>{ spend(boysUp()*9); buzz(10); say("Eight schooners hit the table. Bucko makes a speech nobody can hear. The night is officially airborne.","gd"); }],
       ["Shots for the buck first",()=>{ spend(boysUp()*10); buzz(15); leg(8); say("Tequila for the whole table before anyone's even sat down. Bucko bites the lime skin-side. Unhinged. Legend behaviour from the jump.","leg"); }],
@@ -808,12 +815,18 @@ function step(){
   let decay = S.kickon?2.8:2.2;
   if(S.dexTicks>0){decay*=.45;S.dexTicks--;}
   if(S.soakTicks>0){decay*=.5;S.soakTicks--;}
-  const combo = S.cokeTicks>0 && S.ketTicks>0;   // coke + ket in tandem — the balance smooths the ride
-  if(combo){ decay*=.5; leg(2); }
-  // Pinger comes up gradually: the first 6 ticks keep lifting you, so drinking on top can sneak you over the top.
-  if(S.mdTicks>0){ if(S.mdTicks>10) buzz(+4.5); S.mdTicks--; if(S.mdTicks===0){buzz(-18);say("The comedown arrives like a tax invoice. Jaw finally relaxes.","bad");} }
+  if(S.ketTicks>0){decay*=.6;}                    // ket is potent — it holds your buzz right up
+  const combo = S.cokeTicks>0 && S.ketTicks>0;    // coke + ket in tandem: pays legend and kills the seat
+  if(combo){ leg(2); }
+  // Pinger: gentle come-up, then it LANDS — how hard is down to chance (freight train, or a dud).
+  if(S.mdTicks>0){
+    if(S.mdTicks>10) buzz(+3);
+    S.mdTicks--;
+    if(S.mdTicks===10) pingerLands();
+    if(S.mdTicks===0){ buzz(-18); say("The comedown arrives like a tax invoice. Jaw finally relaxes.","bad"); }
+  }
   if(S.cokeTicks>0){S.cokeTicks--; if(S.cokeTicks===0){buzz(-14);say("The rack wears off mid-sentence. The sentence was about crypto.","bad");}}
-  if(S.ketTicks>0){S.ketTicks--; if(S.ketTicks===0){buzz(-6);say("The K-hole releases you back into the room, blinking. Everything's very loud again.","bad");}}
+  if(S.ketTicks>0){S.ketTicks--; if(S.ketTicks===0){buzz(-8);say("The K-hole releases you back into the room, blinking. Everything's very loud again.","bad");}}
   buzz(-decay);
   if(S.buzz<=0 && S.tick>6){
     const e=SOBER_ENDINGS[Math.floor(Math.random()*SOBER_ENDINGS.length)];
@@ -897,10 +910,10 @@ function boot(){
   renderBoys(); renderSpot(); renderBar(); paint();
   const c=$("card");
   c.innerHTML=`<h2>SEND IT</h2>
-  <p>Bucko's getting married. Eight of you. One night in Northbridge. Ten hours until sunrise — then, if you're still standing, the kick-ons.</p>
+  <p>Bucko's getting married. Eight of you. One night in Northbridge. Eleven hours until sunrise — then, if you're still standing, the kick-ons.</p>
   <p>Keep the buzz in <strong style="color:var(--zone)">THE ZONE</strong> to bank legend points. <strong>Buzz hits zero, the night dies on the spot.</strong> Go too hard and bouncers knock the boys back, cops circle, and heat 100 is the watch house. Tap the boys' handles below to drink, kebab and gear up — the night moves the group from spot to spot on its own. Everything goes on the card — Future You's problem.</p>`;
   const b=document.createElement("button"); b.className="big"; b.textContent="Into the Grass Monkey →";
-  b.onclick=()=>{ S.started=true; S.running=true; say("8pm at the Grass Monkey. Pickles is already the loudest person in the state, and Jez has quietly assessed the bar staff's pour technique.","hot"); kickoffEvent(); };
+  b.onclick=()=>{ S.started=true; S.running=true; say("7pm at the Grass Monkey. Pickles is already the loudest person in the state, and Jez has quietly assessed the bar staff's pour technique.","hot"); kickoffEvent(); };
   c.appendChild(b);
   $("overlay").classList.add("show");
   setInterval(step,1500);
