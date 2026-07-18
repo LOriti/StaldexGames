@@ -173,7 +173,7 @@ const S = {
   day:1, dayEndTick:0, pendingConflict:null, usedChat:{}, usedChaos:new Set(),
   degen:0, aftersStart:0, nightLegend:0, peakBuzz:0, shadow:false, usedShadow:new Set(),
   venueTicks:0, momentum:0, notoriety:0, visited:new Set(["gm"]),
-  counts:{}, spend:{drink:0,gear:0,food:0}, forkCount:0, usedHeat:new Set(),
+  counts:{}, spend:{drink:0,gear:0,food:0}, forkCount:0, usedHeat:new Set(), usedDJ:new Set(),
   bunkered:false, takeover:false, allegiance:0, milestone:0, usedBunker:new Set(),
   kCount:0, travisHole:0, rayDone:false, sandyCd:0,
   jezCd:14, robinCd:11, leroyCd:17, picklesCd:9,
@@ -646,6 +646,28 @@ function fireHeatScenario(){
   if(!avail.length) return false;
   const i=avail[Math.floor(Math.random()*avail.length)]; S.usedHeat.add(i);
   heat(HEAT_SCEN[i].h); say(HEAT_SCEN[i].x,"bad"); return true;
+}
+/* DJ moments — can happen at any venue, and the "late" ones (them running the room)
+   unlock as the night goes on. Robin's a natural; Pickles is a keen learner. */
+const DJ_SET=[
+ {who:"robin", x:"Robin slips into the booth and the transitions turn seamless. The floor doesn't realise it's being led, but it is.", cls:"leg", leg:12},
+ {who:"robin", x:"Robin reads the room and drops the exact song it needed. The whole place turns to face the booth at once.", cls:"leg", leg:15},
+ {who:"robin", x:"Robin's beat-match is so clean the resident DJ asks where he plays. He plays nowhere. He plays everywhere.", cls:"leg", leg:14},
+ {who:"pickles", x:"Pickles gets a track on the decks. It's... fine? He beat-matches by luck and sheer force of will and gets away with it.", cls:"hot", buzz:4},
+ {who:"pickles", x:"Pickles trainwrecks a transition, recovers with a brutal hard cut, and sells it so hard the crowd assumes it was intentional.", cls:"hot", buzz:3},
+ {who:"pickles", x:"Pickles has learned exactly one trick and is deploying it constantly. It works every third time, which he counts as a triumph.", cls:"hot", buzz:3},
+ {who:"robin", late:true, x:"It's late, and Robin is now unofficially running the venue's music. Staff have stopped pretending otherwise and started bringing him drinks.", cls:"leg", leg:20},
+ {who:"robin", late:true, x:"Peak of the night, and Robin has the whole room in his palm from the booth. This is his set now. Nobody voted; nobody minds.", cls:"leg", leg:22},
+ {who:"pickles", late:true, x:"Late enough that Pickles gets a real go on the main system — and hours of shadowing later, he's genuinely improved. It's not bad. It's actually not bad.", cls:"leg", leg:12},
+ {who:"pickles", late:true, x:"Pickles closes out a run on the decks to a real cheer, points at Robin who taught him, and Robin points back. A dynasty forms.", cls:"leg", leg:14},
+];
+function djEligible(){ const r=[]; for(let i=0;i<DJ_SET.length;i++){ const d=DJ_SET[i]; if(!boy(d.who).up)continue; if(d.late && S.tick<60)continue; r.push(i); } return r; }
+function fireDJ(){
+  let avail=djEligible().filter(i=>!S.usedDJ.has(i));
+  if(!avail.length){ S.usedDJ.clear(); avail=djEligible(); }
+  if(!avail.length) return false;
+  const i=avail[Math.floor(Math.random()*avail.length)]; S.usedDJ.add(i);
+  const d=DJ_SET[i]; if(d.leg)leg(d.leg); if(d.buzz)buzz(d.buzz); say(d.x, d.cls||"hot"); return true;
 }
 /* Shadow people — sleep-deprivation company from day four of the kick-ons onward. */
 const SHADOW=[
@@ -1148,6 +1170,11 @@ function step(){
   if(!S.rayDone && boy("ray").up && S.tick>=60){ S.rayDone=true; rayEvent(); paint(); return; }
   if(S.buzz>90 && S.ambientCd<=0 && Math.random()<.30){ S.ambientCd=2; heat(8*VENUES[S.venue].heat); fireChaos(); }
   if(S.shadow && S.ambientCd<=0 && Math.random()<.28){ S.ambientCd=2; fireShadow(); }
+  // DJ moments — any venue on the crawl, and they take the lead as the night gets later
+  if(!S.kickon && !S.bunkered && S.ambientCd<=0 && (boy("robin").up||boy("pickles").up)){
+    const dj=.015 + Math.min(.09, S.tick*0.001);
+    if(Math.random()<dj && fireDJ()) S.ambientCd=2;
+  }
   // contextual heat scenarios — chance climbs with dangerous combos (maggot + gear + notoriety + late + a door)
   if(!S.kickon && !S.bunkered && S.ambientCd<=0){
     let hs=0;
