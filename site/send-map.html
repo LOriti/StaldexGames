@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow" />
+<title>SEND IT — venue fanning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d0b14; --panel:#171224; --panel2:#1f1930; --line:#2c2340;
+  --text:#ece7f2; --dim:#9a90b0;
+  --neon:#ff2e88; --amber:#ffb347; --zone:#2ee6a8; --danger:#ff5252; --klr:#7c5cff;
+  --disp:"Fraunces",serif; --body:"Inter",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:var(--body);padding:18px 14px 44px;max-width:1000px;margin:0 auto;-webkit-tap-highlight-color:transparent}
+h1{font-family:var(--disp);font-weight:900;font-size:clamp(22px,5vw,30px);color:var(--neon);text-shadow:0 0 5px rgba(255,46,136,.85),0 0 18px rgba(255,46,136,.45)}
+.lead{color:var(--dim);font-size:13.5px;line-height:1.55;margin-top:7px;max-width:680px}
+.rule{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--klr);border-radius:9px;padding:11px 13px;margin:16px 0 6px;font-size:13px;color:var(--dim);line-height:1.6}
+.rule b{color:var(--text)}
+.tier{margin-top:20px}
+.tier h2{font-family:var(--disp);font-weight:600;font-size:15px;color:var(--text)}
+.tier .when{font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim);margin-bottom:9px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:9px}
+.v{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+.v.flag{border-color:var(--danger)}
+.v .nm{font-weight:700;font-size:14px}
+.v .tag{font-size:11.5px;color:var(--dim);margin-bottom:7px}
+.v .st{display:flex;gap:10px;font-size:12px;margin-bottom:7px}
+.v .st span b{font-family:var(--disp);font-weight:900}
+.v .st .p b{color:var(--text)}.v .st .l b{color:var(--zone)}.v .st .h b{color:var(--danger)}
+.v .bd{display:flex;flex-wrap:wrap;gap:5px}
+.chip{font-size:10.5px;padding:2px 8px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+.chip.door{background:rgba(255,82,82,.12);color:var(--danger);border-color:rgba(255,82,82,.4)}
+.chip.time{background:rgba(124,92,255,.14);color:var(--klr);border-color:rgba(124,92,255,.4)}
+.chip.warn{background:rgba(255,82,82,.14);color:var(--danger);border-color:rgba(255,82,82,.5);font-weight:600}
+.specials .row{grid-template-columns:repeat(auto-fit,minmax(220px,1fr))}
+.note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:9px;padding:12px 14px;margin-top:24px;font-size:13.5px;line-height:1.6;color:var(--dim)}
+.note b{color:var(--amber)}
+.note .swaps{margin-top:8px;color:var(--text)}
+.note .swaps span{display:inline-block;background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:3px 10px;margin:3px 4px 0 0;font-size:12.5px}
+.key{font-size:12px;color:var(--dim);margin-top:14px}
+.key b.p{color:var(--text)}.key b.l{color:var(--zone)}.key b.h{color:var(--danger)}
+</style>
+</head>
+<body>
+<h1>Venue fanning</h1>
+<p class="lead">How the crawl fans out, and the numbers behind each pub — for tuning. The night runs through four time-tiers; you're never on rails, but each fork keeps you near the hour.</p>
+
+<div class="rule">
+<b>The fork rule.</b> Each “where to, boys?” offers <b>3 venues from the current tier ± one</b> (open ones only), plus a <b>Kebab run</b> when heat is high, plus <b>“stick it out here.”</b> Doors get warier as your <b>notoriety</b> climbs, and the rooftop stops letting you in once you're too marked. Camp a venue too long and it goes <b>cold</b>; a lively, varied crawl builds <b>momentum</b>.
+</div>
+<div class="key">Per venue: <b class="p">P</b> = drink-price multiplier · <b class="l">L</b> = legend rate · <b class="h">H</b> = heat rate. Door = bouncer.</div>
+
+<div class="tier">
+<h2>Warm-up</h2><div class="when">Tier 0 · 7–9pm</div>
+<div class="row">
+<div class="v"><div class="nm">Grass Monkey</div><div class="tag">pub · you start here</div><div class="st"><span class="p">P <b>1.0</b></span><span class="l">L <b>1.0</b></span><span class="h">H <b>0.5</b></span></div><div class="bd"><span class="chip">walk-in</span></div></div>
+<div class="v flag"><div class="nm">The Bowlo</div><div class="tag">RSL</div><div class="st"><span class="p">P <b>0.7</b></span><span class="l">L <b>0.9</b></span><span class="h">H <b>0.3</b></span></div><div class="bd"><span class="chip">walk-in</span><span class="chip warn">not very Northbridge</span></div></div>
+<div class="v"><div class="nm">Vin Rouge</div><div class="tag">wine bar · Sandy's pick</div><div class="st"><span class="p">P <b>1.6</b></span><span class="l">L <b>1.1</b></span><span class="h">H <b>0.4</b></span></div><div class="bd"><span class="chip">walk-in</span></div></div>
+</div>
+</div>
+
+<div class="tier">
+<h2>Mid</h2><div class="when">Tier 1 · 9–11pm</div>
+<div class="row">
+<div class="v"><div class="nm">Mustard Bar</div><div class="tag">live music</div><div class="st"><span class="p">P <b>1.15</b></span><span class="l">L <b>1.4</b></span><span class="h">H <b>0.8</b></span></div><div class="bd"><span class="chip">walk-in</span></div></div>
+<div class="v"><div class="nm">Sneaky Terry's</div><div class="tag">speakeasy</div><div class="st"><span class="p">P <b>1.5</b></span><span class="l">L <b>1.6</b></span><span class="h">H <b>0.6</b></span></div><div class="bd"><span class="chip door">door</span></div></div>
+<div class="v"><div class="nm">The Sportie</div><div class="tag">sports bar</div><div class="st"><span class="p">P <b>1.1</b></span><span class="l">L <b>1.3</b></span><span class="h">H <b>0.9</b></span></div><div class="bd"><span class="chip">walk-in</span></div></div>
+<div class="v"><div class="nm">Molly's</div><div class="tag">Irish pub · Jez's turf</div><div class="st"><span class="p">P <b>1.2</b></span><span class="l">L <b>1.5</b></span><span class="h">H <b>0.9</b></span></div><div class="bd"><span class="chip">walk-in</span></div></div>
+</div>
+</div>
+
+<div class="tier">
+<h2>Late</h2><div class="when">Tier 2 · 11pm–2am · doors</div>
+<div class="row">
+<div class="v"><div class="nm">Retro Shitty</div><div class="tag">club</div><div class="st"><span class="p">P <b>1.7</b></span><span class="l">L <b>2.4</b></span><span class="h">H <b>1.5</b></span></div><div class="bd"><span class="chip door">door</span><span class="chip time">opens 10pm</span></div></div>
+<div class="v"><div class="nm">Alto</div><div class="tag">rooftop</div><div class="st"><span class="p">P <b>1.8</b></span><span class="l">L <b>2.2</b></span><span class="h">H <b>1.0</b></span></div><div class="bd"><span class="chip door">strict door</span><span class="chip time">opens 10pm</span></div></div>
+<div class="v"><div class="nm">The Bird</div><div class="tag">dive bar</div><div class="st"><span class="p">P <b>0.9</b></span><span class="l">L <b>2.0</b></span><span class="h">H <b>1.6</b></span></div><div class="bd"><span class="chip door">mean door</span><span class="chip time">opens 11pm</span></div></div>
+</div>
+</div>
+
+<div class="tier">
+<h2>Closing</h2><div class="when">Tier 3 · 2am+</div>
+<div class="row">
+<div class="v"><div class="nm">Connies</div><div class="tag">late club · best floor</div><div class="st"><span class="p">P <b>1.6</b></span><span class="l">L <b>2.0</b></span><span class="h">H <b>1.2</b></span></div><div class="bd"><span class="chip door">door</span><span class="chip time">opens midnight</span></div></div>
+</div>
+</div>
+
+<div class="tier specials">
+<h2>Off the tiers</h2><div class="when">Special</div>
+<div class="row">
+<div class="v"><div class="nm">Kebab Alley</div><div class="tag">street · the valve</div><div class="st"><span class="p">P <b>1.0</b></span><span class="l">L <b>0.4</b></span><span class="h">H <b>0.3</b></span></div><div class="bd"><span class="chip">walk-in</span><span class="chip">offered when hot</span></div></div>
+<div class="v"><div class="nm">Leroy's Flat</div><div class="tag">kick-ons · afters only</div><div class="st"><span class="p">P <b>0.4</b></span><span class="l">L <b>1.8</b></span><span class="h">H <b>0.9</b></span></div><div class="bd"><span class="chip">neighbours, not bouncers</span></div></div>
+</div>
+</div>
+
+<div class="note">
+<b>Tuning flag — The Bowlo.</b> You're right, an RSL/bowlo isn't a Northbridge thing (they're suburban). It's the odd one out in the warm-up tier. More Northbridge-authentic swaps for that slot:
+<div class="swaps"><span>a tiny laneway / small bar</span><span>a William St noodle/BBQ house</span><span>a karaoke joint</span><span>a grungy band room</span><span>a pool hall / arcade bar</span></div>
+Tell me which (or your own), and any other roster tweaks — add a tier-2 small club, drop a venue, retune any P/L/H — and I'll rebuild the fan.
+</div>
+</body>
+</html>
