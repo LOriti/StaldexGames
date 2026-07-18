@@ -735,7 +735,7 @@ function pingerLands(){
 
 /* ============ THE BOWLO SUB-STORYLINE ============
    Offered ONLY in the first fork. Divert to a suburban bowling club, bunker in,
-   take it over at 2am, and grow one sesh into a global party government. */
+   take it over when it closes, and grow one sesh into a global party government. */
 const BOWLO_IDX=7;
 function enterBowlo(){
   S.bunkered=true; S.walking=4; S.venue=BOWLO_IDX; S.venueTicks=0; S.moveCd=99999;
@@ -856,8 +856,8 @@ function bouncerQuiz(id){
   render();
 }
 function takeoverEvent(){
-  showEvent({t:"2am — the takeover",
-    p:"2:00am. The last legitimate bowls member has been poured into a Silver Cabs. The bar staff have downed tools and picked up cups. The disco lights from the club Christmas do are found, the PA that usually calls the meat raffle is rewired, and Robin is already behind it mixing — with Pickles at his shoulder, learning fast. Boys, this is your bowling club now.",
+  showEvent({t:"They've closed. You stayed.",
+    p:"Last drinks, and the bowls club is closing up around you — the greenkeeper's locked the front door and gone home, and the two staff still here, hopelessly outnumbered and thoroughly charmed, have quietly stopped being staff and started being guests. The disco lights from the club Christmas do get found. The PA that usually calls the meat raffle gets rewired. Robin is already behind it mixing, Pickles at his shoulder learning fast. You didn't leave when they closed, boys. This is your bowling club now.",
     o:[
       ["Declare the greens a sovereign dancefloor",()=>{ leg(24); S.allegiance+=10; say("You stand on the manicured green — a criminal act, the birth of a nation — and declare it a sovereign dancefloor. The greenkeeper weeps openly. It has begun.","leg"); }],
       ["Put Leroy in charge of comms",()=>{ leg(16); S.allegiance+=18; say("Leroy appoints himself Minister for Communications and starts a livestream 'to document the movement'. Forty people are watching. Then four hundred. Then he stops looking at the number.","leg"); }]
@@ -931,7 +931,7 @@ function renderSpot(){
   const v=VENUES[S.venue];
   let vibe;
   if(S.bunkered && S.takeover) vibe="the movement · "+fmt(S.allegiance)+" and rising";
-  else if(S.bunkered) vibe="bunkered in · awaiting 2am";
+  else if(S.bunkered) vibe="bunkered in · they're closing up";
   else if(S.kickon) vibe="kick-ons · goon o'clock";
   else if(S.walking>0) vibe="on the move…";
   else if(S.venueTicks>18) vibe="going cold — move on";
@@ -1363,10 +1363,10 @@ function step(){
       // counterinsurgency — the still-free world fights back between milestones; you must manage it
       if(S.milestone>=2 && S.milestone<8 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
     } else {
-      if(S.tick>=84){ S.takeover=true; takeoverEvent(); paint(); return; } // 2am
+      if(S.tick>=36){ S.takeover=true; takeoverEvent(); paint(); return; } // the club closes and you don't leave
       if(S.buzz>68 && S.ambientCd<=0 && Math.random()<.08){ S.ambientCd=2; heat(5); say("A neighbour in the quiet street leans over the fence: 'This is a bowls club, not a nightclub.' Fair. Noted. Roundly ignored.","bad"); }
       S.eventCd--;
-      if(S.eventCd<=0){ S.eventCd=8+Math.floor(Math.random()*5);
+      if(S.eventCd<=0){ S.eventCd=5+Math.floor(Math.random()*4);
         const be=EVENTS.filter(e=>e.at==="bowlo" && !e.used && (!e.c||e.c()));
         if(be.length && Math.random()<.5){ const ev=be[Math.floor(Math.random()*be.length)]; ev.used=true; showEvent(ev); paint(); return; }
         fireBunker();
