@@ -95,18 +95,27 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .card .tog{display:flex;gap:6px;margin:0 0 10px}
 .card .tog .tg{flex:1;width:auto;margin:0;padding:7px 4px;text-align:center;font-size:12px;font-weight:700;background:var(--panel2);border:1px solid var(--line);color:var(--dim)}
 .card .tog .tg.on{background:var(--neon);color:var(--ink);border-color:var(--neon)}
-.card .sheet{margin:0 0 10px;padding:9px 11px;background:var(--panel2);border:1px solid var(--line);border-radius:9px}
-.card .sh-t{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
-.card .sh-r{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;padding:3px 0;border-top:1px solid var(--line)}
-.card .sh-r:first-of-type{border-top:0}
-.card .sh-l{color:var(--dim)}
-.card .sh-v{font-weight:700;color:var(--text)}
-.card .sh-v.amber{color:var(--amber)}
-.card .sh-v.danger{color:var(--danger)}
-.card .sh-v.zone{color:var(--zone)}
-.card .reel{margin:0 0 12px;padding:8px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px}
-.card .reel div{font-size:11px;color:var(--dim);line-height:1.5;margin-bottom:2px}
-.card .reel .rl{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--amber);margin-bottom:5px}
+.card .stiles{display:grid;grid-template-columns:repeat(auto-fit,minmax(92px,1fr));gap:7px;margin:0 0 9px}
+.card .stile{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 4px;text-align:center}
+.card .stile .tl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.card .stile .tv{font-family:var(--disp);font-weight:900;font-size:21px;margin-top:2px;color:var(--text)}
+.card .stile .tv.amber{color:var(--amber)}.card .stile .tv.zone{color:var(--zone)}.card .stile .tv.danger{color:var(--danger)}
+.card .rankstrip{display:flex;flex-wrap:wrap;gap:5px 14px;justify-content:center;font-size:12.5px;color:var(--dim);margin:0 0 11px}
+.card .rankstrip b{color:var(--text)} .card .rankstrip b.zone{color:var(--zone)}
+.card details{margin:0 0 9px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.card details>summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:12px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center;gap:8px}
+.card details>summary::-webkit-details-marker{display:none}
+.card details>summary::after{content:"▸";color:var(--dim);font-weight:400}
+.card details[open]>summary::after{content:"▾"}
+.card .rcpt{background:#f4f1e8;color:#1a1710;border-radius:6px;margin:0 12px 12px;padding:13px 15px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:12.5px;line-height:1.7}
+.card .rc-h{font-weight:700;text-align:center;font-size:13px;letter-spacing:.05em}
+.card .rc-sub{text-align:center;color:#6b6357;font-size:11px;margin-bottom:7px}
+.card .rc-d{color:#b7ab97;letter-spacing:.08em;overflow:hidden;white-space:nowrap}
+.card .rc-l{display:flex;justify-content:space-between}
+.card .rc-b{font-weight:700}
+.card .rc-f{text-align:center;color:#6b6357;font-size:11px;margin-top:8px}
+.card .reelInner{padding:0 12px 10px}
+.card .reelInner div{font-size:11px;color:var(--dim);line-height:1.5;margin-bottom:2px}
 .card button{display:block;width:100%;margin-top:7px;background:var(--panel2);border:1px solid var(--line);color:var(--text);border-radius:9px;padding:10px;font-family:var(--body);font-weight:600;font-size:13px;cursor:pointer;text-align:left}
 .card button:hover{border-color:var(--neon)}
 .card .big{background:var(--neon);color:var(--ink);text-align:center;border-color:var(--neon);font-size:14px}
@@ -161,6 +170,7 @@ const S = {
   day:1, dayEndTick:0, pendingConflict:null, usedChat:{}, usedChaos:new Set(),
   degen:0, aftersStart:0, nightLegend:0, peakBuzz:0, shadow:false, usedShadow:new Set(),
   venueTicks:0, momentum:0, notoriety:0, visited:new Set(["gm"]),
+  counts:{}, spend:{drink:0,gear:0,food:0},
   kCount:0, travisHole:0, rayDone:false, sandyCd:0,
   jezCd:14, robinCd:11, leroyCd:17, picklesCd:9,
   reel:[],
@@ -697,11 +707,15 @@ function paint(){
 }
 
 /* ---------------- actions ---------------- */
+const ACT_CAT={beer:"drink",wine:"drink",cock:"drink",shot:"drink",coke:"gear",md:"gear",k:"gear",dex:"gear",kebab:"food"};
 function useAct(id){
   const a=ACTS.find(x=>x.id===id);
   if(S.cds[id]>0||S.over)return;
   const price=Math.round(a.base*(a.gear?1:VENUES[S.venue].price));
-  spend(price); S.cds[id]=a.cd; a.do(); paint();
+  spend(price); S.cds[id]=a.cd;
+  S.counts[id]=(S.counts[id]||0)+1;
+  if(ACT_CAT[id]) S.spend[ACT_CAT[id]]+=price;   // for the itemised receipt
+  a.do(); paint();
 }
 const DAY_LEN=36;      // ticks per kick-on "day" — survive three to reach folklore
 /* Curated forks: at each move you're offered a few tier-relevant venues + a stay option.
@@ -860,29 +874,46 @@ function reelHtml(){
   if(!S.reel.length)return "";
   let picks=S.reel;
   if(picks.length>6){ picks=[]; const step=S.reel.length/6; for(let i=0;i<6;i++)picks.push(S.reel[Math.floor(i*step)]); }
-  return `<div class="reel"><div class="rl">Highlight reel</div>`+
-    picks.map(r=>`<div><span style="color:${r[2]==="leg"?"var(--amber)":"var(--danger)"}">${r[0]}</span> — ${r[1]}</div>`).join("")+`</div>`;
+  return `<details open><summary>Highlight reel<span></span></summary><div class="reelInner">`+
+    picks.map(r=>`<div><span style="color:${r[2]==="leg"?"var(--amber)":"var(--danger)"}">${r[0]}</span> — ${r[1]}</div>`).join("")+`</div></details>`;
 }
 function rank(v){ return v>=1000?"CERTIFIED FOLK HERO": v>=600?"ABSOLUTE WEAPON": v>=300?"GOOD SOLDIER": v>=120?"PARTICIPANT":"DESIGNATED DISAPPOINTMENT"; }
 function degenRank(d){ return d>=900?"UNGOVERNABLE": d>=500?"FERAL": d>=250?"CERTIFIED DEGEN": d>=100?"LOOSE UNIT":"MERELY KEEN"; }
-function statBlock(title,rows){
-  return `<div class="sheet"><div class="sh-t">${title}</div>`+
-    rows.map(r=>`<div class="sh-r"><span class="sh-l">${r[0]}</span><span class="sh-v ${r[2]||''}">${r[1]}</span></div>`).join("")+`</div>`;
+function fmt(n){ return Math.round(n).toLocaleString("en-US"); }
+function tilesSheet(mode){
+  const t = mode==="combo"
+    ? [["Total legend",fmt(S.legend),"amber"],["Degen",fmt(S.degen),"zone"],["Days",S.day,""],["Peak buzz",Math.round(S.peakBuzz),""]]
+    : [["Legend",fmt(S.kickon?S.nightLegend:S.legend),"amber"],["Boys",boysUp()+"/8",""],["Peak buzz",Math.round(S.peakBuzz),""],["Card bill","$"+fmt(S.bill),"danger"]];
+  const tiles=t.map(x=>`<div class="stile"><div class="tl">${x[0]}</div><div class="tv ${x[2]}">${x[1]}</div></div>`).join("");
+  const ranks = mode==="combo"
+    ? `<span>Rank <b>${rank(S.legend)}</b></span><span>Degen <b class="zone">${degenRank(S.degen)}</b></span><span>Boys <b>${boysUp()}/8</b></span>`
+    : `<span>Rank <b>${rank(S.kickon?S.nightLegend:S.legend)}</b></span><span>Boys <b>${boysUp()}/8</b></span><span>Peak <b>${Math.round(S.peakBuzz)}</b></span>`;
+  return `<div class="stiles">${tiles}</div><div class="rankstrip">${ranks}</div>`;
 }
-function nightRows(){
-  const v=S.kickon?S.nightLegend:S.legend;
-  return [["Legend",v,"amber"],["Boys standing",boysUp()+"/8",""],["Peak buzz",Math.round(S.peakBuzz),""],["Card bill","$"+S.bill,"danger"],["Rank",rank(v),""]];
+function receiptHtml(){
+  const c=S.counts;
+  const drinkN=(c.beer||0)+(c.wine||0)+(c.cock||0)+(c.shot||0), gearN=(c.coke||0)+(c.md||0)+(c.k||0)+(c.dex||0), foodN=c.kebab||0;
+  const other=Math.max(0, S.bill - S.spend.drink - S.spend.gear - S.spend.food);
+  const row=(l,v)=>`<div class="rc-l"><span>${l}</span><span>$${fmt(v)}</span></div>`;
+  let lines="";
+  if(drinkN) lines+=row("Drinks x"+drinkN, S.spend.drink);
+  if(gearN)  lines+=row("Gear x"+gearN, S.spend.gear);
+  if(foodN)  lines+=row("Kebabs x"+foodN, S.spend.food);
+  if(other>0) lines+=row("Rounds & extras", other);
+  if(!lines) lines=`<div class="rc-l"><span>A suspiciously quiet night</span><span>$0</span></div>`;
+  return `<details><summary>The card bill<span>$${fmt(S.bill)}</span></summary>
+    <div class="rcpt"><div class="rc-h">NORTHBRIDGE BUCKS NIGHT</div>
+    <div class="rc-sub">${clockStr()} · ${S.kickon?("day "+S.day):"night out"}</div>
+    <div class="rc-d">------------------------------</div>${lines}
+    <div class="rc-d">------------------------------</div>
+    <div class="rc-l rc-b"><span>CARD BILL</span><span>$${fmt(S.bill)}</span></div>
+    <div class="rc-f">keep this receipt for the divorce</div></div></details>`;
 }
-function afterRows(){
-  return [["Days survived",S.day,"zone"],["Degen score",S.degen,"zone"],["Total legend",S.legend,"amber"],["Card bill","$"+S.bill,"danger"],["Degen rank",degenRank(S.degen),"zone"]];
-}
-function nightSheet(){ return statBlock("The night",nightRows()); }
-function comboSheet(){ return statBlock("The night",nightRows())+statBlock("The kick-ons",afterRows()); }
 function scoreSheets(){
-  if(!S.kickon) return nightSheet();
+  if(!S.kickon) return tilesSheet("night");
   return `<div class="tog"><button class="tg" data-s="n">Night</button><button class="tg on" data-s="k">Night + Kick-ons</button></div>
-    <div id="sheetN" style="display:none">${nightSheet()}</div>
-    <div id="sheetK">${comboSheet()}</div>`;
+    <div id="sheetN" style="display:none">${tilesSheet("night")}</div>
+    <div id="sheetK">${tilesSheet("combo")}</div>`;
 }
 function endScreen(title,body,win,offerKickon){
   S.over=true;S.running=false;
@@ -890,7 +921,7 @@ function endScreen(title,body,win,offerKickon){
   if(win && !S.kickon && boy("ray").up) extra=" Ray is already talking about the 9am skydive he booked. On your card.";
   const c=$("card");
   c.innerHTML=`<h2 style="color:${win?"var(--zone)":"var(--danger)"}">${title}</h2>
-    <p>${body}${extra}</p>${scoreSheets()}${reelHtml()}`;
+    <p>${body}${extra}</p>${scoreSheets()}${receiptHtml()}${reelHtml()}`;
   c.querySelectorAll(".tg").forEach(el=>el.onclick=()=>{
     const k=el.dataset.s==="k";
     $("sheetK").style.display=k?"":"none"; $("sheetN").style.display=k?"none":"";
