@@ -171,10 +171,11 @@ const S = {
   seated:0, dexTicks:0, mdTicks:0, cokeTicks:0, ketTicks:0, soakTicks:0,
   venue:0, walking:0, arcPos:0, moveCd:13, ambientCd:0, started:false,
   day:1, dayEndTick:0, pendingConflict:null, usedChat:{}, usedChaos:new Set(),
-  degen:0, aftersStart:0, nightLegend:0, peakBuzz:0, shadow:false, usedShadow:new Set(),
+  degen:0, aftersStart:0, nightLegend:0, nightBoys:8, nightPeak:0, nightBill:0, peakBuzz:0, shadow:false, usedShadow:new Set(),
   venueTicks:0, momentum:0, notoriety:0, visited:new Set(["gm"]),
   counts:{}, spend:{drink:0,gear:0,food:0}, forkCount:0, usedHeat:new Set(), usedDJ:new Set(),
   bunkered:false, takeover:false, allegiance:0, milestone:0, usedBunker:new Set(),
+  counterCd:12, usedCounter:new Set(), pendingQuiz:null,
   kCount:0, travisHole:0, rayDone:false, sandyCd:0,
   jezCd:14, robinCd:11, leroyCd:17, picklesCd:9,
   reel:[],
@@ -203,7 +204,7 @@ const VENUES=[
   {id:"connies", tier:3,    n:"Connies",        tag:"late club",  price:1.6,  legend:2.0, heat:1.2, door:true,  opens:60, blurb:"Best dance floor in the hemisphere. Opens midnight.", left:false},
   {id:"kebab",   tier:null, n:"Kebab Alley",    tag:"street",     price:1.0,  legend:.4,  heat:.3,  door:false, blurb:"Garlic sauce fixes most things.", left:false},
   {id:"flat",    tier:null, n:"Leroy's Flat",   tag:"kick-ons",   price:.4,   legend:1.8, heat:.9,  door:false, blurb:"Someone's already on aux. The neighbours are already awake.", left:false, hidden:true},
-  {id:"bowlo",   tier:null, n:"Tuart Hill Bowlo", tag:"suburban bowling club", price:.7, legend:.9, heat:.3, door:false, blurb:"Twenty minutes out of the city. Carpet bowls, a meat raffle, fluorescent light, and destiny.", left:false},
+  {id:"bowlo",   tier:null, n:"North Perth Bowlo", tag:"lawn bowls club", price:.7, legend:.9, heat:.6, door:false, blurb:"Twenty minutes out of the city. Carpet bowls, a meat raffle, fluorescent light, and destiny.", left:false},
   {id:"wine",    tier:0,    n:"Vin Rouge",      tag:"wine bar",   price:1.6,  legend:1.1, heat:.4,  door:false, blurb:"Natural wine and small plates. Sandy's happy place. Use your inside voice.", left:false},
   {id:"sports",  tier:1,    n:"The Sportie",    tag:"sports bar", price:1.1,  legend:1.3, heat:.9,  door:false, blurb:"Big screens, a pool table, a beer tower with your name on it.", left:false},
   {id:"irish",   tier:1,    n:"Molly's",        tag:"Irish pub",  price:1.2,  legend:1.5, heat:.9,  door:false, blurb:"Guinness done properly. Jez knows the owner. A fiddle is warming up.", left:false},
@@ -245,11 +246,16 @@ const ACTS=[
   {id:"water",ico:"💧", nm:"Water",    base:0,  cd:4,  gear:false, do:()=>{ buzz(-8); heat(-3); say("A tactical water. Genuinely elite move.","gd"); }},
   {id:"kebab",ico:"🥙", nm:"Kebab",    base:15, cd:10, gear:false, do:()=>{ S.soakTicks=10; heat(-3); say("Soakage acquired. The kebab slows the slide. Buzz decay halved for a bit.","gd"); }},
   {id:"coke", ico:"❄️", nm:"Racks",    base:60, cd:10, gear:true,  do:()=>{ buzz(+20); S.cokeTicks=10; heatRisk(10,"A cubicle door with four sets of shoes under it draws attention.");
-      if(S.ketTicks>0){ leg(10); say("The rack lands on the ket and the whole night snaps into balance. Calibrated. Untouchable. This is the good stuff.","leg"); }
+      if(S.mdTicks>0){ badStack(); }                                          // coke on a pinger — dangerous
+      else if(S.ketTicks>0){ leg(10); say("The rack lands on the ket and the whole night snaps into balance. Calibrated. Untouchable. This is the good stuff.","leg"); }
       else say("Everyone in the cubicle is now an expert on cryptocurrency.","hot"); }},
-  {id:"md",   ico:"💊", nm:"Pinger",   base:30, cd:14, gear:true,  do:()=>{ S.mdTicks=16; buzz(+2); say("Pinger down. Nothing yet... but it's on its way up. Legend ×2 once it lands.","hot"); }},
+  {id:"md",   ico:"💊", nm:"Pinger",   base:30, cd:14, gear:true,  do:()=>{ S.mdTicks=16; buzz(+2);
+      if(S.cokeTicks>0){ badStack(); }                                        // pinger onto a rack — dangerous
+      else if(S.ketTicks>0){ goodRoll(); }                                    // pinger with ket already down — glorious
+      else say("Pinger down. Nothing yet... but it's on its way up. Legend ×2 once it lands.","hot"); }},
   {id:"k",    ico:"🐴", nm:"K",        base:35, cd:12, gear:true,  do:()=>{ buzz(+16); S.ketTicks=12; S.kCount++;
       if(S.cokeTicks>0){ leg(10); say("The ket settles onto the coke like a saddle on a horse. You are, briefly, a functioning superbeing — no seat for you tonight.","leg"); }
+      else if(S.mdTicks>0){ goodRoll(); }                                     // ket after a pinger — the fabled roll
       else if(S.buzz>70 && Math.random()<.5){ S.seated=5; say("The K takes full hold and the seat becomes your entire universe. You will be here a while.","bad"); }
       else say("The room tips a hard, warm diagonal and simply stays there. This is the good stuff.","hot");
       if(boy("travis").up && S.travisHole===0 && S.kCount>=4 && Math.random() < .25*(S.kCount-3)) travisEvent();
@@ -692,6 +698,21 @@ function fireShadow(){
 }
 /* The pinger drop — fires when the come-up finishes. Most land well; a few dud;
    a slightly larger few come up FAR too strong (an overdose you have to ride out). */
+/* Coke + pinger — a bad stack. The two fight each other, kill the roll, and (low chance) your heart objects. */
+function badStack(){
+  S.mdTicks=0; S.mdOD=false; S.mdSmooth=false; heat(7);
+  say("Racks on a pinger. The upper and the roll fight each other into a jittery, joyless static — the euphoria gone, only the jaw remaining. A bad stack.","bad");
+  if(Math.random()<.14){
+    buzz(-18); S.seated=Math.max(S.seated,6);
+    if(Math.random()<.25) endScreen("CARDIAC EVENT","You stacked a rack on a pinger and your heart filed a formal objection. The floor comes up to meet you; an ambulance comes to meet the floor. You'll be fine — genuinely fine — but the night ends here, on a stretcher, being told off by a paramedic who has said this exact sentence a thousand times.",false,false);
+    else say("Worse — your heart does a thing hearts should not do. You sit down hard, clutching your chest, sheeted in cold sweat. The boys go silent. It passes. It really, really shouldn't have.","bad");
+  }
+}
+/* Ket after a pinger — the fabled roll. It rounds off every edge. */
+function goodRoll(){
+  leg(16); buzz(6); S.mdSmooth=true;
+  say("The ket lands on the pinger and the whole thing goes warm and golden — every edge rounded off, the room breathing with you. This is the one they warn you about, because it is simply too good.","leg");
+}
 function pingerLands(){
   const r=Math.random();
   if(r<0.10){ buzz(-2); say("...and it's a dud. A faint chemical tingle and the dawning certainty you were sold a crushed-up Berocca. Tragic scenes.","bad"); }
@@ -707,7 +728,8 @@ const BOWLO_IDX=7;
 function enterBowlo(){
   S.bunkered=true; S.walking=4; S.venue=BOWLO_IDX; S.venueTicks=0; S.moveCd=99999;
   S.aftersStart=S.tick; // degen starts ramping from here too
-  say("You do the unthinkable: pile into two Ubers and convoy OUT of Northbridge — twenty minutes into the suburbs, to the Tuart Hill Bowling Club. The boys are baffled. Bucko is delighted. Something enormous is beginning and none of you can feel it yet.","leg");
+  say("You take the odd option. Two Ubers, out of the city, twenty minutes north to the North Perth Bowling Club — a lawn bowls club, of all places. The boys are baffled. Bucko is delighted. None of you can feel it yet, but something enormous has just begun.","leg");
+  say("Suburban rules out here: no bouncers, just neighbours; no strip, just quiet streets and a bowls green; heat means the council and the noise line, not the cops. Cheap drinks, fluorescent light, and all the time in the world. Bunker in.","hot");
   renderSpot(); renderBar(); paint();
 }
 const BUNKER=[
@@ -726,6 +748,67 @@ function fireBunker(){
   const idx=idxs[Math.floor(Math.random()*idxs.length)]; S.usedBunker.add(idx);
   buzz(1); leg(3); say(BUNKER[idx],"hot");
 }
+/* Counterinsurgency — the still-free world fights the sesh. Manage it: defuse safely,
+   or gamble for allegiance. Mishandle it and the heat climbs toward THE COUP. */
+const COUNTER=[
+ {t:"The task force",p:"The nations not yet on the sesh have sent a joint task force to the perimeter of the green — shields, floodlights, a man with a megaphone reading rules. The free world has arrived to shut you down.",
+  o:[["Send Jez out with a tray of cold ones",()=>{ leg(12); heat(-6); say("Jez walks a tray to the barricade. The commander tastes one, sighs, radios 'stand down', and quietly asks for another. Defused, tradesman to tradesman.","leg"); }],
+     ["Turn every camera on them, live",()=>{ if(Math.random()<.6){ S.allegiance+=45; leg(10); say("Ten million viewers watch the task force decide, live, not to be the villains of history. Shields lower. Then, eventually, inhibitions.","leg"); } else { heat(16); say("The task force does not enjoy being filmed. They move in harder — the barricade holds, just, but the heat is on.","bad"); } }]]},
+ {t:"The smear campaign",p:"The old-world media has launched a coordinated smear: you're 'just a mess', 'a public health emergency', 'a bloke on a bowling green'. That last one is admittedly true. Public opinion wobbles.",
+  o:[["Let Leroy run counter-comms",()=>{ leg(12); heat(-4); say("Leroy's rebuttal is airtight: grandmothers dancing, the sausage supply lines, Bucko crying with joy. The smear collapses into a wholesome documentary.","leg"); }],
+     ["Ignore it, keep dancing",()=>{ if(Math.random()<.5){ S.allegiance+=25; say("You don't dignify it. The movement's too busy to notice and the media, starved of a reaction, moves on.","gd"); } else { heat(12); say("Left unanswered, the smear sticks. Waverers waver. The crackdown finds fresh appetite.","bad"); } }]]},
+ {t:"They cut the power",p:"Sabotage. The PA dies, the disco lights die, the stream cuts to black. For one held breath there is total silence on the green. The whole thing is one bad minute from over.",
+  o:[["Robin and Pickles go fully acoustic",()=>{ leg(16); say("Robin starts a beat on an empty keg, Pickles finds the melody, and the entire green sings the set from memory in the dark. You cannot cut the power to this. Unkillable.","leg"); }],
+     ["Scramble for the backup generator",()=>{ if(Math.random()<.6){ leg(8); say("Leroy, of course, has a generator. The lights snap back to a roar. Sabotage: failed.","leg"); } else { heat(9); buzz(-4); say("The genny won't start. Twenty dark minutes bleed momentum before someone jiggles a wire. Close one.","bad"); } }]]},
+ {t:"The sober resistance",p:"An organised resistance has formed: people who simply want everyone to go to bed. They are well-rested, they are correct, and they are, therefore, terrifying. Their leader has a clipboard.",
+  o:[["Convert their leader",()=>{ if(Math.random()<.6){ S.allegiance+=45; leg(12); say("You hand him one perfect drink and a genuine hug. He blinks, exhales eleven years of stress, and defects. His followers follow. The opposition is now the party.","leg"); } else { heat(6); say("He is immune to the hug. He files paperwork. Somewhere, a form is being processed against you.","bad"); } }],
+     ["Out-chant them",()=>{ heat(7); leg(6); say("You lead a chant so devastatingly catchy they can't be heard over it. They retreat — but retreat angry, and angry people make phone calls.","hot"); }]]},
+ {t:"Special forces at the fence",p:"This is the big one. Actual special forces, actual helmets, at the fence line, awaiting an order. The still-free world is deciding, right now, whether to raid a party of billions.",
+  o:[["Form a human wall of goodwill",()=>{ if(S.allegiance>400 && Math.random()<.7){ leg(18); heat(-8); say("A thousand joined hands and one livestream later, no government on earth will give the order. The soldiers stand down and, one by one, remove their helmets and their shoes.","leg"); } else { heat(15); say("The wall holds, but the optics are knife-edge. Somewhere a finger hovers near a button. Do not push it.","bad"); } }],
+     ["Dare them, on camera",()=>{ if(Math.random()<.4){ S.allegiance+=60; say("You dare them, live, to raid a party of billions. They cannot. They will not. The bluff is the single biggest flex in human history.","leg"); } else { heat(20); say("They call the bluff. Boots on the green. This is very nearly the end of everything.","bad"); } }]]},
+ {t:"A rival counter-sesh",p:"A hold-out nation has started a competing party specifically to split your movement — a counter-sesh, cynical and well-funded, siphoning off the undecided.",
+  o:[["Absorb them into the movement",()=>{ leg(14); S.allegiance+=35; say("You don't fight the rival sesh — you invite it. Two parties become one bigger party, as parties always should. Their leader is given a hat and a role and is thrilled.","leg"); }],
+     ["Out-party them",()=>{ if(Math.random()<.55){ S.allegiance+=50; leg(10); say("A sesh-off. Yours is simply better — more heart, more snags, a superior DJ in Robin. The rival packs it in and joins you by sunrise.","leg"); } else { heat(10); buzz(-3); say("The sesh-off drags. The energy splits. For an hour it's genuinely unclear who's winning, and unclear is dangerous.","bad"); } }]]},
+];
+function fireCounter(){
+  const avail=[]; for(let i=0;i<COUNTER.length;i++) if(!S.usedCounter.has(i)) avail.push(i);
+  if(!avail.length) return false;
+  const i=avail[Math.floor(Math.random()*avail.length)]; S.usedCounter.add(i);
+  showEvent(COUNTER[i]); return true;
+}
+/* Bouncer quiz — a short, silly mini-game to talk a knocked-back boy back in.
+   Your answers nudge the odds, but the door has the final say: right answers usually pass
+   (occasionally fail), wrong answers usually fail (occasionally pass). */
+const QUIZ=[
+ {q:"'What's the magic word?'", a:[["'Please'",2],["'Cheers, big ears'",1],["'Do you know who I am?'",-2]]},
+ {q:"'Name a lawn bowls term. Go.'", a:[["'The jack'",2],["'A big end'",1],["'Strike! Home run!'",-1]]},
+ {q:"'How many drinks have you actually had tonight?'", a:[["'Two.' (a bold lie)",2],["'Honestly? No clue.'",0],["'YES.'",-2]]},
+ {q:"'Say the alphabet backwards. I won't check.'", a:[["Mumble it with total confidence",2],["'Z, Y, X... nah.'",1],["Attempt it sincerely and fail",-1]]},
+ {q:"'Who are you here with?'", a:[["'The buck — it's his big night.'",2],["'These blokes. Good blokes.'",1],["'Nobody. Everybody. The universe.'",-1]]},
+ {q:"'Straight answer: are you going to be a problem?'", a:[["'No sir. Model citizen.'",2],["'Define problem.'",-1],["'Absolutely not.' (winks slowly)",0]]},
+];
+function bouncerQuiz(id){
+  const b=boy(id); if(!b||b.up) return;
+  S.running=false;
+  const pool=[]; for(let i=0;i<QUIZ.length;i++) pool.push(i);
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i];pool[i]=pool[j];pool[j]=t; }
+  const qs=[pool[0],pool[1]]; let score=0, step=0; const c=$("card");
+  function render(){
+    if(step>=qs.length){ resolve(); return; }
+    const Q=QUIZ[qs[step]];
+    c.innerHTML=`<h2>Talk ${b.n} back in</h2><p>${b.n} is stuck on the wrong side of the rope. The bouncer folds his arms. Answer the man.</p><p style="color:var(--amber);font-weight:600">Q${step+1}. ${Q.q}</p>`;
+    Q.a.forEach(([label,w])=>{ const btn=document.createElement("button"); btn.textContent=label; btn.onclick=()=>{ score+=w; step++; render(); }; c.appendChild(btn); });
+    $("overlay").classList.add("show");
+  }
+  function resolve(){
+    $("overlay").classList.remove("show");
+    const p=Math.max(0.1, Math.min(0.9, 0.42 + score*0.12));
+    if(Math.random()<p){ b.up=true; b.outTicks=0; b.st="talked back in"; leg(10); say("The bouncer weighs it up, then jerks a thumb: '"+b.n+", you're in. Don't make me regret it.' You talked "+b.n+" back through the door. Scenes.","leg"); }
+    else { say("The bouncer is unmoved. "+b.n+" is left outside to have a long think about what "+b.n+" has done. Worth a shot.","bad"); }
+    renderBoys(); S.running=true; paint();
+  }
+  render();
+}
 function takeoverEvent(){
   showEvent({t:"2am — the takeover",
     p:"2:00am. The last legitimate bowls member has been poured into a Silver Cabs. The bar staff have downed tools and picked up cups. The disco lights from the club Christmas do are found, the PA that usually calls the meat raffle is rewired, and Robin is already behind it mixing — with Pickles at his shoulder, learning fast. Boys, this is your bowling club now.",
@@ -736,12 +819,12 @@ function takeoverEvent(){
 }
 const MILESTONES=[
  {at:90, t:"The stream escapes",
-  p:"The livestream has escaped containment. A clip of Pickles doing the worm across the bowling green to a sped-up Eagles song — Free Bird, naturally — is being reposted faster than anyone can watch it. Twelve thousand viewers. Comments in nine languages.",
+  p:"The livestream has escaped containment. A clip of Pickles doing the worm across the bowling green to a sped-up Free Bird (which Pickles still insists is an Eagles song, and which remains, defiantly, Lynyrd Skynyrd) is being reposted faster than anyone can watch it. Twelve thousand viewers. Comments in nine languages.",
   o:[["Address the people directly",()=>{ leg(18); S.allegiance+=14; say("You look down the lens: 'Everyone is welcome. Bring your own cup.' The count doubles mid-sentence. The movement has a face now, and it is yours, and it is sweating.","leg"); }],
      ["Keep it pure — phones down",()=>{ leg(12); S.allegiance+=10; say("You call a phones-down moment of presence. It backfires beautifully: the one grainy clip that escapes becomes the most-shared thing of the night precisely because it's the only one.","leg"); }]]},
- {at:220, t:"Tuart Hill secedes",
-  p:"The neighbours haven't called the police. The neighbours have brought a lasagne and asked to join. The entire suburb of Tuart Hill has just voted, by show of hands on the green, to become an independent sesh-state. A man named Barry is Foreign Minister. Barry is doing very well.",
-  o:[["Enshrine Tuart Hill as founding province",()=>{ leg(20); S.allegiance+=16; say("Tuart Hill is enshrined as the founding province of the movement. Barry gives a tearful acceptance speech from atop the drinks fridge. The retirement village next door pledges its bingo hall as an embassy.","leg"); }]]},
+ {at:220, t:"North Perth secedes",
+  p:"The neighbours haven't called the police. The neighbours have brought a lasagne and asked to join. The entire suburb of North Perth has just voted, by show of hands on the green, to become an independent sesh-state. A man named Barry is Foreign Minister. Barry is doing very well.",
+  o:[["Enshrine North Perth as founding province",()=>{ leg(20); S.allegiance+=16; say("North Perth is enshrined as the founding province of the movement. Barry gives a tearful acceptance speech from atop the drinks fridge. The retirement village next door pledges its bingo hall as an embassy.","leg"); }]]},
  {at:380, t:"Perth is on it",
   p:"It's 4am and the whole city has heard. Cars are arriving from Joondalup, from Freo, from Mandurah. The bowlo car park is a refugee camp of pure joy. A traffic reporter has stopped reporting traffic to join in. Perth — sleepy, isolated, beautiful Perth — is fully on the sesh.",
   o:[["Address the nation of Perth",()=>{ leg(24); S.allegiance+=18; say("You climb the flagpole — the flag is now a Bintang singlet — and address Perth. 'You have always been the most isolated city on earth. Tonight you are the centre of it.' Perth roars. Somewhere, the bell tower rings itself.","leg"); }]]},
@@ -760,7 +843,7 @@ const MILESTONES=[
 ];
 const GLOBAL_AT=1700;
 function globalGovEnd(){
-  const body="A single, synchronised dawn breaks over a planet that has — overnight, from a bowling club in Tuart Hill — formed its first ever GLOBAL PARTY GOVERNMENT. There is no more war; everyone is far too busy. The economy is snags and goodwill. You, holding a warm cup on a suburban bowling green, are the accidental head of a united human race. Bucko still has to be at the church by 3pm.";
+  const body="A single, synchronised dawn breaks over a planet that has — overnight, from a bowling club in North Perth — formed its first ever GLOBAL PARTY GOVERNMENT. There is no more war; everyone is far too busy. The economy is snags and goodwill. You, holding a warm cup on a suburban bowling green, are the accidental head of a united human race. Bucko still has to be at the church by 3pm.";
   endScreen("THE GLOBAL PARTY GOVERNMENT", body, true, false);
 }
 
@@ -878,7 +961,7 @@ function moveVenue(i){
   if(to.door && S.buzz>75){
     S.boys.filter(b=>b.up).forEach(b=>{
       let chance=.2 + (b.id==="pickles"?.12:0) - (jezUp?.05:0) + S.notoriety*.004 + (to.id==="dive"?.14:0) + (to.strict?.1:0);
-      if(Math.random()<chance) benchBoy(b.id,8,"knocked back","The door at "+to.n+" takes one look at "+b.n+" and shakes its head. "+b.n+" is now negotiating from the wrong side of a velvet rope.");
+      if(Math.random()<chance){ benchBoy(b.id,8,"knocked back","The door at "+to.n+" takes one look at "+b.n+" and shakes its head. "+b.n+" is now negotiating from the wrong side of a velvet rope."); if(!S.pendingQuiz && Math.random()<.7) S.pendingQuiz=b.id; }
     });
     if(S.buzz>90 && Math.random()<((jezUp?.35:.5)+S.notoriety*.003)){
       say("The door at "+to.n+" assesses the group's collective condition and refuses the LOT of you. 'Have a water, come back never.'","bad");
@@ -920,8 +1003,10 @@ function fireMoveEvent(){
     const label=(i===KEBAB?"Kebab run — cool off · street":"Head to "+v.n+" · "+v.tag);
     return [label, ()=>{ S.moveCd=11+Math.floor(Math.random()*5); moveVenue(i); }];
   });
-  // The one and only chance to derail the whole night: offered only at the first fork.
-  if(S.forkCount===1) o.push(["↗ Convoy OUT to the suburbs — Tuart Hill Bowlo (a mission)", ()=>{ enterBowlo(); }]);
+  // Easter egg: on the first fork, one of the three is quietly the out-of-town bowls club.
+  // Presented like any other venue — the only hint is that it's an odd choice.
+  if(S.forkCount===1){ const bv=VENUES[BOWLO_IDX];
+    o[o.length-1]=["Head to "+bv.n+" · "+bv.tag, ()=>{ enterBowlo(); }]; }
   o.push(["Stick it out here", ()=>{ S.moveCd=7+Math.floor(Math.random()*4); stayHere(); }]);
   showEvent({t:"Where to, boys?", p:forkPrompt(), o});
   return true;
@@ -1009,23 +1094,26 @@ function movementRank(a){ return a>=1500?"GLOBAL GOVERNMENT": a>=760?"CONTINENTA
 function fmt(n){ return Math.round(n).toLocaleString("en-US"); }
 function tilesRow(t){ return `<div class="stiles">`+t.map(x=>`<div class="stile"><div class="tl">${x[0]}</div><div class="tv ${x[2]||''}">${x[1]}</div></div>`).join("")+`</div>`; }
 function rankRow(h){ return `<div class="rankstrip">${h}</div>`; }
-function nightBlock(){
-  const v=S.kickon?S.nightLegend:S.legend;
-  return tilesRow([["Legend",fmt(v),"amber"],["Boys",boysUp()+"/8",""],["Peak buzz",Math.round(S.peakBuzz),""],["Card bill","$"+fmt(S.bill),"danger"]])
-    + rankRow(`<span>Rank <b>${rank(v)}</b></span><span>Boys <b>${boysUp()}/8</b></span><span>Peak <b>${Math.round(S.peakBuzz)}</b></span>`);
+/* Same layout, different figures: `full=false` = the night-only snapshot (at sunrise);
+   `full=true` = the whole run including kick-ons. Compare apples to apples. */
+function statTop(full){
+  const kn=S.kickon && !full;
+  const leg=kn?S.nightLegend:S.legend, boys=kn?S.nightBoys:boysUp(), peak=kn?S.nightPeak:Math.round(S.peakBuzz), bill=kn?S.nightBill:S.bill;
+  return tilesRow([["Legend",fmt(leg),"amber"],["Boys",boys+"/8",""],["Peak buzz",Math.round(peak),""],["Card bill","$"+fmt(bill),"danger"]])
+    + rankRow(`<span>Rank <b>${rank(leg)}</b></span><span>Boys <b>${boys}/8</b></span><span>Peak <b>${Math.round(peak)}</b></span>`);
 }
 function tilesSheet(mode){
   if(mode==="bowlo"){
     return tilesRow([["Movement",fmt(S.allegiance),"neon"],["Degen",fmt(S.degen),"zone"],["Legend",fmt(S.legend),"amber"],["Peak buzz",Math.round(S.peakBuzz),""]])
       + rankRow(`<span>Reach <b class="neon">${movementRank(S.allegiance)}</b></span><span>Degen <b class="zone">${degenRank(S.degen)}</b></span><span>Boys <b>${boysUp()}/8</b></span>`);
   }
-  if(mode==="combo"){   // identical to Night up top, with the kick-ons component added below
-    return nightBlock()
+  if(mode==="combo"){   // full-run figures up top (bigger), then the kick-ons-only extras
+    return statTop(true)
       + `<div class="addhd">+ the kick-ons</div>`
-      + tilesRow([["Days survived",S.day,"zone"],["Degen",fmt(S.degen),"zone"],["Total legend",fmt(S.legend),"amber"]])
+      + tilesRow([["Days survived",S.day,"zone"],["Degen",fmt(S.degen),"zone"]])
       + rankRow(`<span>Degen rank <b class="zone">${degenRank(S.degen)}</b></span>`);
   }
-  return nightBlock();
+  return statTop(false);  // night-only
 }
 function receiptHtml(){
   const c=S.counts;
@@ -1083,7 +1171,7 @@ function offerKickonDone(c){
 function startKickons(){
   S.kickon=true; S.over=false; S.venue=KICKON;
   S.day=1; S.dayEndTick=S.tick+DAY_LEN;
-  S.nightLegend=S.legend; S.aftersStart=S.tick;
+  S.nightLegend=S.legend; S.nightBoys=boysUp(); S.nightPeak=S.peakBuzz; S.nightBill=S.bill; S.aftersStart=S.tick;
   S.buzz=Math.max(S.buzz,30); S.heat=Math.max(0,S.heat-20);
   $("overlay").classList.remove("show");
   renderSpot(); renderBar();
@@ -1102,7 +1190,8 @@ function step(){
   for(const k in S.cds) if(S.cds[k]>0)S.cds[k]--;
   if(S.walking>0){ S.walking--; buzz(-2);
     if(S.walking===0){
-      if(S.pendingConflict!=null){ const idx=S.pendingConflict; S.pendingConflict=null; securityConflict(idx); paint(); return; }
+      if(S.pendingConflict!=null){ const idx=S.pendingConflict; S.pendingConflict=null; S.pendingQuiz=null; securityConflict(idx); paint(); return; }
+      if(S.pendingQuiz){ const qid=S.pendingQuiz; S.pendingQuiz=null; say("Arrived at "+VENUES[S.venue].n+" — but "+boy(qid).n+" is stuck at the door.","hot"); bouncerQuiz(qid); paint(); return; }
       say("Arrived at "+VENUES[S.venue].n+".","gd");
     }
   }
@@ -1120,7 +1209,8 @@ function step(){
     S.mdTicks--;
     if(S.mdTicks===10) pingerLands();
     if(S.mdTicks===0){
-      if(S.mdOD){ S.mdOD=false; buzz(-28); if(S.buzz>55 && Math.random()<.5) S.seated=5; say("The comedown off that monster lands like a repossession order — jaw unclenches, soul briefly departs. You need to sit down. You are, in fact, already sitting down.","bad"); }
+      if(S.mdSmooth){ S.mdSmooth=false; buzz(-8); say("The pinger eases off gently, cushioned by the ket. No crash — just a soft landing and a stupid, grateful grin.","gd"); }
+      else if(S.mdOD){ S.mdOD=false; buzz(-28); if(S.buzz>55 && Math.random()<.5) S.seated=5; say("The comedown off that monster lands like a repossession order — jaw unclenches, soul briefly departs. You need to sit down. You are, in fact, already sitting down.","bad"); }
       else { buzz(-18); say("The comedown arrives like a tax invoice. Jaw finally relaxes.","bad"); }
     }
   }
@@ -1190,6 +1280,7 @@ function step(){
   if(S.bunkered){
     if(S.walking>0){ paint(); return; }
     if(S.takeover){
+      if(S.counterCd>0)S.counterCd--;
       if(S.buzz>=40 && S.seated===0) S.allegiance += 4 + Math.floor(boysUp()/2) + Math.floor(S.buzz/12); // the movement feeds on the party
       if(S.milestone>=5) heat(-5);                                       // near-global: the authorities ARE the party now, untouchable
       else if(S.milestone>=1 && Math.random()<.25) heat(2+S.milestone+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
@@ -1198,8 +1289,11 @@ function step(){
         const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
       }
       if(S.milestone>=MILESTONES.length && S.allegiance>=GLOBAL_AT){ globalGovEnd(); paint(); return; }
+      // counterinsurgency — the still-free world fights back between milestones; you must manage it
+      if(S.milestone>=2 && S.milestone<7 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
     } else {
       if(S.tick>=84){ S.takeover=true; takeoverEvent(); paint(); return; } // 2am
+      if(S.buzz>68 && S.ambientCd<=0 && Math.random()<.08){ S.ambientCd=2; heat(5); say("A neighbour in the quiet street leans over the fence: 'This is a bowls club, not a nightclub.' Fair. Noted. Roundly ignored.","bad"); }
       S.eventCd--;
       if(S.eventCd<=0){ S.eventCd=8+Math.floor(Math.random()*5);
         const be=EVENTS.filter(e=>e.at==="bowlo" && !e.used && (!e.c||e.c()));
@@ -1212,7 +1306,7 @@ function step(){
       else endScreen("SHUT DOWN AT THE BOWLO","Before the movement could find its feet, the noise complaints won — the council, the cops, and a very determined man in a dressing gown. A beautiful idea, twenty minutes too early.",false,false);
       paint();return;
     }
-    if(S.buzz<=0 && S.tick>6){ endScreen("THE FIZZLE","A global movement needs a heartbeat, and yours flatlined. The sesh cannot run on an empty host. The streams cut out one by one and Tuart Hill quietly goes back to being Tuart Hill.",false,false); paint(); return; }
+    if(S.buzz<=0 && S.tick>6){ endScreen("THE FIZZLE","A global movement needs a heartbeat, and yours flatlined. The sesh cannot run on an empty host. The streams cut out one by one and North Perth quietly goes back to being North Perth.",false,false); paint(); return; }
     if(boysUp()<=2){ endScreen("LEADERSHIP VACUUM","The founding cabinet has been lost to taxis and beanbags. A movement of billions cannot run on two blokes. It dissolves as fast as it formed — into folklore and a very confused Monday.",false,false); paint(); return; }
     paint(); return;
   }
