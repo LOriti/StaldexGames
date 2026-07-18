@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow" />
+<title>SEND IT — scoresheet options</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d0b14; --panel:#171224; --panel2:#1f1930; --line:#2c2340;
+  --text:#ece7f2; --dim:#9a90b0;
+  --neon:#ff2e88; --amber:#ffb347; --zone:#2ee6a8; --danger:#ff5252; --klr:#7c5cff;
+  --disp:"Fraunces",serif; --body:"Inter",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:var(--body);padding:18px 14px 40px;max-width:1100px;margin:0 auto;-webkit-tap-highlight-color:transparent}
+.head{margin-bottom:6px}
+.head h1{font-family:var(--disp);font-weight:900;font-size:clamp(22px,5vw,32px);color:var(--neon);text-shadow:0 0 5px rgba(255,46,136,.85),0 0 18px rgba(255,46,136,.45)}
+.head p{color:var(--dim);font-size:13.5px;line-height:1.55;margin-top:6px;max-width:640px}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-top:18px}
+.cap{font-size:12.5px;color:var(--dim);margin-bottom:7px;font-weight:600}
+.cap b{color:var(--zone)}
+.scr{background:var(--panel);border:1px solid var(--line);border-radius:13px;padding:16px}
+.win{font-family:var(--disp);font-weight:900;font-size:21px;color:var(--zone);margin-bottom:12px}
+.tog{display:flex;gap:6px;margin-bottom:12px}
+.tg{flex:1;text-align:center;padding:7px 4px;font-size:12px;font-weight:700;border-radius:8px;background:var(--panel2);border:1px solid var(--line);color:var(--dim)}
+.tg.on{background:var(--neon);color:var(--ink);border-color:var(--neon)}
+.blk{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:10px 12px;margin-bottom:10px}
+.bt{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:7px}
+.r{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;padding:4px 0;border-top:1px solid var(--line)}
+.r:first-of-type{border-top:0}
+.r .l{color:var(--dim)}
+.r .v{font-weight:700}
+.amber{color:var(--amber)}.zone{color:var(--zone)}.danger{color:var(--danger)}
+.hero{text-align:center;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:18px 10px;margin-bottom:11px}
+.heroLbl{font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim)}
+.heroNum{font-family:var(--disp);font-weight:900;font-size:56px;line-height:1.03;color:var(--amber);margin:5px 0}
+.heroRank{font-size:13.5px}
+.mini{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:13.5px;color:var(--dim);justify-content:center}
+.mini b{color:var(--text)}
+.tiles{display:grid;grid-template-columns:repeat(3,1fr);gap:7px}
+.tile{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 4px;text-align:center}
+.tile .tl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
+.tile .tv{font-family:var(--disp);font-weight:900;font-size:21px;margin-top:3px}
+.rankline{text-align:center;font-size:12.5px;color:var(--dim);margin-top:10px}
+.rcpt{background:#f4f1e8;color:#1a1710;border-radius:6px;padding:15px 17px;font-family:ui-monospace,Menlo,Consolas,monospace;font-size:13px;line-height:1.7}
+.rc-h{font-weight:700;text-align:center;font-size:14px;letter-spacing:.05em}
+.rc-sub{text-align:center;color:#6b6357;font-size:11px;margin-bottom:8px}
+.rc-d{color:#b7ab97;letter-spacing:.08em;overflow:hidden;white-space:nowrap}
+.rc-l{display:flex;justify-content:space-between}
+.rc-b{font-weight:700}
+.rc-f{text-align:center;color:#6b6357;font-size:11px;margin-top:9px}
+.g{min-width:32px;text-align:center;padding:2px 8px;border-radius:6px;font-weight:700;font-size:13.5px}
+.g.a{background:rgba(46,230,168,.16);color:var(--zone)}
+.g.b{background:rgba(255,179,71,.16);color:var(--amber)}
+.g.c{background:rgba(154,144,176,.16);color:var(--dim)}
+.g.f{background:rgba(255,82,82,.16);color:var(--danger)}
+.overall{text-align:center;font-size:13.5px;margin-top:12px}
+</style>
+</head>
+<body>
+<div class="head">
+<h1>Scoresheet options</h1>
+<p>Five ways to format the end-of-night screen, same sample run (a three-day kick-on). Tell me which one — or a hybrid — and I'll build it into the real game.</p>
+</div>
+
+<div class="grid">
+
+<div>
+<div class="cap">1 — Stat blocks <b>(current)</b></div>
+<div class="scr">
+<div class="win">Three days</div>
+<div class="tog"><div class="tg">Night</div><div class="tg on">Night + Kick-ons</div></div>
+<div class="blk"><div class="bt">The night</div>
+<div class="r"><span class="l">Legend</span><span class="v amber">1,180</span></div>
+<div class="r"><span class="l">Boys standing</span><span class="v">6/8</span></div>
+<div class="r"><span class="l">Peak buzz</span><span class="v">96</span></div>
+<div class="r"><span class="l">Card bill</span><span class="v danger">$487</span></div>
+<div class="r"><span class="l">Rank</span><span class="v">Certified folk hero</span></div>
+</div>
+<div class="blk"><div class="bt">The kick-ons</div>
+<div class="r"><span class="l">Days survived</span><span class="v zone">3</span></div>
+<div class="r"><span class="l">Degen score</span><span class="v zone">556</span></div>
+<div class="r"><span class="l">Total legend</span><span class="v amber">2,010</span></div>
+<div class="r"><span class="l">Degen rank</span><span class="v zone">Feral</span></div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="cap">2 — Hero number</div>
+<div class="scr">
+<div class="win">Three days</div>
+<div class="hero">
+<div class="heroLbl">Total legend</div>
+<div class="heroNum">2,010</div>
+<div class="heroRank">Certified folk hero</div>
+</div>
+<div class="mini"><span><b class="zone">556</b> degen</span><span><b>3</b> days</span><span><b>6/8</b> standing</span><span><b>96</b> peak</span><span><b class="danger">$487</b> bill</span></div>
+</div>
+</div>
+
+<div>
+<div class="cap">3 — Stat tiles</div>
+<div class="scr">
+<div class="win">Three days</div>
+<div class="tiles">
+<div class="tile"><div class="tl">Legend</div><div class="tv amber">2,010</div></div>
+<div class="tile"><div class="tl">Degen</div><div class="tv zone">556</div></div>
+<div class="tile"><div class="tl">Days</div><div class="tv">3</div></div>
+<div class="tile"><div class="tl">Boys</div><div class="tv">6/8</div></div>
+<div class="tile"><div class="tl">Peak buzz</div><div class="tv">96</div></div>
+<div class="tile"><div class="tl">Bill</div><div class="tv danger">$487</div></div>
+</div>
+<div class="rankline">Certified folk hero &nbsp;·&nbsp; Feral</div>
+</div>
+</div>
+
+<div>
+<div class="cap">4 — Bar receipt</div>
+<div class="scr">
+<div class="rcpt">
+<div class="rc-h">NORTHBRIDGE BUCKS NIGHT</div>
+<div class="rc-sub">Leroy's flat — 9:12am, day 3</div>
+<div class="rc-d">------------------------------</div>
+<div class="rc-l"><span>Schooners x14</span><span>$126</span></div>
+<div class="rc-l"><span>Racks x2</span><span>$120</span></div>
+<div class="rc-l"><span>Bucko's tattoo</span><span>$120</span></div>
+<div class="rc-l"><span>Rounds &amp; the rest</span><span>$121</span></div>
+<div class="rc-d">------------------------------</div>
+<div class="rc-l rc-b"><span>CARD BILL</span><span>$487</span></div>
+<div class="rc-d">------------------------------</div>
+<div class="rc-l"><span>Legend earned</span><span>2,010</span></div>
+<div class="rc-l"><span>Degen score</span><span>556</span></div>
+<div class="rc-l"><span>Days survived</span><span>3</span></div>
+<div class="rc-d">------------------------------</div>
+<div class="rc-l rc-b"><span>RANK</span><span>FOLK HERO</span></div>
+<div class="rc-f">keep this receipt for the divorce</div>
+</div>
+</div>
+</div>
+
+<div>
+<div class="cap">5 — Report card</div>
+<div class="scr">
+<div class="win">Three days</div>
+<div class="blk">
+<div class="r"><span class="l">Legend</span><span class="g a">A</span></div>
+<div class="r"><span class="l">Degeneracy</span><span class="g b">B+</span></div>
+<div class="r"><span class="l">Survival · 3 days</span><span class="g a">A+</span></div>
+<div class="r"><span class="l">Squad care · 6/8</span><span class="g c">C</span></div>
+<div class="r"><span class="l">Financials · $487</span><span class="g f">F</span></div>
+</div>
+<div class="overall">Overall <b class="zone">A&minus;</b> &nbsp;·&nbsp; Certified folk hero</div>
+</div>
+</div>
+
+</div>
+</body>
+</html>
