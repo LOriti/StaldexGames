@@ -840,11 +840,31 @@ const MILESTONES=[
  {at:1360, t:"The last hold-out",
   p:"Continent by continent, the planet gets on it. Polar research stations are streaming in. The Space Station has requested the aux. One single hold-out remains — a man in a landlocked office somewhere — the last person on Earth not on the sesh. And even he is tapping his foot.",
   o:[["Send him a personal invite",()=>{ leg(30); S.allegiance+=26; say("You send the last hold-out a handwritten invitation via the ISS. He reads it, sighs, loosens his tie, and cracks a warm can he's kept in his drawer since 2019. The planet is unanimous.","leg"); }]]},
+ {at:1760, t:"The ratification",
+  p:"It comes to a vote. The whole species, at once, live: shall we formally become the Doof Republic? The old powers make their final stand — spreadsheets, warnings, a man in a grey suit who has never in his life danced. The result is on a knife-edge. The free world is not going quietly, and the party is not yet won.",
+  o:[["Let the music make the argument",()=>{ leg(30); S.allegiance+=45; say("You don't counter the grey suit with words. You drop the track. Eight billion people move as one, and the man in the grey suit — watching, appalled — feels his own foot begin, against a lifetime of training, to tap. The vote swings.","leg"); }],
+     ["Hand the mic to Bucko",()=>{ if(Math.random()<.7){ leg(26); S.allegiance+=70; say("Bucko takes the mic and says, simply: 'I just wanted a good night with the boys. Look what we did.' The planet votes yes through tears.","leg"); } else { heat(16); say("Bucko freezes. Dead air, planet-wide, for eight excruciating seconds. The grey suit smells blood. You'll have to win this one the hard way now.","bad"); } }]]},
 ];
-const GLOBAL_AT=1700;
+const GLOBAL_AT=2250;
 function globalGovEnd(){
-  const body="A single, synchronised dawn breaks over a planet that has — overnight, from a bowling club in North Perth — formed its first ever GLOBAL PARTY GOVERNMENT. There is no more war; everyone is far too busy. The economy is snags and goodwill. You, holding a warm cup on a suburban bowling green, are the accidental head of a united human race. Bucko still has to be at the church by 3pm.";
-  endScreen("THE GLOBAL PARTY GOVERNMENT", body, true, false);
+  S.running=false;
+  const beats=[
+    "The world has voted. Every nation, every island, the research stations and the space station — unanimous. The Doof Republic is ratified. From a lawn bowls club in North Perth, humanity has finally agreed, formally and forever, to just have a really good time together.",
+    "Governance is simple now. Parliament is a sound system. Policy is proposed by DJ and passed by cheer. Leroy runs the treasury — a single spreadsheet of who owes who a round — and it balances. It always, somehow, balances.",
+    "War is over; everyone is far too busy and far too fond of each other. Borders are just the place where one party meets another. The economy runs on snags, goodwill, and the iron law that you always look after the person next to you.",
+    "There is one law, written on a beer coaster and framed in the old UN building: 'Look after each other, and don't be a dickhead.' It has never once needed amending.",
+    "Robin is the Republic's first Poet Laureate of the Drop. Pickles — still learning, always learning — plays the sunrise set from the ISS, which now has genuinely excellent aux. Bucko got to the church by 3pm and married the love of his life in front of eight billion people and one very tired best man. The reception is ongoing. It will not end.",
+    "And you: on a bowling green, a warm cup in your hand, the accidental head of a united and dancing human race. You went out for a bucks night. You came home with a better world. Send it. Forever.",
+  ];
+  let i=0; const c=$("card");
+  function show(){
+    c.innerHTML=`<h2 style="color:var(--zone)">The Doof Republic</h2><p>${beats[i]}</p>`;
+    const b=document.createElement("button"); b.className="big";
+    b.textContent = i<beats.length-1 ? "Read on →" : "See how it all tallied";
+    b.onclick=()=>{ i++; if(i<beats.length) show(); else endScreen("THE DOOF REPUBLIC","One night out. One bowls club. One better world. Here's how it tallied — though some numbers were never the point.",true,false); };
+    c.appendChild(b); $("overlay").classList.add("show");
+  }
+  show();
 }
 
 /* ---------------- endings ---------------- */
@@ -1090,7 +1110,7 @@ function reelHtml(){
 }
 function rank(v){ return v>=1000?"CERTIFIED FOLK HERO": v>=600?"ABSOLUTE WEAPON": v>=300?"GOOD SOLDIER": v>=120?"PARTICIPANT":"DESIGNATED DISAPPOINTMENT"; }
 function degenRank(d){ return d>=900?"UNGOVERNABLE": d>=500?"FERAL": d>=250?"CERTIFIED DEGEN": d>=100?"LOOSE UNIT":"MERELY KEEN"; }
-function movementRank(a){ return a>=1500?"GLOBAL GOVERNMENT": a>=760?"CONTINENTAL": a>=360?"NATIONAL": a>=95?"CITYWIDE": a>=25?"GONE VIRAL":"LOCAL LEGEND"; }
+function movementRank(a){ return a>=2250?"THE DOOF REPUBLIC": a>=1360?"PLANETARY": a>=560?"MULTINATIONAL": a>=200?"CITYWIDE": a>=90?"GONE VIRAL":"LOCAL LEGEND"; }
 function fmt(n){ return Math.round(n).toLocaleString("en-US"); }
 function tilesRow(t){ return `<div class="stiles">`+t.map(x=>`<div class="stile"><div class="tl">${x[0]}</div><div class="tv ${x[2]||''}">${x[1]}</div></div>`).join("")+`</div>`; }
 function rankRow(h){ return `<div class="rankstrip">${h}</div>`; }
@@ -1282,15 +1302,15 @@ function step(){
     if(S.takeover){
       if(S.counterCd>0)S.counterCd--;
       if(S.buzz>=40 && S.seated===0) S.allegiance += 4 + Math.floor(boysUp()/2) + Math.floor(S.buzz/12); // the movement feeds on the party
-      if(S.milestone>=5) heat(-5);                                       // near-global: the authorities ARE the party now, untouchable
-      else if(S.milestone>=1 && Math.random()<.25) heat(2+S.milestone+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
+      if(S.milestone>=6) heat(-5);                                       // near-global: the authorities ARE the party now, untouchable
+      else if(S.milestone>=1 && Math.random()<.25) heat(2+Math.floor(S.milestone/2)+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
       if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id,"tapped out at the bowlo","One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
       if(S.milestone<MILESTONES.length && S.allegiance>=MILESTONES[S.milestone].at){
         const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
       }
       if(S.milestone>=MILESTONES.length && S.allegiance>=GLOBAL_AT){ globalGovEnd(); paint(); return; }
       // counterinsurgency — the still-free world fights back between milestones; you must manage it
-      if(S.milestone>=2 && S.milestone<7 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
+      if(S.milestone>=2 && S.milestone<8 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
     } else {
       if(S.tick>=84){ S.takeover=true; takeoverEvent(); paint(); return; } // 2am
       if(S.buzz>68 && S.ambientCd<=0 && Math.random()<.08){ S.ambientCd=2; heat(5); say("A neighbour in the quiet street leans over the fence: 'This is a bowls club, not a nightclub.' Fair. Noted. Roundly ignored.","bad"); }
