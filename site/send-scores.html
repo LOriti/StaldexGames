@@ -58,13 +58,50 @@ body{background:var(--ink);color:var(--text);font-family:var(--body);padding:18p
 .g.c{background:rgba(154,144,176,.16);color:var(--dim)}
 .g.f{background:rgba(255,82,82,.16);color:var(--danger)}
 .overall{text-align:center;font-size:13.5px;margin-top:12px}
+.feature{max-width:560px;margin:20px auto 4px}
+.feature .cap{font-size:13px}
+.tiles.four{grid-template-columns:repeat(auto-fit,minmax(112px,1fr))}
+.rankstrip{display:flex;flex-wrap:wrap;gap:8px 18px;justify-content:center;margin-top:13px;font-size:13px;color:var(--dim)}
+.rankstrip b{color:var(--text)}
+.rankstrip b.zone{color:var(--zone)}
+.sechd{font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--dim);margin:30px 0 2px;text-align:center}
 </style>
 </head>
 <body>
 <div class="head">
 <h1>Scoresheet options</h1>
-<p>Five ways to format the end-of-night screen, same sample run (a three-day kick-on). Tell me which one — or a hybrid — and I'll build it into the real game.</p>
+<p>The merge you asked for is up top (tiles + receipt + blocks). The five originals are below for reference. Tell me any tweaks and I'll build it into the real game.</p>
 </div>
+
+<div class="feature">
+<div class="cap">The merge — tiles + receipt + blocks <b>(1 + 3 + 4)</b></div>
+<div class="scr">
+<div class="win">Three days</div>
+<div class="tog"><div class="tg">Night</div><div class="tg on">Night + Kick-ons</div></div>
+<div class="tiles four">
+<div class="tile"><div class="tl">Total legend</div><div class="tv amber">2,010</div></div>
+<div class="tile"><div class="tl">Degen</div><div class="tv zone">556</div></div>
+<div class="tile"><div class="tl">Days</div><div class="tv">3</div></div>
+<div class="tile"><div class="tl">Peak buzz</div><div class="tv">96</div></div>
+</div>
+<div class="rcpt" style="margin-top:12px">
+<div class="rc-h">NORTHBRIDGE BUCKS NIGHT</div>
+<div class="rc-sub">Leroy's flat — 9:12am, day 3</div>
+<div class="rc-d">------------------------------</div>
+<div class="rc-l"><span>Schooners x14</span><span>$126</span></div>
+<div class="rc-l"><span>Shots x6</span><span>$54</span></div>
+<div class="rc-l"><span>Racks x2 · Pinger x1</span><span>$150</span></div>
+<div class="rc-l"><span>Bucko's tattoo</span><span>$120</span></div>
+<div class="rc-l"><span>Kebabs x3</span><span>$37</span></div>
+<div class="rc-d">------------------------------</div>
+<div class="rc-l rc-b"><span>CARD BILL</span><span>$487</span></div>
+<div class="rc-f">keep this receipt for the divorce</div>
+</div>
+<div class="rankstrip"><span>Rank <b>Certified folk hero</b></span><span>Degen <b class="zone">Feral</b></span><span>Boys <b>6/8</b></span></div>
+</div>
+</div>
+
+<div class="sechd">the five originals</div>
 
 <div class="grid">
 
