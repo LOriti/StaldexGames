@@ -763,29 +763,44 @@ function fireBunker(){
 /* Counterinsurgency — the still-free world fights the sesh. Manage it: defuse safely,
    or gamble for allegiance. Mishandle it and the heat climbs toward THE COUP. */
 const COUNTER=[
- {t:"The task force",p:"The nations not yet on the sesh have sent a joint task force to the perimeter of the green — shields, floodlights, a man with a megaphone reading rules. The free world has arrived to shut you down.",
-  o:[["Send Jez out with a tray of cold ones",()=>{ leg(12); heat(-6); say("Jez walks a tray to the barricade. The commander tastes one, sighs, radios 'stand down', and quietly asks for another. Defused, tradesman to tradesman.","leg"); }],
-     ["Turn every camera on them, live",()=>{ if(Math.random()<.6){ S.allegiance+=45; leg(10); say("Ten million viewers watch the task force decide, live, not to be the villains of history. Shields lower. Then, eventually, inhibitions.","leg"); } else { heat(16); say("The task force does not enjoy being filmed. They move in harder — the barricade holds, just, but the heat is on.","bad"); } }]]},
- {t:"The smear campaign",p:"The old-world media has launched a coordinated smear: you're 'just a mess', 'a public health emergency', 'a bloke on a bowling green'. That last one is admittedly true. Public opinion wobbles.",
+ /* --- tier 1: the free world underestimates you --- */
+ {min:2, max:3, t:"A strongly worded letter",p:"The free world's opening move against a movement of millions is a letter. On letterhead. It asks you, respectfully, to please stop. There is a reference number. They have badly misread the room.",
+  o:[["Read it aloud to the crowd",()=>{ leg(12); S.allegiance+=25; say("You read the reference number out to a crowd of thousands. The laughter is heard from space. The letter is framed, then immediately crowd-surfed.","leg"); }],
+     ["Have Leroy draft a courteous reply",()=>{ leg(8); heat(-4); say("Leroy's reply is so polite and so unhelpful it will be studied in law schools. The bureaucrats, disarmed, quietly escalate to a committee.","leg"); }]]},
+ {min:2, max:3, t:"One officer, one clipboard",p:"They've sent a single council noise officer to shut the whole thing down. He arrives, takes in the scale of it, and you watch the exact moment his clipboard stops feeling like enough.",
+  o:[["Make him an honorary member",()=>{ leg(14); S.allegiance+=30; heat(-5); say("You hand him a drink and a hi-vis with MOVEMENT on the back. He radios in 'situation ongoing' and does not leave. He and Barry are inseparable by dawn.","leg"); }],
+     ["Let him write his report",()=>{ heat(5); say("He writes furiously. The report, filed at first light, runs seven pages and concludes 'we should not antagonise them.' His superiors read it and decide to antagonise them.","hot"); }]]},
+ /* --- tier 2: the plot thickens a little --- */
+ {min:3, max:4, t:"The smear campaign",p:"The old-world media has launched a coordinated smear: you're 'just a mess', 'a public health emergency', 'a bloke on a bowling green'. That last one is admittedly true. Public opinion wobbles.",
   o:[["Let Leroy run counter-comms",()=>{ leg(12); heat(-4); say("Leroy's rebuttal is airtight: grandmothers dancing, the sausage supply lines, Bucko crying with joy. The smear collapses into a wholesome documentary.","leg"); }],
      ["Ignore it, keep dancing",()=>{ if(Math.random()<.5){ S.allegiance+=25; say("You don't dignify it. The movement's too busy to notice and the media, starved of a reaction, moves on.","gd"); } else { heat(12); say("Left unanswered, the smear sticks. Waverers waver. The crackdown finds fresh appetite.","bad"); } }]]},
- {t:"They cut the power",p:"Sabotage. The PA dies, the disco lights die, the stream cuts to black. For one held breath there is total silence on the green. The whole thing is one bad minute from over.",
-  o:[["Robin and Pickles go fully acoustic",()=>{ leg(16); say("Robin starts a beat on an empty keg, Pickles finds the melody, and the entire green sings the set from memory in the dark. You cannot cut the power to this. Unkillable.","leg"); }],
-     ["Scramble for the backup generator",()=>{ if(Math.random()<.6){ leg(8); say("Leroy, of course, has a generator. The lights snap back to a roar. Sabotage: failed.","leg"); } else { heat(9); buzz(-4); say("The genny won't start. Twenty dark minutes bleed momentum before someone jiggles a wire. Close one.","bad"); } }]]},
- {t:"The sober resistance",p:"An organised resistance has formed: people who simply want everyone to go to bed. They are well-rested, they are correct, and they are, therefore, terrifying. Their leader has a clipboard.",
+ {min:3, max:4, t:"The sober resistance",p:"An organised resistance has formed: people who simply want everyone to go to bed. They are well-rested, they are correct, and they are, therefore, terrifying. Their leader has a clipboard.",
   o:[["Convert their leader",()=>{ if(Math.random()<.6){ S.allegiance+=45; leg(12); say("You hand him one perfect drink and a genuine hug. He blinks, exhales eleven years of stress, and defects. His followers follow. The opposition is now the party.","leg"); } else { heat(6); say("He is immune to the hug. He files paperwork. Somewhere, a form is being processed against you.","bad"); } }],
      ["Out-chant them",()=>{ heat(7); leg(6); say("You lead a chant so devastatingly catchy they can't be heard over it. They retreat — but retreat angry, and angry people make phone calls.","hot"); }]]},
- {t:"Special forces at the fence",p:"This is the big one. Actual special forces, actual helmets, at the fence line, awaiting an order. The still-free world is deciding, right now, whether to raid a party of billions.",
-  o:[["Form a human wall of goodwill",()=>{ if(S.allegiance>400 && Math.random()<.7){ leg(18); heat(-8); say("A thousand joined hands and one livestream later, no government on earth will give the order. The soldiers stand down and, one by one, remove their helmets and their shoes.","leg"); } else { heat(15); say("The wall holds, but the optics are knife-edge. Somewhere a finger hovers near a button. Do not push it.","bad"); } }],
-     ["Dare them, on camera",()=>{ if(Math.random()<.4){ S.allegiance+=60; say("You dare them, live, to raid a party of billions. They cannot. They will not. The bluff is the single biggest flex in human history.","leg"); } else { heat(20); say("They call the bluff. Boots on the green. This is very nearly the end of everything.","bad"); } }]]},
- {t:"A rival counter-sesh",p:"A hold-out nation has started a competing party specifically to split your movement — a counter-sesh, cynical and well-funded, siphoning off the undecided.",
+ /* --- tier 3: a coordinated response --- */
+ {min:4, max:5, t:"The task force",p:"The nations not yet on the sesh have sent a joint task force to the perimeter of the green — shields, floodlights, a man with a megaphone reading rules. They've stopped underestimating you. This is coordinated.",
+  o:[["Send Jez out with a tray of cold ones",()=>{ leg(12); heat(-6); say("Jez walks a tray to the barricade. The commander tastes one, sighs, radios 'stand down', and quietly asks for another. Defused, tradesman to tradesman.","leg"); }],
+     ["Turn every camera on them, live",()=>{ if(Math.random()<.6){ S.allegiance+=45; leg(10); say("Ten million viewers watch the task force decide, live, not to be the villains of history. Shields lower. Then, eventually, inhibitions.","leg"); } else { heat(16); say("The task force does not enjoy being filmed. They move in harder — the barricade holds, just, but the heat is on.","bad"); } }]]},
+ {min:4, max:5, t:"They cut the power",p:"Sabotage. The PA dies, the disco lights die, the stream cuts to black. For one held breath there is total silence on the green. The whole thing is one bad minute from over.",
+  o:[["Robin and Pickles go fully acoustic",()=>{ leg(16); say("Robin starts a beat on an empty keg, Pickles finds the melody, and the entire green sings the set from memory in the dark. You cannot cut the power to this. Unkillable.","leg"); }],
+     ["Scramble for the backup generator",()=>{ if(Math.random()<.6){ leg(8); say("Leroy, of course, has a generator. The lights snap back to a roar. Sabotage: failed.","leg"); } else { heat(9); buzz(-4); say("The genny won't start. Twenty dark minutes bleed momentum before someone jiggles a wire. Close one.","bad"); } }]]},
+ {min:4, max:5, t:"A rival counter-sesh",p:"A hold-out nation has started a competing party specifically to split your movement — a counter-sesh, cynical and well-funded, siphoning off the undecided.",
   o:[["Absorb them into the movement",()=>{ leg(14); S.allegiance+=35; say("You don't fight the rival sesh — you invite it. Two parties become one bigger party, as parties always should. Their leader is given a hat and a role and is thrilled.","leg"); }],
      ["Out-party them",()=>{ if(Math.random()<.55){ S.allegiance+=50; leg(10); say("A sesh-off. Yours is simply better — more heart, more snags, a superior DJ in Robin. The rival packs it in and joins you by sunrise.","leg"); } else { heat(10); buzz(-3); say("The sesh-off drags. The energy splits. For an hour it's genuinely unclear who's winning, and unclear is dangerous.","bad"); } }]]},
+ /* --- tier 4: the plots get genuinely thick --- */
+ {min:5, t:"The mole",p:"Intel is leaking. Someone in the cabinet on the seventh green is feeding the free world your every move. The plots have thickened all the way to this: there is a mole among the boys.",
+  o:[["Feed the mole a fake plan",()=>{ if(Math.random()<.65){ leg(20); S.allegiance+=50; say("You let a fake plan 'slip' and watch which lie comes back. The mole outs himself — a bloke named Deano nobody remembers inviting. He is forgiven and, obviously, given a role.","leg"); } else { heat(14); say("The counter-intel backfires: the mole feeds them the REAL plan instead. A hard hour. Steady the ship.","bad"); } }],
+     ["Trust the boys, refuse the paranoia",()=>{ if(Math.random()<.5){ S.allegiance+=30; say("There was no mole — only paranoia, and you refused it. A movement built on trust holds because it trusts.","leg"); } else { heat(16); S.allegiance=Math.max(0,S.allegiance-80); say("There was, in fact, a mole. Trust was the wrong call this once, and it cost you a continent.","bad"); } }]]},
+ {min:5, t:"Special forces at the fence",p:"This is the big one. Actual special forces, actual helmets, at the fence line, awaiting an order. The still-free world is deciding, right now, whether to raid a party of billions.",
+  o:[["Form a human wall of goodwill",()=>{ if(S.allegiance>400 && Math.random()<.7){ leg(18); heat(-8); say("A thousand joined hands and one livestream later, no government on earth will give the order. The soldiers stand down and, one by one, remove their helmets and their shoes.","leg"); } else { heat(15); say("The wall holds, but the optics are knife-edge. Somewhere a finger hovers near a button. Do not push it.","bad"); } }],
+     ["Dare them, on camera",()=>{ if(Math.random()<.4){ S.allegiance+=60; say("You dare them, live, to raid a party of billions. They cannot. They will not. The bluff is the single biggest flex in human history.","leg"); } else { heat(20); say("They call the bluff. Boots on the green. This is very nearly the end of everything.","bad"); } }]]},
 ];
 function fireCounter(){
-  const avail=[]; for(let i=0;i<COUNTER.length;i++) if(!S.usedCounter.has(i)) avail.push(i);
-  if(!avail.length) return false;
-  const i=avail[Math.floor(Math.random()*avail.length)]; S.usedCounter.add(i);
+  const elig=[]; for(let i=0;i<COUNTER.length;i++){ const c=COUNTER[i]; if(!S.usedCounter.has(i) && (c.min||0)<=S.milestone && (c.max===undefined||S.milestone<=c.max)) elig.push(i); }
+  if(!elig.length) return false;
+  let maxMin=0; for(const i of elig) if((COUNTER[i].min||0)>maxMin) maxMin=COUNTER[i].min||0;
+  const top=elig.filter(i=>(COUNTER[i].min||0)===maxMin);   // fire the thickest plot still in its window
+  const i=top[Math.floor(Math.random()*top.length)]; S.usedCounter.add(i);
   showEvent(COUNTER[i]); return true;
 }
 /* Unavoidable derails — the free world lands a blow you cannot manage, and the odds rise the more
@@ -894,20 +909,22 @@ const MILESTONES=[
 const GLOBAL_AT=2250;
 function globalGovEnd(){
   S.running=false;
+  const bonus=Math.round(600 + S.allegiance/4); leg(bonus); S.degen+=500; S.foundersBonus=bonus; // founder's dividend
   const beats=[
     "The world has voted. Every nation, every island, the research stations and the space station — unanimous. The Doof Republic is ratified. From a lawn bowls club in North Perth, humanity has finally agreed, formally and forever, to just have a really good time together.",
     "Governance is simple now. Parliament is a sound system. Policy is proposed by DJ and passed by cheer. Leroy runs the treasury — a single spreadsheet of who owes who a round — and it balances. It always, somehow, balances.",
     "War is over; everyone is far too busy and far too fond of each other. Borders are just the place where one party meets another. The economy runs on snags, goodwill, and the iron law that you always look after the person next to you.",
     "There is one law, written on a beer coaster and framed in the old UN building: 'Look after each other, and don't be a dickhead.' It has never once needed amending.",
     "Robin is the Republic's first Poet Laureate of the Drop. Pickles — still learning, always learning — plays the sunrise set from the ISS, which now has genuinely excellent aux. Bucko got to the church by 3pm and married the love of his life in front of eight billion people and one very tired best man. The reception is ongoing. It will not end.",
-    "And you: on a bowling green, a warm cup in your hand, the accidental head of a united and dancing human race. You went out for a bucks night. You came home with a better world. Send it. Forever.",
+    "They wanted to name it after you. You wouldn't let them, so they named the day instead: every year, the whole planet stops, cracks one, and sends it in your honour. Statues of a bloke holding a warm cup have gone up on six continents and one moon. The history books need only one name for the Founder, and it is yours.",
+    "And you: on a bowling green, first cup of the rest of forever in your hand, the accidental head of a united and dancing human race. You went out for a bucks night. You came home with a better world. Send it. Forever.",
   ];
   let i=0; const c=$("card");
   function show(){
     c.innerHTML=`<h2 style="color:var(--zone)">The Doof Republic</h2><p>${beats[i]}</p>`;
     const b=document.createElement("button"); b.className="big";
-    b.textContent = i<beats.length-1 ? "Read on →" : "See how it all tallied";
-    b.onclick=()=>{ i++; if(i<beats.length) show(); else endScreen("THE DOOF REPUBLIC","One night out. One bowls club. One better world. Here's how it tallied — though some numbers were never the point.",true,false); };
+    b.textContent = i<beats.length-1 ? "Read on →" : "Take your place in history";
+    b.onclick=()=>{ i++; if(i<beats.length) show(); else endScreen("FOUNDER OF THE DOOF REPUBLIC","One night out. One bowls club. One better world — and a founder's dividend of "+fmt(bonus)+" legend for the small matter of uniting the species. Here's the tally, Founder, though some numbers were never the point.",true,false); };
     c.appendChild(b); $("overlay").classList.add("show");
   }
   show();
