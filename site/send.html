@@ -30,11 +30,14 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .sub{color:var(--dim);font-size:10px;letter-spacing:.12em;text-transform:uppercase;text-align:right}
 
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.stats.afters{grid-template-columns:repeat(4,1fr)}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:5px 8px;text-align:center}
+.stat.hidden{display:none}
 .stat .lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
 .stat .val{font-family:var(--disp);font-weight:900;font-size:18px}
 #legendVal{color:var(--amber)}
 #billVal{color:var(--danger)}
+#degenVal{color:var(--zone)}
 
 .gauge{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 10px}
 .gauge .row{display:flex;justify-content:space-between;font-size:10px;color:var(--dim);letter-spacing:.1em;text-transform:uppercase;margin-bottom:4px}
@@ -89,6 +92,9 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .card{background:var(--panel);border:1px solid var(--line);border-radius:13px;max-width:460px;width:100%;padding:18px;max-height:88vh;overflow-y:auto}
 .card h2{font-family:var(--disp);font-weight:900;font-size:22px;margin-bottom:7px;color:var(--neon)}
 .card p{color:var(--dim);font-size:13.5px;line-height:1.5;margin-bottom:12px}
+.card .tog{display:flex;gap:6px;margin:0 0 10px}
+.card .tog .tg{flex:1;width:auto;margin:0;padding:7px 4px;text-align:center;font-size:12px;font-weight:700;background:var(--panel2);border:1px solid var(--line);color:var(--dim)}
+.card .tog .tg.on{background:var(--neon);color:var(--ink);border-color:var(--neon)}
 .card .reel{margin:0 0 12px;padding:8px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px}
 .card .reel div{font-size:11px;color:var(--dim);line-height:1.5;margin-bottom:2px}
 .card .reel .rl{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--amber);margin-bottom:5px}
@@ -105,10 +111,11 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
   <div class="sub">One bucks night in Northbridge<br>last til sunrise</div>
 </header>
 
-<div class="stats">
+<div class="stats" id="statsRow">
   <div class="stat"><div class="lbl">Time</div><div class="val" id="clockVal">8:00pm</div></div>
   <div class="stat"><div class="lbl">Legend</div><div class="val" id="legendVal">0</div></div>
   <div class="stat"><div class="lbl">Card Bill</div><div class="val" id="billVal">$0</div></div>
+  <div class="stat hidden" id="degenStat"><div class="lbl">Degen</div><div class="val" id="degenVal">0</div></div>
 </div>
 
 <div class="gauge">
@@ -140,9 +147,10 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 const S = {
   tick:0, ticksTotal:120, running:false, over:false, kickon:false,
   buzz:0, heat:0, bill:0, billMark:0, legend:0, streak:0,
-  seated:0, dexTicks:0, mdTicks:0, cokeCrash:0, soakTicks:0,
+  seated:0, dexTicks:0, mdTicks:0, cokeTicks:0, ketTicks:0, soakTicks:0,
   venue:0, walking:0, arcPos:0, moveCd:13, ambientCd:0, started:false,
   day:1, dayEndTick:0, pendingConflict:null, usedChat:{}, usedChaos:new Set(),
+  degen:0, aftersStart:0, nightLegend:0,
   kCount:0, travisHole:0, rayDone:false, sandyCd:0,
   jezCd:14, robinCd:11, leroyCd:17, picklesCd:9,
   reel:[],
@@ -205,10 +213,13 @@ const ACTS=[
   {id:"shot", ico:"🥃", nm:"Shots",    base:10, cd:2,  gear:false, do:()=>{ buzz(+12); if(Math.random()<.25){leg(6);say("Tequila for the table. Someone bites the lime, skin-side. Legend behaviour.","leg");} else say("A shot vanishes. Your future self files a complaint.","gd"); }},
   {id:"water",ico:"💧", nm:"Water",    base:0,  cd:4,  gear:false, do:()=>{ buzz(-8); heat(-3); say("A tactical water. Genuinely elite move.","gd"); }},
   {id:"kebab",ico:"🥙", nm:"Kebab",    base:15, cd:10, gear:false, do:()=>{ S.soakTicks=10; heat(-3); say("Soakage acquired. The kebab slows the slide. Buzz decay halved for a bit.","gd"); }},
-  {id:"coke", ico:"❄️", nm:"Racks",    base:60, cd:10, gear:true,  do:()=>{ buzz(+20); S.cokeCrash=10; heatRisk(10,"A cubicle door with four sets of shoes under it draws attention."); say("Everyone in the cubicle is now an expert on cryptocurrency.","hot"); }},
-  {id:"md",   ico:"💊", nm:"Pinger",   base:30, cd:14, gear:true,  do:()=>{ S.mdTicks=14; buzz(+12); say("Pinger down. This song is suddenly the greatest song ever recorded. Legend ×2.","hot"); }},
-  {id:"k",    ico:"🐴", nm:"K",        base:35, cd:12, gear:true,  do:()=>{ buzz(+10); S.kCount++;
-      if(S.buzz>70 && Math.random()<.5){S.seated=5; say("You have taken a seat. The seat is now your entire universe.","bad");}
+  {id:"coke", ico:"❄️", nm:"Racks",    base:60, cd:10, gear:true,  do:()=>{ buzz(+20); S.cokeTicks=10; heatRisk(10,"A cubicle door with four sets of shoes under it draws attention.");
+      if(S.ketTicks>0){ leg(10); say("The rack lands on the ket and the whole night snaps into balance. Calibrated. Untouchable. This is the good stuff.","leg"); }
+      else say("Everyone in the cubicle is now an expert on cryptocurrency.","hot"); }},
+  {id:"md",   ico:"💊", nm:"Pinger",   base:30, cd:14, gear:true,  do:()=>{ S.mdTicks=16; buzz(+2); say("Pinger down. Nothing yet... but it's on its way up. Legend ×2 once it lands.","hot"); }},
+  {id:"k",    ico:"🐴", nm:"K",        base:35, cd:12, gear:true,  do:()=>{ buzz(+10); S.ketTicks=8; S.kCount++;
+      if(S.cokeTicks>0){ leg(10); say("The ket settles onto the coke like a saddle on a horse. You are, briefly, a functioning superbeing — no seat for you tonight.","leg"); }
+      else if(S.buzz>70 && Math.random()<.5){ S.seated=5; say("You have taken a seat. The seat is now your entire universe.","bad"); }
       else say("The room goes pleasantly diagonal.","hot");
       if(boy("travis").up && S.travisHole===0 && S.kCount>=4 && Math.random() < .25*(S.kCount-3)) travisEvent();
   }},
@@ -378,24 +389,24 @@ const EVENTS=[
 
 /* ---------------- ambient chatter (large pools, no repeats within a night) ---------------- */
 const JEZ_VENUE=[
- {x:"Jez vaults the bar at the Grass Monkey to save a drowning bartender; two minutes later the queue is gone and the table has staff drinks.", cls:"leg", leg:15},
- {x:"Jez clocks the Mustard Bar's new kid pulling foam and quietly shows him the tilt; the pints come good all night.", cls:"gd"},
- {x:"Jez gives the Connies bouncer the weary nod of one tradesman to another, and the whole standoff just evaporates.", cls:"gd", heat:-9},
+ {x:"Jez vaults the bar to save a drowning bartender; two minutes later the queue is gone and the table has staff drinks.", cls:"leg", leg:15},
+ {x:"Jez clocks the new kid behind the bar pulling foam and quietly shows him the tilt; the pints come good all night.", cls:"gd"},
+ {x:"Jez gives the bouncer the weary nod of one tradesman to another, and the whole standoff just evaporates.", cls:"gd", heat:-9},
  {x:"Jez free-pours a tray of eight identical rums with terrifying precision. The table goes reverently silent.", cls:"leg", leg:12},
- {x:"Jez knows the Sneaky Terry's bartender from a Christmas function in 2016, so the round arrives on the house.", cls:"gd", relieve:32},
+ {x:"Jez knows the bartender from a Christmas function in 2016, so the round arrives on the house.", cls:"gd", relieve:32},
  {x:"Jez is deep in a war story about a wedding, a seafood tower and a fire alarm. The table is in ruins.", cls:"hot"},
- {x:"Jez spots the Retro Shitty's till drawer jammed and fixes it one-handed without breaking his sentence.", cls:"gd"},
+ {x:"Jez spots the till drawer jammed and fixes it one-handed without breaking his sentence.", cls:"gd"},
  {x:"Jez talks the door manager down from an eviction with three flat words and a look that says he's seen worse. Heat gone.", cls:"gd", heat:-8},
  {x:"Jez calls the correct pour count on a mystery cocktail just by watching the bartender's wrist. Dead accurate.", cls:"hot", buzz:4},
- {x:"Jez slides behind the Grass Monkey bar during a rush and clears forty tickets before anyone notices he's not staff.", cls:"leg", leg:18},
+ {x:"Jez slides behind the bar during a rush and clears forty tickets before anyone notices he's not staff.", cls:"leg", leg:18},
  {x:"Jez sorts mates-rates on the whole round from a bartender he trained back in the day. The tab barely moves.", cls:"gd", relieve:38},
  {x:"Jez explains, unprompted, the correct way to change a keg, to a barman who did not ask. Educational.", cls:"hot"},
- {x:"Jez catches a tray about to go over at Mustard Bar, saves nine drinks, and hands it back without a word.", cls:"leg", leg:10},
+ {x:"Jez catches a tray about to go over, saves nine drinks, and hands it back without a word.", cls:"leg", leg:10},
  {x:"Jez tells the one about the New Year's shift where the EFTPOS died and the ice ran out at the same time. Grim poetry.", cls:"hot"},
  {x:"Jez tries to teach the boys the proper Guinness two-part pour and gets impatient with all of them. Slight tension.", cls:"bad", heat:6},
  {x:"Jez wades behind the taps to help, but the venue's manager clocks a non-staffie back there and gets shirty.", cls:"bad", heat:8},
- {x:"Jez corrects the Sneaky Terry's bartender on their own signature spec; the bartender was, annoyingly, wrong.", cls:"hot"},
- {x:"Jez recognises the Connies floor manager, and suddenly the boys have a booth they absolutely did not book.", cls:"leg", leg:13},
+ {x:"Jez corrects the bartender on their own signature spec; the bartender was, annoyingly, wrong.", cls:"hot"},
+ {x:"Jez recognises the floor manager, and suddenly the boys have a booth they absolutely did not book.", cls:"leg", leg:13},
 ];
 const JEZ_KICK=[
  {x:"Jez appraises Leroy's goon sack setup, sighs, and rigs a proper drip station off the Hills Hoist. Now it's a bar.", cls:"leg", leg:14},
@@ -409,23 +420,23 @@ const JEZ_KICK=[
  {x:"Jez watches the sun come up over the Hills Hoist, calls it the best knock-off he's had in years, and means it.", cls:"leg", leg:9},
 ];
 const ROBIN_VENUE=[
- {x:"Robin does a shoey out of Bucko's own shoe at the Grass Monkey and the whole front bar loses it.", cls:"leg", leg:16},
- {x:"Robin convinces a table of strangers at Mustard Bar that he's the cover band's retired original singer.", cls:"leg", leg:14},
- {x:"Robin starts beatbox unprompted in the Sneaky Terry's queue and a stranger drops a genuinely filthy verse over it.", cls:"hot", buzz:5},
+ {x:"Robin does a shoey out of Bucko's own shoe and the whole front bar loses it.", cls:"leg", leg:16},
+ {x:"Robin convinces a table of strangers he's the cover band's retired original singer.", cls:"leg", leg:14},
+ {x:"Robin starts beatboxing unprompted in the queue and a stranger drops a genuinely filthy verse over it.", cls:"hot", buzz:5},
  {x:"Robin changes Bucko's phone background to a photo of Bucko crying. Bucko won't notice for three venues.", cls:"hot"},
- {x:"Robin does a flawless impression of the Retro Shitty DJ, to the Retro Shitty DJ's face. The DJ loves it.", cls:"hot", buzz:4},
- {x:"Robin runs a fake raffle at the Grass Monkey and somehow the boys walk away with a genuine meat tray.", cls:"leg", leg:13},
+ {x:"Robin does a flawless impression of the DJ, to the DJ's face. The DJ loves it.", cls:"hot", buzz:4},
+ {x:"Robin runs a fake raffle at the bar and somehow the boys walk away with a genuine meat tray.", cls:"leg", leg:13},
  {x:"Robin does an impression of Jez telling a war story and even Jez has to look away, grinning.", cls:"hot"},
- {x:"Robin convinces half of Connies that tonight is his last night in Australia. There are tearful farewells. He lives here.", cls:"leg", leg:15},
+ {x:"Robin convinces half the room that tonight is his last night in Australia. There are tearful farewells. He lives here.", cls:"leg", leg:15},
  {x:"Robin orders a round in a fully committed fake Irish accent and the bartender plays along the entire time.", cls:"hot"},
- {x:"Robin's shoey bit goes one shoe too far and a bouncer at Connies is suddenly very interested in the group.", cls:"bad", heat:8},
+ {x:"Robin's shoey bit goes one shoe too far and a bouncer is suddenly very interested in the group.", cls:"bad", heat:8},
  {x:"Robin sets up an elaborate bit where Sandy 'wins' a fake trivia jackpot; Sandy nearly cries with joy.", cls:"hot"},
- {x:"Robin does a note-perfect impression of the Mustard Bar sound guy and briefly gets handed the actual mixing desk.", cls:"leg", leg:12},
- {x:"Robin gets a whole corner of Retro Shitty doing a synchronised move he invented ninety seconds ago.", cls:"leg", leg:11},
+ {x:"Robin does a note-perfect impression of the venue's sound guy and briefly gets handed the actual mixing desk.", cls:"leg", leg:12},
+ {x:"Robin gets a whole corner of the dance floor doing a synchronised move he invented ninety seconds ago.", cls:"leg", leg:11},
  {x:"Robin's fake magic trick at the bar knocks a full pint into a stranger's lap. Free drink owed, mood dented.", cls:"bad", heat:7},
  {x:"Robin swaps Travis's ringtone to an airhorn and calls him from the toilet to test it. It works spectacularly.", cls:"hot", buzz:3},
  {x:"Robin talks a hen's night into believing the boys are a visiting rugby team. Photos are taken. Names are invented.", cls:"leg", leg:14},
- {x:"Robin does the worm across the Retro Shitty floor and finishes exactly on the drop like he planned it. He did not.", cls:"leg", leg:10},
+ {x:"Robin does the worm across the dance floor and finishes exactly on the drop like he planned it. He did not.", cls:"leg", leg:10},
  {x:"Robin insists on ordering everyone's drinks as one long unbroken sentence and the poor bartender just about manages it.", cls:"hot"},
 ];
 const ROBIN_KICK=[
@@ -477,16 +488,16 @@ const PICKLES_VENUE=[
  {x:"Pickles has met an actual American and his accent has relapsed to full Midwest without warning.", cls:"leg", leg:13},
  {x:"Pickles is explaining daylight saving to the DJ with the fury of a man deeply wronged.", cls:"hot"},
  {x:"Pickles flashed his Bunnings PowerPass at the door like it was a VIP card.", cls:"hot", buzz:4},
- {x:"Pickles started a West Coast Eagles chant and, incredibly, three strangers knew the words.", cls:"leg", leg:15},
+ {x:"Pickles leads a West Coast Eagles chant — he's decided it's the boys' great passion and nobody has ever had the heart to tell him it's a running joke.", cls:"leg", leg:15},
  {x:"Pickles insists the barman try 'proper footy talk' and tips him for the effort.", cls:"gd", relieve:10},
  {x:"Pickles orders for the whole group at a volume the kitchen can hear over the band.", cls:"hot"},
  {x:"Pickles is defending the meat pie against a bloke who dared mention a hot dog.", cls:"hot", buzz:5},
  {x:"Pickles bellowed 'MAGGOT' across the bar and the bouncer took it personally.", cls:"bad", heat:7},
- {x:"Pickles got so loud about the Eagles that a Dockers fan stood up, and now there is 'discourse'.", cls:"bad", heat:8},
+ {x:"Pickles picks a loud fight about the Eagles he does not actually care about — purely because he thinks the boys do — and a Dockers fan stands up. Now there is 'discourse'.", cls:"bad", heat:8},
  {x:"Pickles corrects a tourist's pronunciation of 'Northbridge' at a truly unnecessary volume.", cls:"hot"},
  {x:"Pickles high-fives the entire front bar on his way back from the toilets.", cls:"gd", heat:-6},
  {x:"Pickles has adopted a table of backpackers and is teaching them to say 'heaps good'.", cls:"gd"},
- {x:"Pickles argued the aux band should cover an Eagles song and got so heated staff had a word.", cls:"bad", heat:6},
+ {x:"Pickles asks the band for 'an Eagles song' — being American, he means the band — and it somehow becomes Free Bird, which isn't even the Eagles. He commits completely.", cls:"leg", leg:13},
  {x:"Pickles roars approval at every drink order like a man narrating a grand final.", cls:"hot", buzz:3},
  {x:"Pickles told the whole venue Bucko is getting married and the entire room cheered.", cls:"leg", leg:14},
 ];
@@ -494,11 +505,11 @@ const PICKLES_KICK=[
  {x:"Pickles bellows 'LET'S GOOO' at the sunrise and a dog two yards over answers him.", cls:"leg", leg:13},
  {x:"Pickles is toasting the toaster and demanding everyone respect the humble pie one more time.", cls:"hot"},
  {x:"Pickles calls Leroy 'maggot' with such affection that Leroy adds him to the spreadsheet.", cls:"gd"},
- {x:"Pickles has the whole kitchen chanting for the Eagles over a shared goon sack.", cls:"leg", leg:15},
+ {x:"Pickles gets the whole kitchen chanting for the Eagles, still convinced after a decade that it's the boys' one true religion and not a bit they started as a joke.", cls:"leg", leg:15},
  {x:"Pickles is lecturing a neighbour about daylight saving across the Hills Hoist at 4am.", cls:"hot", buzz:4},
  {x:"Pickles met the neighbour's American cousin and his accent has fully relapsed in the backyard.", cls:"leg", leg:12},
  {x:"Pickles woke half the street bellowing 'LET'S GOOO' and a porch light just came on.", cls:"bad", heat:8},
- {x:"Pickles cranked the aux so loud defending an Eagles anthem that a neighbour banged on the fence.", cls:"bad", heat:7},
+ {x:"Pickles puts 'an Eagles song' on the aux to please the boys and it's Free Bird — wrong Eagles, wrong band entirely — cranked so loud a neighbour bangs on the fence.", cls:"bad", heat:7},
  {x:"Pickles is force-feeding everyone toast at sunrise and calling it 'the breakfast pie'.", cls:"hot", buzz:3},
 ];
 const CHATTER={
@@ -578,6 +589,7 @@ function paint(){
   $("clockVal").textContent=clockStr();
   $("legendVal").textContent=S.legend;
   $("billVal").textContent="$"+S.bill;
+  if(S.kickon){ $("statsRow").classList.add("afters"); $("degenStat").classList.remove("hidden"); $("degenVal").textContent=S.degen; }
   $("buzzFill").style.width=S.buzz+"%";
   $("buzzPct").textContent=Math.round(S.buzz);
   $("heatFill").style.width=S.heat+"%";
@@ -726,8 +738,20 @@ function reelHtml(){
   return `<div class="reel"><div class="rl">Highlight reel</div>`+
     picks.map(r=>`<div><span style="color:${r[2]==="leg"?"var(--amber)":"var(--danger)"}">${r[0]}</span> — ${r[1]}</div>`).join("")+`</div>`;
 }
-function statLine(){
-  return `<p><strong style="color:var(--amber)">${S.legend} legend points</strong> · ${boysUp()}/8 boys standing · card bill <strong style="color:var(--danger)">$${S.bill}</strong> · rank: <strong>${ S.legend>=1000?"CERTIFIED FOLK HERO": S.legend>=600?"ABSOLUTE WEAPON": S.legend>=300?"GOOD SOLDIER": S.legend>=120?"PARTICIPANT":"DESIGNATED DISAPPOINTMENT" }</strong></p>`;
+function rank(v){ return v>=1000?"CERTIFIED FOLK HERO": v>=600?"ABSOLUTE WEAPON": v>=300?"GOOD SOLDIER": v>=120?"PARTICIPANT":"DESIGNATED DISAPPOINTMENT"; }
+function degenRank(d){ return d>=900?"UNGOVERNABLE": d>=500?"FERAL": d>=250?"CERTIFIED DEGEN": d>=100?"LOOSE UNIT":"MERELY KEEN"; }
+function nightSheet(){
+  const v=S.kickon?S.nightLegend:S.legend;
+  return `<p><strong style="color:var(--amber)">${v} legend</strong> · ${boysUp()}/8 standing · bill <strong style="color:var(--danger)">$${S.bill}</strong> · rank: <strong>${rank(v)}</strong></p>`;
+}
+function aftersSheet(){
+  return `<p><strong style="color:var(--amber)">${S.legend} legend</strong> + <strong style="color:var(--zone)">${S.degen} degen</strong> · day ${S.day} · bill <strong style="color:var(--danger)">$${S.bill}</strong> · rank: <strong style="color:var(--zone)">${degenRank(S.degen)}</strong></p>`;
+}
+function scoreSheets(){
+  if(!S.kickon) return nightSheet();
+  return `<div class="tog"><button class="tg" data-s="n">Night</button><button class="tg on" data-s="k">Kick-ons</button></div>
+    <div id="sheetN" style="display:none">${nightSheet()}</div>
+    <div id="sheetK">${aftersSheet()}</div>`;
 }
 function endScreen(title,body,win,offerKickon){
   S.over=true;S.running=false;
@@ -735,7 +759,12 @@ function endScreen(title,body,win,offerKickon){
   if(win && !S.kickon && boy("ray").up) extra=" Ray is already talking about the 9am skydive he booked. On your card.";
   const c=$("card");
   c.innerHTML=`<h2 style="color:${win?"var(--zone)":"var(--danger)"}">${title}</h2>
-    <p>${body}${extra}</p>${statLine()}${reelHtml()}`;
+    <p>${body}${extra}</p>${scoreSheets()}${reelHtml()}`;
+  c.querySelectorAll(".tg").forEach(el=>el.onclick=()=>{
+    const k=el.dataset.s==="k";
+    $("sheetK").style.display=k?"":"none"; $("sheetN").style.display=k?"none":"";
+    c.querySelectorAll(".tg").forEach(t=>t.classList.toggle("on",t===el));
+  });
   if(offerKickon){
     const k=document.createElement("button"); k.className="kick"; k.textContent="KICK ON — Leroy's flat, 3 more hours";
     k.onclick=()=>{ startKickons(); };
@@ -754,11 +783,12 @@ function offerKickonDone(c){
 function startKickons(){
   S.kickon=true; S.over=false; S.venue=KICKON;
   S.day=1; S.dayEndTick=S.tick+DAY_LEN;
+  S.nightLegend=S.legend; S.aftersStart=S.tick;
   S.buzz=Math.max(S.buzz,30); S.heat=Math.max(0,S.heat-20);
   $("overlay").classList.remove("show");
   renderSpot(); renderBar();
   say("KICK-ONS. The survivors pile into two Ubers to Leroy's flat. Someone is already on aux. The sun is a rumour. Northbridge is shut — it's the flat and the kebab run only.","leg");
-  say("New rules: goon-priced drinks, neighbours instead of bouncers. Heat now means noise complaints. Survive each sunrise and you can push on — theoretically, all the way to a three-day siege.","hot");
+  say("New rules: goon-priced drinks, neighbours instead of bouncers. Heat now means noise complaints. Survive the sunrise and you can push on. How far? Only one way to find out.","hot");
   S.running=true; paint();
 }
 
@@ -778,8 +808,12 @@ function step(){
   let decay = S.kickon?2.8:2.2;
   if(S.dexTicks>0){decay*=.45;S.dexTicks--;}
   if(S.soakTicks>0){decay*=.5;S.soakTicks--;}
-  if(S.mdTicks>0){S.mdTicks--; if(S.mdTicks===0){buzz(-18);say("The comedown arrives like a tax invoice. Jaw finally relaxes.","bad");}}
-  if(S.cokeCrash>0){S.cokeCrash--; if(S.cokeCrash===0){buzz(-14);say("The rack wears off mid-sentence. The sentence was about crypto.","bad");}}
+  const combo = S.cokeTicks>0 && S.ketTicks>0;   // coke + ket in tandem — the balance smooths the ride
+  if(combo){ decay*=.5; leg(2); }
+  // Pinger comes up gradually: the first 6 ticks keep lifting you, so drinking on top can sneak you over the top.
+  if(S.mdTicks>0){ if(S.mdTicks>10) buzz(+4.5); S.mdTicks--; if(S.mdTicks===0){buzz(-18);say("The comedown arrives like a tax invoice. Jaw finally relaxes.","bad");} }
+  if(S.cokeTicks>0){S.cokeTicks--; if(S.cokeTicks===0){buzz(-14);say("The rack wears off mid-sentence. The sentence was about crypto.","bad");}}
+  if(S.ketTicks>0){S.ketTicks--; if(S.ketTicks===0){buzz(-6);say("The K-hole releases you back into the room, blinking. Everything's very loud again.","bad");}}
   buzz(-decay);
   if(S.buzz<=0 && S.tick>6){
     const e=SOBER_ENDINGS[Math.floor(Math.random()*SOBER_ENDINGS.length)];
@@ -792,6 +826,12 @@ function step(){
     if(boy("ray").up)g+=0.8;
     leg(g);
   } else S.streak=0;
+  // Degen score — only accrues in afters. Ramps every hour you keep going; doubles when you push above the zone.
+  if(S.kickon){
+    let d = 1 + Math.floor((S.tick-S.aftersStart)/12);
+    if(S.buzz>ZONE[1]) d*=2;
+    S.degen += d;
+  }
   /* ---- character ticks ---- */
   if(S.travisHole>0){
     S.travisHole--;
