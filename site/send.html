@@ -31,6 +31,7 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 
 .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
 .stats.afters{grid-template-columns:repeat(4,1fr)}
+#moveVal{color:var(--neon)}
 .stat{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:5px 8px;text-align:center}
 .stat.hidden{display:none}
 .stat .lbl{font-size:9px;letter-spacing:.12em;text-transform:uppercase;color:var(--dim)}
@@ -99,9 +100,10 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .card .stile{background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:9px 4px;text-align:center}
 .card .stile .tl{font-size:9px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim)}
 .card .stile .tv{font-family:var(--disp);font-weight:900;font-size:21px;margin-top:2px;color:var(--text)}
-.card .stile .tv.amber{color:var(--amber)}.card .stile .tv.zone{color:var(--zone)}.card .stile .tv.danger{color:var(--danger)}
+.card .stile .tv.amber{color:var(--amber)}.card .stile .tv.zone{color:var(--zone)}.card .stile .tv.danger{color:var(--danger)}.card .stile .tv.neon{color:var(--neon)}
 .card .rankstrip{display:flex;flex-wrap:wrap;gap:5px 14px;justify-content:center;font-size:12.5px;color:var(--dim);margin:0 0 11px}
-.card .rankstrip b{color:var(--text)} .card .rankstrip b.zone{color:var(--zone)}
+.card .rankstrip b{color:var(--text)} .card .rankstrip b.zone{color:var(--zone)} .card .rankstrip b.neon{color:var(--neon)}
+.card .addhd{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--zone);text-align:center;margin:4px 0 8px;padding-top:9px;border-top:1px solid var(--line)}
 .card details{margin:0 0 9px;background:var(--panel2);border:1px solid var(--line);border-radius:9px;overflow:hidden}
 .card details>summary{list-style:none;cursor:pointer;padding:9px 12px;font-size:12px;font-weight:700;color:var(--text);display:flex;justify-content:space-between;align-items:center;gap:8px}
 .card details>summary::-webkit-details-marker{display:none}
@@ -132,8 +134,9 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 <div class="stats" id="statsRow">
   <div class="stat"><div class="lbl">Time</div><div class="val" id="clockVal">7:00pm</div></div>
   <div class="stat"><div class="lbl">Legend</div><div class="val" id="legendVal">0</div></div>
-  <div class="stat"><div class="lbl">Card Bill</div><div class="val" id="billVal">$0</div></div>
+  <div class="stat" id="billStat"><div class="lbl">Card Bill</div><div class="val" id="billVal">$0</div></div>
   <div class="stat hidden" id="degenStat"><div class="lbl">Degen</div><div class="val" id="degenVal">0</div></div>
+  <div class="stat hidden" id="moveStat"><div class="lbl">Movement</div><div class="val" id="moveVal">0</div></div>
 </div>
 
 <div class="gauge">
@@ -170,7 +173,8 @@ const S = {
   day:1, dayEndTick:0, pendingConflict:null, usedChat:{}, usedChaos:new Set(),
   degen:0, aftersStart:0, nightLegend:0, peakBuzz:0, shadow:false, usedShadow:new Set(),
   venueTicks:0, momentum:0, notoriety:0, visited:new Set(["gm"]),
-  counts:{}, spend:{drink:0,gear:0,food:0},
+  counts:{}, spend:{drink:0,gear:0,food:0}, forkCount:0,
+  bunkered:false, takeover:false, allegiance:0, milestone:0, usedBunker:new Set(),
   kCount:0, travisHole:0, rayDone:false, sandyCd:0,
   jezCd:14, robinCd:11, leroyCd:17, picklesCd:9,
   reel:[],
@@ -199,7 +203,7 @@ const VENUES=[
   {id:"connies", tier:3,    n:"Connies",        tag:"late club",  price:1.6,  legend:2.0, heat:1.2, door:true,  opens:60, blurb:"Best dance floor in the hemisphere. Opens midnight.", left:false},
   {id:"kebab",   tier:null, n:"Kebab Alley",    tag:"street",     price:1.0,  legend:.4,  heat:.3,  door:false, blurb:"Garlic sauce fixes most things.", left:false},
   {id:"flat",    tier:null, n:"Leroy's Flat",   tag:"kick-ons",   price:.4,   legend:1.8, heat:.9,  door:false, blurb:"Someone's already on aux. The neighbours are already awake.", left:false, hidden:true},
-  {id:"bowlo",   tier:0,    n:"The Bowlo",      tag:"RSL",        price:.7,   legend:.9,  heat:.3,  door:false, blurb:"Members' prices, carpet bowls, a meat tray on the line.", left:false},
+  {id:"bowlo",   tier:null, n:"Tuart Hill Bowlo", tag:"suburban bowling club", price:.7, legend:.9, heat:.3, door:false, blurb:"Twenty minutes out of the city. Carpet bowls, a meat raffle, fluorescent light, and destiny.", left:false},
   {id:"wine",    tier:0,    n:"Vin Rouge",      tag:"wine bar",   price:1.6,  legend:1.1, heat:.4,  door:false, blurb:"Natural wine and small plates. Sandy's happy place. Use your inside voice.", left:false},
   {id:"sports",  tier:1,    n:"The Sportie",    tag:"sports bar", price:1.1,  legend:1.3, heat:.9,  door:false, blurb:"Big screens, a pool table, a beer tower with your name on it.", left:false},
   {id:"irish",   tier:1,    n:"Molly's",        tag:"Irish pub",  price:1.2,  legend:1.5, heat:.9,  door:false, blurb:"Guinness done properly. Jez knows the owner. A fiddle is warming up.", left:false},
@@ -647,6 +651,70 @@ function pingerLands(){
   else { S.mdOD=true; buzz(+24); heat(10); leg(10); say("This one is FAR too strong. The room smears, your jaw could chew through a bus, and you are — magnificently, unmanageably — cooked. Ride it out. The comedown is going to be biblical.","bad"); }
 }
 
+/* ============ THE BOWLO SUB-STORYLINE ============
+   Offered ONLY in the first fork. Divert to a suburban bowling club, bunker in,
+   take it over at 2am, and grow one sesh into a global party government. */
+const BOWLO_IDX=7;
+function enterBowlo(){
+  S.bunkered=true; S.walking=4; S.venue=BOWLO_IDX; S.venueTicks=0; S.moveCd=99999;
+  S.aftersStart=S.tick; // degen starts ramping from here too
+  say("You do the unthinkable: pile into two Ubers and convoy OUT of Northbridge — twenty minutes into the suburbs, to the Tuart Hill Bowling Club. The boys are baffled. Bucko is delighted. Something enormous is beginning and none of you can feel it yet.","leg");
+  renderSpot(); renderBar(); paint();
+}
+const BUNKER=[
+ "You shout the entire bowling club a round. The members, average age seventy-one, are cautiously delighted.",
+ "Robin has entered the meat raffle forty times under forty different fake names.",
+ "Jez is behind the bowlo bar, obviously, pulling immaculate middies for pensioners who already love him.",
+ "Pickles is learning lawn bowls from a man named Kev. Pickles is, alarmingly, a natural.",
+ "Leroy is negotiating 'after-hours access' with the club treasurer over a shandy. The treasurer never stood a chance.",
+ "Bucko has been made an honorary life member. There was a small ceremony. He cried.",
+ "The club's ancient PA crackles to life. It plays one CD, on loop, and the CD is unexpectedly hard.",
+ "Sandy has found the trophy cabinet and is delivering emotional speeches about men he has never met.",
+];
+function fireBunker(){
+  let idxs=[]; for(let i=0;i<BUNKER.length;i++) if(!S.usedBunker.has(i)) idxs.push(i);
+  if(!idxs.length){ S.usedBunker.clear(); for(let i=0;i<BUNKER.length;i++) idxs.push(i); }
+  const idx=idxs[Math.floor(Math.random()*idxs.length)]; S.usedBunker.add(idx);
+  buzz(1); leg(3); say(BUNKER[idx],"hot");
+}
+function takeoverEvent(){
+  showEvent({t:"2am — the takeover",
+    p:"2:00am. The last legitimate bowls member has been poured into a Silver Cabs. The bar staff have downed tools and picked up cups. Someone has found the disco lights from the club Christmas do and the PA that usually calls the meat raffle. Boys — this is your bowling club now.",
+    o:[
+      ["Declare the greens a sovereign dancefloor",()=>{ leg(24); S.allegiance+=10; say("You stand on the manicured green — a criminal act, the birth of a nation — and declare it a sovereign dancefloor. The greenkeeper weeps openly. It has begun.","leg"); }],
+      ["Put Leroy in charge of comms",()=>{ leg(16); S.allegiance+=18; say("Leroy appoints himself Minister for Communications and starts a livestream 'to document the movement'. Forty people are watching. Then four hundred. Then he stops looking at the number.","leg"); }]
+    ]});
+}
+const MILESTONES=[
+ {at:90, t:"The stream escapes",
+  p:"The livestream has escaped containment. A clip of Pickles doing the worm across the bowling green to a sped-up Eagles song — Free Bird, naturally — is being reposted faster than anyone can watch it. Twelve thousand viewers. Comments in nine languages.",
+  o:[["Address the people directly",()=>{ leg(18); S.allegiance+=14; say("You look down the lens: 'Everyone is welcome. Bring your own cup.' The count doubles mid-sentence. The movement has a face now, and it is yours, and it is sweating.","leg"); }],
+     ["Keep it pure — phones down",()=>{ leg(12); S.allegiance+=10; say("You call a phones-down moment of presence. It backfires beautifully: the one grainy clip that escapes becomes the most-shared thing of the night precisely because it's the only one.","leg"); }]]},
+ {at:220, t:"Tuart Hill secedes",
+  p:"The neighbours haven't called the police. The neighbours have brought a lasagne and asked to join. The entire suburb of Tuart Hill has just voted, by show of hands on the green, to become an independent sesh-state. A man named Barry is Foreign Minister. Barry is doing very well.",
+  o:[["Enshrine Tuart Hill as founding province",()=>{ leg(20); S.allegiance+=16; say("Tuart Hill is enshrined as the founding province of the movement. Barry gives a tearful acceptance speech from atop the drinks fridge. The retirement village next door pledges its bingo hall as an embassy.","leg"); }]]},
+ {at:380, t:"Perth is on it",
+  p:"It's 4am and the whole city has heard. Cars are arriving from Joondalup, from Freo, from Mandurah. The bowlo car park is a refugee camp of pure joy. A traffic reporter has stopped reporting traffic to join in. Perth — sleepy, isolated, beautiful Perth — is fully on the sesh.",
+  o:[["Address the nation of Perth",()=>{ leg(24); S.allegiance+=18; say("You climb the flagpole — the flag is now a Bintang singlet — and address Perth. 'You have always been the most isolated city on earth. Tonight you are the centre of it.' Perth roars. Somewhere, the bell tower rings itself.","leg"); }]]},
+ {at:560, t:"Australia pledges allegiance",
+  p:"Breaking: the Prime Minister has addressed the nation. Rather than condemn the movement, they have pledged allegiance to it and sent a keg 'from the people of Australia'. Parliament is suspended. The national broadcaster is now just the livestream.",
+  o:[["Accept the national keg with grace",()=>{ leg(28); S.allegiance+=20; say("You accept the national keg on behalf of the movement. The Governor-General taps it. National productivity hits zero and nobody has ever been happier. Bucko is knighted for reasons no one can explain.","leg"); }]]},
+ {at:780, t:"New Zealand, obviously",
+  p:"New Zealand has joined. Of course New Zealand has joined. They insist they were sending it before it was cool and, honestly, they might have a point. They have brought their own, superior kegs and will not stop mentioning it.",
+  o:[["Form the Trans-Tasman Sesh Union",()=>{ leg(26); S.allegiance+=22; say("You and the New Zealand delegation form the Trans-Tasman Sesh Union on the green — the most functional union in either nation's history. A haka and the Nutbush are performed simultaneously. The earth moves.","leg"); }]]},
+ {at:1040, t:"The nations line up",
+  p:"It's cascading now. Ireland pledged first, saying they'd trained their whole lives for this. Then the UK, then Brazil, then the entire Pacific. Time zones are being rescheduled so the whole planet can sesh at once. The movement has annexed the neighbouring Bunnings for 'sausage logistics'.",
+  o:[["Nationalise the sausage supply",()=>{ leg(28); S.allegiance+=24; say("The Bunnings sausage sizzle is nationalised and scaled to the species: a snag in every hand on earth. Leroy's spreadsheet now governs global food security. He has never been calmer.","leg"); }]]},
+ {at:1360, t:"The last hold-out",
+  p:"Continent by continent, the planet gets on it. Polar research stations are streaming in. The Space Station has requested the aux. One single hold-out remains — a man in a landlocked office somewhere — the last person on Earth not on the sesh. And even he is tapping his foot.",
+  o:[["Send him a personal invite",()=>{ leg(30); S.allegiance+=26; say("You send the last hold-out a handwritten invitation via the ISS. He reads it, sighs, loosens his tie, and cracks a warm can he's kept in his drawer since 2019. The planet is unanimous.","leg"); }]]},
+];
+const GLOBAL_AT=1700;
+function globalGovEnd(){
+  const body="A single, synchronised dawn breaks over a planet that has — overnight, from a bowling club in Tuart Hill — formed its first ever GLOBAL PARTY GOVERNMENT. There is no more war; everyone is far too busy. The economy is snags and goodwill. You, holding a warm cup on a suburban bowling green, are the accidental head of a united human race. Bucko still has to be at the church by 3pm.";
+  endScreen("THE GLOBAL PARTY GOVERNMENT", body, true, false);
+}
+
 /* ---------------- endings ---------------- */
 const SOBER_ENDINGS=[
  ["THE MORTGAGE TALK","Somewhere around your last sip, you started explaining offset accounts to a stranger. The stranger left. The buzz left. The night, sensing weakness, self-terminated. You are in an Uber before you can stop yourself."],
@@ -664,7 +732,9 @@ function renderBoys(){
 function renderSpot(){
   const v=VENUES[S.venue];
   let vibe;
-  if(S.kickon) vibe="kick-ons · goon o'clock";
+  if(S.bunkered && S.takeover) vibe="the movement · "+fmt(S.allegiance)+" and rising";
+  else if(S.bunkered) vibe="bunkered in · awaiting 2am";
+  else if(S.kickon) vibe="kick-ons · goon o'clock";
   else if(S.walking>0) vibe="on the move…";
   else if(S.venueTicks>18) vibe="going cold — move on";
   else if(S.heat>60) vibe="getting hot here";
@@ -688,6 +758,7 @@ function paint(){
   $("legendVal").textContent=S.legend;
   $("billVal").textContent="$"+S.bill;
   if(S.kickon){ $("statsRow").classList.add("afters"); $("degenStat").classList.remove("hidden"); $("degenVal").textContent=S.degen; }
+  if(S.bunkered){ $("statsRow").classList.add("afters"); $("billStat").classList.add("hidden"); $("degenStat").classList.remove("hidden"); $("degenVal").textContent=S.degen; $("moveStat").classList.remove("hidden"); $("moveVal").textContent=fmt(S.allegiance); }
   $("buzzFill").style.width=S.buzz+"%";
   $("buzzPct").textContent=Math.round(S.buzz);
   $("heatFill").style.width=S.heat+"%";
@@ -794,11 +865,14 @@ function stayHere(){
 function fireMoveEvent(){
   const opts=forkOptions();
   if(!opts.length) return false;
+  S.forkCount++;
   const o=opts.map(i=>{
     const v=VENUES[i];
     const label=(i===KEBAB?"Kebab run — cool off · street":"Head to "+v.n+" · "+v.tag);
     return [label, ()=>{ S.moveCd=11+Math.floor(Math.random()*5); moveVenue(i); }];
   });
+  // The one and only chance to derail the whole night: offered only at the first fork.
+  if(S.forkCount===1) o.push(["↗ Convoy OUT to the suburbs — Tuart Hill Bowlo (a mission)", ()=>{ enterBowlo(); }]);
   o.push(["Stick it out here", ()=>{ S.moveCd=7+Math.floor(Math.random()*4); stayHere(); }]);
   showEvent({t:"Where to, boys?", p:forkPrompt(), o});
   return true;
@@ -882,16 +956,27 @@ function reelHtml(){
 }
 function rank(v){ return v>=1000?"CERTIFIED FOLK HERO": v>=600?"ABSOLUTE WEAPON": v>=300?"GOOD SOLDIER": v>=120?"PARTICIPANT":"DESIGNATED DISAPPOINTMENT"; }
 function degenRank(d){ return d>=900?"UNGOVERNABLE": d>=500?"FERAL": d>=250?"CERTIFIED DEGEN": d>=100?"LOOSE UNIT":"MERELY KEEN"; }
+function movementRank(a){ return a>=1500?"GLOBAL GOVERNMENT": a>=760?"CONTINENTAL": a>=360?"NATIONAL": a>=95?"CITYWIDE": a>=25?"GONE VIRAL":"LOCAL LEGEND"; }
 function fmt(n){ return Math.round(n).toLocaleString("en-US"); }
+function tilesRow(t){ return `<div class="stiles">`+t.map(x=>`<div class="stile"><div class="tl">${x[0]}</div><div class="tv ${x[2]||''}">${x[1]}</div></div>`).join("")+`</div>`; }
+function rankRow(h){ return `<div class="rankstrip">${h}</div>`; }
+function nightBlock(){
+  const v=S.kickon?S.nightLegend:S.legend;
+  return tilesRow([["Legend",fmt(v),"amber"],["Boys",boysUp()+"/8",""],["Peak buzz",Math.round(S.peakBuzz),""],["Card bill","$"+fmt(S.bill),"danger"]])
+    + rankRow(`<span>Rank <b>${rank(v)}</b></span><span>Boys <b>${boysUp()}/8</b></span><span>Peak <b>${Math.round(S.peakBuzz)}</b></span>`);
+}
 function tilesSheet(mode){
-  const t = mode==="combo"
-    ? [["Total legend",fmt(S.legend),"amber"],["Degen",fmt(S.degen),"zone"],["Days",S.day,""],["Peak buzz",Math.round(S.peakBuzz),""]]
-    : [["Legend",fmt(S.kickon?S.nightLegend:S.legend),"amber"],["Boys",boysUp()+"/8",""],["Peak buzz",Math.round(S.peakBuzz),""],["Card bill","$"+fmt(S.bill),"danger"]];
-  const tiles=t.map(x=>`<div class="stile"><div class="tl">${x[0]}</div><div class="tv ${x[2]}">${x[1]}</div></div>`).join("");
-  const ranks = mode==="combo"
-    ? `<span>Rank <b>${rank(S.legend)}</b></span><span>Degen <b class="zone">${degenRank(S.degen)}</b></span><span>Boys <b>${boysUp()}/8</b></span>`
-    : `<span>Rank <b>${rank(S.kickon?S.nightLegend:S.legend)}</b></span><span>Boys <b>${boysUp()}/8</b></span><span>Peak <b>${Math.round(S.peakBuzz)}</b></span>`;
-  return `<div class="stiles">${tiles}</div><div class="rankstrip">${ranks}</div>`;
+  if(mode==="bowlo"){
+    return tilesRow([["Movement",fmt(S.allegiance),"neon"],["Degen",fmt(S.degen),"zone"],["Legend",fmt(S.legend),"amber"],["Peak buzz",Math.round(S.peakBuzz),""]])
+      + rankRow(`<span>Reach <b class="neon">${movementRank(S.allegiance)}</b></span><span>Degen <b class="zone">${degenRank(S.degen)}</b></span><span>Boys <b>${boysUp()}/8</b></span>`);
+  }
+  if(mode==="combo"){   // identical to Night up top, with the kick-ons component added below
+    return nightBlock()
+      + `<div class="addhd">+ the kick-ons</div>`
+      + tilesRow([["Days survived",S.day,"zone"],["Degen",fmt(S.degen),"zone"],["Total legend",fmt(S.legend),"amber"]])
+      + rankRow(`<span>Degen rank <b class="zone">${degenRank(S.degen)}</b></span>`);
+  }
+  return nightBlock();
 }
 function receiptHtml(){
   const c=S.counts;
@@ -913,6 +998,7 @@ function receiptHtml(){
     <div class="rc-f">keep this receipt for the divorce</div></div></details>`;
 }
 function scoreSheets(){
+  if(S.bunkered) return tilesSheet("bowlo");
   if(!S.kickon) return tilesSheet("night");
   return `<div class="tog"><button class="tg" data-s="n">Night</button><button class="tg on" data-s="k">Night + Kick-ons</button></div>
     <div id="sheetN" style="display:none">${tilesSheet("night")}</div>
@@ -1007,8 +1093,8 @@ function step(){
     if(boy("ray").up)g+=0.8;
     leg(g);
   } else S.streak=0;
-  // Degen score — only accrues in afters. Ramps every hour you keep going; doubles when you push above the zone.
-  if(S.kickon){
+  // Degen score — accrues in afters AND during the bowlo takeover. Ramps hourly; doubles above the zone.
+  if(S.kickon || S.bunkered){
     let d = 1 + Math.floor((S.tick-S.aftersStart)/12);
     if(S.buzz>ZONE[1]) d*=2;
     S.degen += d;
@@ -1036,6 +1122,36 @@ function step(){
   if(S.buzz>90 && S.ambientCd<=0 && Math.random()<.30){ S.ambientCd=2; heat(8*VENUES[S.venue].heat); fireChaos(); }
   if(S.shadow && S.ambientCd<=0 && Math.random()<.28){ S.ambientCd=2; fireShadow(); }
   if(S.heat>0 && Math.random()<.5)heat(-1);
+  // ===== THE BOWLO SUB-STORYLINE — the night pivots to a global takeover =====
+  if(S.bunkered){
+    if(S.walking>0){ paint(); return; }
+    if(S.takeover){
+      if(S.buzz>=40 && S.seated===0) S.allegiance += 4 + Math.floor(boysUp()/2) + Math.floor(S.buzz/12); // the movement feeds on the party
+      if(S.milestone>=5) heat(-5);                                       // near-global: the authorities ARE the party now, untouchable
+      else if(S.milestone>=1 && Math.random()<.25) heat(2+S.milestone+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
+      if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id,"tapped out at the bowlo","One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
+      if(S.milestone<MILESTONES.length && S.allegiance>=MILESTONES[S.milestone].at){
+        const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
+      }
+      if(S.milestone>=MILESTONES.length && S.allegiance>=GLOBAL_AT){ globalGovEnd(); paint(); return; }
+    } else {
+      if(S.tick>=84){ S.takeover=true; takeoverEvent(); paint(); return; } // 2am
+      S.eventCd--;
+      if(S.eventCd<=0){ S.eventCd=8+Math.floor(Math.random()*5);
+        const be=EVENTS.filter(e=>e.at==="bowlo" && !e.used && (!e.c||e.c()));
+        if(be.length && Math.random()<.5){ const ev=be[Math.floor(Math.random()*be.length)]; ev.used=true; showEvent(ev); paint(); return; }
+        fireBunker();
+      }
+    }
+    if(S.heat>=100){
+      if(S.milestone>=3) endScreen("THE COUP","You got so big the old powers panicked, and somewhere someone pulled a plug they shouldn't have been able to reach. The greens fall silent. History will call it a coup. History will be wrong, but too sober to argue.",false,false);
+      else endScreen("SHUT DOWN AT THE BOWLO","Before the movement could find its feet, the noise complaints won — the council, the cops, and a very determined man in a dressing gown. A beautiful idea, twenty minutes too early.",false,false);
+      paint();return;
+    }
+    if(S.buzz<=0 && S.tick>6){ endScreen("THE FIZZLE","A global movement needs a heartbeat, and yours flatlined. The sesh cannot run on an empty host. The streams cut out one by one and Tuart Hill quietly goes back to being Tuart Hill.",false,false); paint(); return; }
+    if(boysUp()<=2){ endScreen("LEADERSHIP VACUUM","The founding cabinet has been lost to taxis and beanbags. A movement of billions cannot run on two blokes. It dissolves as fast as it formed — into folklore and a very confused Monday.",false,false); paint(); return; }
+    paint(); return;
+  }
   // venue moves — the night rolls forward through the arc, offered as an event
   S.moveCd--;
   if(!S.kickon && S.walking===0 && S.seated===0 && S.buzz>=12 && S.moveCd<=0 && S.tick<S.ticksTotal-6){
