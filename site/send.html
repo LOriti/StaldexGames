@@ -95,6 +95,15 @@ header{display:flex;align-items:baseline;justify-content:space-between;gap:10px}
 .card .tog{display:flex;gap:6px;margin:0 0 10px}
 .card .tog .tg{flex:1;width:auto;margin:0;padding:7px 4px;text-align:center;font-size:12px;font-weight:700;background:var(--panel2);border:1px solid var(--line);color:var(--dim)}
 .card .tog .tg.on{background:var(--neon);color:var(--ink);border-color:var(--neon)}
+.card .sheet{margin:0 0 10px;padding:9px 11px;background:var(--panel2);border:1px solid var(--line);border-radius:9px}
+.card .sh-t{font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim);margin-bottom:6px}
+.card .sh-r{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;padding:3px 0;border-top:1px solid var(--line)}
+.card .sh-r:first-of-type{border-top:0}
+.card .sh-l{color:var(--dim)}
+.card .sh-v{font-weight:700;color:var(--text)}
+.card .sh-v.amber{color:var(--amber)}
+.card .sh-v.danger{color:var(--danger)}
+.card .sh-v.zone{color:var(--zone)}
 .card .reel{margin:0 0 12px;padding:8px 10px;background:var(--panel2);border:1px solid var(--line);border-radius:9px}
 .card .reel div{font-size:11px;color:var(--dim);line-height:1.5;margin-bottom:2px}
 .card .reel .rl{font-size:9px;letter-spacing:.15em;text-transform:uppercase;color:var(--amber);margin-bottom:5px}
@@ -150,7 +159,7 @@ const S = {
   seated:0, dexTicks:0, mdTicks:0, cokeTicks:0, ketTicks:0, soakTicks:0,
   venue:0, walking:0, arcPos:0, moveCd:13, ambientCd:0, started:false,
   day:1, dayEndTick:0, pendingConflict:null, usedChat:{}, usedChaos:new Set(),
-  degen:0, aftersStart:0, nightLegend:0,
+  degen:0, aftersStart:0, nightLegend:0, peakBuzz:0, shadow:false, usedShadow:new Set(),
   kCount:0, travisHole:0, rayDone:false, sandyCd:0,
   jezCd:14, robinCd:11, leroyCd:17, picklesCd:9,
   reel:[],
@@ -163,7 +172,7 @@ const S = {
     {id:"robin",  n:"Robin",  up:true, st:"the joker"},
     {id:"ray",    n:"Ray",    up:true, st:"mingling"},
     {id:"leroy",  n:"Leroy",  up:true, st:"scheming"},
-    {id:"pickles", n:"Pickles", up:true, st:"LOUD (10yr visa)"},
+    {id:"pickles", n:"Pickles", up:true, st:"loud American"},
   ],
   cds:{}, eventCd:8
 };
@@ -187,7 +196,7 @@ function say(t,cls){
   const b=$("logBox"); b.prepend(p); while(b.children.length>7)b.lastChild.remove();
   if((cls==="leg"||cls==="bad") && S.reel.length<60) S.reel.push([clockStr(),t,cls]);
 }
-function buzz(d){ S.buzz=Math.min(100,Math.max(0,S.buzz+d)); }
+function buzz(d){ S.buzz=Math.min(100,Math.max(0,S.buzz+d)); if(S.buzz>S.peakBuzz)S.peakBuzz=S.buzz; }
 function leg(d){ S.legend=Math.max(0,Math.round(S.legend+d)); }
 function heat(d){ S.heat=Math.min(100,Math.max(0,S.heat+d)); }
 function heatRisk(amt,msg){ if(Math.random()<.5){ heat(amt); say(msg,"bad"); } }
@@ -385,6 +394,9 @@ const EVENTS=[
  {t:"Aux cord coup",ctx:"home",p:"Someone nobody knows has seized the aux and queued forty minutes of hard techno. The vibe is being held hostage in Leroy's own kitchen.",
   o:[["Stage a counter-coup",()=>{leg(10);buzz(4);say("You wrestle back the aux and drop a song the whole kitchen knows every word of. Order restored. Democracy, at 4am, prevails.","leg");}],
      ["Let it ride",()=>{buzz(-4);heat(5);say("Forty minutes of unbroken doof. Two people leave. A porch light comes on across the road. The kitchen enters a fugue state.","bad");}]]},
+ {t:"A shadow person beckons",ctx:"home",c:()=>S.shadow,p:"One of the shadow people has peeled away from the wall and is holding the front door open for you. It is very polite. It is very tall. It would very much like you to follow it outside.",
+  o:[["Do not follow the shadow person",()=>{buzz(-4);leg(14);say("You stay. You put the kettle on. The shadow person shrugs — a whole-body event — and rejoins the wall. The correct call. Almost certainly the correct call.","leg");}],
+     ["Follow the shadow person",()=>{ if(Math.random()<.5){ leg(26); say("It leads you to the yard and shows you the most beautiful sunrise you have ever seen, then dissolves. You return luminous, changed, and slightly damp. Nobody asks.","leg"); } else { endScreen("THE LONG WALK","You follow the shadow person out the door and simply keep walking. The boys find you four suburbs away at a bus stop hours later — calm, barefoot, unable to explain a second of it. The kick-ons ended the moment you left. Some doors you don't hold open.",false,false); } }]]},
 ];
 
 /* ---------------- ambient chatter (large pools, no repeats within a night) ---------------- */
@@ -551,6 +563,27 @@ function fireChaos(){
   const idx=idxs[Math.floor(Math.random()*idxs.length)]; S.usedChaos.add(idx);
   say(CHAOS[idx],"bad");
 }
+/* Shadow people — sleep-deprivation company from day four of the kick-ons onward. */
+const SHADOW=[
+ "A shadow person is standing in the hallway. It has been there an hour. It wants nothing. It is simply keeping up appearances.",
+ "One of the shadow people is wearing a lanyard. You are almost certain it is Deano.",
+ "You offer a shadow person a goon. It declines with enormous dignity.",
+ "The shadow people have formed an orderly queue by the fridge. You don't know what for. You join it anyway.",
+ "A shadow person laughs at something you didn't say. Fair enough, honestly.",
+ "Two shadow people are having a silent argument about the aux cord. You side with the taller one.",
+ "The tallest shadow person nods at you, once, with what you choose to read as deep respect.",
+ "A shadow person has been doing the dishes this entire time. Absolute legend. You will never thank it.",
+ "You blink and there are more of them. You blink again and there are fewer. The number is not your business.",
+ "A shadow person goes for a high-five. Your hand passes clean through. You both agree never to mention it.",
+ "The shadow people are watching the sunrise with you. It's genuinely nice. Nobody's making it weird except you.",
+ "A shadow person is standing exactly where Travis was. You decide, firmly, not to check on Travis.",
+];
+function fireShadow(){
+  let idxs=[]; for(let i=0;i<SHADOW.length;i++) if(!S.usedShadow.has(i)) idxs.push(i);
+  if(!idxs.length){ S.usedShadow.clear(); for(let i=0;i<SHADOW.length;i++) idxs.push(i); }
+  const idx=idxs[Math.floor(Math.random()*idxs.length)]; S.usedShadow.add(idx);
+  say(SHADOW[idx],"hot");
+}
 /* The pinger drop — fires when the come-up finishes. How hard it hits is a roll of the dice. */
 function pingerLands(){
   const r=Math.random();
@@ -707,21 +740,31 @@ function securityConflict(idx){
 }
 function endKickonGood(){
   const d=S.day;
+  const title = d>=5?"THE UNKILLABLES" : d>=4?"THROUGH THE VEIL" : d>=3?"THREE DAYS" : d>=2?"LEGENDS OF THE KICK-ON" : "THE SKYDIVE";
   let body;
-  if(boy("ray").up) body="Ray herds the survivors into a van — you are, apparently, going skydiving. "+d+" day"+(d>1?"s":"")+" deep, still in the same polo, you watch Perth shrink beneath you. The greatest bucks night ever run.";
+  if(d>=4) body="You step out into day "+d+"'s light with the shadow people watching politely from the yard, and somehow you're still smiling. "+boysUp()+" survivors, "+d+" days, one unbroken party. Nobody will ever believe this. Nobody needs to.";
+  else if(boy("ray").up) body="Ray herds the survivors into a van — you are, apparently, going skydiving. "+d+" day"+(d>1?"s":"")+" deep, still in the same polo, you watch Perth shrink beneath you. The greatest bucks night ever run.";
   else body="You call it after "+d+" day"+(d>1?"s":"")+" on the tools. The survivors share one last kebab on Leroy's step as the city wakes up around you. Bucko is getting married. Nothing was burned down.";
-  endScreen(d>=2?"LEGENDS OF THE KICK-ON":"THE SKYDIVE", body, true, false);
+  endScreen(title, body, true, false);
 }
 function dawnEvent(){
   S.running=false;
-  if(S.day>=3){
-    endScreen("THREE DAYS","It is 9am on the third day. The kick-ons never technically stopped. Neighbours have come and gone and come back. Somewhere in there Bucko got married in spirit if not in law. What remains of the group watches a third sunrise over the Hills Hoist and understands, wordlessly, that this will never be topped. Legends. Actual folklore.",true,false);
-    return;
+  const d=S.day; // day just survived
+  let p, title="Dawn over Leroy's flat";
+  if(d<3){
+    p="Day "+d+" of the kick-ons: survived. The sun is up, the goon is warm, "+boysUp()+" of you are still technically conscious. Push into another day, or bow out a legend while you still can?";
+  } else if(d===3){
+    title="Beyond the veil";
+    p="Three days. THREE. The kick-ons never technically stopped — you're folklore already. But the flat has started to breathe, and there are figures at the edge of the room that weren't there an hour ago. Do you dare go further?";
+  } else {
+    title="Beyond the veil";
+    p="Day "+d+" survived. Time has gone soft and warm. The shadow people outnumber the boys now and not one of them has blinked. Sleep is a rumour told by cowards. Push deeper into the veil, or get out while a version of you still exists?";
   }
-  showEvent({t:"Dawn over Leroy's flat",
-    p:"Day "+S.day+" of the kick-ons: survived. The sun is up, the goon is warm, "+boysUp()+" of you are still technically conscious. Push into another day, or bow out a legend while you still can?",
+  showEvent({t:title, p:p,
     o:[
-      ["Push into day "+(S.day+1),()=>{ S.day++; S.dayEndTick=S.tick+DAY_LEN; S.buzz=Math.max(S.buzz,30); S.heat=Math.max(0,S.heat-14); say("Day "+S.day+". Nobody has been to bed. The neighbours have stopped asking. This is a siege now.","leg"); }],
+      ["Push into day "+(d+1),()=>{ S.day++; S.dayEndTick=S.tick+DAY_LEN; S.buzz=Math.max(S.buzz,30); S.heat=Math.max(0,S.heat-12);
+          if(S.day>=4 && !S.shadow){ S.shadow=true; say("Day "+S.day+". You have not slept in over sixty hours. The shadow people have arrived — tall, patient, standing just past every doorway. Nobody mentions them. It would be rude.","bad"); }
+          else say("Day "+S.day+". Nobody has been to bed. The neighbours have stopped asking. This is a siege now.","leg"); }],
       ["Bow out a legend",()=>{ endKickonGood(); }]
     ]});
 }
@@ -747,18 +790,24 @@ function reelHtml(){
 }
 function rank(v){ return v>=1000?"CERTIFIED FOLK HERO": v>=600?"ABSOLUTE WEAPON": v>=300?"GOOD SOLDIER": v>=120?"PARTICIPANT":"DESIGNATED DISAPPOINTMENT"; }
 function degenRank(d){ return d>=900?"UNGOVERNABLE": d>=500?"FERAL": d>=250?"CERTIFIED DEGEN": d>=100?"LOOSE UNIT":"MERELY KEEN"; }
-function nightSheet(){
+function statBlock(title,rows){
+  return `<div class="sheet"><div class="sh-t">${title}</div>`+
+    rows.map(r=>`<div class="sh-r"><span class="sh-l">${r[0]}</span><span class="sh-v ${r[2]||''}">${r[1]}</span></div>`).join("")+`</div>`;
+}
+function nightRows(){
   const v=S.kickon?S.nightLegend:S.legend;
-  return `<p><strong style="color:var(--amber)">${v} legend</strong> · ${boysUp()}/8 standing · bill <strong style="color:var(--danger)">$${S.bill}</strong> · rank: <strong>${rank(v)}</strong></p>`;
+  return [["Legend",v,"amber"],["Boys standing",boysUp()+"/8",""],["Peak buzz",Math.round(S.peakBuzz),""],["Card bill","$"+S.bill,"danger"],["Rank",rank(v),""]];
 }
-function aftersSheet(){
-  return `<p><strong style="color:var(--amber)">${S.legend} legend</strong> + <strong style="color:var(--zone)">${S.degen} degen</strong> · day ${S.day} · bill <strong style="color:var(--danger)">$${S.bill}</strong> · rank: <strong style="color:var(--zone)">${degenRank(S.degen)}</strong></p>`;
+function afterRows(){
+  return [["Days survived",S.day,"zone"],["Degen score",S.degen,"zone"],["Total legend",S.legend,"amber"],["Card bill","$"+S.bill,"danger"],["Degen rank",degenRank(S.degen),"zone"]];
 }
+function nightSheet(){ return statBlock("The night",nightRows()); }
+function comboSheet(){ return statBlock("The night",nightRows())+statBlock("The kick-ons",afterRows()); }
 function scoreSheets(){
   if(!S.kickon) return nightSheet();
-  return `<div class="tog"><button class="tg" data-s="n">Night</button><button class="tg on" data-s="k">Kick-ons</button></div>
+  return `<div class="tog"><button class="tg" data-s="n">Night</button><button class="tg on" data-s="k">Night + Kick-ons</button></div>
     <div id="sheetN" style="display:none">${nightSheet()}</div>
-    <div id="sheetK">${aftersSheet()}</div>`;
+    <div id="sheetK">${comboSheet()}</div>`;
 }
 function endScreen(title,body,win,offerKickon){
   S.over=true;S.running=false;
@@ -811,7 +860,7 @@ function step(){
     }
   }
   if(S.seated>0){S.seated--; if(S.seated===0)say("You have risen from the seat. The seat will be missed.","gd");}
-  S.boys.forEach(b=>{ if(!b.up && b.outTicks>0){ b.outTicks--; if(b.outTicks===0){ b.up=true; b.st=b.id==="pickles"?"LOUD (10yr visa)":"back in"; say(b.n+" has snuck back in through the smokers' area like it never happened.","gd"); renderBoys(); } } });
+  S.boys.forEach(b=>{ if(!b.up && b.outTicks>0){ b.outTicks--; if(b.outTicks===0){ b.up=true; b.st=b.id==="pickles"?"loud American":"back in"; say(b.n+" has snuck back in through the smokers' area like it never happened.","gd"); renderBoys(); } } });
   let decay = S.kickon?2.8:2.2;
   if(S.dexTicks>0){decay*=.45;S.dexTicks--;}
   if(S.soakTicks>0){decay*=.5;S.soakTicks--;}
@@ -866,6 +915,7 @@ function step(){
   if(boy("pickles").up && S.picklesCd<=0 && S.ambientCd<=0){ S.picklesCd=9+Math.floor(Math.random()*7); S.ambientCd=2; fireChatter("pickles"); }
   if(!S.rayDone && boy("ray").up && S.tick>=60){ S.rayDone=true; rayEvent(); paint(); return; }
   if(S.buzz>90 && S.ambientCd<=0 && Math.random()<.30){ S.ambientCd=2; heat(8*VENUES[S.venue].heat); fireChaos(); }
+  if(S.shadow && S.ambientCd<=0 && Math.random()<.28){ S.ambientCd=2; fireShadow(); }
   if(S.heat>0 && Math.random()<.5)heat(-1);
   // venue moves — the night rolls forward through the arc, offered as an event
   S.moveCd--;
