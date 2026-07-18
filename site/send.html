@@ -175,6 +175,7 @@ const S = {
   venueTicks:0, momentum:0, notoriety:0, visited:new Set(["gm"]),
   counts:{}, spend:{drink:0,gear:0,food:0}, forkCount:0, usedHeat:new Set(), usedDJ:new Set(),
   cokeStreak:0, lastCoke:-99,
+  lockin:false, lockinStart:0,
   bunkered:false, takeover:false, allegiance:0, milestone:0, usedBunker:new Set(),
   counterCd:12, usedCounter:new Set(), pendingQuiz:null, usedDerail:new Set(),
   lastFood:0, lastWater:0, hygieneWarned:false,
@@ -974,6 +975,7 @@ function renderSpot(){
   const v=VENUES[S.venue];
   let vibe;
   if(S.bunkered && S.takeover) vibe="the movement · "+fmt(S.allegiance)+" and rising";
+  else if(S.lockin) vibe="LOCK-IN · after close, shutters down";
   else if(S.kickon) vibe="kick-ons · goon o'clock";
   else if(S.walking>0) vibe="on the move…";
   else if(S.venueTicks>18) vibe="going cold — move on";
@@ -997,7 +999,7 @@ function paint(){
   $("clockVal").textContent=clockStr();
   $("legendVal").textContent=S.legend;
   $("billVal").textContent="$"+S.bill;
-  if(S.kickon){ $("statsRow").classList.add("afters"); $("degenStat").classList.remove("hidden"); $("degenVal").textContent=S.degen; }
+  if(S.kickon || S.lockin){ $("statsRow").classList.add("afters"); $("degenStat").classList.remove("hidden"); $("degenVal").textContent=S.degen; }
   if(S.bunkered){ $("statsRow").classList.add("afters"); $("billStat").classList.add("hidden"); $("degenStat").classList.remove("hidden"); $("degenVal").textContent=S.degen; $("moveStat").classList.remove("hidden"); $("moveVal").textContent=fmt(S.allegiance); }
   $("buzzFill").style.width=S.buzz+"%";
   $("buzzPct").textContent=Math.round(S.buzz);
@@ -1032,6 +1034,7 @@ function useAct(id){
   a.do(); paint();
 }
 const DAY_LEN=36;      // ticks per kick-on "day" — survive three to reach folklore
+const LOCKIN_LEN=18;   // a pub lock-in runs ~90 min after close, then spills out to Leroy's kick-ons
 /* Curated forks: at each move you're offered a few tier-relevant venues + a stay option.
    Camping a venue is viable (it just goes "cold"); a good, varied crawl builds momentum. */
 function timeTier(){ return S.tick<24?0 : S.tick<48?1 : S.tick<84?2 : 3; }
@@ -1115,9 +1118,44 @@ function fireMoveEvent(){
   // Presented like any other venue — the only hint is that it's an odd choice.
   if(S.forkCount===1){ const bv=VENUES[BOWLO_IDX];
     o[o.length-1]=["Head to "+bv.n+" · "+bv.tag, ()=>{ enterBowlo(); }]; }
+  // Rare charm play: instead of moving on, sweet-talk the venue into a post-close lock-in.
+  // Low chance, earned by being dialled into the zone late with real momentum on the board.
+  if(lockinReady()) o.push(["Sweet-talk a lock-in — stay after close", ()=>{ startLockin(); }]);
   o.push(["Stick it out here", ()=>{ S.moveCd=7+Math.floor(Math.random()*4); stayHere(); }]);
   showEvent({t:"Where to, boys?", p:forkPrompt(), o});
   return true;
+}
+/* A lock-in can happen at ANY pub, but rarely — you have to be late, in the zone, and charming.
+   It's an alternative to moving on: you hold the venue past close, then it bridges to Leroy's. */
+function lockinReady(){
+  if(S.kickon||S.bunkered||S.lockin) return false;
+  const v=VENUES[S.venue];
+  if(v.tier==null||S.venue===BOWLO_IDX||S.venue===KEBAB) return false;
+  if(S.tick<72) return false;                          // post-close only (~1am+)
+  if(S.buzz<ZONE[0]||S.buzz>ZONE[1]+8) return false;   // must be dialled in, in/near the zone
+  if(S.heat>60) return false;                          // too hot and the publican won't risk it
+  let p=0.05;                                          // low base chance
+  p += Math.min(S.momentum,100)/100*0.12;              // momentum reads as charm/energy
+  p += Math.min(S.legend,3000)/3000*0.08;
+  if(boy("jez").up) p+=0.10;                           // Jez knows the publican
+  if(boysUp()>=5) p+=0.04;                             // a full crew makes it worth their while
+  return Math.random()<Math.min(p,0.4);
+}
+function startLockin(){
+  S.lockin=true; S.lockinStart=S.tick; S.aftersStart=S.tick;
+  S.moveCd=999;                                        // no more "where to?" — you've made your call
+  const v=VENUES[S.venue];
+  heat(-12); S.notoriety=Math.max(0,S.notoriety-10);   // shutters down, off the street's radar
+  leg(30);
+  say("Last drinks are called at "+v.n+" — and then they don't kick you out. A nod from behind the bar, the main lights drop, the shutters come halfway down, and just like that you've talked your way into a LOCK-IN. This does not happen. It is, impossibly, happening. The pub is yours.","leg");
+  say("New rules: no more moving on, no bouncers, no last train to catch. Just this room, these boys, and the clock quietly ceasing to matter. Keep it lit and keep it quiet — a lock-in only lasts while nobody outside knows it's on.","hot");
+  renderSpot(); renderBar(); paint();
+}
+function lockinBridge(){
+  S.lockin=false;
+  showEvent({t:"Time, gentlemen",
+    p:"The lock-in has run its course — the taps are finally dry, the publican's yawning into his own shoulder, and the sky outside is making threats. Someone says the only word left to say: Leroy's. The crew peels itself off the bar and spills out into the pre-dawn to chase the afters.",
+    o:[["Kick on at Leroy's",()=>{ startKickons(); }]]});
 }
 function kickoffEvent(){
   showEvent({t:"Crack the first one",
@@ -1277,9 +1315,11 @@ function offerKickonDone(c){
   b.onclick=()=>location.reload(); c.appendChild(b);
 }
 function startKickons(){
+  const fromLockin=S.lockin; S.lockin=false;
   S.kickon=true; S.over=false; S.venue=KICKON;
   S.day=1; S.dayEndTick=S.tick+DAY_LEN;
-  S.nightLegend=S.legend; S.nightBoys=boysUp(); S.nightPeak=S.peakBuzz; S.nightBill=S.bill; S.aftersStart=S.tick;
+  S.nightLegend=S.legend; S.nightBoys=boysUp(); S.nightPeak=S.peakBuzz; S.nightBill=S.bill;
+  if(!fromLockin) S.aftersStart=S.tick;   // a lock-in already started the afters clock; keep its degen ramp
   S.buzz=Math.max(S.buzz,30); S.heat=Math.max(0,S.heat-20);
   $("overlay").classList.remove("show");
   renderSpot(); renderBar();
@@ -1344,8 +1384,8 @@ function step(){
     if(boy("ray").up)g+=0.8;
     leg(g);
   } else S.streak=0;
-  // Degen score — accrues in afters AND during the bowlo takeover. Ramps hourly; doubles above the zone.
-  if(S.kickon || S.bunkered){
+  // Degen score — accrues in afters, the pub lock-in, AND during the bowlo takeover. Ramps hourly; doubles above the zone.
+  if(S.kickon || S.bunkered || S.lockin){
     let d = 1 + Math.floor((S.tick-S.aftersStart)/12);
     if(S.buzz>ZONE[1]) d*=2;
     S.degen += d;
@@ -1416,9 +1456,14 @@ function step(){
     if(boysUp()<=2){ endScreen("LEADERSHIP VACUUM","The founding cabinet has been lost to taxis and beanbags. A movement of billions cannot run on two blokes. It dissolves as fast as it formed — into folklore and a very confused Monday.",false,false); paint(); return; }
     paint(); return;
   }
+  // the pub lock-in — held past close, then it bridges out to Leroy's kick-ons
+  if(S.lockin){
+    if(S.walking===0 && (S.tick-S.lockinStart>=LOCKIN_LEN || S.tick>=S.ticksTotal-1)){ lockinBridge(); paint(); return; }
+    if(S.heat>=100){ endScreen("SPRUNG","Word of the lock-in got out — a neighbour, a rideshare driver, a rookie doing laps. The police knock once, politely, then not politely. Everyone files out onto the street holding a warm mid-strength. A magnificent, doomed idea.",false,false); paint(); return; }
+  }
   // venue moves — the night rolls forward through the arc, offered as an event
   S.moveCd--;
-  if(!S.kickon && S.walking===0 && S.seated===0 && S.buzz>=12 && S.moveCd<=0 && S.tick<S.ticksTotal-6){
+  if(!S.kickon && !S.lockin && S.walking===0 && S.seated===0 && S.buzz>=12 && S.moveCd<=0 && S.tick<S.ticksTotal-6){
     if(fireMoveEvent()){ paint(); return; } else S.moveCd=8;
   }
   // random events — no repeats, context-gated (venue/house), venue-signature-gated, momentum quickens the pace
