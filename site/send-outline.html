@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow" />
+<title>SEND IT — gameplay outline</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,600;9..144,900&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0d0b14; --panel:#171224; --panel2:#1f1930; --line:#2c2340;
+  --text:#ece7f2; --dim:#9a90b0;
+  --neon:#ff2e88; --amber:#ffb347; --zone:#2ee6a8; --danger:#ff5252; --klr:#7c5cff;
+  --disp:"Fraunces",serif; --body:"Inter",system-ui,sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--ink);color:var(--text);font-family:var(--body);padding:20px 14px 56px;max-width:1000px;margin:0 auto;-webkit-tap-highlight-color:transparent;line-height:1.5}
+h1{font-family:var(--disp);font-weight:900;font-size:clamp(24px,5.4vw,34px);color:var(--neon);text-shadow:0 0 5px rgba(255,46,136,.85),0 0 18px rgba(255,46,136,.45)}
+.lead{color:var(--dim);font-size:14px;line-height:1.6;margin-top:8px;max-width:720px}
+.sec{margin-top:30px}
+.sec>h2{font-family:var(--disp);font-weight:900;font-size:20px;color:var(--text);display:flex;align-items:baseline;gap:9px}
+.sec>h2 .no{font-size:12px;color:var(--klr);font-weight:700;letter-spacing:.1em}
+.sec>.sub{color:var(--dim);font-size:13px;margin:5px 0 12px;max-width:720px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:11px;padding:14px 15px;margin-top:10px}
+.card.klr{border-left:3px solid var(--klr)}
+.card.zone{border-left:3px solid var(--zone)}
+.card.neon{border-left:3px solid var(--neon)}
+.card.amber{border-left:3px solid var(--amber)}
+.card.danger{border-left:3px solid var(--danger)}
+.card h3{font-size:14px;font-weight:700;margin-bottom:6px}
+.card p{font-size:13px;color:var(--dim);line-height:1.6}
+.card p b,.card li b{color:var(--text)}
+.card p .z{color:var(--zone);font-weight:700}
+.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:10px;margin-top:10px}
+.mini{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 13px}
+.mini .k{display:flex;align-items:center;gap:7px;font-weight:700;font-size:13.5px}
+.mini .k .ic{font-size:16px}
+.mini p{font-size:12.5px;color:var(--dim);margin-top:5px;line-height:1.55}
+table{width:100%;border-collapse:collapse;margin-top:10px;font-size:12.5px}
+.tw{overflow-x:auto;border:1px solid var(--line);border-radius:10px}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);white-space:nowrap}
+th{background:var(--panel2);color:var(--dim);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:700}
+td{color:var(--text)}
+td.d{color:var(--dim);white-space:normal;min-width:200px}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;font-size:11px;color:var(--dim)}
+.gear td:first-child{color:var(--klr)}
+.zoneband{display:flex;height:34px;border-radius:8px;overflow:hidden;margin:12px 0 4px;border:1px solid var(--line);font-size:11px;font-weight:700}
+.zoneband div{display:flex;align-items:center;justify-content:center;text-align:center;padding:0 6px}
+.zb-low{background:rgba(154,144,176,.18);color:var(--dim);flex:42}
+.zb-in{background:rgba(46,230,168,.22);color:var(--zone);flex:33}
+.zb-hi{background:rgba(255,82,82,.2);color:var(--danger);flex:25}
+.scale{font-size:11px;color:var(--dim);display:flex;justify-content:space-between;margin-top:2px}
+.steps{list-style:none;counter-reset:s;margin-top:8px}
+.steps li{position:relative;padding:7px 0 7px 30px;font-size:13px;color:var(--dim);border-top:1px solid var(--line)}
+.steps li:first-child{border-top:0}
+.steps li:before{counter-increment:s;content:counter(s);position:absolute;left:0;top:7px;width:20px;height:20px;border-radius:50%;background:var(--panel2);border:1px solid var(--klr);color:var(--klr);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center}
+.steps li b{color:var(--text)}
+.tiers{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:9px;margin-top:10px}
+.tier{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+.tier .h{font-family:var(--disp);font-weight:600;font-size:14px}
+.tier .when{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);margin:2px 0 8px}
+.tier ul{list-style:none;display:flex;flex-direction:column;gap:4px}
+.tier li{font-size:12.5px;display:flex;justify-content:space-between;gap:8px;color:var(--text)}
+.tier li span{color:var(--dim);font-size:11px}
+.tier li .door{color:var(--danger)}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px}
+.chip{font-size:11px;padding:3px 9px;border-radius:999px;border:1px solid var(--line);color:var(--dim)}
+.chip.on{background:rgba(124,92,255,.14);color:var(--klr);border-color:rgba(124,92,255,.4)}
+.combo{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:9px;margin-top:10px}
+.combo .c{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 12px}
+.combo .c .t{font-weight:700;font-size:13px}
+.combo .c.good .t{color:var(--zone)}
+.combo .c.bad .t{color:var(--danger)}
+.combo .c p{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5}
+.mstones{margin-top:10px;border-left:2px solid var(--line);padding-left:16px}
+.ms{position:relative;padding:6px 0 10px}
+.ms:before{content:"";position:absolute;left:-21px;top:9px;width:9px;height:9px;border-radius:50%;background:var(--neon);box-shadow:0 0 7px var(--neon)}
+.ms .at{font-size:11px;color:var(--klr);font-weight:700}
+.ms .t{font-weight:700;font-size:13.5px}
+.ms .d{font-size:12px;color:var(--dim);margin-top:2px}
+.ms.win:before{background:var(--zone);box-shadow:0 0 8px var(--zone)}
+.ms.win .at{color:var(--zone)}
+.ends{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:9px;margin-top:10px}
+.end{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+.end .n{font-family:var(--disp);font-weight:900;font-size:13.5px}
+.end .n.win{color:var(--zone)}.end .n.fail{color:var(--danger)}.end .n.crown{color:var(--amber)}
+.end .d{font-size:11.5px;color:var(--dim);margin-top:3px;line-height:1.45}
+.note{background:var(--panel);border:1px solid var(--line);border-left:3px solid var(--amber);border-radius:9px;padding:13px 15px;margin-top:26px;font-size:13.5px;line-height:1.6;color:var(--dim)}
+.note b{color:var(--amber)}
+.k-neon{color:var(--neon);font-weight:700}.k-zone{color:var(--zone);font-weight:700}.k-amber{color:var(--amber);font-weight:700}.k-klr{color:var(--klr);font-weight:700}.k-dan{color:var(--danger);font-weight:700}
+</style>
+</head>
+<body>
+<h1>SEND IT — gameplay outline</h1>
+<p class="lead">The full shape of the game on one page: the loop, the dials you're juggling, the bar, the crawl, kick-ons, the secret bowlo run, and every way the night can end. Design reference — not the game itself.</p>
+
+<!-- 1 -->
+<div class="sec">
+  <h2><span class="no">01</span> The premise</h2>
+  <p class="sub">You're on a Northbridge (Perth) bucks night with <b class="k-amber">Bucko</b> and seven mates. The goal isn't to get as maggot as possible — it's to keep the whole crew, and the whole night, humming for as long as you can. Great nights are <b>managed</b>, not survived.</p>
+  <div class="card klr">
+    <p>One real-time night runs <b>7:00pm → 6:00am</b> (<b>132 ticks</b>, each tick = 5 minutes of game-clock). Survive to sunrise and you're offered <span class="z">kick-ons</span>, which can push the session across multiple days. Take one strange fork early and the game quietly becomes something else entirely.</p>
+  </div>
+</div>
+
+<!-- 2 -->
+<div class="sec">
+  <h2><span class="no">02</span> The core loop — THE ZONE</h2>
+  <p class="sub">Everything orbits your <b class="k-zone">buzz</b> (0–100). Too sober and the party fades; too maggot and you get sloppy, hot, and seated. The sweet spot is <b class="k-zone">THE ZONE: 42–75</b> — staying in it earns legend faster and keeps the boys and the night alive.</p>
+  <div class="zoneband">
+    <div class="zb-low">0–41 · fading, flat</div>
+    <div class="zb-in">42–75 · THE ZONE</div>
+    <div class="zb-hi">76–100 · maggot / danger</div>
+  </div>
+  <div class="scale"><span>0</span><span>buzz</span><span>100</span></div>
+  <div class="card zone">
+    <p>Buzz <b>decays every tick</b> on its own (~<b>2.2/tick</b> out on the town, ~<b>2.8/tick</b> at kick-ons), so you're constantly topping up. Drink to climb, water to come down, food to slow the slide. Drift too far from the zone in either direction and your <b>out-of-control</b> factor rises — which makes bad events more likely and, at the bowlo, makes the night harder to hold.</p>
+  </div>
+</div>
+
+<!-- 3 -->
+<div class="sec">
+  <h2><span class="no">03</span> The dials you're juggling</h2>
+  <p class="sub">Six things move under the hood. Read them together — a great run keeps buzz in the zone, heat low, boys up, and the card... a problem for tomorrow.</p>
+  <div class="grid">
+    <div class="mini"><div class="k"><span class="ic">🎯</span>Buzz</div><p>Your intoxication, 0–100. Keep it in <b class="z" style="color:var(--zone)">the zone (42–75)</b>. Drink up, water down, food slows the decay.</p></div>
+    <div class="mini"><div class="k"><span class="ic">🚨</span>Heat / notoriety</div><p>Police & bouncer attention. Rises with chaos, drugs, and getting caught; too much heat gets you knocked back at doors or ends the night in the cells.</p></div>
+    <div class="mini"><div class="k"><span class="ic">💳</span>The card bill</div><p>Every drink and shout stacks up. Doesn't end the night — it's the receipt of shame at the end. Your bank starts sending worried texts.</p></div>
+    <div class="mini"><div class="k"><span class="ic">⭐</span>Legend</div><p>Your score. Earned by being in the zone, big moments, shoeys, saving the night. This is what the end-of-night rank is built on.</p></div>
+    <div class="mini"><div class="k"><span class="ic">🥙</span>Hygiene</div><p>Hours since your last <b>food or water</b>. Past ~24h the sesh gets harder to hold; by ~36h, much harder. Kebabs and waters reset it.</p></div>
+    <div class="mini"><div class="k"><span class="ic">👥</span>The boys (8)</div><p>Bucko + 7. They can chunder, get picked up, get thrown out, or vanish to a taxi. Drop to <b>2 standing</b> and the night collapses.</p></div>
+  </div>
+</div>
+
+<!-- 4 -->
+<div class="sec">
+  <h2><span class="no">04</span> The bar — what you can order</h2>
+  <p class="sub">Two rows of buttons: drinks (walk-up) and <span class="k-klr">gear</span> (the risky stuff). Prices scale with the venue; gear is fixed-price. Each has a cooldown. Once you're at kick-ons, the <b>Kebab</b> button becomes <b>Uber Eats</b>.</p>
+  <div class="tw">
+  <table>
+    <tr><th>Item</th><th>Type</th><th>What it does</th></tr>
+    <tr><td>🍺 Schooner</td><td class="tag">drink</td><td class="d">+8 buzz. The bread and butter of staying in the zone.</td></tr>
+    <tr><td>🍷 Vino</td><td class="tag">drink</td><td class="d">+10 buzz. Goon-adjacent red, allegedly sophisticated.</td></tr>
+    <tr><td>🍸 Cocktail</td><td class="tag">drink</td><td class="d">+16 buzz, +legend. Now varies — negroni, pornstar martini, a four-straw fishbowl, margarita, and more.</td></tr>
+    <tr><td>🥃 Shots</td><td class="tag">drink</td><td class="d">+12 buzz, chance of a legend moment for the table.</td></tr>
+    <tr><td>💧 Water</td><td class="tag">drink</td><td class="d">−8 buzz, −heat. The tactical reset. Also fixes hygiene.</td></tr>
+    <tr><td>🥙 Kebab → 📱 Uber Eats</td><td class="tag">food</td><td class="d">Soakage: halves buzz decay for a while, resets hunger. On the street it's a kebab; at home it's a delivery order (with delivery-fee pain).</td></tr>
+    <tr class="gear"><td>❄️ Racks (coke)</td><td class="tag">gear</td><td class="d">A controlled boost <b>into the zone</b> — sharpens you up rather than blasting you over. Hit it several times back-to-back and you risk a <b class="k-dan">cardiac episode</b>.</td></tr>
+    <tr class="gear"><td>💊 Pinger (MD)</td><td class="tag">gear</td><td class="d">Slow burn — nothing at first, then <b>legend ×2</b> once it lands.</td></tr>
+    <tr class="gear"><td>🐴 K</td><td class="tag">gear</td><td class="d">+16 buzz, tips the room on a warm diagonal. Too much and you're <b>seated</b> — glued to a chair for a while.</td></tr>
+    <tr class="gear"><td>⚡ Dexie</td><td class="tag">gear</td><td class="d">Laser focus, slows buzz decay. The functional one.</td></tr>
+  </table>
+  </div>
+</div>
+
+<!-- 5 -->
+<div class="sec">
+  <h2><span class="no">05</span> Stacking the gear</h2>
+  <p class="sub">Combinations matter. Some snap the night into balance; some file a formal objection with your heart.</p>
+  <div class="combo">
+    <div class="c good"><div class="t">Racks + K — the tandem</div><p>Coke onto ket calibrates the whole night. Untouchable, no seat for you. Big legend.</p></div>
+    <div class="c good"><div class="t">K + Pinger — the good roll</div><p>Ket after a pinger (or vice-versa) is the fabled roll. Glorious.</p></div>
+    <div class="c bad"><div class="t">Racks + Pinger — bad stack</div><p>Coke on a pinger (either order) is dangerous — spikes heat and buzz, small cardiac chance.</p></div>
+    <div class="c bad"><div class="t">Racks × 3+ — cardiac streak</div><p>Hammering coke over and over in a short window keeps a tally your heart eventually invoices. Grey, sat down, possibly an ambulance.</p></div>
+  </div>
+</div>
+
+<!-- 6 -->
+<div class="sec">
+  <h2><span class="no">06</span> The crawl — venues &amp; forks</h2>
+  <p class="sub">You don't pick venues from a menu — the night <b>fans out</b>. Every so often a "where to, boys?" fork offers <b>3 venues from the current time-tier (± one)</b>, plus a <b>kebab run</b> when you're hot, plus <b>"stick it out here."</b> Doors get warier as your <b>notoriety</b> climbs; camp one spot too long and it goes <b>cold</b>; a lively, varied crawl builds <b>momentum</b>.</p>
+  <div class="tiers">
+    <div class="tier"><div class="h">Warm-up</div><div class="when">Tier 0 · 7–9pm</div><ul>
+      <li>Grass Monkey <span>pub · start</span></li>
+      <li>Vin Rouge <span>wine bar</span></li>
+    </ul></div>
+    <div class="tier"><div class="h">Mid</div><div class="when">Tier 1 · 9–11pm</div><ul>
+      <li>Mustard Bar <span>live music</span></li>
+      <li>Sneaky Terry's <span class="door">door</span></li>
+      <li>The Sportie <span>sports bar</span></li>
+      <li>Molly's <span>Irish pub</span></li>
+    </ul></div>
+    <div class="tier"><div class="h">Late</div><div class="when">Tier 2 · 11pm–2am</div><ul>
+      <li>Retro Shitty <span class="door">door</span></li>
+      <li>Alto <span class="door">strict</span></li>
+      <li>The Bird <span class="door">mean door</span></li>
+    </ul></div>
+    <div class="tier"><div class="h">Closing</div><div class="when">Tier 3 · 2am+</div><ul>
+      <li>Connies <span class="door">door · opens 12</span></li>
+    </ul></div>
+  </div>
+  <div class="chips">
+    <span class="chip">💵 price multiplier per venue</span>
+    <span class="chip">⭐ legend rate per venue</span>
+    <span class="chip">🚨 heat rate per venue</span>
+    <span class="chip on">🥙 Kebab Alley — offered when hot</span>
+    <span class="chip on">🏠 Leroy's Flat — kick-ons only</span>
+  </div>
+</div>
+
+<!-- 7 -->
+<div class="sec">
+  <h2><span class="no">07</span> Kick-ons — pushing into the days</h2>
+  <p class="sub">Make it to <b class="k-amber">6am sunrise</b> and you can call it a perfect night — or <b class="k-zone">KICK ON</b> at Leroy's flat for 3 more hours. From here you're chasing a <b class="k-zone">degen score</b> instead of legend, and every full day you push adds a bigger, dumber title.</p>
+  <div class="card zone">
+    <p>At the flat the vibe shifts to house-party mode: goon o'clock on the Hills Hoist, neighbours instead of bouncers, Uber Eats instead of kebabs. Keep enough boys standing and enough buzz alive to "push into day N". The card bill hides; <b>degen</b> takes over as the headline number.</p>
+  </div>
+  <div class="tiers" style="margin-top:12px">
+    <div class="tier"><div class="h">Day 1</div><div class="when">the skydive</div><ul><li>THE SKYDIVE</li></ul></div>
+    <div class="tier"><div class="h">Day 2</div><div class="when">legends</div><ul><li>LEGENDS OF THE KICK-ON</li></ul></div>
+    <div class="tier"><div class="h">Day 3</div><div class="when">three days</div><ul><li>THREE DAYS</li></ul></div>
+    <div class="tier"><div class="h">Day 4</div><div class="when">the veil</div><ul><li>THROUGH THE VEIL</li></ul></div>
+    <div class="tier"><div class="h">Day 5+</div><div class="when">mythic</div><ul><li>THE UNKILLABLES</li></ul></div>
+  </div>
+</div>
+
+<!-- 8 -->
+<div class="sec">
+  <h2><span class="no">08</span> The secret: the North Perth bowlo</h2>
+  <p class="sub">At the <b>very first fork only</b>, one option is <b>North Perth Bowling Club</b> — presented like any normal venue, the only tell being that it's an odd call. It's a genuine, leave-able venue: most players have a couple and launch straight back into Northbridge. But <b>stick it out past its midnight close</b> and the whole game pivots.</p>
+  <ol class="steps">
+    <li><b>Arrive.</b> A normal suburban lawn-bowls club — carpet bowls, a meat raffle, fluorescent light. Drink, then rejoin the crawl whenever you like.</li>
+    <li><b>Midnight (tick 60).</b> If you're still there at close, you're invited to <b>declare sovereignty</b> — the bowlo's version of kick-ons. This is the point of no return.</li>
+    <li><b>The takeover.</b> You bunker in and take the place over. Your headline metric becomes <b class="k-neon">the Movement</b> (allegiance), with degen still ticking underneath.</li>
+    <li><b>Grow the sesh.</b> Push allegiance through <b>8 milestones</b> while managing <b>counterinsurgency</b>, unavoidable <b>derails</b>, and <b>hygiene</b>. The powers-that-be start out underestimating you; the plots thicken as you grow.</li>
+    <li><b>Ratification.</b> Reach the target and the whole species votes to become the <b class="k-amber">Doof Republic</b>.</li>
+  </ol>
+  <div class="mstones">
+    <div class="ms"><div class="at">at 90</div><div class="t">The stream escapes</div><div class="d">A clip of Pickles doing the worm goes global. The movement gets a face — yours.</div></div>
+    <div class="ms"><div class="at">at 220</div><div class="t">North Perth secedes</div><div class="d">The neighbours bring a lasagne and vote to become an independent sesh-state.</div></div>
+    <div class="ms"><div class="at">at 380</div><div class="t">Perth is on it</div><div class="d">Cars from Joondalup to Mandurah. The most isolated city becomes the centre of it.</div></div>
+    <div class="ms"><div class="at">at 560</div><div class="t">Australia pledges allegiance</div><div class="d">The PM sends a national keg. Parliament is suspended.</div></div>
+    <div class="ms"><div class="at">at 780</div><div class="t">New Zealand, obviously</div><div class="d">The Trans-Tasman Sesh Union forms. Haka meets Nutbush.</div></div>
+    <div class="ms"><div class="at">at 1040</div><div class="t">The nations line up</div><div class="d">Time zones reschedule so the planet can sesh at once. Sausage logistics nationalised.</div></div>
+    <div class="ms"><div class="at">at 1360</div><div class="t">The last hold-out</div><div class="d">One man on Earth isn't on the sesh. He gets a handwritten invite via the ISS.</div></div>
+    <div class="ms"><div class="at">at 1760</div><div class="t">The ratification</div><div class="d">The whole species votes, live, on a knife-edge. The music makes the argument.</div></div>
+    <div class="ms win"><div class="at">at 2250</div><div class="t">FOUNDER OF THE DOOF REPUBLIC</div><div class="d">Humanity agrees, formally and forever, to just have a really good time — plus a founder's dividend.</div></div>
+  </div>
+</div>
+
+<!-- 9 -->
+<div class="sec">
+  <h2><span class="no">09</span> How the night ends</h2>
+  <p class="sub">Every ending, sorted by flavour. Wins in green, the crown in gold, the ways it falls apart in red.</p>
+  <div class="ends">
+    <div class="end"><div class="n win">SUNRISE</div><div class="d">6am over the Horseshoe Bridge, kebabs in hand. Nothing burned down. The clean win.</div></div>
+    <div class="end"><div class="n win">THE SKYDIVE → THE UNKILLABLES</div><div class="d">Kick-on wins, tiered by how many days you pushed (1 → 5+).</div></div>
+    <div class="end"><div class="n crown">FOUNDER OF THE DOOF REPUBLIC</div><div class="d">The bowlo grand win — you united the species from a lawn-bowls club.</div></div>
+    <div class="end"><div class="n fail">A NIGHT IN THE CELLS</div><div class="d">A taxi-rank scuffle too far. Folded into a divvy van.</div></div>
+    <div class="end"><div class="n fail">LOCKED UP</div><div class="d">Heat maxed out. The night ends in the Perth watch house.</div></div>
+    <div class="end"><div class="n fail">EIGHTY-SIXED</div><div class="d">Argued with a bouncer and lost. Trespassed from three venues by radio.</div></div>
+    <div class="end"><div class="n fail">CARDIAC EVENT</div><div class="d">Your heart files a formal objection. Stretcher, ambulance, a stern paramedic.</div></div>
+    <div class="end"><div class="n fail">PARTY WIPE</div><div class="d">Down to two boys standing. You're holding six phones, none yours.</div></div>
+    <div class="end"><div class="n fail">THAT'S A WRAP / THE LONG WALK</div><div class="d">The night just quietly runs out of road.</div></div>
+    <div class="end"><div class="n fail">EVICTED AT DAWN / SHUT DOWN</div><div class="d">The kick-on gets busted — property manager or police at Leroy's flat.</div></div>
+  </div>
+  <div class="card danger" style="margin-top:12px">
+    <h3>Bowlo-run failures</h3>
+    <p><b>SHUT DOWN AT THE BOWLO</b> — the noise complaints won before the movement found its feet. <b>THE COUP</b> — you got so big the old powers pulled a plug. <b>THE FIZZLE</b> — the sesh ran out of heartbeat (buzz hit zero). <b>LEADERSHIP VACUUM</b> — the founding cabinet lost to taxis and beanbags.</p>
+  </div>
+</div>
+
+<!-- 10 -->
+<div class="sec">
+  <h2><span class="no">10</span> How you're scored</h2>
+  <p class="sub">The end screen ranks the run. Legend drives the night rank; degen drives the kick-on rank; the bowlo run has its own Movement reach.</p>
+  <div class="grid">
+    <div class="mini"><div class="k"><span class="ic">⭐</span>Night — Legend rank</div><p>Built from total legend, boys standing, peak buzz, and the card bill. From keen amateur up to certified folk hero.</p></div>
+    <div class="mini"><div class="k"><span class="ic">🔥</span>Kick-ons — Degen rank</div><p>Merely Keen → Loose Unit → Certified Degen → Feral → <b>Ungovernable</b>, by degen score.</p></div>
+    <div class="mini"><div class="k"><span class="ic">🌍</span>Bowlo — Movement reach</div><p>Scaled by allegiance, all the way to Founder of the Doof Republic.</p></div>
+  </div>
+</div>
+
+<div class="note">
+<b>This is a design outline, not the live game.</b> Numbers (zone 42–75, decay rates, milestone thresholds, the 132-tick night) are pulled straight from the current build and will drift as it's tuned. Play it at <b>staldex.com/send</b>. Want this trimmed to a one-screen quick-reference, or expanded with the exact per-venue price/legend/heat table? Say the word.
+</div>
+</body>
+</html>
