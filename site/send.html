@@ -821,11 +821,17 @@ function fireDerail(){
    (occasionally fail), wrong answers usually fail (occasionally pass). */
 const QUIZ=[
  {q:"'What's the magic word?'", a:[["'Please'",2],["'Cheers, big ears'",1],["'Do you know who I am?'",-2]]},
- {q:"'Name a lawn bowls term. Go.'", a:[["'The jack'",2],["'A big end'",1],["'Strike! Home run!'",-1]]},
  {q:"'How many drinks have you actually had tonight?'", a:[["'Two.' (a bold lie)",2],["'Honestly? No clue.'",0],["'YES.'",-2]]},
  {q:"'Say the alphabet backwards. I won't check.'", a:[["Mumble it with total confidence",2],["'Z, Y, X... nah.'",1],["Attempt it sincerely and fail",-1]]},
  {q:"'Who are you here with?'", a:[["'The buck — it's his big night.'",2],["'These blokes. Good blokes.'",1],["'Nobody. Everybody. The universe.'",-1]]},
  {q:"'Straight answer: are you going to be a problem?'", a:[["'No sir. Model citizen.'",2],["'Define problem.'",-1],["'Absolutely not.' (winks slowly)",0]]},
+ {q:"'Walk this line for me.'", a:[["Walk it dead straight",2],["Commit hard and overbalance",-1],["'I'd rather not commit to that legally'",0]]},
+ {q:"'Touch your nose. Prove you're sober.'", a:[["Do it, clean and slow",2],["Miss, and poke yourself in the eye",-2],["Touch HIS nose",-1]]},
+ {q:"'Got ID?'", a:[["Produce it, smooth as you like",2],["'It's in my other pants'",-1],["Hand over a Bunnings loyalty card",0]]},
+ {q:"'What's the vibe going to be in there?'", a:[["'Respectful. Contained. Joyous.'",2],["'Depends who's on the decks'",1],["'UNGOVERNABLE' (too honest)",-2]]},
+ {q:"'Why should I let you in?'", a:[["'It's my mate's bucks, big fella'",2],["'Because you can tell I'm a legend'",1],["'Because I'll just try the other door'",-2]]},
+ {q:"'Empty your pockets.'", a:[["Lint, a receipt, and quiet dignity",2],["Produce, inexplicably, a full kebab",0],["Decline, politely, as a gentleman",-1]]},
+ {q:"'Where are your shoes?'", a:[["Point, confidently, at your shoes",2],["'Excellent question'",-1],["Look down. Panic. One is missing",-1]]},
 ];
 function bouncerQuiz(id){
   const b=boy(id); if(!b||b.up) return;
