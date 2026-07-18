@@ -175,7 +175,8 @@ const S = {
   venueTicks:0, momentum:0, notoriety:0, visited:new Set(["gm"]),
   counts:{}, spend:{drink:0,gear:0,food:0}, forkCount:0, usedHeat:new Set(), usedDJ:new Set(),
   bunkered:false, takeover:false, allegiance:0, milestone:0, usedBunker:new Set(),
-  counterCd:12, usedCounter:new Set(), pendingQuiz:null,
+  counterCd:12, usedCounter:new Set(), pendingQuiz:null, usedDerail:new Set(),
+  lastFood:0, lastWater:0, hygieneWarned:false,
   kCount:0, travisHole:0, rayDone:false, sandyCd:0,
   jezCd:14, robinCd:11, leroyCd:17, picklesCd:9,
   reel:[],
@@ -236,6 +237,17 @@ function boysUp(){ return S.boys.filter(b=>b.up).length; }
 function downBoy(id,status,msg){ const b=boy(id); if(!b||!b.up)return; b.up=false; b.outTicks=0; b.st=status; say(msg,"bad"); renderBoys(); }
 function benchBoy(id,ticks,status,msg){ const b=boy(id); if(!b||!b.up)return; b.up=false; b.outTicks=ticks; b.st=status; say(msg,"bad"); renderBoys(); }
 function clockStr(){ const m=19*60 + S.tick*5; const h24=Math.floor(m/60)%24; const mm=(m%60).toString().padStart(2,"0"); const ap=h24>=12&&h24<24?"pm":"am"; let h=h24%12; if(h===0)h=12; return h+":"+mm+ap; }
+/* Hygiene — hours since the last food or water. Past ~24h the sesh gets harder to hold; by ~36h, much harder. */
+function hygieneHrs(){ return Math.max((S.tick-S.lastFood)*5/60, (S.tick-S.lastWater)*5/60); }
+function hygienePenalty(){ const h=hygieneHrs(); return h<24?0:Math.min(0.6,(h-24)/12*0.6); }
+function outOfControl(){
+  let o=0;
+  if(S.buzz>ZONE[1]) o+=(S.buzz-ZONE[1])/25;       // too maggot
+  else if(S.buzz<ZONE[0]) o+=(ZONE[0]-S.buzz)/50;  // the party is fading
+  o+=S.heat/220;
+  o+=hygienePenalty()*0.8;                          // running on empty makes you sloppy
+  return o;
+}
 
 /* ---------------- consumables ---------------- */
 const ACTS=[
@@ -243,8 +255,8 @@ const ACTS=[
   {id:"wine", ico:"🍷", nm:"Vino",     base:12, cd:3,  gear:false, do:()=>{ buzz(+10); say("A sophisticated glass of goon-adjacent red.","gd"); }},
   {id:"cock", ico:"🍸", nm:"Cocktail", base:24, cd:4,  gear:false, do:()=>{ buzz(+16); leg(4); say("An espresso martini. The boys pretend not to judge.","gd"); }},
   {id:"shot", ico:"🥃", nm:"Shots",    base:10, cd:2,  gear:false, do:()=>{ buzz(+12); if(Math.random()<.25){leg(6);say("Tequila for the table. Someone bites the lime, skin-side. Legend behaviour.","leg");} else say("A shot vanishes. Your future self files a complaint.","gd"); }},
-  {id:"water",ico:"💧", nm:"Water",    base:0,  cd:4,  gear:false, do:()=>{ buzz(-8); heat(-3); say("A tactical water. Genuinely elite move.","gd"); }},
-  {id:"kebab",ico:"🥙", nm:"Kebab",    base:15, cd:10, gear:false, do:()=>{ S.soakTicks=10; heat(-3); say("Soakage acquired. The kebab slows the slide. Buzz decay halved for a bit.","gd"); }},
+  {id:"water",ico:"💧", nm:"Water",    base:0,  cd:4,  gear:false, do:()=>{ buzz(-8); heat(-3); const dry=(S.tick-S.lastWater)*5/60>24; S.lastWater=S.tick; say(dry?"First water in over a day. Your body sends up a flare of pure gratitude. Everything eases a notch.":"A tactical water. Genuinely elite move.","gd"); }},
+  {id:"kebab",ico:"🥙", nm:"Kebab",    base:15, cd:10, gear:false, do:()=>{ S.soakTicks=10; heat(-3); const starved=(S.tick-S.lastFood)*5/60>24; S.lastFood=S.tick; say(starved?"First real food in over a day. The whole machine reboots. Soakage acquired and, for once, actually needed — the slide eases right off.":"Soakage acquired. The kebab slows the slide. Buzz decay halved for a bit.","gd"); }},
   {id:"coke", ico:"❄️", nm:"Racks",    base:60, cd:10, gear:true,  do:()=>{ buzz(+20); S.cokeTicks=10; heatRisk(10,"A cubicle door with four sets of shoes under it draws attention.");
       if(S.mdTicks>0){ badStack(); }                                          // coke on a pinger — dangerous
       else if(S.ketTicks>0){ leg(10); say("The rack lands on the ket and the whole night snaps into balance. Calibrated. Untouchable. This is the good stuff.","leg"); }
@@ -306,7 +318,7 @@ const EVENTS=[
  {t:"Shout o'clock",p:"It's your shout. Every remaining boy turns to you expectantly.",
   o:[["Shout the round",()=>{const c=boysUp()*9;spend(c);leg(15);buzz(6);say("You shout the round ($"+c+" on the card, a problem for Future You). Songs may be written about this.","leg");}],
      ["Fake a phone call",()=>{leg(-10);say("Everyone can see your screen is off.","bad");}]]},
- {t:"Kerb negotiation",c:()=>boy("robin").up,p:"Robin wants to jaywalk across William St to beat the kebab rush, 'as a bit'.",
+ {t:"Kerb negotiation",transit:true,c:()=>boy("robin").up,p:"Mid-walk, Robin wants to jaywalk across William St to beat the kebab rush, 'as a bit'.",
   o:[["Send it",()=>{if(Math.random()<.6){leg(8);say("Frogger complete. First in line.","leg");}else{heat(12);say("A traffic cop materialises from thin air with a notepad.","bad");}}],
      ["Use the crossing",()=>{say("You wait for the green man like absolute legends of civic order.","gd");leg(3);}]]},
  {t:"The guest list",c:()=>boy("leroy").up,p:"At the door, Leroy steps forward and announces — with total conviction — that you are 'the visiting under-23s development squad' and should be on the list. The bouncer looks at Travis. Travis waves.",
@@ -324,7 +336,7 @@ const EVENTS=[
  {t:"The tattoo window",p:"A late-night tattoo parlour glows across the street. Bucko is staring at it. 'It's my last night of freedom, boys.'",
   o:[["Talk him into something small",()=>{S.flags.tattoo=true;spend(120);leg(28);say("Bucko now has a tiny cocktail glass on his ankle ($120). The bride will find it eventually.","leg");}],
      ["Full veto, best-man privilege",()=>{leg(6);say("You invoke best-man veto powers. Bucko sulks for one song, then forgets entirely.","gd");}]]},
- {t:"E-scooter armada",p:"Four parked e-scooters. Robin has already unlocked one with the app. 'Convoy to the next venue?'",
+ {t:"E-scooter armada",transit:true,p:"On the move, you pass four parked e-scooters. Robin has already unlocked one with the app. 'Convoy to the next venue?'",
   o:[["Assemble the armada",()=>{spend(18);if(Math.random()<.6){leg(22);buzz(4);say("Grown adults in polos glide down James St in formation. Onlookers salute.","leg");}else{heat(14);say("A council ranger films the entire convoy on his phone, nodding slowly.","bad");}}],
      ["Walk like it's 1997",()=>{buzz(-3);say("You walk. Robin rides beside you at 2km/h making seagull noises.","hot");}]]},
  {t:"The bride calls",ctx:"any",p:"Bucko's phone lights up: it's the bride. Bucko is currently wearing a traffic cone as a hat.",
@@ -398,7 +410,7 @@ const EVENTS=[
   o:[["Come clean",()=>{leg(15);say("You confess everything. The manager stares... then laughs so hard he comps the round anyway 'for the commitment'. Leroy takes full credit.","leg");}],
      ["Pose for the photo",()=>{if(Math.random()<.5){leg(25);relieve(50);say("The photo is taken. Drinks are comped. Somewhere on a nightclub Instagram, eight cooked civilians are captioned 'future stars'. The bill breathes easier.","leg");}else{heat(15);say("A patron who follows the actual under-23s squints at Travis. The jig is up. You are asked to leave with a firmness usually reserved for actual athletes.","bad");}}]]},
  /* ---- extra venue jeopardy: more ways for the night to end early ---- */
- {t:"The taxi rank stand-off",c:()=>S.tick>30,p:"One cab, two groups, both swear they flagged it. The other mob is bigger and their buck has removed his shirt as a formality.",
+ {t:"The taxi rank stand-off",transit:true,c:()=>S.tick>30,p:"On the move between spots, you hit the taxi rank: one cab, two groups, both swear they flagged it. The other mob is bigger and their buck has removed his shirt as a formality.",
   o:[["Concede it like gentlemen",()=>{leg(6);say("You wave them off with grace. Bucko salutes their buck. A rare outbreak of civility on William St.","gd");}],
      ["Stand your ground",()=>{ if(Math.random()< .3 + S.tick*0.004){ heat(18); endScreen("A NIGHT IN THE CELLS","A taxi-rank scuffle at this hour is a Northbridge classic and the police have seen every episode. You are gently folded into a divvy van. Bucko's speech writes itself.",false,false);} else { leg(10); heat(6); say("Chest-to-chest, then — somehow — a handshake and a shared maxi. Warm cab, cooler heads.","hot"); } }]]},
  {t:"Cut off",c:()=>S.buzz>80,p:"The bartender slides your card back and says the four words: 'You've had enough, mate.' The whole bar is watching.",
@@ -612,7 +624,7 @@ const CHAOS=[
  "Robin convinces you to challenge a parking meter to a fight. You lose.",
  "Bucko tries to pay for a kebab with a Medicare card, then a Bunnings receipt.",
  "Pickles attempts a British accent. Publicly. At volume. It comes out American.",
- "The boys attempt a human pyramid on James St. It reaches two men high.",
+ "The boys attempt a human pyramid on the footpath. It reaches two men high.",
  "Someone orders a espresso martini 'to go' and wears most of it.",
  "Travis is found explaining the tram network of a city that has no trams.",
  "A traffic cone is knighted. The ceremony is genuinely quite moving.",
@@ -775,6 +787,34 @@ function fireCounter(){
   if(!avail.length) return false;
   const i=avail[Math.floor(Math.random()*avail.length)]; S.usedCounter.add(i);
   showEvent(COUNTER[i]); return true;
+}
+/* Unavoidable derails — the free world lands a blow you cannot manage, and the odds rise the more
+   out of control you are (out of the zone, hot, running on empty). Stay in control and they stay away. */
+const DERAIL_TERMINAL=[
+ ["THE COUNTER-COUP","The free world was waiting for exactly this: the moment you lost the thread, went too hard, stopped reading the room. They took it. The stream cuts, the lights come up, and it turns out a movement of billions can still be undone by one bloke losing control at the wrong second. Tonight, that bloke was you."],
+ ["DECAPITATION STRIKE","They didn't fight the movement — they went for its head. In the chaos of your own making, nobody clocked the quiet extraction until you were already in the back of an unmarked car being offered a very reasonable cup of tea. The party runs leaderless for eleven minutes, then remembers it has work on Monday."],
+ ["THE PLUG","In the seconds you weren't holding it together, a hand found the one switch that mattered. Everything stops at once. Eight billion people blink, check the time, and quietly agree it's probably a night. The Doof Republic dies one vote short — of a wound that was entirely self-inflicted."],
+];
+const DERAIL_SET=[
+ {h:14, a:130, x:"You dropped the thread for a moment and the free world pounced — a coordinated push peels a whole continent back off the movement before you claw it together. Costly, and avoidable if you'd kept it tight."},
+ {h:12, a:100, x:"Out of control at the worst possible second: a clip of you at your absolute worst hands the opposition their best day in weeks. Allegiance bleeds. Get a grip."},
+ {h:16, a:160, x:"A lapse — a big one. The old powers exploit the gap ruthlessly and the movement staggers, still standing but bloodied. It did not have to be this way."},
+];
+/* Transit scenarios — only fire on the walk between venues (never while you're settled at a spot). */
+function fireTransit(){
+  const avail=EVENTS.filter(e=>e.transit && !e.used && (!e.c||e.c()));
+  if(!avail.length) return false;
+  const ev=avail[Math.floor(Math.random()*avail.length)]; ev.used=true; showEvent(ev); return true;
+}
+function fireDerail(){
+  if(Math.random()<0.4){
+    const t=DERAIL_TERMINAL[Math.floor(Math.random()*DERAIL_TERMINAL.length)];
+    endScreen(t[0], t[1], false, false); return true;
+  }
+  let idxs=[]; for(let i=0;i<DERAIL_SET.length;i++) if(!S.usedDerail.has(i)) idxs.push(i);
+  if(!idxs.length){ S.usedDerail.clear(); for(let i=0;i<DERAIL_SET.length;i++) idxs.push(i); }
+  const i=idxs[Math.floor(Math.random()*idxs.length)]; S.usedDerail.add(i);
+  const d=DERAIL_SET[i]; heat(d.h); S.allegiance=Math.max(0,S.allegiance-d.a); say(d.x,"bad"); return false;
 }
 /* Bouncer quiz — a short, silly mini-game to talk a knocked-back boy back in.
    Your answers nudge the odds, but the door has the final say: right answers usually pass
@@ -1212,6 +1252,7 @@ function step(){
     if(S.walking===0){
       if(S.pendingConflict!=null){ const idx=S.pendingConflict; S.pendingConflict=null; S.pendingQuiz=null; securityConflict(idx); paint(); return; }
       if(S.pendingQuiz){ const qid=S.pendingQuiz; S.pendingQuiz=null; say("Arrived at "+VENUES[S.venue].n+" — but "+boy(qid).n+" is stuck at the door.","hot"); bouncerQuiz(qid); paint(); return; }
+      if(!S.bunkered && Math.random()<.35 && fireTransit()){ paint(); return; }  // a scene on the walk over
       say("Arrived at "+VENUES[S.venue].n+".","gd");
     }
   }
@@ -1236,6 +1277,9 @@ function step(){
   }
   if(S.cokeTicks>0){S.cokeTicks--; if(S.cokeTicks===0){buzz(-14);heat(-2);say("The rack wears off mid-sentence — the sentence was about crypto — and a thin grey craving slides in behind it. You check the time. It is not later than you think.","bad");}}
   if(S.ketTicks>0){S.ketTicks--; if(S.ketTicks===0){buzz(-8);say("The K-hole spits you back into the room, blinking and somehow taller. Everything is very loud and very close again.","bad");}}
+  decay *= 1 + hygienePenalty();   // no food/water for a day-plus and the buzz slides faster
+  if(hygieneHrs()>24){ if(!S.hygieneWarned){ S.hygieneWarned=true; say("Over a full day now without proper food or water. The sesh is getting hard to hold — the body is filing complaints in triplicate. A kebab and a water would go a long way.","bad"); } }
+  else S.hygieneWarned=false;
   buzz(-decay);
   if(S.buzz<=0 && S.tick>6){
     const e=SOBER_ENDINGS[Math.floor(Math.random()*SOBER_ENDINGS.length)];
@@ -1278,7 +1322,7 @@ function step(){
   S.picklesCd--;
   if(boy("pickles").up && S.picklesCd<=0 && S.ambientCd<=0){ S.picklesCd=9+Math.floor(Math.random()*7); S.ambientCd=2; fireChatter("pickles"); }
   if(!S.rayDone && boy("ray").up && S.tick>=60){ S.rayDone=true; rayEvent(); paint(); return; }
-  if(S.buzz>90 && S.ambientCd<=0 && Math.random()<.30){ S.ambientCd=2; heat(8*VENUES[S.venue].heat); fireChaos(); }
+  if(S.buzz>90 && S.ambientCd<=0 && Math.random()<.30){ S.ambientCd=2; heat(8*VENUES[S.venue].heat); if(!S.bunkered) fireChaos(); }
   if(S.shadow && S.ambientCd<=0 && Math.random()<.28){ S.ambientCd=2; fireShadow(); }
   // DJ moments — any venue on the crawl, and they take the lead as the night gets later
   if(!S.kickon && !S.bunkered && S.ambientCd<=0 && (boy("robin").up||boy("pickles").up)){
@@ -1305,6 +1349,7 @@ function step(){
       if(S.milestone>=6) heat(-5);                                       // near-global: the authorities ARE the party now, untouchable
       else if(S.milestone>=1 && Math.random()<.25) heat(2+Math.floor(S.milestone/2)+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
       if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id,"tapped out at the bowlo","One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
+      if(S.milestone>=2 && S.milestone<6){ const ooc=outOfControl(); if(ooc>0.2 && Math.random()<0.022*ooc){ fireDerail(); paint(); return; } } // unavoidable if you lose the plot
       if(S.milestone<MILESTONES.length && S.allegiance>=MILESTONES[S.milestone].at){
         const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
       }
@@ -1339,7 +1384,7 @@ function step(){
   S.eventCd--;
   if(S.eventCd<=0 && (S.kickon || S.tick<S.ticksTotal-4)){
     S.eventCd=Math.max(4, 9+Math.floor(Math.random()*6) - Math.floor(S.momentum/25));
-    const avail=EVENTS.filter(e=>!e.used&&(!e.c||e.c())&&ctxOk(e)&&atOk(e));
+    const avail=EVENTS.filter(e=>!e.used&&(!e.c||e.c())&&ctxOk(e)&&atOk(e)&&!e.transit);
     const sig=avail.filter(e=>e.at===VENUES[S.venue].id);   // this venue's signature scenes
     const follow=avail.filter(e=>e.f);
     let pool=avail;
