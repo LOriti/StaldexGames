@@ -174,6 +174,7 @@ const S = {
   degen:0, aftersStart:0, nightLegend:0, nightBoys:8, nightPeak:0, nightBill:0, peakBuzz:0, shadow:false, usedShadow:new Set(),
   venueTicks:0, momentum:0, notoriety:0, visited:new Set(["gm"]),
   counts:{}, spend:{drink:0,gear:0,food:0}, forkCount:0, usedHeat:new Set(), usedDJ:new Set(),
+  cokeStreak:0, lastCoke:-99,
   bunkered:false, takeover:false, allegiance:0, milestone:0, usedBunker:new Set(),
   counterCd:12, usedCounter:new Set(), pendingQuiz:null, usedDerail:new Set(),
   lastFood:0, lastWater:0, hygieneWarned:false,
@@ -205,7 +206,7 @@ const VENUES=[
   {id:"connies", tier:3,    n:"Connies",        tag:"late club",  price:1.6,  legend:2.0, heat:1.2, door:true,  opens:60, blurb:"Best dance floor in the hemisphere. Opens midnight.", left:false},
   {id:"kebab",   tier:null, n:"Kebab Alley",    tag:"street",     price:1.0,  legend:.4,  heat:.3,  door:false, blurb:"Garlic sauce fixes most things.", left:false},
   {id:"flat",    tier:null, n:"Leroy's Flat",   tag:"kick-ons",   price:.4,   legend:1.8, heat:.9,  door:false, blurb:"Someone's already on aux. The neighbours are already awake.", left:false, hidden:true},
-  {id:"bowlo",   tier:null, n:"North Perth Bowlo", tag:"lawn bowls club", price:.7, legend:.9, heat:.6, door:false, blurb:"Twenty minutes out of the city. Carpet bowls, a meat raffle, fluorescent light, and destiny.", left:false},
+  {id:"bowlo",   tier:null, n:"North Perth Bowlo", tag:"lawn bowls club", price:.7, legend:.9, heat:.6, door:false, blurb:"Twenty minutes out of the city — carpet bowls, a meat raffle, fluorescent light. A weird call.", left:false},
   {id:"wine",    tier:0,    n:"Vin Rouge",      tag:"wine bar",   price:1.6,  legend:1.1, heat:.4,  door:false, blurb:"Natural wine and small plates. Sandy's happy place. Use your inside voice.", left:false},
   {id:"sports",  tier:1,    n:"The Sportie",    tag:"sports bar", price:1.1,  legend:1.3, heat:.9,  door:false, blurb:"Big screens, a pool table, a beer tower with your name on it.", left:false},
   {id:"irish",   tier:1,    n:"Molly's",        tag:"Irish pub",  price:1.2,  legend:1.5, heat:.9,  door:false, blurb:"Guinness done properly. Jez knows the owner. A fiddle is warming up.", left:false},
@@ -250,17 +251,44 @@ function outOfControl(){
 }
 
 /* ---------------- consumables ---------------- */
+const COCKTAILS=[
+  "An espresso martini. The boys pretend not to judge.",
+  "A negroni, ordered with total confidence and instantly regretted. Bitter, adult, punishing.",
+  "A pornstar martini, requested with a completely straight face. The shot glass on the side is the whole point.",
+  "A lurid blue thing in a fishbowl with four straws. Nobody knows what's in it. Nobody ever will.",
+  "A margarita, salt rim, the works. For eleven seconds you are on holiday.",
+  "An old fashioned, because someone's decided they're sophisticated now. They are not.",
+  "A pint-glass mojito with enough mint to alarm a botanist.",
+  "A pina colada that arrives with an umbrella and a sparkler. The bartender is also over it.",
+];
+const EATS=[
+  "Uber Eats: a whole HSP for the room, $58 with fees and a $9 tip you don't remember agreeing to. Soakage acquired — the slide eases off.",
+  "Uber Eats: forty McNuggets and a stack of cheeseburgers land at the door. The driver has seen this exact order a thousand times tonight. Soakage acquired.",
+  "Uber Eats: you order a kebab anyway, from the same shop, but now it's $34 and driven across town by a man named Anwar. Soakage acquired, dignity not.",
+  "Uber Eats: a large pizza arrives cold, folded, and correct. Nobody complains. Soakage acquired — buzz decay halved for a bit.",
+  "Uber Eats: fried chicken, potato scallops and two litres of gravy, ordered at a volume the app was not designed for. Soakage acquired.",
+  "Uber Eats: someone's phone auto-fills the wrong address and the food goes to Leroy's ex. Second attempt lands. Soakage, eventually, acquired.",
+];
 const ACTS=[
   {id:"beer", ico:"🍺", nm:"Schooner", base:9,  cd:3,  gear:false, do:()=>{ buzz(+8);  say("Schooner down. Crisp.","gd"); }},
   {id:"wine", ico:"🍷", nm:"Vino",     base:12, cd:3,  gear:false, do:()=>{ buzz(+10); say("A sophisticated glass of goon-adjacent red.","gd"); }},
-  {id:"cock", ico:"🍸", nm:"Cocktail", base:24, cd:4,  gear:false, do:()=>{ buzz(+16); leg(4); say("An espresso martini. The boys pretend not to judge.","gd"); }},
+  {id:"cock", ico:"🍸", nm:"Cocktail", base:24, cd:4,  gear:false, do:()=>{ buzz(+16); leg(4); say(COCKTAILS[Math.floor(Math.random()*COCKTAILS.length)],"gd"); }},
   {id:"shot", ico:"🥃", nm:"Shots",    base:10, cd:2,  gear:false, do:()=>{ buzz(+12); if(Math.random()<.25){leg(6);say("Tequila for the table. Someone bites the lime, skin-side. Legend behaviour.","leg");} else say("A shot vanishes. Your future self files a complaint.","gd"); }},
   {id:"water",ico:"💧", nm:"Water",    base:0,  cd:4,  gear:false, do:()=>{ buzz(-8); heat(-3); const dry=(S.tick-S.lastWater)*5/60>24; S.lastWater=S.tick; say(dry?"First water in over a day. Your body sends up a flare of pure gratitude. Everything eases a notch.":"A tactical water. Genuinely elite move.","gd"); }},
-  {id:"kebab",ico:"🥙", nm:"Kebab",    base:15, cd:10, gear:false, do:()=>{ S.soakTicks=10; heat(-3); const starved=(S.tick-S.lastFood)*5/60>24; S.lastFood=S.tick; say(starved?"First real food in over a day. The whole machine reboots. Soakage acquired and, for once, actually needed — the slide eases right off.":"Soakage acquired. The kebab slows the slide. Buzz decay halved for a bit.","gd"); }},
-  {id:"coke", ico:"❄️", nm:"Racks",    base:60, cd:10, gear:true,  do:()=>{ buzz(+20); S.cokeTicks=10; heatRisk(10,"A cubicle door with four sets of shoes under it draws attention.");
+  {id:"kebab",ico:()=>S.kickon?"📱":"🥙", nm:()=>S.kickon?"Uber Eats":"Kebab", base:15, cd:10, gear:false, do:()=>{ S.soakTicks=10; heat(-3); const starved=(S.tick-S.lastFood)*5/60>24; S.lastFood=S.tick;
+      if(S.kickon){ say(starved?"First real food in over a day, and it takes a $19 delivery fee and forty minutes to arrive. The whole machine reboots anyway. Soakage acquired — the slide eases right off.":EATS[Math.floor(Math.random()*EATS.length)],"gd"); }
+      else say(starved?"First real food in over a day. The whole machine reboots. Soakage acquired and, for once, actually needed — the slide eases right off.":"Soakage acquired. The kebab slows the slide. Buzz decay halved for a bit.","gd"); }},
+  {id:"coke", ico:"❄️", nm:"Racks",    base:60, cd:10, gear:true,  do:()=>{
+      // Racks sharpen you UP into the zone rather than blasting you over — a controlled boost.
+      const d = S.buzz<76 ? Math.min(20, 76-S.buzz) : 4; buzz(d);
+      S.cokeTicks=10; heatRisk(8,"A cubicle door with four sets of shoes under it draws attention.");
+      S.cokeStreak = (S.tick - S.lastCoke) <= 12 ? S.cokeStreak+1 : 1; S.lastCoke = S.tick;
       if(S.mdTicks>0){ badStack(); }                                          // coke on a pinger — dangerous
+      else if(S.cokeStreak>=3 && Math.random() < (S.cokeStreak-2)*0.22){       // hitting it over and over
+        cardiacEpisode("Three, four, five racks back to back now — and your heart, keeping a tally you weren't, sends the invoice. You go grey and sit down hard.");
+      }
       else if(S.ketTicks>0){ leg(10); say("The rack lands on the ket and the whole night snaps into balance. Calibrated. Untouchable. This is the good stuff.","leg"); }
-      else say("Everyone in the cubicle is now an expert on cryptocurrency.","hot"); }},
+      else say("Sharp, clean, dialled in — right in the pocket. Everyone in the cubicle is now, briefly, an expert on cryptocurrency.","hot"); }},
   {id:"md",   ico:"💊", nm:"Pinger",   base:30, cd:14, gear:true,  do:()=>{ S.mdTicks=16; buzz(+2);
       if(S.cokeTicks>0){ badStack(); }                                        // pinger onto a rack — dangerous
       else if(S.ketTicks>0){ goodRoll(); }                                    // pinger with ket already down — glorious
@@ -279,7 +307,7 @@ const ACTS=[
 function travisEvent(){
   showEvent({t:"Travis has FINALLY gone under",
     p:"You thought Travis was pacing himself. Travis was not pacing himself. A forensic review of the night reveals he's been quietly running his own private program in the cubicle since 8:45pm — his stash makes yours look like a sample pack. The tank is empty. Travis is now furniture, staring at a gig poster like it's the Sistine Chapel. Security is doing laps.",
-    o:[["Babysit him in a booth",()=>{buzz(-4);boy("travis").st="booth · recovering";say("You park Travis with a water and stand guard. He resurfaces asking what year it is, then asks if anyone's keen for another.","gd");renderBoys();setTimeout(()=>{const t=boy("travis");if(t.up)t.st="suspiciously chipper";renderBoys();},9000);}],
+    o:[["Babysit him somewhere quiet",()=>{buzz(-4);boy("travis").st="recovering quietly";say("You park Travis somewhere quiet with a water and stand guard. He resurfaces asking what year it is, then asks if anyone's keen for another.","gd");renderBoys();setTimeout(()=>{const t=boy("travis");if(t.up)t.st="suspiciously chipper";renderBoys();},9000);}],
        ["He'll ride it out",()=>{S.travisHole=6;boy("travis").st="one with the wall";renderBoys();say("Travis is riding it out in full public view. Bold strategy given his intake.","hot");}]]});
 }
 function sandyEvent(){
@@ -444,7 +472,7 @@ const EVENTS=[
  {t:"The dress code",at:"rooftop",p:"The rooftop's door host looks the group up and down: polos, one traffic cone, Bucko in a dress shoe and a servo thong. 'Smart casual, gentlemen.' This is a negotiation.",
   o:[["Let Leroy talk",()=>{ if(boy("leroy").up && Math.random()<.6){leg(16);say("Leroy explains you're a 'private investment group celebrating a merger'. The host, charmed or confused, waves you through to the good view. Incredible.","leg");}else{heat(6);S.notoriety=Math.min(100,S.notoriety+6);say("The bit doesn't fly. Bucko's servo thong is, apparently, a deal-breaker. You're turned away with great politeness.","bad");} }],
      ["Not worth it, find somewhere real",()=>{leg(4);say("You clock the $28 cocktail list and the dress code and decide, as a group, that you have standards too. You leave with your dignity and your money.","gd");}]]},
- {t:"The twenty-eight-dollar spill",at:"rooftop",p:"Someone's knocked a full espresso martini across a table of influencers doing a 'content night'. The drink cost $28. The phones cost far more. Ring lights are being repositioned toward you.",
+ {t:"The twenty-eight-dollar spill",at:"rooftop",p:"Someone's knocked a full pornstar martini, shot glass and all, across a table of influencers doing a 'content night'. The drink cost $28. The phones cost far more. Ring lights are being repositioned toward you.",
   o:[["Grovel and shout the round",()=>{spend(90);say("You buy the influencers a round to smooth it over. They film the apology 'for the story'. You are now, unwillingly, content. Bucko waves at the camera.","hot");}],
      ["Vanish into the crowd",()=>{ if(Math.random()<.5){buzz(-3);say("You melt into the rooftop crowd before anyone gets a clean shot. Ninja work. They film an empty space, betrayed.","hot");}else{heat(12);S.notoriety=Math.min(100,S.notoriety+8);say("Security has you on camera. You're escorted to the lift, collars up. The content, ironically, does numbers.","bad");} }]]},
  {t:"The pit opens up",at:"dive",p:"The band nobody's heard of has just gone up a gear and a mosh pit has opened in the middle of The Bird — small, sweaty, and pulling the whole group toward it like a drain.",
@@ -711,14 +739,16 @@ function fireShadow(){
 /* The pinger drop — fires when the come-up finishes. Most land well; a few dud;
    a slightly larger few come up FAR too strong (an overdose you have to ride out). */
 /* Coke + pinger — a bad stack. The two fight each other, kill the roll, and (low chance) your heart objects. */
+/* A cardiac episode — you sit down hard, and a fraction of the time it ends the night in an ambulance. */
+function cardiacEpisode(line){
+  buzz(-18); S.seated=Math.max(S.seated,6); heat(4);
+  if(Math.random()<.25) endScreen("CARDIAC EVENT","Your heart has filed a formal objection. The floor comes up to meet you; an ambulance comes to meet the floor. You'll be fine — genuinely fine — but the night ends here, on a stretcher, being told off by a paramedic who has said this exact sentence a thousand times.",false,false);
+  else say(line||"Your heart does a thing hearts should not do. You sit down hard, clutching your chest, sheeted in cold sweat. The boys go silent. It passes. It really, really shouldn't have.","bad");
+}
 function badStack(){
   S.mdTicks=0; S.mdOD=false; S.mdSmooth=false; heat(7);
   say("Racks on a pinger. The upper and the roll fight each other into a jittery, joyless static — the euphoria gone, only the jaw remaining. A bad stack.","bad");
-  if(Math.random()<.14){
-    buzz(-18); S.seated=Math.max(S.seated,6);
-    if(Math.random()<.25) endScreen("CARDIAC EVENT","You stacked a rack on a pinger and your heart filed a formal objection. The floor comes up to meet you; an ambulance comes to meet the floor. You'll be fine — genuinely fine — but the night ends here, on a stretcher, being told off by a paramedic who has said this exact sentence a thousand times.",false,false);
-    else say("Worse — your heart does a thing hearts should not do. You sit down hard, clutching your chest, sheeted in cold sweat. The boys go silent. It passes. It really, really shouldn't have.","bad");
-  }
+  if(Math.random()<.14) cardiacEpisode();
 }
 /* Ket after a pinger — the fabled roll. It rounds off every edge. */
 function goodRoll(){
@@ -737,13 +767,9 @@ function pingerLands(){
    Offered ONLY in the first fork. Divert to a suburban bowling club, bunker in,
    take it over when it closes, and grow one sesh into a global party government. */
 const BOWLO_IDX=7;
-function enterBowlo(){
-  S.bunkered=true; S.walking=4; S.venue=BOWLO_IDX; S.venueTicks=0; S.moveCd=99999;
-  S.aftersStart=S.tick; // degen starts ramping from here too
-  say("You take the odd option. Two Ubers, out of the city, twenty minutes north to the North Perth Bowling Club — a lawn bowls club, of all places. The boys are baffled. Bucko is delighted. None of you can feel it yet, but something enormous has just begun.","leg");
-  say("Suburban rules out here: no bouncers, just neighbours; no strip, just quiet streets and a bowls green; heat means the council and the noise line, not the cops. Cheap drinks, fluorescent light, and all the time in the world. Bunker in.","hot");
-  renderSpot(); renderBar(); paint();
-}
+/* The bowls club is a perfectly normal venue you can drink at and leave from — most players will
+   head back into the city. Only staying past its midnight close tips it into the sub-storyline. */
+function enterBowlo(){ S.moveCd=10+Math.floor(Math.random()*4); moveVenue(BOWLO_IDX); }
 const BUNKER=[
  "You shout the entire bowling club a round. The members, average age seventy-one, are cautiously delighted.",
  "Robin has entered the meat raffle forty times under forty different fake names.",
@@ -871,10 +897,10 @@ function bouncerQuiz(id){
   render();
 }
 function takeoverEvent(){
-  showEvent({t:"They've closed. You stayed.",
-    p:"Last drinks, and the bowls club is closing up around you — the greenkeeper's locked the front door and gone home, and the two staff still here, hopelessly outnumbered and thoroughly charmed, have quietly stopped being staff and started being guests. The disco lights from the club Christmas do get found. The PA that usually calls the meat raffle gets rewired. Robin is already behind it mixing, Pickles at his shoulder learning fast. You didn't leave when they closed, boys. This is your bowling club now.",
+  showEvent({t:"Midnight. Declare sovereignty.",
+    p:"Midnight, and the bowls club calls last drinks. The greenkeeper locks the front door and drives off; the two staff left, hopelessly outnumbered and thoroughly charmed, quietly stop being staff and become guests. Everyone else has long since headed back to the city — but not you. You stayed. The disco lights from the Christmas do come out, the PA that calls the meat raffle gets rewired, Robin gets behind it. This is your after-hours now: no bouncers, just neighbours; heat means the council, not the cops. Standing on the manicured green, you realise you could just... declare this place a nation.",
     o:[
-      ["Declare the greens a sovereign dancefloor",()=>{ leg(24); S.allegiance+=10; say("You stand on the manicured green — a criminal act, the birth of a nation — and declare it a sovereign dancefloor. The greenkeeper weeps openly. It has begun.","leg"); }],
+      ["Declare the greens a sovereign dancefloor",()=>{ leg(24); S.allegiance+=10; say("You stand on the green — a criminal act, the birth of a nation — and declare it a sovereign dancefloor. The greenkeeper, watching from his car, weeps openly. It has begun.","leg"); }],
       ["Put Leroy in charge of comms",()=>{ leg(16); S.allegiance+=18; say("Leroy appoints himself Minister for Communications and starts a livestream 'to document the movement'. Forty people are watching. Then four hundred. Then he stops looking at the number.","leg"); }]
     ]});
 }
@@ -948,7 +974,6 @@ function renderSpot(){
   const v=VENUES[S.venue];
   let vibe;
   if(S.bunkered && S.takeover) vibe="the movement · "+fmt(S.allegiance)+" and rising";
-  else if(S.bunkered) vibe="bunkered in · they're closing up";
   else if(S.kickon) vibe="kick-ons · goon o'clock";
   else if(S.walking>0) vibe="on the move…";
   else if(S.venueTicks>18) vibe="going cold — move on";
@@ -963,7 +988,7 @@ function renderBar(){
   $("actsRow").innerHTML=ACTS.map(a=>{
     const price=actPrice(a.id);
     return `<button class="act ${a.gear?"gear":""}" data-a="${a.id}">
-      <div class="ico">${a.ico}</div><div class="nm">${a.nm}</div>
+      <div class="ico">${typeof a.ico==="function"?a.ico():a.ico}</div><div class="nm">${typeof a.nm==="function"?a.nm():a.nm}</div>
       <div class="pr">${price?("$"+price):"free"}</div><div class="cd"></div></button>`;
   }).join("");
   document.querySelectorAll(".act").forEach(el=>el.onclick=()=>useAct(el.dataset.a));
@@ -1363,32 +1388,25 @@ function step(){
     if(hs>0 && Math.random()<hs && fireHeatScenario()) S.ambientCd=2;
   }
   if(S.heat>0 && Math.random()<.5)heat(-1);
-  // ===== THE BOWLO SUB-STORYLINE — the night pivots to a global takeover =====
+  // The bowls club shuts at MIDNIGHT. Stay past close and you declare sovereignty — the after-hours, instead of kick-ons.
+  if(!S.bunkered && S.venue===BOWLO_IDX && S.walking===0 && S.tick>=60){
+    S.bunkered=true; S.takeover=true; S.aftersStart=S.tick; takeoverEvent(); paint(); return;
+  }
+  // ===== THE BOWLO SUB-STORYLINE — sovereignty declared; the night pivots to a global takeover =====
   if(S.bunkered){
     if(S.walking>0){ paint(); return; }
-    if(S.takeover){
-      if(S.counterCd>0)S.counterCd--;
-      if(S.buzz>=40 && S.seated===0) S.allegiance += 4 + Math.floor(boysUp()/2) + Math.floor(S.buzz/12); // the movement feeds on the party
-      if(S.milestone>=6) heat(-5);                                       // near-global: the authorities ARE the party now, untouchable
-      else if(S.milestone>=1 && Math.random()<.25) heat(2+Math.floor(S.milestone/2)+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
-      if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id,"tapped out at the bowlo","One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
-      if(S.milestone>=2 && S.milestone<6){ const ooc=outOfControl(); if(ooc>0.2 && Math.random()<0.022*ooc){ fireDerail(); paint(); return; } } // unavoidable if you lose the plot
-      if(S.milestone<MILESTONES.length && S.allegiance>=MILESTONES[S.milestone].at){
-        const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
-      }
-      if(S.milestone>=MILESTONES.length && S.allegiance>=GLOBAL_AT){ globalGovEnd(); paint(); return; }
-      // counterinsurgency — the still-free world fights back between milestones; you must manage it
-      if(S.milestone>=2 && S.milestone<8 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
-    } else {
-      if(S.tick>=36){ S.takeover=true; takeoverEvent(); paint(); return; } // the club closes and you don't leave
-      if(S.buzz>68 && S.ambientCd<=0 && Math.random()<.08){ S.ambientCd=2; heat(5); say("A neighbour in the quiet street leans over the fence: 'This is a bowls club, not a nightclub.' Fair. Noted. Roundly ignored.","bad"); }
-      S.eventCd--;
-      if(S.eventCd<=0){ S.eventCd=5+Math.floor(Math.random()*4);
-        const be=EVENTS.filter(e=>e.at==="bowlo" && !e.used && (!e.c||e.c()));
-        if(be.length && Math.random()<.5){ const ev=be[Math.floor(Math.random()*be.length)]; ev.used=true; showEvent(ev); paint(); return; }
-        fireBunker();
-      }
+    if(S.counterCd>0)S.counterCd--;
+    if(S.buzz>=40 && S.seated===0) S.allegiance += 4 + Math.floor(boysUp()/2) + Math.floor(S.buzz/12); // the movement feeds on the party
+    if(S.milestone>=6) heat(-5);                                       // near-global: the authorities ARE the party now, untouchable
+    else if(S.milestone>=1 && Math.random()<.25) heat(2+Math.floor(S.milestone/2)+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
+    if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id,"tapped out at the bowlo","One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
+    if(S.milestone>=2 && S.milestone<6){ const ooc=outOfControl(); if(ooc>0.2 && Math.random()<0.022*ooc){ fireDerail(); paint(); return; } } // unavoidable if you lose the plot
+    if(S.milestone<MILESTONES.length && S.allegiance>=MILESTONES[S.milestone].at){
+      const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
     }
+    if(S.milestone>=MILESTONES.length && S.allegiance>=GLOBAL_AT){ globalGovEnd(); paint(); return; }
+    // counterinsurgency — the still-free world fights back between milestones; you must manage it
+    if(S.milestone>=2 && S.milestone<8 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
     if(S.heat>=100){
       if(S.milestone>=3) endScreen("THE COUP","You got so big the old powers panicked, and somewhere someone pulled a plug they shouldn't have been able to reach. The greens fall silent. History will call it a coup. History will be wrong, but too sober to argue.",false,false);
       else endScreen("SHUT DOWN AT THE BOWLO","Before the movement could find its feet, the noise complaints won — the council, the cops, and a very determined man in a dressing gown. A beautiful idea, twenty minutes too early.",false,false);
@@ -1407,6 +1425,13 @@ function step(){
   S.eventCd--;
   if(S.eventCd<=0 && (S.kickon || S.tick<S.ticksTotal-4)){
     S.eventCd=Math.max(4, 9+Math.floor(Math.random()*6) - Math.floor(S.momentum/25));
+    if(S.venue===BOWLO_IDX && !S.bunkered){   // out at the quiet bowls club: its own scenes + a neighbour, no city scenes
+      const be=EVENTS.filter(e=>e.at==="bowlo" && !e.used && (!e.c||e.c()));
+      if(be.length && Math.random()<.5){ const ev=be[Math.floor(Math.random()*be.length)]; ev.used=true; showEvent(ev); paint(); return; }
+      if(S.buzz>68 && Math.random()<.3){ heat(5); say("A neighbour leans over the fence: 'This is a bowls club, not a nightclub.' Fair. Noted. Roundly ignored.","bad"); }
+      else fireBunker();
+      paint(); return;
+    }
     const avail=EVENTS.filter(e=>!e.used&&(!e.c||e.c())&&ctxOk(e)&&atOk(e)&&!e.transit);
     const sig=avail.filter(e=>e.at===VENUES[S.venue].id);   // this venue's signature scenes
     const follow=avail.filter(e=>e.f);
