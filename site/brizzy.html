@@ -197,12 +197,12 @@ const TRIP = {
 
   // Where we sleep, in order. Nights are worked out from the dates.
   stays: [
-    { name: "Bri's place", from: "2026-08-01", to: "2026-08-02", where: "Brisbane",
-      note: "Straight off the red-eye" },
+    { name: "Bri's place", from: "2026-08-01", to: "2026-08-02", where: "8 Perfect Place, Bridgeman Downs",
+      note: "Straight off the red-eye — ~25 min from the airport" },
     { name: "K'gari", from: "2026-08-02", to: "2026-08-05", where: "Fraser Coast",
       note: "Booking and transfers to confirm" },
-    { name: "Bri's place", from: "2026-08-05", to: "2026-08-09", where: "Brisbane",
-      note: "Back in time for the gig on the Thursday" }
+    { name: "Bri's place", from: "2026-08-05", to: "2026-08-09", where: "8 Perfect Place, Bridgeman Downs",
+      note: "Back in time for the gig on the Thursday — venue is only ~15 min away" }
   ],
 
   // Day-by-day. Add or remove days freely.
@@ -216,11 +216,11 @@ const TRIP = {
     { date: "2026-08-01", slots: [
       { t: "05:20", w: "Land at BNE", key: true, note: "Two hours ahead of Perth — that's 03:20 body clock" },
       { t: "~06:00", w: "Pick up the hire car", note: "Budget, airport desk. Check the counter opens this early." },
-      { t: null, w: "Drive to Bri's", note: "You'll arrive at an unsociable hour — worth warning her" },
+      { t: "~06:45", w: "Drive to Bri's", note: "8 Perfect Place, Bridgeman Downs — ~25 min. You'll land on her doorstep early; worth warning her." },
       { t: null, w: "Sleep, then a slow day", note: "You've had a red-eye and no real night. Don't plan anything." }
     ]},
     { date: "2026-08-02", away: true, slots: [
-      { t: "08:00", w: "On the road by 8", key: true, note: "River Heads is ~3.5–4 hrs from Brisbane. An 08:00 start gives you an hour of slack; 09:00 gives you none." },
+      { t: "08:00", w: "On the road by 8", key: true, note: "~3.5 hrs to River Heads, and starting northside saves you the city crawl. An 08:00 start leaves decent slack; 09:00 leaves none." },
       { t: "12:30", w: "At the terminal", note: "Vehicle barges want you there ~30 min early" },
       { t: "13:00", w: "Ferry across", key: true, note: "Confirm which terminal — River Heads and Rainbow Beach are 1.5 hrs apart and not interchangeable" },
       { t: null, w: "First night on the island" }
@@ -232,11 +232,11 @@ const TRIP = {
       { t: null, w: "Back at Bri's" }
     ]},
     { date: "2026-08-06", slots: [
-      { t: null, w: "Slow one during the day", note: "Boondall is a mission — don't stack anything after 16:00" },
-      { t: null, w: "Eat before you go", note: "Arena food is a trap, and Boondall has nothing around it" },
-      { t: "~18:15", w: "Drive out to Boondall", key: true, note: "You have the car — venue has paid parking, but the car park empties slowly. Train (Shorncliffe line) is the no-stress alternative if anyone's drinking." },
+      { t: null, w: "Day is yours", note: "Venue is 15 min away — this day doesn't need protecting" },
+      { t: null, w: "Eat before you go", note: "Arena food is a trap, and there's nothing around Boondall" },
+      { t: "~19:00", w: "Uber to the venue", key: true, note: "Short run. Uber means neither of you is the sober one." },
       { t: "20:00", w: "MASSIVE ATTACK", key: true, note: "Brisbane Entertainment Centre" },
-      { t: null, w: "Out", note: "One of you is driving, or it's the train. Decide before you leave, not in the queue." }
+      { t: null, w: "Uber home", note: "Walk a few minutes clear of the car park before ordering — surge and gridlock right at the doors" }
     ]},
     { date: "2026-08-07", slots: [{ t: null, w: "Open" }] },
     { date: "2026-08-08", slots: [
@@ -255,11 +255,10 @@ const TRIP = {
   transport: [
     { b: "★", t: "<b>Hire car (Budget) from BNE, 1–9 Aug.</b> Picked up on landing, dropped back before the flight home. Means the Airtrain and Go Card stuff below is mostly irrelevant — except for the gig." },
     { b: "!", t: "<b>A standard hire car cannot go on K'gari.</b> The island is sand tracks — 4WD only, and rental agreements for 2WD cars explicitly exclude it, so any damage is uninsured and on you. Either upgrade to a 4WD, or leave the car at the terminal and take a passenger ferry + tour. Worth resolving before the 1pm barge on the 2nd is booked." },
-    { b: "→", t: "<b>Airtrain</b> BNE to Central/Fortitude Valley, ~20 min, every 15 min. Cheaper if booked online in advance." },
-    { b: "→", t: "<b>Go Card</b> or just tap a debit card on buses, trains and ferries — contactless works network-wide." },
-    { b: "→", t: "<b>CityHopper</b> ferry is free and the nicest way to move along the river. CityCat is the paid, faster one." },
-    { b: "→", t: "<b>Walking</b> the CBD to Fortitude Valley is ~25 min; South Bank is over the Goodwill Bridge." },
-    { b: "★", t: "<b>Brisbane Entertainment Centre is at Boondall</b> — about 15 km north of the city, not walkable from anything. Train (Shorncliffe line) to Boondall station, roughly 30 min from Central, then a signed walk to the venue. Extra services usually run on event nights. Rideshare back is slow and surge-priced when 13,000 people leave at once." }
+    { b: "→", t: "<b>Bridgeman Downs is northside</b>, which suits this trip. Rough drives: airport ~25 min · Entertainment Centre ~15 min · CBD or the Valley ~25–30 min · South Bank ~30 min." },
+    { b: "★", t: "<b>The venue is practically local.</b> Boondall is one suburb over — ~15 min. No need to leave early, and no train logistics to think about." },
+    { b: "→", t: "<b>Uber on the gig night.</b> Both of you can drink and it's a short, cheap run home. Expect surge and a wait when 13,000 people leave at once — walk five minutes clear of the venue before ordering." },
+    { b: "→", t: "<b>Nights in the CBD or the Valley</b> are the ones to Uber. Driving in means paying for parking and someone staying sober." }
   ],
 
   picks: [
