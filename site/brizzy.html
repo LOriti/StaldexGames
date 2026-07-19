@@ -13,6 +13,7 @@
   --ink:#0b0b0c; --panel:#141416; --panel2:#1b1b1e; --line:#2a2a2e;
   --text:#ececeb; --dim:#8e8e94; --faint:#5c5c62;
   --sig:#e0242b;          /* signal red — the one accent */
+  --gap:#d9a441;          /* amber — days with nothing in them yet */
   --ok:#5ec98a;
   --disp:"Space Grotesk",system-ui,sans-serif;
   --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
@@ -49,6 +50,7 @@ h1 .slash{color:var(--sig)}
 section{padding:38px 0;border-bottom:1px solid var(--line)}
 h2{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.26em;text-transform:uppercase;color:var(--faint);margin-bottom:20px}
 h2 b{color:var(--sig);font-weight:500}
+h2 .tally{color:var(--gap);border:1px dashed var(--gap);border-radius:4px;padding:1px 7px;margin-left:8px;letter-spacing:.14em}
 
 /* ---------- key/value cards ---------- */
 .cards{display:grid;gap:12px;grid-template-columns:1fr}
@@ -77,6 +79,22 @@ dd .note{display:block;font-size:12px;color:var(--dim);font-family:var(--disp);l
 /* ---------- itinerary ---------- */
 .day.away{opacity:.92}
 .day.away .daylabel .dn{color:var(--faint)}
+
+/* Gaps — days with nothing in them yet, so they're obvious at a glance. */
+.day.gapday{
+  background:repeating-linear-gradient(135deg,rgba(217,164,65,.05) 0 8px,transparent 8px 16px);
+  border-left:2px dashed var(--gap);
+  margin:0 -14px;padding-left:12px;padding-right:14px;border-radius:8px;
+}
+.day.gapday .daylabel .dn{color:var(--gap)}
+.gapchip{
+  display:inline-block;margin-top:5px;font-family:var(--mono);font-size:9px;
+  letter-spacing:.18em;text-transform:uppercase;color:var(--gap);
+  border:1px dashed var(--gap);border-radius:4px;padding:1px 6px;
+}
+.slot.open .t{color:var(--gap);font-weight:600}
+.slot.open .w{color:var(--gap)}
+.slot.open .w em{color:var(--dim)}
 .day{display:grid;grid-template-columns:88px 1fr;gap:18px;padding:16px 0;border-top:1px solid var(--line)}
 .day:first-of-type{border-top:none}
 .day.gigday{background:linear-gradient(90deg,rgba(224,36,43,.07),transparent);margin:0 -14px;padding-left:14px;padding-right:14px;border-radius:8px}
@@ -140,7 +158,7 @@ a:focus-visible,summary:focus-visible{outline:2px solid var(--sig);outline-offse
 </section>
 
 <section id="itinerary">
-  <h2><b>02</b> &nbsp;Day by day</h2>
+  <h2><b>02</b> &nbsp;Day by day <span id="gapcount"></span></h2>
   <div id="days"></div>
 </section>
 
@@ -241,16 +259,17 @@ const TRIP = {
       { t: null, w: "Back at Bri's", note: "Gig is tomorrow night — this is the quiet evening" }
     ]},
     { date: "2026-08-06", slots: [
-      { t: null, w: "Day is yours", note: "Venue is 15 min away — this day doesn't need protecting" },
+      { open: true, w: "Daytime free", note: "Venue is 15 min away — this day doesn't need protecting" },
       { t: null, w: "Eat before you go", note: "Arena food is a trap, and there's nothing around Boondall" },
       { t: "~19:00", w: "Uber to the venue", key: true, note: "Short run. Uber means neither of you is the sober one." },
       { t: "20:00", w: "MASSIVE ATTACK", key: true, note: "Brisbane Entertainment Centre" },
       { t: null, w: "Uber home", note: "Walk a few minutes clear of the car park before ordering — surge and gridlock right at the doors" }
     ]},
-    { date: "2026-08-07", slots: [{ t: null, w: "Open" }] },
+    { date: "2026-08-07", slots: [
+      { open: true, w: "Whole day free", note: "Day after the gig — a soft one, or the day trip you didn't fit in" }
+    ]},
     { date: "2026-08-08", slots: [
-      { t: null, w: "Last full day" },
-      { t: null, w: "Whatever got missed", note: "Also: check out time for tomorrow" }
+      { open: true, w: "Last full day", note: "Whatever got missed. Also worth sorting the check-out and car return for tomorrow." }
     ]},
     { date: "2026-08-09", slots: [
       { t: null, w: "Check out", note: "Most places 10:00 — bag storage if the flight's not till 20:20" },
@@ -389,22 +408,35 @@ $('stays').innerHTML = TRIP.stays.map(s => {
 $('days').innerHTML = TRIP.itinerary.map((day, i) => {
   const d = parseDate(day.date);
   const isGig = day.gig || (day.date && day.date === TRIP.gig.date);
-  return `<div class="day${isGig ? ' gigday' : ''}${day.away ? ' away' : ''}">
+  const allOpen = day.slots.length > 0 && day.slots.every(sl => sl.open);
+  return `<div class="day${isGig ? ' gigday' : ''}${day.away ? ' away' : ''}${allOpen ? ' gapday' : ''}">
     <div class="daylabel">
       <div class="dn">Day ${i + 1}</div>
       <div>
         <div class="dd">${d ? `${d.getDate()} ${MONTHS[d.getMonth()]}` : TBC}</div>
         <div class="dw">${d ? DAYNAMES[d.getDay()] : day.title}</div>
+        ${allOpen ? `<div class="gapchip">Empty</div>` : ""}
       </div>
     </div>
     <div class="slots">${day.slots.map(sl =>
-      `<div class="slot${sl.key ? ' key' : ''}">
-        <div class="t">${sl.t || "—"}</div>
+      `<div class="slot${sl.key ? ' key' : ''}${sl.open ? ' open' : ''}">
+        <div class="t">${sl.open ? "+" : (sl.t || "—")}</div>
         <div class="w">${sl.w}${sl.note ? `<em>${sl.note}</em>` : ""}</div>
       </div>`).join("")}
     </div>
   </div>`;
 }).join("");
+
+/* ---- gap tally ---- */
+(function(){
+  const empty = TRIP.itinerary.filter(d => d.slots.length && d.slots.every(s => s.open)).length;
+  const partial = TRIP.itinerary.filter(d => d.slots.some(s => s.open) && !d.slots.every(s => s.open)).length;
+  if (!empty && !partial){ $('gapcount').textContent = ""; return; }
+  const bits = [];
+  if (empty) bits.push(`${empty} empty`);
+  if (partial) bits.push(`${partial} part-planned`);
+  $('gapcount').innerHTML = `<span class="tally">${bits.join(" · ")}</span>`;
+})();
 
 /* ---- transport + notes ---- */
 const noteRows = arr => arr.map(n =>
