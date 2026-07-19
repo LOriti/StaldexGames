@@ -199,8 +199,8 @@ const TRIP = {
   stays: [
     { name: "Bri's place", from: "2026-08-01", to: "2026-08-02", where: "8 Perfect Place, Bridgeman Downs",
       note: "Straight off the red-eye — ~25 min from the airport" },
-    { name: "K'gari", from: "2026-08-02", to: "2026-08-05", where: "Fraser Coast",
-      note: "Booking and transfers to confirm" },
+    { name: "Kingfisher Bay Resort", from: "2026-08-02", to: "2026-08-05", where: "K'gari",
+      note: "Passenger ferry from River Heads — hire car stays parked on the mainland" },
     { name: "Bri's place", from: "2026-08-05", to: "2026-08-09", where: "8 Perfect Place, Bridgeman Downs",
       note: "Back in time for the gig on the Thursday — venue is only ~15 min away" }
   ],
@@ -221,15 +221,24 @@ const TRIP = {
     ]},
     { date: "2026-08-02", away: true, slots: [
       { t: "08:00", w: "On the road by 8", key: true, note: "~3.5 hrs to River Heads, and starting northside saves you the city crawl. An 08:00 start leaves decent slack; 09:00 leaves none." },
-      { t: "12:30", w: "At the terminal", note: "Vehicle barges want you there ~30 min early" },
-      { t: "13:00", w: "Ferry across", key: true, note: "Confirm which terminal — River Heads and Rainbow Beach are 1.5 hrs apart and not interchangeable" },
+      { t: null, w: "Fuel and food on the way", note: "Grab it in Maryborough or Hervey Bay — the resort is a captive market" },
+      { t: "12:15", w: "Park at River Heads", note: "Car stays here three nights. Take anything you need off it — you're not coming back to it." },
+      { t: "13:00", w: "Ferry to Kingfisher Bay", key: true, note: "~50 min across" },
+      { t: "~14:00", w: "Arrive, check in", note: "Kingfisher Bay Resort" },
       { t: null, w: "First night on the island" }
     ]},
-    { date: "2026-08-03", away: true, slots: [{ t: null, w: "K'gari" }] },
-    { date: "2026-08-04", away: true, slots: [{ t: null, w: "K'gari" }] },
+    { date: "2026-08-03", away: true, slots: [
+      { t: "full day", w: "4WD tour", key: true, note: "The classic run — Lake McKenzie, 75 Mile Beach, Eli Creek, the Maheno wreck. Long day in a bus on sand." },
+      { t: null, w: "Bring", note: "Swimmers, towel, hat, sunscreen, motion sickness tablets if you're prone — the beach track is rough" }
+    ]},
+    { date: "2026-08-04", away: true, slots: [
+      { t: null, w: "Whale watching", key: true, note: "Hervey Bay in August is the good end of the season — humpbacks come into the bay to rest" },
+      { t: null, w: "Layers", note: "Cold and windy on the water even on a mild day" }
+    ]},
     { date: "2026-08-05", away: true, slots: [
-      { t: null, w: "Ferry back and drive to Brisbane", key: true, note: "Long day — and the gig is tomorrow night" },
-      { t: null, w: "Back at Bri's" }
+      { t: "11:30", w: "Ferry back to River Heads", key: true, note: "Check out first — resort will hold bags" },
+      { t: "~12:30", w: "Pick the car up and drive south", note: "~3.5 hrs to Bridgeman Downs, so back around 16:00–16:30" },
+      { t: null, w: "Back at Bri's", note: "Gig is tomorrow night — this is the quiet evening" }
     ]},
     { date: "2026-08-06", slots: [
       { t: null, w: "Day is yours", note: "Venue is 15 min away — this day doesn't need protecting" },
@@ -254,7 +263,7 @@ const TRIP = {
 
   transport: [
     { b: "★", t: "<b>Hire car (Budget) from BNE, 1–9 Aug.</b> Picked up on landing, dropped back before the flight home. The car covers everything except nights out — those are Ubers." },
-    { b: "!", t: "<b>A standard hire car cannot go on K'gari.</b> The island is sand tracks — 4WD only, and rental agreements for 2WD cars explicitly exclude it, so any damage is uninsured and on you. Either upgrade to a 4WD, or leave the car at the terminal and take a passenger ferry + tour. Worth resolving before the 1pm barge on the 2nd is booked." },
+    { b: "★", t: "<b>The car does not go to K'gari — and doesn't need to.</b> Kingfisher Bay runs a passenger ferry from River Heads and the island driving is all on guided 4WD tours. Leave the hire car in the River Heads car park for the three nights. Check whether Budget's agreement is happy with it sitting there, and whether the resort or terminal offers secure parking." },
     { b: "→", t: "<b>Bridgeman Downs is northside</b>, which suits this trip. Rough drives: airport ~25 min · Entertainment Centre ~15 min · CBD or the Valley ~25–30 min · South Bank ~30 min." },
     { b: "★", t: "<b>The venue is practically local.</b> Boondall is one suburb over — ~15 min. No need to leave early, and no train logistics to think about." },
     { b: "→", t: "<b>Uber on the gig night.</b> Both of you can drink and it's a short, cheap run home. Expect surge and a wait when 13,000 people leave at once — walk five minutes clear of the venue before ordering." },
