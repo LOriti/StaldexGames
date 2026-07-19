@@ -188,8 +188,8 @@ const TRIP = {
 
   flights: {
     out:  { date: "2026-07-31", flight: null, from: "Perth (PER)", to: "Brisbane (BNE)",
-            dep: "22:55", arr: null, ref: "E7CS3Y",
-            note: "Qantas · red-eye, lands Saturday morning" },
+            dep: "22:55", arr: "05:20", ref: "E7CS3Y",
+            note: "Qantas · red-eye, lands 05:20 Saturday" },
     back: { date: "2026-08-09", flight: null, from: "Brisbane (BNE)", to: "Perth (PER)",
             dep: "20:20", arr: null, ref: "E7CS3Y",
             note: "Qantas · lands Perth late Sunday" }
@@ -214,14 +214,15 @@ const TRIP = {
       { t: "22:55", w: "Wheels up", key: true, note: "Booking E7CS3Y" }
     ]},
     { date: "2026-08-01", slots: [
-      { t: "am", w: "Land at BNE", key: true, note: "Overnight flight — you land Saturday morning, two hours ahead of Perth" },
-      { t: null, w: "Airtrain into town", note: "~20 min, runs every 15" },
-      { t: null, w: "Bags down, then breakfast", note: "Too early to check in — most places are 15:00" },
-      { t: null, w: "Easy first night", note: "You've just done a red-eye. Don't fight it." }
+      { t: "05:20", w: "Land at BNE", key: true, note: "Two hours ahead of Perth — that's 03:20 body clock" },
+      { t: "~06:00", w: "Pick up the hire car", note: "Budget, airport desk. Check the counter opens this early." },
+      { t: null, w: "Drive to Bri's", note: "You'll arrive at an unsociable hour — worth warning her" },
+      { t: null, w: "Sleep, then a slow day", note: "You've had a red-eye and no real night. Don't plan anything." }
     ]},
     { date: "2026-08-02", away: true, slots: [
-      { t: "early", w: "Head north to K'gari", key: true, note: "Brisbane to Hervey Bay is ~3.5–4 hrs driving, then the ferry. Leave earlier than feels necessary." },
-      { t: null, w: "Ferry across", note: "Barge from River Heads (Hervey Bay) or Inskip Point (Rainbow Beach) — depends which way you book" },
+      { t: "08:00", w: "On the road by 8", key: true, note: "River Heads is ~3.5–4 hrs from Brisbane. An 08:00 start gives you an hour of slack; 09:00 gives you none." },
+      { t: "12:30", w: "At the terminal", note: "Vehicle barges want you there ~30 min early" },
+      { t: "13:00", w: "Ferry across", key: true, note: "Confirm which terminal — River Heads and Rainbow Beach are 1.5 hrs apart and not interchangeable" },
       { t: null, w: "First night on the island" }
     ]},
     { date: "2026-08-03", away: true, slots: [{ t: null, w: "K'gari" }] },
@@ -233,9 +234,9 @@ const TRIP = {
     { date: "2026-08-06", slots: [
       { t: null, w: "Slow one during the day", note: "Boondall is a mission — don't stack anything after 16:00" },
       { t: null, w: "Eat before you go", note: "Arena food is a trap, and Boondall has nothing around it" },
-      { t: "~18:30", w: "Train to Boondall", key: true, note: "Shorncliffe line from Central, ~30 min. Event trains run on show nights." },
+      { t: "~18:15", w: "Drive out to Boondall", key: true, note: "You have the car — venue has paid parking, but the car park empties slowly. Train (Shorncliffe line) is the no-stress alternative if anyone's drinking." },
       { t: "20:00", w: "MASSIVE ATTACK", key: true, note: "Brisbane Entertainment Centre" },
-      { t: null, w: "Train back", note: "Everyone leaves at once — either bolt at the last song or wait it out" }
+      { t: null, w: "Out", note: "One of you is driving, or it's the train. Decide before you leave, not in the queue." }
     ]},
     { date: "2026-08-07", slots: [{ t: null, w: "Open" }] },
     { date: "2026-08-08", slots: [
@@ -245,12 +246,15 @@ const TRIP = {
     { date: "2026-08-09", slots: [
       { t: null, w: "Check out", note: "Most places 10:00 — bag storage if the flight's not till 20:20" },
       { t: null, w: "Last day in town", note: "You have the whole day; the flight is at night" },
+      { t: null, w: "Return the hire car", note: "Refuel before the airport — airport fuel is a scam, and so is their refuelling fee" },
       { t: "18:50", w: "At BNE", note: "90 min before departure" },
       { t: "20:20", w: "Fly home", key: true, note: "Booking E7CS3Y" }
     ]}
   ],
 
   transport: [
+    { b: "★", t: "<b>Hire car (Budget) from BNE, 1–9 Aug.</b> Picked up on landing, dropped back before the flight home. Means the Airtrain and Go Card stuff below is mostly irrelevant — except for the gig." },
+    { b: "!", t: "<b>A standard hire car cannot go on K'gari.</b> The island is sand tracks — 4WD only, and rental agreements for 2WD cars explicitly exclude it, so any damage is uninsured and on you. Either upgrade to a 4WD, or leave the car at the terminal and take a passenger ferry + tour. Worth resolving before the 1pm barge on the 2nd is booked." },
     { b: "→", t: "<b>Airtrain</b> BNE to Central/Fortitude Valley, ~20 min, every 15 min. Cheaper if booked online in advance." },
     { b: "→", t: "<b>Go Card</b> or just tap a debit card on buses, trains and ferries — contactless works network-wide." },
     { b: "→", t: "<b>CityHopper</b> ferry is free and the nicest way to move along the river. CityCat is the paid, faster one." },
