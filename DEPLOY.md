@@ -67,6 +67,18 @@ the homepage and a `noindex` meta tag. It loads Fraunces and Inter from Google F
 which is fine here — the no-external-fonts rule in `site/STYLE.md` binds the shell, not a
 standalone project page.
 
+## BRIZZY (Brisbane trip page, unlisted at staldex.com/brizzy)
+
+Single self-contained file, `site/brizzy.html` — no build step, no Worker; it ships with the
+normal site deploy. Unlisted on the same terms as LRMP and SEND IT: no links from the
+homepage and a `noindex` meta tag. It loads Space Grotesk and IBM Plex Mono from Google
+Fonts, allowed for a standalone project page (the no-external-fonts rule binds the shell).
+
+All trip details live in the single `const TRIP = {...}` object in the page's script — flights,
+stay, gig, itinerary, transport, picks, crew. Nothing else needs editing; the DOM renders from
+it, and any field left `null` shows as a visible "to confirm" placeholder rather than a gap.
+The countdown reads `TRIP.gig.date` + `TRIP.gig.doors`.
+
 ## Notes
 
 - Every submitted run is its own board entry — one player can hold multiple of the 10

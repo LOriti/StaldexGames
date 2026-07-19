@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow" />
+<title>BRIZZY — Massive Attack, Brisbane</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --ink:#0b0b0c; --panel:#141416; --panel2:#1b1b1e; --line:#2a2a2e;
+  --text:#ececeb; --dim:#8e8e94; --faint:#5c5c62;
+  --sig:#e0242b;          /* signal red — the one accent */
+  --ok:#5ec98a;
+  --disp:"Space Grotesk",system-ui,sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  background:var(--ink);color:var(--text);font-family:var(--disp);
+  font-size:16px;line-height:1.55;
+  padding:0 18px 96px;max-width:820px;margin:0 auto;
+  -webkit-tap-highlight-color:transparent;
+}
+@media (prefers-reduced-motion: reduce){*{animation:none !important;transition:none !important}}
+
+/* ---------- header ---------- */
+header{padding:56px 0 30px;border-bottom:1px solid var(--line)}
+.kicker{font-family:var(--mono);font-size:11px;letter-spacing:.28em;text-transform:uppercase;color:var(--sig)}
+h1{font-size:clamp(46px,15vw,104px);line-height:.86;font-weight:700;letter-spacing:-.03em;margin:10px 0 14px}
+h1 .slash{color:var(--sig)}
+.lede{color:var(--dim);font-size:15px;max-width:46ch}
+
+/* ---------- countdown ---------- */
+.count{display:flex;gap:8px;margin-top:26px;flex-wrap:wrap}
+.count .unit{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:9px 14px;min-width:76px;text-align:center}
+.count .n{font-family:var(--mono);font-size:26px;font-weight:600;letter-spacing:-.02em;display:block}
+.count .u{font-family:var(--mono);font-size:9.5px;letter-spacing:.18em;text-transform:uppercase;color:var(--faint)}
+.count .unit.hero .n{color:var(--sig)}
+.count.done .unit{border-color:var(--sig)}
+.countlabel{flex-basis:100%;font-family:var(--mono);font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:var(--faint);margin-top:2px}
+.window{font-family:var(--mono);font-size:12px;letter-spacing:.1em;color:var(--dim);margin-top:18px}
+.window b{color:var(--text);font-weight:500}
+
+/* ---------- sections ---------- */
+section{padding:38px 0;border-bottom:1px solid var(--line)}
+h2{font-family:var(--mono);font-size:11px;font-weight:500;letter-spacing:.26em;text-transform:uppercase;color:var(--faint);margin-bottom:20px}
+h2 b{color:var(--sig);font-weight:500}
+
+/* ---------- key/value cards ---------- */
+.cards{display:grid;gap:12px;grid-template-columns:1fr}
+@media(min-width:620px){.cards.two{grid-template-columns:1fr 1fr}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:16px 18px}
+.card.lead{border-color:#3a2225;background:linear-gradient(180deg,#1a1214,var(--panel))}
+.card h3{font-size:17px;font-weight:700;letter-spacing:-.01em;margin-bottom:2px}
+.card .sub{font-family:var(--mono);font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--sig);margin-bottom:12px}
+dl{display:grid;grid-template-columns:auto 1fr;gap:7px 16px;align-items:baseline}
+dt{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--faint);white-space:nowrap}
+dd{font-size:14.5px;text-align:right}
+dd.mono{font-family:var(--mono);font-size:13.5px;letter-spacing:.02em}
+dd .note{display:block;font-size:12px;color:var(--dim);font-family:var(--disp);letter-spacing:0}
+.tbc{color:var(--faint);font-style:italic}
+.tbc::after{content:" · to confirm";font-size:10px;font-style:normal;letter-spacing:.1em;text-transform:uppercase}
+
+/* ---------- itinerary ---------- */
+.day{display:grid;grid-template-columns:88px 1fr;gap:18px;padding:16px 0;border-top:1px solid var(--line)}
+.day:first-of-type{border-top:none}
+.day.gigday{background:linear-gradient(90deg,rgba(224,36,43,.07),transparent);margin:0 -14px;padding-left:14px;padding-right:14px;border-radius:8px}
+.daylabel .dn{font-family:var(--mono);font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--sig)}
+.daylabel .dd{font-size:15px;font-weight:700;line-height:1.2;margin-top:2px}
+.daylabel .dw{font-size:12px;color:var(--faint)}
+.slots{display:flex;flex-direction:column;gap:9px}
+.slot{display:grid;grid-template-columns:62px 1fr;gap:12px;align-items:baseline}
+.slot .t{font-family:var(--mono);font-size:12px;color:var(--dim);white-space:nowrap}
+.slot .w{font-size:14.5px}
+.slot .w em{display:block;font-style:normal;font-size:12.5px;color:var(--dim);margin-top:1px}
+.slot.key .w{font-weight:700}
+.slot.key .t{color:var(--sig)}
+@media(max-width:560px){
+  .day{grid-template-columns:1fr;gap:10px}
+  .daylabel{display:flex;align-items:baseline;gap:10px}
+  .daylabel .dd{margin-top:0}
+}
+
+/* ---------- lists / extras ---------- */
+.picks{display:grid;gap:10px;grid-template-columns:1fr}
+@media(min-width:620px){.picks{grid-template-columns:1fr 1fr}}
+.pick{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:12px 14px}
+.pick .nm{font-weight:700;font-size:15px}
+.pick .mt{font-family:var(--mono);font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:var(--sig);margin-top:2px}
+.pick .ln{font-size:13.5px;color:var(--dim);margin-top:6px}
+.notes{display:flex;flex-direction:column;gap:10px}
+.note-row{display:grid;grid-template-columns:22px 1fr;gap:10px;align-items:start;font-size:14.5px}
+.note-row .b{color:var(--sig);font-family:var(--mono);font-size:12px;line-height:1.7}
+.note-row .x{color:var(--dim)}
+.note-row .x b{color:var(--text);font-weight:600}
+
+/* ---------- crew ---------- */
+.crew{display:flex;flex-wrap:wrap;gap:8px}
+.who{background:var(--panel2);border:1px solid var(--line);border-radius:999px;padding:7px 14px;font-size:13.5px}
+.who span{color:var(--faint);font-family:var(--mono);font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;margin-left:7px}
+
+footer{padding:30px 0 0;color:var(--faint);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
+a{color:var(--text)}
+a:focus-visible,summary:focus-visible{outline:2px solid var(--sig);outline-offset:3px}
+</style>
+</head>
+<body>
+
+<!-- ==========================================================================
+     ALL TRIP DATA LIVES IN THE ONE BLOCK AT THE BOTTOM OF THIS FILE (const TRIP).
+     Edit that object only — everything on the page renders from it.
+     Anything left as null renders as a visible "to confirm" placeholder.
+     ========================================================================== -->
+
+<header>
+  <div class="kicker" id="kicker">Brisbane · Massive Attack</div>
+  <h1>BRIZ<span class="slash">Z</span>Y</h1>
+  <p class="lede" id="lede"></p>
+  <div class="count" id="count"></div>
+</header>
+
+<section id="logistics">
+  <h2><b>01</b> &nbsp;Key logistics</h2>
+  <div class="cards two" id="logisticsCards"></div>
+</section>
+
+<section id="itinerary">
+  <h2><b>02</b> &nbsp;Day by day</h2>
+  <div id="days"></div>
+</section>
+
+<section id="around">
+  <h2><b>03</b> &nbsp;Getting around</h2>
+  <div class="notes" id="transport"></div>
+</section>
+
+<section id="extras">
+  <h2><b>04</b> &nbsp;Brisbane shortlist</h2>
+  <div class="picks" id="picks"></div>
+</section>
+
+<section id="crew">
+  <h2><b>05</b> &nbsp;The crew</h2>
+  <div class="crew" id="crewList"></div>
+  <div class="notes" id="crewNotes" style="margin-top:18px"></div>
+</section>
+
+<footer id="foot"></footer>
+
+<script>
+/* ============================================================================
+   TRIP DATA — edit here, nowhere else.
+   Dates are ISO (YYYY-MM-DD). Times are 24h strings ("19:30") or null.
+   Use null for anything not locked in yet; it renders as "to confirm".
+   ========================================================================= */
+const TRIP = {
+  lede: "Leon and Rahana, ten days in Brisbane, built around one gig on the Thursday. Flights, beds, and what to do with the other nine days.",
+
+  // Trip window — drives the countdown when the gig date isn't locked in yet.
+  start: "2026-07-31",
+  end:   "2026-08-09",
+
+  gig: {
+    artist: "Massive Attack",
+    venue: "Brisbane Entertainment Centre, Boondall",
+    date: "2026-08-06",     // Thursday. Confirmed — the gig day highlights itself from this field.
+    doors: null,            // e.g. "18:00"
+    support: null,          // e.g. "TBA"
+    setTime: "20:00",
+    curfew: null,           // e.g. "23:00"
+    tickets: null           // e.g. "Ticketek — mobile tickets in the group chat"
+  },
+
+  flights: {
+    out:  { date: "2026-07-31", flight: null, from: "Perth (PER)", to: "Brisbane (BNE)",
+            dep: "22:55", arr: null, ref: "E7CS3Y",
+            note: "Qantas · red-eye, lands Saturday morning" },
+    back: { date: "2026-08-09", flight: null, from: "Brisbane (BNE)", to: "Perth (PER)",
+            dep: "20:20", arr: null, ref: "E7CS3Y",
+            note: "Qantas · lands Perth late Sunday" }
+  },
+
+  stay: {
+    name: null,             // e.g. "The Fantauzzo, Howard Smith Wharves"
+    address: null,
+    checkIn: null,          // e.g. "2026-09-11, from 15:00"
+    checkOut: null,         // e.g. "2026-09-14, by 10:00"
+    ref: null,
+    note: null              // e.g. "Two rooms, both under Leon's name"
+  },
+
+  // Day-by-day. Add or remove days freely.
+  // A day with gig:true gets the red treatment.
+  // Set gig:true on whichever day the show lands on and it gets the red treatment.
+  itinerary: [
+    { date: "2026-07-31", slots: [
+      { t: "21:00", w: "At Perth airport", note: "Domestic — 90 min before is plenty" },
+      { t: "22:55", w: "Wheels up", key: true, note: "Booking E7CS3Y" }
+    ]},
+    { date: "2026-08-01", slots: [
+      { t: "am", w: "Land at BNE", key: true, note: "Overnight flight — you land Saturday morning, two hours ahead of Perth" },
+      { t: null, w: "Airtrain into town", note: "~20 min, runs every 15" },
+      { t: null, w: "Bags down, then breakfast", note: "Too early to check in — most places are 15:00" },
+      { t: null, w: "Easy first night", note: "You've just done a red-eye. Don't fight it." }
+    ]},
+    { date: "2026-08-02", slots: [{ t: null, w: "Open" }] },
+    { date: "2026-08-03", slots: [{ t: null, w: "Open" }] },
+    { date: "2026-08-04", slots: [{ t: null, w: "Open" }] },
+    { date: "2026-08-05", slots: [{ t: null, w: "Open" }] },
+    { date: "2026-08-06", slots: [
+      { t: null, w: "Slow one during the day", note: "Boondall is a mission — don't stack anything after 16:00" },
+      { t: null, w: "Eat before you go", note: "Arena food is a trap, and Boondall has nothing around it" },
+      { t: "~18:30", w: "Train to Boondall", key: true, note: "Shorncliffe line from Central, ~30 min. Event trains run on show nights." },
+      { t: "20:00", w: "MASSIVE ATTACK", key: true, note: "Brisbane Entertainment Centre" },
+      { t: null, w: "Train back", note: "Everyone leaves at once — either bolt at the last song or wait it out" }
+    ]},
+    { date: "2026-08-07", slots: [{ t: null, w: "Open" }] },
+    { date: "2026-08-08", slots: [
+      { t: null, w: "Last full day" },
+      { t: null, w: "Whatever got missed", note: "Also: check out time for tomorrow" }
+    ]},
+    { date: "2026-08-09", slots: [
+      { t: null, w: "Check out", note: "Most places 10:00 — bag storage if the flight's not till 20:20" },
+      { t: null, w: "Last day in town", note: "You have the whole day; the flight is at night" },
+      { t: "18:50", w: "At BNE", note: "90 min before departure" },
+      { t: "20:20", w: "Fly home", key: true, note: "Booking E7CS3Y" }
+    ]}
+  ],
+
+  transport: [
+    { b: "→", t: "<b>Airtrain</b> BNE to Central/Fortitude Valley, ~20 min, every 15 min. Cheaper if booked online in advance." },
+    { b: "→", t: "<b>Go Card</b> or just tap a debit card on buses, trains and ferries — contactless works network-wide." },
+    { b: "→", t: "<b>CityHopper</b> ferry is free and the nicest way to move along the river. CityCat is the paid, faster one." },
+    { b: "→", t: "<b>Walking</b> the CBD to Fortitude Valley is ~25 min; South Bank is over the Goodwill Bridge." },
+    { b: "★", t: "<b>Brisbane Entertainment Centre is at Boondall</b> — about 15 km north of the city, not walkable from anything. Train (Shorncliffe line) to Boondall station, roughly 30 min from Central, then a signed walk to the venue. Extra services usually run on event nights. Rideshare back is slow and surge-priced when 13,000 people leave at once." }
+  ],
+
+  picks: [
+    { nm: "Howard Smith Wharves", mt: "Drinks", ln: "Riverside under the Story Bridge — Felons brewery is the obvious one, and it works." },
+    { nm: "Fortitude Valley", mt: "Night", ln: "Where the late ones happen. Brunswick St Mall and everything off it." },
+    { nm: "South Bank", mt: "Day", ln: "Streets Beach, the parklands, and the walk back over the river." },
+    { nm: "West End", mt: "Food", ln: "Boundary St for food that isn't a chain. Good on a hangover." }
+  ],
+
+  crew: [
+    { name: "Leon",   note: "flights booked" },
+    { name: "Rahana", note: null }
+  ],
+
+  notes: [
+    { b: "!", t: "<b>Brisbane runs two hours ahead of Perth.</b> No daylight saving in QLD, so it stays +2 the whole trip. A 20:20 flight home is 18:20 Perth time — and you land back very late." },
+    { b: "!", t: "<b>August is Brisbane's best weather</b> — dry, low 20s in the day, but genuinely cool after dark. Take a jacket for standing around outdoors at night." },
+    { b: "!", t: "The outbound is a <b>red-eye</b>: 22:55 Perth, landing Saturday morning. Day one is a write-off if you plan it like a normal day." }
+  ]
+};
+
+/* ============================================================================
+   RENDER — no need to touch below here.
+   ========================================================================= */
+const $ = id => document.getElementById(id);
+const TBC = '<span class="tbc">—</span>';
+const val = v => (v === null || v === undefined || v === "") ? TBC : v;
+
+const DAYNAMES = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+
+// Parse "YYYY-MM-DD" as a local date (avoids the UTC-shift trap of new Date(str)).
+function parseDate(iso){
+  if (!iso) return null;
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso.trim());
+  if (!m) return null;
+  return new Date(+m[1], +m[2] - 1, +m[3]);
+}
+function fmtDate(iso){
+  const d = parseDate(iso);
+  return d ? `${d.getDate()} ${MONTHS[d.getMonth()]}` : null;
+}
+function fmtLong(iso){
+  const d = parseDate(iso);
+  return d ? `${DAYNAMES[d.getDay()]} ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}` : null;
+}
+
+/* ---- header ---- */
+$('lede').textContent = TRIP.lede;
+$('kicker').textContent = `Brisbane · ${TRIP.gig.artist}`;
+
+/* ---- countdown ---- */
+function renderCount(){
+  const box = $('count');
+
+  // Count to the gig once its date is known; until then, to wheels-up.
+  const gigDay = parseDate(TRIP.gig.date);
+  const d      = gigDay || parseDate(TRIP.start);
+  const clock  = gigDay ? (TRIP.gig.doors || "19:00") : (TRIP.flights.out.dep || "00:00");
+  const label  = gigDay ? "Until doors" : "Until wheels up";
+
+  if (!d){
+    box.innerHTML = `<div class="unit hero" style="min-width:auto;padding-left:18px;padding-right:18px">
+      <span class="n">?</span><span class="u">No dates yet</span></div>`;
+    return;
+  }
+  const [hh, mm] = clock.split(":").map(Number);
+  const target = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh || 0, mm || 0);
+  const diff = target - new Date();
+
+  if (diff <= 0){
+    box.className = "count done";
+    box.innerHTML = `<div class="unit hero" style="min-width:auto;padding-left:18px;padding-right:18px">
+      <span class="n">▶</span><span class="u">${gigDay ? "It's happening" : "You're off"}</span></div>`;
+    return;
+  }
+  const s = Math.floor(diff / 1000);
+  const parts = [
+    ["Days",    Math.floor(s / 86400), true],
+    ["Hours",   Math.floor(s / 3600) % 24, false],
+    ["Minutes", Math.floor(s / 60) % 60, false],
+    ["Seconds", s % 60, false]
+  ];
+  box.className = "count";
+  box.innerHTML = parts.map(([u, n, hero]) =>
+    `<div class="unit${hero ? ' hero' : ''}"><span class="n">${String(n).padStart(2,"0")}</span><span class="u">${u}</span></div>`
+  ).join("") + `<div class="countlabel">${label}</div>`;
+}
+renderCount();
+setInterval(renderCount, 1000);
+
+/* ---- logistics cards ---- */
+function row(k, v){ return `<dt>${k}</dt><dd>${val(v)}</dd>`; }
+function rowM(k, v){ return `<dt>${k}</dt><dd class="mono">${val(v)}</dd>`; }
+
+function flightCard(f, label, tag){
+  return `<div class="card">
+    <h3>${label}</h3><div class="sub">${tag}</div>
+    <dl>
+      ${row("Date", fmtLong(f.date))}
+      ${rowM("Flight", f.flight)}
+      ${row("From", f.from)}
+      ${row("To", f.to)}
+      ${rowM("Depart", f.dep)}
+      ${rowM("Arrive", f.arr)}
+      ${rowM("Booking", f.ref)}
+      ${f.note ? row("Note", f.note) : ""}
+    </dl></div>`;
+}
+
+/* ---- trip window strip ---- */
+(function(){
+  const a = parseDate(TRIP.start), b = parseDate(TRIP.end);
+  if (!a || !b) return;
+  const nights = Math.round((b - a) / 86400000);
+  const el = document.createElement("div");
+  el.className = "window";
+  el.innerHTML = `<b>${fmtLong(TRIP.start)}</b> → <b>${fmtLong(TRIP.end)}</b> · ${nights} nights`;
+  $('count').insertAdjacentElement("afterend", el);
+})();
+
+const g = TRIP.gig, s = TRIP.stay;
+$('logisticsCards').innerHTML = `
+  <div class="card lead" style="grid-column:1/-1">
+    <h3>${g.artist}</h3><div class="sub">The whole reason</div>
+    <dl>
+      ${row("Venue", g.venue)}
+      ${row("Date", fmtLong(g.date))}
+      ${rowM("Doors", g.doors)}
+      ${row("Support", g.support)}
+      ${rowM("On stage", g.setTime)}
+      ${rowM("Curfew", g.curfew)}
+      ${row("Tickets", g.tickets)}
+    </dl>
+  </div>
+  ${flightCard(TRIP.flights.out, "Getting there", "Outbound")}
+  ${flightCard(TRIP.flights.back, "Getting home", "Return")}
+  <div class="card" style="grid-column:1/-1">
+    <h3>${s.name || "Accommodation"}</h3><div class="sub">Base camp</div>
+    <dl>
+      ${row("Address", s.address)}
+      ${row("Check in", s.checkIn)}
+      ${row("Check out", s.checkOut)}
+      ${rowM("Booking", s.ref)}
+      ${row("Note", s.note)}
+    </dl>
+  </div>`;
+
+/* ---- itinerary ---- */
+$('days').innerHTML = TRIP.itinerary.map((day, i) => {
+  const d = parseDate(day.date);
+  const isGig = day.gig || (day.date && day.date === TRIP.gig.date);
+  return `<div class="day${isGig ? ' gigday' : ''}">
+    <div class="daylabel">
+      <div class="dn">Day ${i + 1}</div>
+      <div>
+        <div class="dd">${d ? `${d.getDate()} ${MONTHS[d.getMonth()]}` : TBC}</div>
+        <div class="dw">${d ? DAYNAMES[d.getDay()] : day.title}</div>
+      </div>
+    </div>
+    <div class="slots">${day.slots.map(sl =>
+      `<div class="slot${sl.key ? ' key' : ''}">
+        <div class="t">${sl.t || "—"}</div>
+        <div class="w">${sl.w}${sl.note ? `<em>${sl.note}</em>` : ""}</div>
+      </div>`).join("")}
+    </div>
+  </div>`;
+}).join("");
+
+/* ---- transport + notes ---- */
+const noteRows = arr => arr.map(n =>
+  `<div class="note-row"><div class="b">${n.b}</div><div class="x">${n.t}</div></div>`).join("");
+$('transport').innerHTML = noteRows(TRIP.transport);
+$('crewNotes').innerHTML = noteRows(TRIP.notes);
+
+/* ---- picks ---- */
+$('picks').innerHTML = TRIP.picks.map(p =>
+  `<div class="pick"><div class="nm">${p.nm}</div><div class="mt">${p.mt}</div><div class="ln">${p.ln}</div></div>`
+).join("");
+
+/* ---- crew ---- */
+$('crewList').innerHTML = TRIP.crew.length
+  ? TRIP.crew.map(c => `<div class="who">${c.name}${c.note ? `<span>${c.note}</span>` : ""}</div>`).join("")
+  : `<div class="who" style="color:var(--faint)">Crew not listed yet</div>`;
+
+$('foot').textContent = `staldex.com/brizzy — unlisted`;
+</script>
+</body>
+</html>
