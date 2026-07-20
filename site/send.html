@@ -943,15 +943,23 @@ const MILESTONES=[
  {tick:372, t:"The nations line up",
   p:"It's cascading now. Ireland pledged first, saying they'd trained their whole lives for this. Then the UK, then Brazil, then the entire Pacific. Time zones are being rescheduled so the whole planet can sesh at once. The movement has annexed the neighbouring Bunnings for 'sausage logistics'.",
   o:[["Nationalise the sausage supply",()=>{ leg(28); S.allegiance+=24; say("The Bunnings sausage sizzle is nationalised and scaled to the species: a snag in every hand on earth. Leroy's spreadsheet now governs global food security. He has never been calmer.","leg"); }]]},
- {tick:420, t:"The last hold-out",
+ {tick:420, t:"The graveyard shift",
+  p:"The nations have pledged — but nations are made of people who can't simply stop. Nurses mid-shift. Air traffic controllers with aircraft actually in the sky. The bloke on his own at the servo on Great Eastern Highway. They're watching the stream on their phones with the specific ache of someone who desperately wants in and cannot leave their post. The movement has run headlong into the limit of what a party is allowed to ask of people.",
+  o:[["Rolling shifts — relief crews, nobody misses out",()=>{ leg(28); S.allegiance+=55; say("Leroy drafts a global roster on the back of a coaster: relief crews in, so the night nurse gets her hour on the green and the tower stays staffed. It works perfectly. The world keeps turning AND everyone gets their turn, and the essential workers join in waves, each one roaring as they clock off. Quietly the best thing the movement has ever done.","leg"); }],
+     ["Down tools, all of you — the world can wait",()=>{ if(Math.random()<.35){ leg(14); S.allegiance+=40; say("Against all sense it holds. Everything that absolutely had to keep running somehow kept running, staffed by volunteers who refused to leave. You got away with it, and everybody knows you got away with it.","leg"); } else { heat(14); S.allegiance=Math.max(0,S.allegiance-40); say("Three hours of genuine, unfunny chaos. A plane circles for forty minutes. A ward goes quiet in the wrong way. The movement's first real mistake, and the people who were on the verge of joining fold their arms and take a step back.","bad"); } }]]},
+ {tick:468, t:"The unconvinced",
+  p:"Not enemies — just people who aren't sold. The ones who've been the designated driver every single time. Parents with a kid asleep in the next room. Everyone who has ever watched a good night turn and then had to clean it up. They aren't fighting the movement; they're standing at the edge with their arms folded, waiting to find out whether this is a party or just a mess with better branding.",
+  o:[["Show them the care, not the carnage",()=>{ leg(26); S.allegiance+=60; say("You don't turn anything up. You show them the water stations, the roster, the food logistics, the fact that in three days not one person has been left behind or left alone. Bucko explains, welling up, that nobody has had to ring anybody's mum. The arms unfold. The sceptics join in a single afternoon — and they bring, as sceptics always do, by far the best esky.","leg"); }],
+     ["Crank it louder — they'll come round",()=>{ if(Math.random()<.4){ leg(12); S.allegiance+=45; say("Sheer joy wins the argument. The wall of sound turns out to be exactly what the folded-arms brigade needed, and they come in grinning like they've been let off something.","leg"); } else { heat(12); S.allegiance=Math.max(0,S.allegiance-35); say("They came looking for reassurance and got volume. It confirms every last thing they suspected. The arms stay folded, and a few people who'd been leaning in quietly go home to bed.","bad"); } }]]},
+ {tick:516, t:"The last hold-out",
   p:"Continent by continent, the planet gets on it. Polar research stations are streaming in. The Space Station has requested the aux. One single hold-out remains — a man in a landlocked office somewhere — the last person on Earth not on the sesh. And even he is tapping his foot.",
   o:[["Send him a personal invite",()=>{ leg(30); S.allegiance+=26; say("You send the last hold-out a handwritten invitation via the ISS. He reads it, sighs, loosens his tie, and cracks a warm can he's kept in his drawer since 2019. The planet is unanimous.","leg"); }]]},
- {tick:468, t:"The ratification",
+ {tick:564, t:"The ratification",
   p:"It comes to a vote. The whole species, at once, live: shall we formally become the Doof Republic? The old powers make their final stand — spreadsheets, warnings, a man in a grey suit who has never in his life danced. The result is on a knife-edge. The free world is not going quietly, and the party is not yet won.",
   o:[["Let the music make the argument",()=>{ leg(30); S.allegiance+=45; say("You don't counter the grey suit with words. You drop the track. Eight billion people move as one, and the man in the grey suit — watching, appalled — feels his own foot begin, against a lifetime of training, to tap. The vote swings.","leg"); }],
      ["Hand the mic to Bucko",()=>{ if(Math.random()<.7){ leg(26); S.allegiance+=70; say("Bucko takes the mic and says, simply: 'I just wanted a good night with the boys. Look what we did.' The planet votes yes through tears.","leg"); } else { heat(16); say("Bucko freezes. Dead air, planet-wide, for eight excruciating seconds. The grey suit smells blood. You'll have to win this one the hard way now.","bad"); } }]]},
 ];
-const GLOBAL_AT=4500;   // the last push after the ratification — ~4 more hours of holding it together
+const GLOBAL_AT=5500;   // the last push after the ratification — ~4 more hours of holding it together
 function globalGovEnd(){
   S.running=false;
   const bonus=Math.round(600 + S.allegiance/4); leg(bonus); S.degen+=500; S.foundersBonus=bonus; // founder's dividend
@@ -1460,8 +1468,11 @@ function step(){
     if(S.walking>0){ paint(); return; }
     if(S.counterCd>0)S.counterCd--;
     if(S.buzz>=40 && S.seated===0) S.allegiance += 4 + Math.floor(boysUp()/2) + Math.floor(S.buzz/12); // the movement feeds on the party
-    if(S.milestone>=6) heat(-5);                                       // near-global: the authorities ARE the party now, untouchable
-    else if(S.milestone>=1 && Math.random()<.25) heat(2+Math.floor(S.milestone/2)+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
+    if(S.milestone>=8) heat(-5);                                       // the last beats: the authorities ARE the party now, untouchable
+    else {
+      if(S.milestone>=5) heat(-0.8);                                   // the tide turns — heat plateaus, so bad DECISIONS become the real threat
+      if(S.milestone>=1 && Math.random()<.25) heat(2+Math.floor(S.milestone/2)+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
+    }
     if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id,"tapped out at the bowlo","One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
     if(S.milestone>=2 && S.milestone<6){ const ooc=outOfControl(); if(ooc>0.2 && Math.random()<0.022*ooc){ fireDerail(); paint(); return; } } // unavoidable if you lose the plot
     // Milestones run to the clock now: the stream escapes at 6am, then one every four hours.
@@ -1470,7 +1481,7 @@ function step(){
     }
     if(S.milestone>=MILESTONES.length && S.allegiance>=GLOBAL_AT){ globalGovEnd(); paint(); return; }
     // counterinsurgency — the still-free world fights back between milestones; you must manage it
-    if(S.milestone>=2 && S.milestone<8 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
+    if(S.milestone>=2 && S.milestone<10 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
     if(S.heat>=100){
       if(S.milestone>=3) endScreen("THE COUP","You got so big the old powers panicked, and somewhere someone pulled a plug they shouldn't have been able to reach. The greens fall silent. History will call it a coup. History will be wrong, but too sober to argue.",false,false);
       else endScreen("SHUT DOWN AT THE BOWLO","Before the movement could find its feet, the noise complaints won — the council, the cops, and a very determined man in a dressing gown. A beautiful idea, twenty minutes too early.",false,false);
