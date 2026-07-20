@@ -256,8 +256,6 @@ const TRIP = {
 
   // Things that need resolving. Rendered loud at the top; empty array hides the block.
   alerts: [
-    { t: "Whale watch and the return ferry collide on the 5th",
-      d: "The cruise boards 07:15 and gets back to the jetty around 12:00. The ferry off the island is booked for 11:30. You cannot make both — one of them has to move. Cancelling the cruise inside 24 hrs costs 100%." },
     { t: "The tour booking is for 3 people",
       d: "Booking 23M2H3 says 3 passengers. This page is built for Leon and Rahana. Worth checking who the third is before anyone turns up expecting a seat." },
     { t: "River Heads parking must be pre-booked",
@@ -329,10 +327,11 @@ const TRIP = {
       { open: true, w: "Nothing booked", note: "The free day on the island — the whale watch is on the 5th, not today" }
     ]},
     { date: "2026-08-05", away: true, slots: [
-      { t: "07:15", w: "Board at the end of the jetty", key: true, note: "07:30 departure — this is an early start after two big days" },
+      { t: "07:15", w: "Board at the end of the jetty", key: true, note: "07:30 departure — early start, so check out and pack the night before" },
       { t: "07:30", w: "Whale watch cruise", key: true, note: "Back at the jetty approximately 12:00" },
-      { t: "11:30", w: "⚠ Ferry booked for now", key: true, note: "CLASH — you are still on the boat. See the alert at the top of the page." },
-      { t: null, w: "Then the drive south", note: "~3.5 hrs to Bridgeman Downs once you're actually off the island" }
+      { t: "~12:00", w: "Lunch and collect bags", note: "Two and a half hours before the ferry — no need to rush" },
+      { t: "14:30", w: "Ferry back to River Heads", key: true, note: "~50 min across, so on the road by about 15:30" },
+      { t: "~19:00", w: "Back at Bri's", note: "3.5 hr drive after a 07:15 start. Long day — and the gig is tomorrow." }
     ]},
     { date: "2026-08-06", slots: [
       { open: true, w: "Daytime free", note: "Venue is 15 min away — this day doesn't need protecting" },
