@@ -122,7 +122,8 @@ dd .note{display:block;font-size:12px;color:var(--dim);font-family:var(--disp);l
 }
 
 /* ---------- view toggle ---------- */
-.viewbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin:-8px 0 22px}
+.viewbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:24px 0 0}
+.viewlbl{font-family:var(--mono);font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--faint)}
 #viewtoggle{display:inline-flex;background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:3px;gap:2px}
 #viewtoggle button{
   font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;
@@ -211,6 +212,12 @@ a:focus-visible,summary:focus-visible{outline:2px solid var(--sig);outline-offse
   <div class="count" id="count"></div>
 </header>
 
+<div class="viewbar">
+  <span class="viewlbl">Itinerary layout</span>
+  <div id="viewtoggle" role="group" aria-label="Itinerary layout"></div>
+  <div id="viewhint"></div>
+</div>
+
 <div id="alerts"></div>
 
 <section id="beds">
@@ -220,10 +227,6 @@ a:focus-visible,summary:focus-visible{outline:2px solid var(--sig);outline-offse
 
 <section id="itinerary">
   <h2><b>02</b> &nbsp;Day by day <span id="gapcount"></span></h2>
-  <div class="viewbar">
-    <div id="viewtoggle" role="group" aria-label="Itinerary layout"></div>
-    <div id="viewhint"></div>
-  </div>
   <div id="days"></div>
 </section>
 
