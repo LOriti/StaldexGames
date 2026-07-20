@@ -175,7 +175,7 @@ const S = {
   venueTicks:0, momentum:0, notoriety:0, visited:new Set(["gm"]),
   counts:{}, spend:{drink:0,gear:0,food:0}, forkCount:0, usedHeat:new Set(), usedDJ:new Set(),
   cokeStreak:0, lastCoke:-99,
-  lockin:false, lockinStart:0,
+  lockin:false, lockinStart:0, bowloLock:false,
   bunkered:false, takeover:false, allegiance:0, milestone:0, usedBunker:new Set(),
   counterCd:12, usedCounter:new Set(), pendingQuiz:null, usedDerail:new Set(),
   lastFood:0, lastWater:0, hygieneWarned:false,
@@ -897,43 +897,61 @@ function bouncerQuiz(id){
   }
   render();
 }
+/* Midnight: the club shuts like the suburban club it is. Back into town, or stay for the lock-in. */
+function bowloCloseEvent(){
+  const ci=VENUES.findIndex(v=>v.id==="connies"), di=VENUES.findIndex(v=>v.id==="dive");
+  showEvent({t:"Last drinks at the bowlo",
+    p:"Midnight, and the bowls club calls last drinks — it's a suburban club, not a nightclub, and it shuts like one. The greenkeeper is jangling his keys. Northbridge is twenty minutes back the other way and only just hitting its stride: Connies has thrown its doors open for the night, and The Bird is still going and getting meaner by the hour. But the two staff left behind the bar don't seem to be in any hurry to throw anyone out, and one of them has just quietly asked whether you blokes can keep a secret.",
+    o:[
+      ["Back into town — Connies · late club",()=>{ S.moveCd=11+Math.floor(Math.random()*5); moveVenue(ci); }],
+      ["Back into town — The Bird · dive bar",()=>{ S.moveCd=11+Math.floor(Math.random()*5); moveVenue(di); }],
+      ["Stay for the lock-in",()=>{ startBowloLock(); }]
+    ]});
+}
+function startBowloLock(){
+  S.bowloLock=true; S.moveCd=999; S.aftersStart=S.tick;
+  heat(-8); leg(20);
+  say("The front door locks from the inside. The greenkeeper drives off none the wiser; the last two staff stop being staff and become guests. The fluorescents go off and the disco set from the Christmas do comes out of a cupboard. A private after-hours inside a lawn bowls club, and not one person on earth knows it's happening.","leg");
+  say("No bouncers out here — just neighbours. Heat means the council, not the cops. The club is yours until someone decides otherwise.","hot");
+  renderSpot(); renderBar(); paint();
+}
 function takeoverEvent(){
-  showEvent({t:"Midnight. Declare sovereignty.",
-    p:"Midnight, and the bowls club calls last drinks. The greenkeeper locks the front door and drives off; the two staff left, hopelessly outnumbered and thoroughly charmed, quietly stop being staff and become guests. Everyone else has long since headed back to the city — but not you. You stayed. The disco lights from the Christmas do come out, the PA that calls the meat raffle gets rewired, Robin gets behind it. This is your after-hours now: no bouncers, just neighbours; heat means the council, not the cops. Standing on the manicured green, you realise you could just... declare this place a nation.",
+  showEvent({t:"2am. Declare sovereignty.",
+    p:"Two hours into the lock-in and something has shifted. The PA that calls the meat raffle has been rewired and Robin is behind it. Kev has taught half the crew to bowl. The staff-who-are-no-longer-staff have stopped counting drinks. Everyone else in this city is in a club or a kebab queue or a taxi — and you are in a locked bowling club at 2am with a disco light and a functioning democracy of about eleven people. Standing on the manicured green, it occurs to you, with total clarity, that you could just... declare this place a nation.",
     o:[
       ["Declare the greens a sovereign dancefloor",()=>{ leg(24); S.allegiance+=10; say("You stand on the green — a criminal act, the birth of a nation — and declare it a sovereign dancefloor. The greenkeeper, watching from his car, weeps openly. It has begun.","leg"); }],
       ["Put Leroy in charge of comms",()=>{ leg(16); S.allegiance+=18; say("Leroy appoints himself Minister for Communications and starts a livestream 'to document the movement'. Forty people are watching. Then four hundred. Then he stops looking at the number.","leg"); }]
     ]});
 }
 const MILESTONES=[
- {at:90, t:"The stream escapes",
-  p:"The livestream has escaped containment. A clip of Pickles doing the worm across the bowling green to a sped-up Free Bird (which Pickles still insists is an Eagles song, and which remains, defiantly, Lynyrd Skynyrd) is being reposted faster than anyone can watch it. Twelve thousand viewers. Comments in nine languages.",
+ {tick:132, t:"The stream escapes",
+  p:"6am. The sun comes up on what should have been the end of the night — the hour you'd normally be climbing into a taxi for kick-ons at someone's flat. Instead the livestream has escaped containment. A clip of Pickles doing the worm across the bowling green to a sped-up Free Bird (which Pickles still insists is an Eagles song, and which remains, defiantly, Lynyrd Skynyrd) is being reposted faster than anyone can watch it. Twelve thousand viewers. Comments in nine languages.",
   o:[["Address the people directly",()=>{ leg(18); S.allegiance+=14; say("You look down the lens: 'Everyone is welcome. Bring your own cup.' The count doubles mid-sentence. The movement has a face now, and it is yours, and it is sweating.","leg"); }],
      ["Keep it pure — phones down",()=>{ leg(12); S.allegiance+=10; say("You call a phones-down moment of presence. It backfires beautifully: the one grainy clip that escapes becomes the most-shared thing of the night precisely because it's the only one.","leg"); }]]},
- {at:220, t:"North Perth secedes",
+ {tick:180, t:"North Perth secedes",
   p:"The neighbours haven't called the police. The neighbours have brought a lasagne and asked to join. The entire suburb of North Perth has just voted, by show of hands on the green, to become an independent sesh-state. A man named Barry is Foreign Minister. Barry is doing very well.",
   o:[["Enshrine North Perth as founding province",()=>{ leg(20); S.allegiance+=16; say("North Perth is enshrined as the founding province of the movement. Barry gives a tearful acceptance speech from atop the drinks fridge. The retirement village next door pledges its bingo hall as an embassy.","leg"); }]]},
- {at:380, t:"Perth is on it",
-  p:"It's 4am and the whole city has heard. Cars are arriving from Joondalup, from Freo, from Mandurah. The bowlo car park is a refugee camp of pure joy. A traffic reporter has stopped reporting traffic to join in. Perth — sleepy, isolated, beautiful Perth — is fully on the sesh.",
+ {tick:228, t:"Perth is on it",
+  p:"It's the middle of the afternoon — a full day since last drinks were called — and the whole city has heard. Cars are arriving from Joondalup, from Freo, from Mandurah. The bowlo car park is a refugee camp of pure joy. A traffic reporter has stopped reporting traffic to join in. Perth — sleepy, isolated, beautiful Perth — is fully on the sesh.",
   o:[["Address the nation of Perth",()=>{ leg(24); S.allegiance+=18; say("You climb the flagpole — the flag is now a Bintang singlet — and address Perth. 'You have always been the most isolated city on earth. Tonight you are the centre of it.' Perth roars. Somewhere, the bell tower rings itself.","leg"); }]]},
- {at:560, t:"Australia pledges allegiance",
+ {tick:276, t:"Australia pledges allegiance",
   p:"Breaking: the Prime Minister has addressed the nation. Rather than condemn the movement, they have pledged allegiance to it and sent a keg 'from the people of Australia'. Parliament is suspended. The national broadcaster is now just the livestream.",
   o:[["Accept the national keg with grace",()=>{ leg(28); S.allegiance+=20; say("You accept the national keg on behalf of the movement. The Governor-General taps it. National productivity hits zero and nobody has ever been happier. Bucko is knighted for reasons no one can explain.","leg"); }]]},
- {at:780, t:"New Zealand, obviously",
+ {tick:324, t:"New Zealand, obviously",
   p:"New Zealand has joined. Of course New Zealand has joined. They insist they were sending it before it was cool and, honestly, they might have a point. They have brought their own, superior kegs and will not stop mentioning it.",
   o:[["Form the Trans-Tasman Sesh Union",()=>{ leg(26); S.allegiance+=22; say("You and the New Zealand delegation form the Trans-Tasman Sesh Union on the green — the most functional union in either nation's history. A haka and the Nutbush are performed simultaneously. The earth moves.","leg"); }]]},
- {at:1040, t:"The nations line up",
+ {tick:372, t:"The nations line up",
   p:"It's cascading now. Ireland pledged first, saying they'd trained their whole lives for this. Then the UK, then Brazil, then the entire Pacific. Time zones are being rescheduled so the whole planet can sesh at once. The movement has annexed the neighbouring Bunnings for 'sausage logistics'.",
   o:[["Nationalise the sausage supply",()=>{ leg(28); S.allegiance+=24; say("The Bunnings sausage sizzle is nationalised and scaled to the species: a snag in every hand on earth. Leroy's spreadsheet now governs global food security. He has never been calmer.","leg"); }]]},
- {at:1360, t:"The last hold-out",
+ {tick:420, t:"The last hold-out",
   p:"Continent by continent, the planet gets on it. Polar research stations are streaming in. The Space Station has requested the aux. One single hold-out remains — a man in a landlocked office somewhere — the last person on Earth not on the sesh. And even he is tapping his foot.",
   o:[["Send him a personal invite",()=>{ leg(30); S.allegiance+=26; say("You send the last hold-out a handwritten invitation via the ISS. He reads it, sighs, loosens his tie, and cracks a warm can he's kept in his drawer since 2019. The planet is unanimous.","leg"); }]]},
- {at:1760, t:"The ratification",
+ {tick:468, t:"The ratification",
   p:"It comes to a vote. The whole species, at once, live: shall we formally become the Doof Republic? The old powers make their final stand — spreadsheets, warnings, a man in a grey suit who has never in his life danced. The result is on a knife-edge. The free world is not going quietly, and the party is not yet won.",
   o:[["Let the music make the argument",()=>{ leg(30); S.allegiance+=45; say("You don't counter the grey suit with words. You drop the track. Eight billion people move as one, and the man in the grey suit — watching, appalled — feels his own foot begin, against a lifetime of training, to tap. The vote swings.","leg"); }],
      ["Hand the mic to Bucko",()=>{ if(Math.random()<.7){ leg(26); S.allegiance+=70; say("Bucko takes the mic and says, simply: 'I just wanted a good night with the boys. Look what we did.' The planet votes yes through tears.","leg"); } else { heat(16); say("Bucko freezes. Dead air, planet-wide, for eight excruciating seconds. The grey suit smells blood. You'll have to win this one the hard way now.","bad"); } }]]},
 ];
-const GLOBAL_AT=2250;
+const GLOBAL_AT=4500;   // the last push after the ratification — ~4 more hours of holding it together
 function globalGovEnd(){
   S.running=false;
   const bonus=Math.round(600 + S.allegiance/4); leg(bonus); S.degen+=500; S.foundersBonus=bonus; // founder's dividend
@@ -976,6 +994,7 @@ function renderSpot(){
   let vibe;
   if(S.bunkered && S.takeover) vibe="the movement · "+fmt(S.allegiance)+" and rising";
   else if(S.lockin) vibe="LOCK-IN · after close, shutters down";
+  else if(S.bowloLock) vibe="LOCK-IN · doors locked, disco lights on";
   else if(S.kickon) vibe="kick-ons · goon o'clock";
   else if(S.walking>0) vibe="on the move…";
   else if(S.venueTicks>18) vibe="going cold — move on";
@@ -999,7 +1018,7 @@ function paint(){
   $("clockVal").textContent=clockStr();
   $("legendVal").textContent=S.legend;
   $("billVal").textContent="$"+S.bill;
-  if(S.kickon || S.lockin){ $("statsRow").classList.add("afters"); $("degenStat").classList.remove("hidden"); $("degenVal").textContent=S.degen; }
+  if(S.kickon || S.lockin || S.bowloLock){ $("statsRow").classList.add("afters"); $("degenStat").classList.remove("hidden"); $("degenVal").textContent=S.degen; }
   if(S.bunkered){ $("statsRow").classList.add("afters"); $("billStat").classList.add("hidden"); $("degenStat").classList.remove("hidden"); $("degenVal").textContent=S.degen; $("moveStat").classList.remove("hidden"); $("moveVal").textContent=fmt(S.allegiance); }
   $("buzzFill").style.width=S.buzz+"%";
   $("buzzPct").textContent=Math.round(S.buzz);
@@ -1385,7 +1404,7 @@ function step(){
     leg(g);
   } else S.streak=0;
   // Degen score — accrues in afters, the pub lock-in, AND during the bowlo takeover. Ramps hourly; doubles above the zone.
-  if(S.kickon || S.bunkered || S.lockin){
+  if(S.kickon || S.bunkered || S.lockin || S.bowloLock){
     let d = 1 + Math.floor((S.tick-S.aftersStart)/12);
     if(S.buzz>ZONE[1]) d*=2;
     S.degen += d;
@@ -1428,9 +1447,13 @@ function step(){
     if(hs>0 && Math.random()<hs && fireHeatScenario()) S.ambientCd=2;
   }
   if(S.heat>0 && Math.random()<.5)heat(-1);
-  // The bowls club shuts at MIDNIGHT. Stay past close and you declare sovereignty — the after-hours, instead of kick-ons.
-  if(!S.bunkered && S.venue===BOWLO_IDX && S.walking===0 && S.tick>=60){
-    S.bunkered=true; S.takeover=true; S.aftersStart=S.tick; takeoverEvent(); paint(); return;
+  // The bowls club shuts at MIDNIGHT — back into town, or stay for the lock-in.
+  if(!S.bunkered && !S.bowloLock && S.venue===BOWLO_IDX && S.walking===0 && S.tick>=60){
+    bowloCloseEvent(); paint(); return;
+  }
+  // 2am: two hours into the lock-in, you declare sovereignty — the after-hours, instead of kick-ons.
+  if(S.bowloLock && !S.bunkered && S.tick>=84){
+    S.bowloLock=false; S.bunkered=true; S.takeover=true; takeoverEvent(); paint(); return;
   }
   // ===== THE BOWLO SUB-STORYLINE — sovereignty declared; the night pivots to a global takeover =====
   if(S.bunkered){
@@ -1441,7 +1464,8 @@ function step(){
     else if(S.milestone>=1 && Math.random()<.25) heat(2+Math.floor(S.milestone/2)+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
     if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id,"tapped out at the bowlo","One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
     if(S.milestone>=2 && S.milestone<6){ const ooc=outOfControl(); if(ooc>0.2 && Math.random()<0.022*ooc){ fireDerail(); paint(); return; } } // unavoidable if you lose the plot
-    if(S.milestone<MILESTONES.length && S.allegiance>=MILESTONES[S.milestone].at){
+    // Milestones run to the clock now: the stream escapes at 6am, then one every four hours.
+    if(S.milestone<MILESTONES.length && S.tick>=MILESTONES[S.milestone].tick){
       const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
     }
     if(S.milestone>=MILESTONES.length && S.allegiance>=GLOBAL_AT){ globalGovEnd(); paint(); return; }
@@ -1463,7 +1487,7 @@ function step(){
   }
   // venue moves — the night rolls forward through the arc, offered as an event
   S.moveCd--;
-  if(!S.kickon && !S.lockin && S.walking===0 && S.seated===0 && S.buzz>=12 && S.moveCd<=0 && S.tick<S.ticksTotal-6){
+  if(!S.kickon && !S.lockin && !S.bowloLock && S.walking===0 && S.seated===0 && S.buzz>=12 && S.moveCd<=0 && S.tick<S.ticksTotal-6){
     if(fireMoveEvent()){ paint(); return; } else S.moveCd=8;
   }
   // random events — no repeats, context-gated (venue/house), venue-signature-gated, momentum quickens the pace
