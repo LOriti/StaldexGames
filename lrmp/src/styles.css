@@ -84,14 +84,9 @@
   .restore-rm:hover{color:var(--ink);border-color:var(--cream-dim)}
   .restore-rm:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
 
-  /* Brush bar (Month) */
+  /* Month toolbar */
   .brush-bar{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:20px 0 16px}
   .bb-label{font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:var(--cream-dim);margin-right:2px}
-  .brush{font-family:inherit;font-size:11.5px;font-weight:500;cursor:pointer;background:var(--chit);color:var(--cream-dim);border:1px solid var(--line);border-left-width:4px;border-radius:7px;padding:6px 11px;letter-spacing:.02em;transition:all .15s;display:inline-flex;align-items:center;gap:6px;border-left-color:var(--gc)}
-  .brush:hover{color:var(--ink)}
-  .brush.on{color:var(--ink);font-weight:700;box-shadow:0 1px 4px rgba(35,28,18,.15);border-color:var(--gc)}
-  .brush:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
-  .brush .ico{font-size:13px}
 
   /* Month grid */
   .mgrid-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -18px;padding:0 18px}

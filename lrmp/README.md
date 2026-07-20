@@ -24,9 +24,10 @@ npm run build     # -> dist/  (static, no backend — deploy anywhere)
 **Recipes** — all 40 dishes across the five cooking modes: Curry, Fry/BBQ, Assembly,
 Soup & Stew, Bake. Ingredients and method for each. Star your favourites.
 
-**Month** — a 4×7 grid. Pick a category brush and tap days; a dish from that category drops
-in, avoiding same-week repeats. Tap a painted day again to re-roll it. Blank days are fine —
-they're your leftover and freezer nights.
+**Month** — a 4×7 grid. Tap a day to pick a dish: choose a cooking mode, then a recipe
+(or 🎲 surprise, which avoids same-week repeats). Tap a planned day to change or clear it,
+drag days to swap them, or drag into the bin to remove one. Blank days are fine — they're
+your leftover and freezer nights.
 
 **Weekly** — the working view. Each day shows Dinner and Lunch.
 - **−/+** sets how many leftover portions a dinner yields.

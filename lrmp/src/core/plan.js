@@ -106,9 +106,10 @@ export function sameWeekDishes(plan, idx) {
 }
 
 /**
- * Month-view brush. Mutates `plan` in place.
+ * Deal a random dish of a category onto a day (the picker's 🎲 and Shuffle/Reset paths).
+ * Mutates `plan` in place.
  *   brush = a mode key  -> set that category and drop in a dish
- *           (re-painting the SAME category re-rolls to a different dish)
+ *           (re-dealing the SAME category rolls a different dish)
  *   brush = 'erase'     -> clear the day
  */
 export function paintDay(plan, idx, brush, rng = Math.random) {

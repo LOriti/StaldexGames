@@ -24,7 +24,6 @@ const state = {
   removedDishes: [], // built-in dish names deleted from cards + pools (restorable)
   tab: 'weekly', // 'recipes' | 'month' | 'weekly' | 'shopping'
   week: 0, // 0-3, which week the Weekly view is showing
-  brush: 'curry', // active Month-view brush, or 'erase'
 };
 
 const listeners = new Set();
@@ -118,7 +117,7 @@ function isValidShopping(s) {
   );
 }
 
-/** UI-only changes (tab, week, brush) — no persistence needed. */
+/** UI-only changes (tab, week) — no persistence needed. */
 export function setUI(patch) {
   Object.assign(state, patch);
   emit();

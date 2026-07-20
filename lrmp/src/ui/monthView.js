@@ -1,24 +1,19 @@
-import { MODES, MODE_BY_KEY } from '../data/modes.js';
-import { DAY_NAMES, paintDay, shuffleAll, clearPlan, seedPlan, swapDinners, emptyDinner } from '../core/plan.js';
-import { get, commit, setUI } from '../state.js';
+import { MODE_BY_KEY } from '../data/modes.js';
+import { DAY_NAMES, shuffleAll, clearPlan, seedPlan, swapDinners, emptyDinner } from '../core/plan.js';
+import { get, commit } from '../state.js';
 import { toast, beginDrag } from './dom.js';
+import { openDishPicker, clearDay } from './dishPicker.js';
 
 /**
- * Month view = paint categories onto a 4x7 grid. Painting a day auto-drops a dish from
- * that category's pool (avoiding same-week repeats). Re-tapping a painted day re-rolls it.
- * Drag a painted day onto another day to swap them, or onto the bin to drop it from the
- * month entirely (that's the eraser — there is no separate erase brush).
+ * Month view = the 4x7 grid. Tap any day to open the dish picker (mode click filters,
+ * then pick / surprise). Tapping an already-planned day jumps straight to its mode's
+ * list with a "clear this day" option. Drag a day onto another to swap, or onto the
+ * bin to remove it. There is no brush — the picker replaced it.
  *
  * This writes to the SAME plan array the Weekly view reads. There is no sync step.
  */
 export function renderMonth(root) {
-  const { plan, brush } = get();
-
-  const brushes = MODES.map(
-    (m) => `<button class="brush ${brush === m.key ? 'on' : ''}" data-brush="${m.key}" style="--gc:${m.color}">
-              <span class="ico">${m.ico}</span>${m.name}
-            </button>`
-  ).join('');
+  const { plan } = get();
 
   const cells = [];
   for (let w = 0; w < 4; w++) {
@@ -38,8 +33,7 @@ export function renderMonth(root) {
 
   root.innerHTML = `
     <div class="brush-bar">
-      <span class="bb-label">Paint with</span>
-      ${brushes}
+      <span class="bb-label">Month</span>
       <span class="spacer"></span>
       <button class="reset" data-cmd="shuffle">🎲 Shuffle all</button>
       <button class="reset" data-cmd="reset">Reset</button>
@@ -50,18 +44,14 @@ export function renderMonth(root) {
       ${cells.join('')}
     </div></div>
     <div class="mbin">🗑 Not this month — drag a day here to remove it</div>
-    <p class="board-note">Pick a category, then tap days to paint — a recipe drops in automatically.
-      Tap a painted day again to re-roll it. Drag a day onto another to swap them, or into the bin to remove it.
+    <p class="board-note">Tap a day to pick a dish — choose a cooking mode, then a recipe (or 🎲 surprise).
+      Tap a planned day to change or clear it. Drag a day onto another to swap them, or into the bin to remove it.
       Blank days are fine: they're your leftover/freezer nights. This feeds straight into the Weekly plan.</p>`;
 
   wire(root);
 }
 
 function wire(root) {
-  root.querySelectorAll('[data-brush]').forEach((b) => {
-    b.onclick = () => setUI({ brush: b.dataset.brush });
-  });
-
   root.querySelectorAll('[data-cmd]').forEach((cmd) => {
     cmd.onclick = () => {
       const s = get();
@@ -101,14 +91,14 @@ function wire(root) {
     cell.addEventListener('pointerdown', (e) => {
       const s = get();
       const dinner = s.plan[idx].dinner;
-      const paint = () => {
-        paintDay(s.plan, idx, s.brush);
-        commit({ plan: true });
-      };
+      const openPicker = () => openDishPicker(idx, {
+        startMode: dinner.cat ?? undefined,
+        onRemove: dinner.dish || dinner.note ? () => clearDay(idx) : undefined,
+      });
 
-      // Empty days can't be dragged — a tap paints them.
+      // Empty days can't be dragged — a tap opens the picker at the mode step.
       if (!dinner.dish && !dinner.note) {
-        cell.onclick = paint;
+        cell.onclick = openPicker;
         return;
       }
       cell.onclick = null;
@@ -118,8 +108,8 @@ function wire(root) {
         type: 'mday',
         idx,
         label: dinner.dish ?? dinner.note,
-        colour: mode ? mode.color : '#8a8377',
-      }, { ...dragOpts, onTap: paint });
+        colour: mode ? mode.color : '#a49d8e',
+      }, { ...dragOpts, onTap: openPicker });
     });
   });
 }
