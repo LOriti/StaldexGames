@@ -1,13 +1,14 @@
 import { RECIPES } from '../data/recipes.js';
-import { metaOf } from '../data/dishes.js';
+import { metaOf, customEntry, allDishNames } from '../data/dishes.js';
 import { MODE_BY_KEY } from '../data/modes.js';
 import { ingredientsOf, isEdited, PORTIONS_PER_SERVE } from '../core/recipes.js';
 import { get, commit } from '../state.js';
-import { $, $$, toast } from './dom.js';
+import { $, $$, escapeAttr, toast } from './dom.js';
 
 export function openRecipe(name) {
   const info = metaOf(name);
-  const recipe = RECIPES[name];
+  const custom = customEntry(name);
+  const recipe = RECIPES[name] ?? custom;
   const mode = info ? MODE_BY_KEY[info.mode] : null;
   const colour = mode ? mode.color : 'var(--curry)';
   const body = $('#modalBody');
@@ -18,32 +19,41 @@ export function openRecipe(name) {
   } else {
     const ing = ingredientsOf(name, recipeEdits);
     const edited = isEdited(name, recipeEdits);
+    const steps = recipe.steps ?? [];
     body.innerHTML = `
-      <div class="m-eyebrow" style="color:${colour}">${mode ? `${mode.ico} ${mode.name}` : ''}</div>
+      <div class="m-eyebrow" style="color:${colour}">${mode ? `${mode.ico} ${mode.name}` : ''}${custom ? ' · your recipe' : ''}</div>
       <h3 class="m-title">${name}</h3>
-      <div class="m-meta">${info ? `${info.dish.p} · ${info.dish.t}` : ''}</div>
+      <div class="m-meta">${info && (info.dish.p || info.dish.t) ? [info.dish.p, info.dish.t].filter(Boolean).join(' · ') : ''}</div>
       <div class="m-serves">Quantities are for <b>1 serve = ${PORTIONS_PER_SERVE} portions</b> — the shopping list scales them by how much you're cooking.</div>
       <div class="m-cols" style="--gc:${colour}">
         <div class="m-ing">
           <h4>Ingredients ${edited ? '<span class="m-edited">edited</span>' : ''}</h4>
           <ul>${ing.map((x) => `<li>${x}</li>`).join('')}</ul>
           <div class="m-edit-row">
-            <button class="m-editbtn" data-edit="1">✎ Edit ingredients</button>
+            ${custom
+              ? '<button class="m-editbtn" data-editcustom="1">✎ Edit recipe</button>'
+              : '<button class="m-editbtn" data-edit="1">✎ Edit ingredients</button>'}
             ${edited ? '<button class="m-editbtn" data-restore="1">Restore original</button>' : ''}
           </div>
         </div>
-        <div class="m-step"><h4>Method</h4><ol>${recipe.steps.map((x) => `<li>${x}</li>`).join('')}</ol></div>
+        <div class="m-step"><h4>Method</h4>${
+          steps.length ? `<ol>${steps.map((x) => `<li>${x}</li>`).join('')}</ol>`
+                       : '<p class="m-meta">No method written down.</p>'
+        }</div>
       </div>
       ${recipe.note ? `<div class="m-note">${recipe.note}</div>` : ''}`;
 
-    body.querySelector('[data-edit]').onclick = () => openEditor(name, ing);
+    const editIng = body.querySelector('[data-edit]');
+    if (editIng) editIng.onclick = () => openIngredientEditor(name, ing);
+    const editCustom = body.querySelector('[data-editcustom]');
+    if (editCustom) editCustom.onclick = () => openRecipeForm(custom.mode, name);
     const restore = body.querySelector('[data-restore]');
     if (restore) {
       restore.onclick = () => {
         delete get().recipeEdits[name];
         commit({ recipes: true });
         toast('Original recipe restored');
-        openRecipe(name); // re-render the modal with the built-in list
+        openRecipe(name);
       };
     }
   }
@@ -52,8 +62,8 @@ export function openRecipe(name) {
   document.body.style.overflow = 'hidden';
 }
 
-/** Swap the ingredient list for a one-line-per-ingredient editor. */
-function openEditor(name, current) {
+/** Swap the ingredient list for a one-line-per-ingredient editor (built-in recipes). */
+function openIngredientEditor(name, current) {
   const wrap = $('#modalBody .m-ing');
   wrap.innerHTML = `
     <h4>Ingredients — one per line, for 1 serve</h4>
@@ -80,6 +90,73 @@ function openEditor(name, current) {
     openRecipe(name);
   };
   wrap.querySelector('[data-cancel]').onclick = () => openRecipe(name);
+}
+
+/**
+ * Add (or edit, when `existingName` is passed) a custom recipe. Renders into the same
+ * modal shell as openRecipe. Name is the primary key everywhere, so it's locked when
+ * editing — delete + re-add to rename.
+ */
+export function openRecipeForm(modeKey, existingName = null) {
+  const s = get();
+  const mode = MODE_BY_KEY[modeKey];
+  const existing = existingName ? s.customRecipes[existingName] : null;
+  const body = $('#modalBody');
+
+  body.innerHTML = `
+    <div class="m-eyebrow" style="color:${mode.color}">${mode.ico} ${mode.name} · ${existing ? 'edit your recipe' : 'new recipe'}</div>
+    <h3 class="m-title">${existing ? existingName : 'Add a recipe'}</h3>
+    <div class="m-form" style="--gc:${mode.color}">
+      ${existing ? '' : `<label class="m-lab">Name<input class="m-in" data-f="name" maxlength="40" placeholder="e.g. Nan's chicken soup"></label>`}
+      <div class="m-form-row">
+        <label class="m-lab">Protein <span class="m-opt">optional</span><input class="m-in" data-f="p" maxlength="24" value="${escapeAttr(existing?.p ?? '')}" placeholder="e.g. Chicken thigh"></label>
+        <label class="m-lab">Prep time <span class="m-opt">optional</span><input class="m-in" data-f="t" maxlength="16" value="${escapeAttr(existing?.t ?? '')}" placeholder="e.g. 25 min"></label>
+      </div>
+      <label class="m-lab">Ingredients — one per line, for 1 serve (= ${PORTIONS_PER_SERVE} portions)
+        <textarea class="m-ta" data-f="ing" rows="8" spellcheck="false" placeholder="500g chicken thigh&#10;1 onion, diced">${(existing?.ing ?? []).join('\n')}</textarea>
+      </label>
+      <label class="m-lab">Method — one step per line <span class="m-opt">optional</span>
+        <textarea class="m-ta" data-f="steps" rows="5" spellcheck="false" placeholder="Brown the chicken.&#10;Add everything else; simmer.">${(existing?.steps ?? []).join('\n')}</textarea>
+      </label>
+      <div class="m-edit-row">
+        <button class="m-editbtn save" data-save="1">${existing ? 'Save changes' : 'Add recipe'}</button>
+        <button class="m-editbtn" data-cancel="1">Cancel</button>
+      </div>
+    </div>`;
+
+  const val = (f) => body.querySelector(`[data-f="${f}"]`)?.value ?? '';
+  const lines = (f) => val(f).split('\n').map((l) => l.trim()).filter(Boolean);
+
+  body.querySelector('[data-save]').onclick = () => {
+    const name = existing ? existingName : val('name').trim();
+    if (!name) return toast('Give it a name');
+    if (!existing && (allDishNames().includes(name) || RECIPES[name])) {
+      return toast('A recipe with that name already exists');
+    }
+    const ing = lines('ing');
+    if (!ing.length) return toast('At least one ingredient needed');
+
+    s.customRecipes[name] = {
+      mode: modeKey,
+      p: val('p').trim(),
+      t: val('t').trim(),
+      l: existing?.l ?? 'keeps',
+      e: existing?.e ?? '',
+      ing,
+      steps: lines('steps'),
+    };
+    commit({ customs: true });
+    toast(existing ? 'Recipe updated' : `${name} added to ${mode.name}`);
+    openRecipe(name);
+  };
+  body.querySelector('[data-cancel]').onclick = () => {
+    if (existing) openRecipe(existingName);
+    else closeRecipe();
+  };
+
+  $('#recipeModal').hidden = false;
+  document.body.style.overflow = 'hidden';
+  if (!existing) body.querySelector('[data-f="name"]').focus();
 }
 
 export function closeRecipe() {

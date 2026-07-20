@@ -47,9 +47,10 @@ parallel lunch array.
 src/
   data/       pure data, no logic
     modes.js      the 5 cooking modes (curry, fry, assembly, soup, bake)
-    dishes.js     40 dishes, indexed by name; metaOf(name)
+    dishes.js     40 built-in dishes + the USER CATALOG OVERLAY (customs/removals —
+                  registered by state.js; always read pools via dishPool/allDishNames,
+                  and identity via metaOf, never DISHES/DISH_INDEX directly)
     recipes.js    40 recipes, keyed by dish name
-    notes.js      keto watch-outs
   core/       pure domain logic — NO DOM, NO imports from ui/ or state.js
     plan.js       plan shape, seeding, painting, shuffling, swapping
     allocate.js   *** the FIFO leftover→lunch allocator. Read this first. ***

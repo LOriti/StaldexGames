@@ -28,7 +28,7 @@
  */
 
 import { MODES } from '../data/modes.js';
-import { DISHES, metaOf } from '../data/dishes.js';
+import { dishPool, metaOf } from '../data/dishes.js';
 
 export const DAYS = 28;
 export const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -85,7 +85,8 @@ export function seedPlan(rng = Math.random) {
  * Falls back to the full pool if `avoid` would leave nothing.
  */
 export function pickDish(modeKey, avoid = new Set(), rng = Math.random) {
-  const pool = DISHES[modeKey] ?? [];
+  // dishPool = built-ins minus user removals, plus user customs (see data/dishes.js).
+  const pool = dishPool(modeKey);
   const names = pool.map((d) => d.n);
   const open = names.filter((n) => !avoid.has(n));
   const arr = open.length ? open : names;

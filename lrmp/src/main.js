@@ -1,5 +1,4 @@
 import './styles.css';
-import { NOTES } from './data/notes.js';
 import { hydrate, subscribe, get, setUI, snapshot, applyRemote } from './state.js';
 import { backend } from './storage/adapter.js';
 import { initSync } from './storage/sync.js';
@@ -27,12 +26,6 @@ function render() {
   $$('#tabBar button').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.tab === tab)));
 }
 
-function renderNotes() {
-  $('#notesBody').innerHTML = NOTES.map(
-    ([title, body]) => `<div class="note-row"><b>${title}</b><span>${body}</span></div>`
-  ).join('');
-}
-
 // Passive indicator only — sync is automatic, nothing to configure.
 const SYNC_LABELS = { off: '☁ …', ok: '☁ synced', error: '☁ offline' };
 
@@ -43,7 +36,6 @@ function initSyncUI() {
 
 async function init() {
   await hydrate();
-  renderNotes();
   initModal();
 
   $$('#tabBar button').forEach((b) => {

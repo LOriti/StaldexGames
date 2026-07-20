@@ -98,4 +98,6 @@ export const KEYS = {
   PINS: 'pins',
   SHOPPING: 'shopping',
   RECIPE_EDITS: 'recipeEdits',
+  CUSTOM_RECIPES: 'customRecipes',
+  REMOVED_DISHES: 'removedDishes',
 };

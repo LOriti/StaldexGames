@@ -14,13 +14,15 @@
  */
 
 import { RECIPES } from '../data/recipes.js';
+import { customEntry } from '../data/dishes.js';
 
 export const PORTIONS_PER_SERVE = 2;
 
-/** Ingredient lines for one serve — the user's edited version if there is one. */
+/** Ingredient lines for one serve — user edit > built-in recipe > custom recipe. */
 export function ingredientsOf(dish, edits = {}) {
   const override = edits?.[dish];
-  return Array.isArray(override) ? override : (RECIPES[dish]?.ing ?? []);
+  if (Array.isArray(override)) return override;
+  return RECIPES[dish]?.ing ?? customEntry(dish)?.ing ?? [];
 }
 
 /** Whether a dish's ingredients have been edited away from the built-in recipe. */

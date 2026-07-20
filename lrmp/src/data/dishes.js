@@ -73,5 +73,65 @@ for (const [modeKey, list] of Object.entries(DISHES)) {
 
 export const ALL_DISH_NAMES = Object.keys(DISH_INDEX);
 
-/** @returns {{mode:string, dish:object}|null} */
-export function metaOf(name) { return DISH_INDEX[name] ?? null; }
+/** @returns {{mode:string, dish:object}|null} — customs first, then built-ins. */
+export function metaOf(name) {
+  const c = CUSTOM[name];
+  if (c) return { mode: c.mode, dish: customAsDish(name, c) };
+  return DISH_INDEX[name] ?? null;
+}
+
+/* ------------------------------------------------------------------------------------
+ * USER CATALOG OVERLAY — custom recipes and removed built-ins.
+ *
+ * The static data above never changes; the user's additions/removals live in persisted
+ * state (customRecipes / removedDishes) and are registered here by state.js whenever
+ * they load or change. Everything that needs the LIVE catalog goes through dishPool /
+ * metaOf / allDishNames — never through DISHES/DISH_INDEX directly (those are the
+ * built-ins only, kept exported for the data-integrity tests).
+ *
+ * metaOf deliberately still resolves REMOVED built-ins: a day already planned with a
+ * removed dish keeps its colour and recipe; removal only takes it out of the pools.
+ * ---------------------------------------------------------------------------------- */
+
+let CUSTOM = {};          // { name: { mode, p, t, l, e, ing, steps } }
+let REMOVED = new Set();  // built-in dish names the user deleted
+
+export function setCatalog(custom = {}, removed = []) {
+  CUSTOM = custom && typeof custom === 'object' ? custom : {};
+  REMOVED = new Set(Array.isArray(removed) ? removed : []);
+}
+
+/** The full custom entry (with ing/steps) or null — used for recipe fallback. */
+export function customEntry(name) {
+  return CUSTOM[name] ?? null;
+}
+
+export function isRemoved(name) {
+  return REMOVED.has(name);
+}
+
+/** Removed built-in names belonging to one mode (for the "restore" affordance). */
+export function removedIn(modeKey) {
+  return (DISHES[modeKey] ?? []).filter((d) => REMOVED.has(d.n)).map((d) => d.n);
+}
+
+function customAsDish(name, c) {
+  return { n: name, p: c.p || '', t: c.t || '', l: c.l || 'keeps', e: c.e || '' };
+}
+
+/** The live pool for a mode: built-ins minus removals, plus the user's customs. */
+export function dishPool(modeKey) {
+  const builtIns = (DISHES[modeKey] ?? []).filter((d) => !REMOVED.has(d.n));
+  const customs = Object.entries(CUSTOM)
+    .filter(([, c]) => c.mode === modeKey)
+    .map(([n, c]) => customAsDish(n, c));
+  return [...builtIns, ...customs];
+}
+
+/** Every live dish name (built-ins minus removals, plus customs). */
+export function allDishNames() {
+  return [
+    ...ALL_DISH_NAMES.filter((n) => !REMOVED.has(n)),
+    ...Object.keys(CUSTOM),
+  ];
+}

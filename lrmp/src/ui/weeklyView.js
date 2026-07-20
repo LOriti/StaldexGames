@@ -1,5 +1,5 @@
 import { MODE_BY_KEY } from '../data/modes.js';
-import { metaOf, DISHES } from '../data/dishes.js';
+import { metaOf, allDishNames } from '../data/dishes.js';
 import { DAY_NAMES, swapDinners, deferDinner, emptyDinner } from '../core/plan.js';
 import { allocate, groupSurplus } from '../core/allocate.js';
 import * as fz from '../core/freezer.js';
@@ -79,8 +79,8 @@ function freezerPanel(freezer) {
         </div>`).join('')
     : `<div class="fz-empty">Freezer is empty — drag a dinner in here to bank all its leftovers, or a single lunch to bank that portion.</div>`;
 
-  const dishOptions = Object.values(DISHES).flat()
-    .map((d) => `<option value="${escapeAttr(d.n)}"></option>`).join('');
+  const dishOptions = allDishNames()
+    .map((n) => `<option value="${escapeAttr(n)}"></option>`).join('');
 
   return `<details class="freezer" open>
             <summary>❄ Freezer <span class="fz-count">${total} portion${total === 1 ? '' : 's'}</span>
