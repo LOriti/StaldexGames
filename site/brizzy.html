@@ -67,6 +67,13 @@ dd .note{display:block;font-size:12px;color:var(--dim);font-family:var(--disp);l
 .tbc{color:var(--faint);font-style:italic}
 .tbc::after{content:" · to confirm";font-size:10px;font-style:normal;letter-spacing:.1em;text-transform:uppercase}
 
+/* ---------- alerts ---------- */
+.alertbox{border:1px solid var(--sig);border-radius:10px;background:linear-gradient(180deg,rgba(224,36,43,.10),rgba(224,36,43,.03));padding:16px 18px;margin-top:34px}
+.alerthd{font-family:var(--mono);font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--sig);margin-bottom:12px}
+.alert + .alert{margin-top:13px;padding-top:13px;border-top:1px solid rgba(224,36,43,.28)}
+.alert .at{font-size:15.5px;font-weight:700;line-height:1.3}
+.alert .ad{font-size:13.5px;color:var(--dim);margin-top:4px}
+
 /* ---------- stays ---------- */
 .stay{display:grid;grid-template-columns:3px 1fr;gap:14px;padding:13px 0;border-top:1px solid var(--line)}
 .stay:first-child{border-top:none}
@@ -152,6 +159,8 @@ a:focus-visible,summary:focus-visible{outline:2px solid var(--sig);outline-offse
   <div class="count" id="count"></div>
 </header>
 
+<div id="alerts"></div>
+
 <section id="beds">
   <h2><b>01</b> &nbsp;Where we're sleeping</h2>
   <div id="stays"></div>
@@ -189,6 +198,16 @@ a:focus-visible,summary:focus-visible{outline:2px solid var(--sig);outline-offse
 const TRIP = {
   lede: "Leon and Rahana, ten days in Brisbane, built around one gig on the Thursday. Flights, beds, and what to do with the other nine days.",
 
+  // Things that need resolving. Rendered loud at the top; empty array hides the block.
+  alerts: [
+    { t: "Whale watch and the return ferry collide on the 5th",
+      d: "The cruise boards 07:15 and gets back to the jetty around 12:00. The ferry off the island is booked for 11:30. You cannot make both — one of them has to move. Cancelling the cruise inside 24 hrs costs 100%." },
+    { t: "The tour booking is for 3 people",
+      d: "Booking 23M2H3 says 3 passengers. This page is built for Leon and Rahana. Worth checking who the third is before anyone turns up expecting a seat." },
+    { t: "River Heads parking must be pre-booked",
+      d: "Secure parking at the River Heads terminal is a pre-booked service, not a turn-up-and-park car park. The hire car is sitting there three nights." }
+  ],
+
   // Trip window — drives the countdown when the gig date isn't locked in yet.
   start: "2026-07-31",
   end:   "2026-08-09",
@@ -218,7 +237,7 @@ const TRIP = {
     { name: "Bri's place", from: "2026-08-01", to: "2026-08-02", where: "8 Perfect Place, Bridgeman Downs",
       note: "Straight off the red-eye — ~25 min from the airport" },
     { name: "Kingfisher Bay Resort", from: "2026-08-02", to: "2026-08-05", where: "K'gari",
-      note: "Passenger ferry from River Heads — hire car stays parked on the mainland" },
+      note: "Tours booked under 23M2H3 (Fraser Island Ferries / SeaLink). Hire car stays at River Heads." },
     { name: "Bri's place", from: "2026-08-05", to: "2026-08-09", where: "8 Perfect Place, Bridgeman Downs",
       note: "Back in time for the gig on the Thursday — venue is only ~15 min away" }
   ],
@@ -246,17 +265,18 @@ const TRIP = {
       { t: null, w: "First night on the island" }
     ]},
     { date: "2026-08-03", away: true, slots: [
-      { t: "full day", w: "4WD tour", key: true, note: "The classic run — Lake McKenzie, 75 Mile Beach, Eli Creek, the Maheno wreck. Long day in a bus on sand." },
-      { t: null, w: "Bring", note: "Swimmers, towel, hat, sunscreen, motion sickness tablets if you're prone — the beach track is rough" }
+      { t: "08:50", w: "At the Sunset Bar", note: "Pick-up window is 10 min either side of 09:00. They do not wait." },
+      { t: "09:00", w: "Beauty Spots 4WD tour", key: true, note: "Full day. Lake McKenzie, Central Station, Wanggoolba Creek, Pile Valley, 75 Mile Beach, the Maheno wreck, Eli Creek." },
+      { t: null, w: "Included", note: "Lunch and refreshments. Bring sunscreen and swimwear." }
     ]},
     { date: "2026-08-04", away: true, slots: [
-      { t: null, w: "Whale watching", key: true, note: "Hervey Bay in August is the good end of the season — humpbacks come into the bay to rest" },
-      { t: null, w: "Layers", note: "Cold and windy on the water even on a mild day" }
+      { open: true, w: "Nothing booked", note: "The free day on the island — the whale watch is on the 5th, not today" }
     ]},
     { date: "2026-08-05", away: true, slots: [
-      { t: "11:30", w: "Ferry back to River Heads", key: true, note: "Check out first — resort will hold bags" },
-      { t: "~12:30", w: "Pick the car up and drive south", note: "~3.5 hrs to Bridgeman Downs, so back around 16:00–16:30" },
-      { t: null, w: "Back at Bri's", note: "Gig is tomorrow night — this is the quiet evening" }
+      { t: "07:15", w: "Board at the end of the jetty", key: true, note: "07:30 departure — this is an early start after two big days" },
+      { t: "07:30", w: "Whale watch cruise", key: true, note: "Back at the jetty approximately 12:00" },
+      { t: "11:30", w: "⚠ Ferry booked for now", key: true, note: "CLASH — you are still on the boat. See the alert at the top of the page." },
+      { t: null, w: "Then the drive south", note: "~3.5 hrs to Bridgeman Downs once you're actually off the island" }
     ]},
     { date: "2026-08-06", slots: [
       { open: true, w: "Daytime free", note: "Venue is 15 min away — this day doesn't need protecting" },
@@ -282,7 +302,9 @@ const TRIP = {
 
   transport: [
     { b: "★", t: "<b>Hire car (Budget) from BNE, 1–9 Aug.</b> Picked up on landing, dropped back before the flight home. The car covers everything except nights out — those are Ubers." },
-    { b: "★", t: "<b>The car does not go to K'gari — and doesn't need to.</b> Kingfisher Bay runs a passenger ferry from River Heads and the island driving is all on guided 4WD tours. Leave the hire car in the River Heads car park for the three nights. Check whether Budget's agreement is happy with it sitting there, and whether the resort or terminal offers secure parking." },
+    { b: "★", t: "<b>The car does not go to K'gari — and doesn't need to.</b> The island driving is all on guided 4WD tours, so the hire car stays at River Heads for the three nights." },
+    { b: "!", t: "<b>Secure parking at River Heads must be pre-booked</b> — it's a paid service through Kingfisher Bay Mainland Reception (54 Ariadne St), not a turn-up-and-park car park. Sort it before the 2nd." },
+    { b: "→", t: "<b>Phone signal on K'gari is very limited</b>, per the operator's own notes. Download anything you need — tickets, maps, the return ferry booking — before you get on the boat." },
     { b: "→", t: "<b>Bridgeman Downs is northside</b>, which suits this trip. Rough drives: airport ~25 min · Entertainment Centre ~15 min · CBD or the Valley ~25–30 min · South Bank ~30 min." },
     { b: "★", t: "<b>The venue is practically local.</b> Boondall is one suburb over — ~15 min. No need to leave early, and no train logistics to think about." },
     { b: "→", t: "<b>Uber on the gig night.</b> Both of you can drink and it's a short, cheap run home. Expect surge and a wait when 13,000 people leave at once — walk five minutes clear of the venue before ordering." },
@@ -387,6 +409,14 @@ setInterval(renderCount, 1000);
   el.innerHTML = `<b>${fmtLong(TRIP.start)}</b> → <b>${fmtLong(TRIP.end)}</b> · ${nights} nights`;
   $('count').insertAdjacentElement("afterend", el);
 })();
+
+/* ---- alerts ---- */
+$('alerts').innerHTML = (TRIP.alerts && TRIP.alerts.length)
+  ? `<div class="alertbox">
+       <div class="alerthd">Needs sorting — ${TRIP.alerts.length}</div>
+       ${TRIP.alerts.map(a => `<div class="alert"><div class="at">${a.t}</div><div class="ad">${a.d}</div></div>`).join("")}
+     </div>`
+  : "";
 
 /* ---- stays ---- */
 $('stays').innerHTML = TRIP.stays.map(s => {
