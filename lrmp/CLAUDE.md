@@ -66,6 +66,7 @@ src/
     monthView.js
     weeklyView.js   the complex one
     shoppingView.js weekly list: tick off ingredients, skip dishes, copy as text
+    dishPicker.js   tap-an-empty-day picker: mode click filters, then pick/random/note
     recipeModal.js
   state.js    tiny observable store; hydrate / commit / subscribe
   main.js     entry, tab switching

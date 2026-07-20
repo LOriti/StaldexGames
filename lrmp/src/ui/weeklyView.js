@@ -6,6 +6,7 @@ import * as fz from '../core/freezer.js';
 import { get, commit, setUI } from '../state.js';
 import { escapeAttr, toast, beginDrag } from './dom.js';
 import { openRecipe } from './recipeModal.js';
+import { openDishPicker } from './dishPicker.js';
 
 const colourOf = (dish) => {
   const info = metaOf(dish);
@@ -25,7 +26,7 @@ function dinnerTile(plan, idx) {
             </div>`;
   }
   if (!d.dish) {
-    return `<button class="flex empty-day" data-noteday="${idx}">empty — tap to note a plan<br>(e.g. dinner out)</button>`;
+    return `<button class="flex empty-day" data-pickday="${idx}">empty — tap to plan<br>a dinner or a note</button>`;
   }
 
   const colour = d.cat ? MODE_BY_KEY[d.cat].color : '#888';
@@ -149,7 +150,7 @@ export function renderWeekly(root) {
     <p class="board-note">Drag a dinner onto another day to swap, onto the freezer ❄ to bank all its leftovers, or down into the surplus strip to push it to next week ·
       drag a lunch onto another day to pin it there 📌, or onto the freezer to bank that one portion ·
       −/+ sets leftover portions (they fill later lunches, earliest-cooked first, and roll into the next week) ·
-      tap an empty dinner to note a plan · everything saves automatically.</p>`;
+      tap an empty dinner to pick a dish (filtered by mode) or write a note · everything saves automatically.</p>`;
 
   wire(root);
 }
@@ -233,8 +234,16 @@ function wire(root) {
       return commit({ pins: true });
     }
 
-    const nd = e.target.closest('[data-noteday]');
-    if (nd) return openNoteEditor(root, nd.closest('.dslot'), Number(nd.dataset.noteday));
+    const pd = e.target.closest('[data-pickday]');
+    if (pd) {
+      const idx = Number(pd.dataset.pickday);
+      return openDishPicker(idx, {
+        onNote: () => {
+          const slot = root.querySelector(`.dslot[data-idx="${idx}"]`);
+          if (slot) openNoteEditor(root, slot, idx);
+        },
+      });
+    }
 
     const en = e.target.closest('[data-editnote]');
     if (en) return openNoteEditor(root, en.closest('.dslot'), Number(en.dataset.editnote));

@@ -234,6 +234,23 @@
   .m-editbtn:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
   .m-ta{width:100%;font-family:"JetBrains Mono",monospace;font-size:12px;line-height:1.7;color:var(--cream);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 12px;resize:vertical}
   .m-ta:focus{outline:2px solid var(--focus);outline-offset:1px}
+  /* Dish picker (tap an empty weekly day) */
+  .pick-modes{display:grid;grid-template-columns:repeat(auto-fill,minmax(170px,1fr));gap:10px;margin-top:20px}
+  .pick-mode{display:flex;flex-direction:column;align-items:flex-start;gap:2px;font-family:inherit;text-align:left;background:var(--bg);border:1px solid var(--line);border-left:4px solid var(--gc);border-radius:8px;padding:12px 14px;cursor:pointer;transition:box-shadow .12s,border-color .12s}
+  .pick-mode:hover{box-shadow:0 1px 4px rgba(35,28,18,.15);border-color:var(--gc)}
+  .pick-mode:focus-visible{outline:2px solid var(--focus);outline-offset:2px}
+  .pick-ico{font-size:17px}
+  .pick-name{font-family:"Fraunces",serif;font-weight:600;font-size:15px;color:var(--ink)}
+  .pick-desc{font-size:10px;color:var(--cream-dim);letter-spacing:.02em}
+  .pick-list{margin-top:18px;display:flex;flex-direction:column;max-height:46vh;overflow:auto;border:1px solid var(--line);border-radius:8px}
+  .pick-row{display:flex;align-items:center;justify-content:space-between;gap:10px;font-family:inherit;text-align:left;background:var(--chit);border:none;border-left:4px solid var(--gc);border-bottom:1px solid var(--line);padding:10px 12px;cursor:pointer}
+  .pick-row:last-child{border-bottom:none}
+  .pick-row:hover{background:var(--bg)}
+  .pick-row:focus-visible{outline:2px solid var(--focus);outline-offset:-2px}
+  .pick-dish{font-family:"Fraunces",serif;font-weight:600;font-size:13.5px;color:var(--ink)}
+  .pick-tags{display:flex;gap:5px;flex-wrap:wrap;justify-content:flex-end}
+  .tag.wk{color:#5a6a86;border-color:rgba(90,106,134,.35);background:rgba(90,106,134,.07)}
+
   .m-form{margin-top:20px;display:flex;flex-direction:column;gap:14px}
   .m-form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
   .m-lab{display:flex;flex-direction:column;gap:6px;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-soft);font-weight:700}
