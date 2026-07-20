@@ -125,6 +125,96 @@ h2 .tally{color:var(--gap);border:1px dashed var(--gap);border-radius:4px;paddin
 .note-row .x{color:var(--dim)}
 .note-row .x b{color:var(--text);font-weight:600}
 
+/* ---------- format switcher ---------- */
+.view{display:none}
+.view.active{display:block}
+.switcher{
+  position:sticky;top:0;z-index:60;display:flex;gap:3px;
+  background:rgba(11,11,12,.92);backdrop-filter:blur(10px);
+  border-bottom:1px solid var(--line);margin:0 -18px;padding:10px 18px;
+}
+.switcher button{
+  font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;
+  color:var(--dim);background:transparent;border:1px solid transparent;border-radius:999px;
+  padding:7px 15px;cursor:pointer;
+}
+.switcher button:hover{color:var(--text)}
+.switcher button.on{background:var(--sig);color:#fff}
+.switcher button:focus-visible{outline:2px solid var(--sig);outline-offset:2px}
+
+/* ---------- RUN SHEET ---------- */
+.e-wrap{font-family:var(--mono);padding-top:30px}
+.e-mast{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;
+  border-bottom:2px solid var(--text);padding-bottom:12px;margin-bottom:4px}
+.e-mast h1{font-family:var(--disp);font-weight:700;font-size:clamp(34px,9vw,48px);line-height:1;letter-spacing:-.02em}
+.e-mast .meta{text-align:right;font-size:10.5px;color:var(--dim);line-height:1.8;letter-spacing:.06em}
+.e-mast .meta b{color:var(--sig);font-weight:500}
+.e-day{display:flex;align-items:center;gap:12px;background:var(--text);color:var(--ink);
+  padding:6px 12px;margin-top:20px;font-size:11px;letter-spacing:.1em;text-transform:uppercase}
+.e-day .dn{font-family:var(--disp);font-size:14px;font-weight:700;letter-spacing:0;text-transform:none}
+.e-day .dtag{opacity:.7}
+.e-day .ds{margin-left:auto;opacity:.7}
+.e-row{display:grid;grid-template-columns:56px 24px 1fr auto;gap:0 12px;align-items:baseline;
+  padding:7px 12px;border-bottom:1px solid var(--line);font-size:12.5px}
+.e-row .t{color:var(--faint);font-size:11.5px;white-space:nowrap}
+.e-row .ic{font-family:var(--disp)}
+.e-row .what b{font-weight:500;color:var(--text)}
+.e-row.key .what b{color:var(--text);font-weight:600}
+.e-row.key .t{color:var(--sig)}
+.e-row .what .d{color:var(--faint)}
+.e-row.open .what b{color:var(--gap)}
+.e-st{font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;padding:2px 8px;border-radius:3px;white-space:nowrap}
+.e-st.ok{background:rgba(94,201,138,.14);color:var(--ok)}
+.e-st.todo{background:rgba(217,164,65,.16);color:var(--gap)}
+.e-st.opt{background:var(--panel2);color:var(--faint)}
+.e-st.open{background:rgba(217,164,65,.16);color:var(--gap)}
+.e-block{padding:8px 12px 8px 92px;font-size:11.5px;color:var(--dim);border-bottom:1px solid var(--line);line-height:1.6}
+.e-block b{color:var(--text);font-weight:500}
+.e-key{margin-top:18px;display:flex;gap:16px;flex-wrap:wrap;font-size:10.5px;color:var(--faint);letter-spacing:.06em}
+.e-key span{display:flex;align-items:center;gap:6px}
+.e-key i{width:8px;height:8px;border-radius:2px;display:inline-block}
+.e-key i.ok{background:var(--ok)}.e-key i.todo{background:var(--gap)}
+.e-key i.opt{background:var(--line2,#37343f)}.e-key i.open{background:var(--gap)}
+@media(max-width:640px){
+  .e-row{grid-template-columns:48px 1fr auto;gap:0 8px}
+  .e-row .ic{display:none}
+  .e-block{padding-left:12px}
+}
+
+/* ---------- DOSSIER ---------- */
+.f-wrap{display:grid;grid-template-columns:270px 1fr;gap:20px;padding-top:30px}
+@media(max-width:860px){.f-wrap{grid-template-columns:1fr}}
+.f-side{position:sticky;top:56px;align-self:start;display:flex;flex-direction:column;gap:9px}
+@media(max-width:860px){.f-side{position:static}}
+.f-side h1{font-family:var(--disp);font-weight:700;font-size:36px;line-height:.95;letter-spacing:-.03em}
+.f-side .sub{color:var(--dim);font-size:12.5px;margin:5px 0 4px}
+.f-side .sub b{color:var(--sig)}
+.f-card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.f-card h4{font-family:var(--mono);font-size:9.5px;font-weight:500;letter-spacing:.18em;text-transform:uppercase;color:var(--faint);margin-bottom:8px}
+.f-kv{display:flex;justify-content:space-between;gap:10px;font-size:12.5px;padding:3px 0;align-items:baseline}
+.f-kv span:first-child{color:var(--dim);white-space:nowrap}
+.f-kv span:last-child{text-align:right}
+.f-chips{display:flex;flex-wrap:wrap;gap:5px}
+.f-chip{font-size:11.5px;padding:3px 10px;border-radius:999px;background:var(--panel2);color:var(--dim)}
+.f-chip.g{background:rgba(217,164,65,.14);color:var(--gap)}
+.f-main{display:flex;flex-direction:column;gap:10px}
+.f-dayrow{background:var(--panel);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.f-dayrow.hot{border-color:rgba(224,36,43,.5)}
+.f-dayrow.gap{border-style:dashed;border-color:rgba(217,164,65,.45)}
+.f-dh{display:flex;align-items:baseline;gap:12px;padding:11px 15px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.f-dh .d{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--sig)}
+.f-dayrow.gap .f-dh .d{color:var(--gap)}
+.f-dh .n{font-size:18px;font-weight:700;letter-spacing:-.01em}
+.f-dh .s{margin-left:auto;font-size:11.5px;color:var(--faint)}
+.f-track{display:flex;flex-wrap:wrap;padding:5px 7px}
+.f-slot{flex:1 1 145px;min-width:145px;padding:8px;border-right:1px dashed var(--line)}
+.f-slot:last-child{border-right:0}
+.f-slot .t{font-family:var(--mono);font-size:10.5px;color:var(--faint)}
+.f-slot .w{font-size:12.5px;font-weight:600;margin-top:2px;line-height:1.35}
+.f-slot .m{font-size:11.5px;color:var(--dim);margin-top:2px;line-height:1.45}
+.f-slot.hot .w,.f-slot.hot .t{color:var(--sig)}
+.f-slot.open .w,.f-slot.open .t{color:var(--gap)}
+
 footer{padding:30px 0 0;color:var(--faint);font-family:var(--mono);font-size:11px;letter-spacing:.1em}
 a{color:var(--text)}
 a:focus-visible,summary:focus-visible{outline:2px solid var(--sig);outline-offset:3px}
@@ -138,6 +228,9 @@ a:focus-visible,summary:focus-visible{outline:2px solid var(--sig);outline-offse
      Anything left as null renders as a visible "to confirm" placeholder.
      ========================================================================== -->
 
+<nav class="switcher" id="switcher" role="group" aria-label="Page format"></nav>
+
+<div class="view active" id="view-detailed">
 <header>
   <div class="kicker" id="kicker">Brisbane · Massive Attack</div>
   <h1>BRIZ<span class="slash">Z</span>Y</h1>
@@ -161,6 +254,10 @@ a:focus-visible,summary:focus-visible{outline:2px solid var(--sig);outline-offse
   <h2><b>03</b> &nbsp;Worth knowing</h2>
   <div class="notes" id="notes"></div>
 </section>
+</div><!-- /view-detailed -->
+
+<div class="view" id="view-run"></div>
+<div class="view" id="view-dossier"></div>
 
 <footer id="foot"></footer>
 
@@ -205,65 +302,76 @@ const TRIP = {
             note: "Qantas · lands Perth late Sunday" }
   },
 
-  // Day-by-day. Add or remove days freely.
-  // A day with gig:true gets the red treatment.
-  // Set gig:true on whichever day the show lands on and it gets the red treatment.
+  // Hire car — referenced by the Dossier sidebar.
+  car: {
+    ref: "00254184AU0",
+    what: "Intermediate SUV (Kia Sportage or similar)",
+    spec: "Auto · 5 seats · 2 large + 2 small bags",
+    from: "Sat 1 Aug 06:00, BNE",
+    to:   "Sun 9 Aug 20:00, BNE",
+    cost: "A$447.24",
+    extra: "Unlimited km · free cancellation"
+  },
+
+  // Day-by-day.
+  // Slot fields: t (time) · w (what) · note · key (emphasis) · open (nothing planned)
+  //              stay (bed for the night) · ic (icon) · st (status: ok | todo | opt)
   itinerary: [
-    { date: "2026-07-31", slots: [
-      { t: "21:00", w: "At Perth airport", note: "Domestic — 90 min before is plenty" },
-      { t: "22:55", w: "Wheels up", key: true, note: "Booking E7CS3Y" }
+    { date: "2026-07-31", tag: "Fly out", slots: [
+      { t: "21:00", w: "At Perth airport", ic: "🚗", st: "ok", note: "Domestic — 90 min before is plenty" },
+      { t: "22:55", w: "Wheels up, PER → BNE", ic: "✈️", key: true, st: "ok", note: "Qantas · booking E7CS3Y · red-eye" }
     ]},
-    { date: "2026-08-01", slots: [
-      { t: "05:20", w: "Land at BNE", key: true, note: "Two hours ahead of Perth — that's 03:20 body clock" },
-      { t: "06:00", w: "Pick up the hire car", key: true, note: "Confirmation 00254184AU0 · Intermediate SUV, auto, 5 seats · A$447.24, unlimited km, free cancellation · booked 06:00, 40 min after you land" },
-      { t: "~06:45", w: "Drive to Bri's", key: true, note: "8 Perfect Place, Bridgeman Downs — ~25 min from the airport. You'll land on her doorstep early; worth warning her." },
-      { t: null, w: "Sleep, then a slow day", note: "You've had a red-eye and no real night. Don't plan anything." },
+    { date: "2026-08-01", tag: "Land, recover", slots: [
+      { t: "05:20", w: "Land at BNE", ic: "✈️", key: true, st: "ok", note: "Two hours ahead of Perth — that's 03:20 body clock" },
+      { t: "06:00", w: "Pick up the hire car", ic: "🚙", key: true, st: "ok", note: "Confirmation 00254184AU0 · Intermediate SUV · A$447.24, unlimited km" },
+      { t: "~06:45", w: "Drive to Bri's", ic: "🏠", key: true, st: "ok", note: "8 Perfect Place, Bridgeman Downs — ~25 min. You'll land on her doorstep early; worth warning her." },
+      { t: null, w: "Sleep, then a slow day", ic: "😴", st: "opt", note: "You've had a red-eye and no real night. Don't plan anything." },
       { stay: true, w: "Bri's place · 1 night", note: "8 Perfect Place, Bridgeman Downs" }
     ]},
-    { date: "2026-08-02", away: true, slots: [
-      { t: "08:00", w: "On the road by 8", key: true, note: "~3.5 hrs to River Heads, and starting northside saves you the city crawl. An 08:00 start leaves decent slack; 09:00 leaves none." },
-      { t: null, w: "Fuel and food on the way", note: "Grab it in Maryborough or Hervey Bay — the resort is a captive market" },
-      { t: "12:15", w: "Park at River Heads", note: "Car stays here three nights. Take anything you need off it — you're not coming back to it." },
-      { t: "13:00", w: "Ferry to Kingfisher Bay", key: true, note: "~50 min across. Download tickets and bookings first — signal on K'gari is very limited, per the operator." },
-      { t: "~14:00", w: "Arrive, check in", note: "Kingfisher Bay Resort" },
-      { stay: true, w: "Kingfisher Bay Resort · 3 nights", note: "K'gari. Tours booked under 23M2H3 (Fraser Island Ferries / SeaLink)." }
+    { date: "2026-08-02", away: true, tag: "North to K'gari", slots: [
+      { t: "08:00", w: "On the road by 8", ic: "🚙", key: true, st: "todo", note: "~3.5 hrs to River Heads. An 08:00 start leaves decent slack; 09:00 leaves none." },
+      { t: null, w: "Fuel and food on the way", ic: "⛽", st: "opt", note: "Grab it in Maryborough or Hervey Bay — the resort is a captive market" },
+      { t: "12:15", w: "Park at River Heads", ic: "🅿️", st: "todo", note: "Must be pre-booked. Car stays three nights — take everything off it." },
+      { t: "13:00", w: "Ferry to Kingfisher Bay", ic: "⛴️", key: true, st: "ok", note: "~50 min. Download tickets first — signal on K'gari is very limited." },
+      { t: "~14:00", w: "Arrive, check in", ic: "🏝️", st: "ok", note: "Kingfisher Bay Resort" },
+      { stay: true, w: "Kingfisher Bay Resort · 3 nights", note: "K'gari · tours under 23M2H3" }
     ]},
-    { date: "2026-08-03", away: true, slots: [
-      { t: "08:50", w: "At the Sunset Bar", note: "Pick-up window is 10 min either side of 09:00. They do not wait." },
-      { t: "09:00", w: "Beauty Spots 4WD tour", key: true, note: "Full day. Lake McKenzie, Central Station, Wanggoolba Creek, Pile Valley, 75 Mile Beach, the Maheno wreck, Eli Creek." },
-      { t: null, w: "Included", note: "Lunch and refreshments. Bring sunscreen and swimwear." }
+    { date: "2026-08-03", away: true, tag: "4WD tour", slots: [
+      { t: "08:50", w: "At the Sunset Bar", ic: "⏰", st: "ok", note: "Pick-up window is 10 min either side of 09:00. They do not wait." },
+      { t: "09:00", w: "Beauty Spots 4WD tour", ic: "🚌", key: true, st: "ok", note: "Full day. Lake McKenzie, Central Station, Wanggoolba Creek, Pile Valley, 75 Mile Beach, the Maheno wreck, Eli Creek." },
+      { t: null, w: "Lunch and refreshments included", ic: "🥪", st: "ok", note: "Bring sunscreen and swimwear" }
     ]},
-    { date: "2026-08-04", away: true, slots: [
-      { open: true, w: "Nothing booked", note: "The free day on the island — the whale watch is on the 5th, not today" }
+    { date: "2026-08-04", away: true, tag: "Free on the island", slots: [
+      { open: true, w: "Nothing booked", note: "The free day on K'gari — the whale watch is on the 5th, not today" }
     ]},
-    { date: "2026-08-05", away: true, slots: [
-      { t: "07:15", w: "Board at the end of the jetty", key: true, note: "07:30 departure — early start, so check out and pack the night before" },
-      { t: "07:30", w: "Whale watch cruise", key: true, note: "Back at the jetty approximately 12:00" },
-      { t: "~12:00", w: "Lunch and collect bags", note: "Two and a half hours before the ferry — no need to rush" },
-      { t: "14:30", w: "Ferry back to River Heads", key: true, note: "~50 min across, so on the road by about 15:30" },
-      { t: "~19:00", w: "Back at Bri's", note: "3.5 hr drive after a 07:15 start. Long day — and the gig is tomorrow." },
+    { date: "2026-08-05", away: true, tag: "Whales, then south", slots: [
+      { t: "07:15", w: "Board at the end of the jetty", ic: "⏰", key: true, st: "ok", note: "07:30 departure — check out and pack the night before" },
+      { t: "07:30", w: "Whale watch cruise", ic: "🐋", key: true, st: "ok", note: "Back at the jetty approximately 12:00" },
+      { t: "~12:00", w: "Lunch and collect bags", ic: "🥪", st: "opt", note: "Two and a half hours before the ferry — no need to rush" },
+      { t: "14:30", w: "Ferry back to River Heads", ic: "⛴️", key: true, st: "ok", note: "~50 min across, so on the road by about 15:30" },
+      { t: "~19:00", w: "Back at Bri's", ic: "🏠", st: "ok", note: "3.5 hr drive after a 07:15 start. Long day — and the gig is tomorrow." },
       { stay: true, w: "Bri's place · 4 nights", note: "Through to the flight home on the 9th" }
     ]},
-    { date: "2026-08-06", slots: [
+    { date: "2026-08-06", tag: "GIG DAY", slots: [
       { open: true, w: "Daytime free", note: "Venue is 15 min away — this day doesn't need protecting" },
-      { t: null, w: "Eat before you go", note: "Arena food is a trap, and there's nothing around Boondall" },
-      { t: "~19:00", w: "Uber to the venue", key: true, note: "Short run. Uber means neither of you is the sober one." },
-      { t: "20:00", w: "MASSIVE ATTACK", key: true, note: "Brisbane Entertainment Centre" },
-      { t: null, w: "Uber home", note: "Walk a few minutes clear of the car park before ordering — surge and gridlock right at the doors" }
+      { t: "~17:00", w: "Eat before you go", ic: "🍔", st: "todo", note: "Arena food is a trap, and there's nothing around Boondall" },
+      { t: "~19:00", w: "Uber to the venue", ic: "🚕", key: true, st: "ok", note: "Short run. Uber means neither of you is the sober one." },
+      { t: "20:00", w: "MASSIVE ATTACK", ic: "🔊", key: true, st: "ok", note: "Brisbane Entertainment Centre, Boondall" },
+      { t: null, w: "Uber home", ic: "🚕", st: "opt", note: "Walk clear of the car park before ordering — surge and gridlock at the doors" }
     ]},
-    { date: "2026-08-07", slots: [
+    { date: "2026-08-07", tag: "Day after", slots: [
       { open: true, w: "Whole day free", note: "Day after the gig — a soft one, or the day trip you didn't fit in" }
     ]},
-    { date: "2026-08-08", slots: [
-      { open: true, w: "Last full day", note: "Whatever got missed. Also worth sorting the check-out and car return for tomorrow." }
+    { date: "2026-08-08", tag: "Last full day", slots: [
+      { open: true, w: "Last full day", note: "Whatever got missed. Also worth sorting check-out and the car return for tomorrow." }
     ]},
-    { date: "2026-08-09", slots: [
-      { t: null, w: "Check out", note: "Most places 10:00 — bag storage if the flight's not till 20:20" },
-      { t: null, w: "Last day in town", note: "You have the whole day; the flight is at night" },
-      { t: "~17:45", w: "Refuel", note: "Fill up away from the airport — their refuelling fee is worse than the pump price" },
-      { t: "~18:15", w: "Return the hire car", key: true, note: "Booking says 20:00, but that's after your flight. Ignore it and come back early." },
-      { t: "18:50", w: "At BNE", note: "90 min before departure" },
-      { t: "20:20", w: "Fly home", key: true, note: "Booking E7CS3Y" }
+    { date: "2026-08-09", tag: "Fly home", slots: [
+      { t: null, w: "Check out and load the car", ic: "🧳", st: "opt", note: "Bags in the boot — the flight isn't till 20:20" },
+      { t: null, w: "Last day in town", ic: "🌤️", st: "opt", note: "You have the whole day" },
+      { t: "~17:45", w: "Refuel", ic: "⛽", st: "opt", note: "Fill up away from the airport — their refuelling fee is worse than the pump price" },
+      { t: "~18:15", w: "Return the hire car", ic: "🚙", key: true, st: "todo", note: "Booking says 20:00, but that's after your flight. Ignore it and come back early." },
+      { t: "18:50", w: "At BNE", ic: "🧾", st: "ok", note: "90 min before departure" },
+      { t: "20:20", w: "Fly home, BNE → PER", ic: "✈️", key: true, st: "ok", note: "Qantas · booking E7CS3Y" }
     ]}
   ],
 
@@ -475,6 +583,172 @@ $('ideas').innerHTML = TRIP.ideas.map(g => {
 }).join("");
 
 $('foot').textContent = `staldex.com/brizzy — unlisted`;
+
+/* ============================================================================
+   ALTERNATE FORMATS — same TRIP data, different shape.
+   ========================================================================= */
+const ST = { ok: "Booked", todo: "Action", opt: "Loose" };
+
+function daysToGig(){
+  const d = parseDate(TRIP.gig.date);
+  if (!d) return null;
+  const [hh, mm] = (TRIP.gig.doors || TRIP.gig.setTime || "20:00").split(":").map(Number);
+  const diff = new Date(d.getFullYear(), d.getMonth(), d.getDate(), hh, mm) - new Date();
+  return diff > 0 ? Math.ceil(diff / 86400000) : 0;
+}
+
+/* ---- RUN SHEET ---- */
+function renderRun(){
+  const n = daysToGig();
+  const rows = TRIP.itinerary.map((day, i) => {
+    const m = dayMeta(day, i);
+    const head = `<div class="e-day">
+      <span class="dn">${m.wday}</span>
+      <span class="dtag">${day.tag || ""}</span>
+      <span class="ds">${m.date || ""}</span>
+    </div>`;
+    const body = day.slots.map(sl => {
+      if (sl.stay) return `<div class="e-block"><b>Bed:</b> ${sl.w}${sl.note ? ` — ${sl.note}` : ""}</div>`;
+      if (sl.open) return `<div class="e-row open">
+        <span class="t">—</span><span class="ic">＋</span>
+        <span class="what"><b>${sl.w}</b>${sl.note ? ` <span class="d">— ${sl.note}</span>` : ""}</span>
+        <span class="e-st open">Open</span></div>`;
+      return `<div class="e-row${sl.key ? ' key' : ''}">
+        <span class="t">${sl.t || ""}</span>
+        <span class="ic">${sl.ic || ""}</span>
+        <span class="what"><b>${sl.w}</b>${sl.note ? ` <span class="d">— ${sl.note}</span>` : ""}</span>
+        ${sl.st ? `<span class="e-st ${sl.st}">${ST[sl.st]}</span>` : `<span class="e-st"></span>`}</div>`;
+    }).join("");
+    return head + body;
+  }).join("");
+
+  return `<div class="e-wrap">
+    <div class="e-mast">
+      <h1>BRIZZY</h1>
+      <div class="meta">
+        RUN SHEET · MASSIVE ATTACK, BRISBANE ENTERTAINMENT CENTRE<br>
+        LEON + RAHANA · BASE: BRIDGEMAN DOWNS · ${n !== null ? `SHOW IN <b>${n} DAY${n === 1 ? "" : "S"}</b>` : ""}
+      </div>
+    </div>
+    ${rows}
+    <div class="e-key">
+      <span><i class="ok"></i>Booked — locked in</span>
+      <span><i class="todo"></i>Action — needs doing</span>
+      <span><i class="opt"></i>Loose — optional</span>
+      <span><i class="open"></i>Open — nothing planned</span>
+    </div>
+  </div>`;
+}
+
+/* ---- DOSSIER ---- */
+function renderDossier(){
+  const n = daysToGig();
+  const g = TRIP.gig, c = TRIP.car;
+  const beds = TRIP.itinerary.flatMap(d => d.slots.filter(s => s.stay).map(s => s.w));
+
+  const kv = (k, v) => v ? `<div class="f-kv"><span>${k}</span><span>${v}</span></div>` : "";
+
+  const side = `<aside class="f-side">
+    <div>
+      <h1>Brizzy</h1>
+      <p class="sub">${g.artist} · ${fmtDate(g.date)} · ${n !== null ? `show in <b>${n} day${n === 1 ? "" : "s"}</b>` : ""}</p>
+    </div>
+
+    <div class="f-card">
+      <h4>Show</h4>
+      ${kv("Venue", g.venue)}
+      ${kv("Date", fmtLong(g.date))}
+      ${kv("On stage", g.setTime)}
+      ${kv("Doors", g.doors || "—")}
+      ${kv("Getting there", "Uber, ~15 min")}
+    </div>
+
+    <div class="f-card">
+      <h4>Flights</h4>
+      ${kv("Out", `${fmtDate(TRIP.flights.out.date)} · ${TRIP.flights.out.dep}`)}
+      ${kv("Lands", TRIP.flights.out.arr)}
+      ${kv("Back", `${fmtDate(TRIP.flights.back.date)} · ${TRIP.flights.back.dep}`)}
+      ${kv("Booking", TRIP.flights.out.ref)}
+    </div>
+
+    <div class="f-card">
+      <h4>Hire car</h4>
+      ${kv("Booking", c.ref)}
+      ${kv("Vehicle", c.what)}
+      ${kv("Out", c.from)}
+      ${kv("Back", c.to)}
+      ${kv("Cost", c.cost)}
+      ${kv("Terms", c.extra)}
+    </div>
+
+    <div class="f-card">
+      <h4>Beds</h4>
+      ${beds.map(b => `<div class="f-kv"><span>${b.split(" · ")[0]}</span><span>${b.split(" · ")[1] || ""}</span></div>`).join("")}
+    </div>
+
+    ${TRIP.alerts.length ? `<div class="f-card">
+      <h4>Open items</h4>
+      <div class="f-chips">${TRIP.alerts.map(a => `<span class="f-chip g">${a.t}</span>`).join("")}</div>
+    </div>` : ""}
+  </aside>`;
+
+  const main = `<main class="f-main">${TRIP.itinerary.map((day, i) => {
+    const m = dayMeta(day, i);
+    const slots = day.slots.filter(s => !s.stay);
+    const bed = day.slots.find(s => s.stay);
+    return `<div class="f-dayrow${m.isGig ? ' hot' : ''}${m.allOpen ? ' gap' : ''}">
+      <div class="f-dh">
+        <span class="d">${m.wshort} ${m.date || ""}</span>
+        <span class="n">${day.tag || m.wday}</span>
+        ${bed ? `<span class="s">${bed.w}</span>` : ""}
+      </div>
+      <div class="f-track">${slots.map(sl => `
+        <div class="f-slot${sl.key ? ' hot' : ''}${sl.open ? ' open' : ''}">
+          <p class="t">${sl.open ? "—" : (sl.t || "")}</p>
+          <p class="w">${sl.ic ? sl.ic + " " : ""}${sl.w}</p>
+          ${sl.note ? `<p class="m">${sl.note}</p>` : ""}
+        </div>`).join("")}
+      </div>
+    </div>`;
+  }).join("")}</main>`;
+
+  return `<div class="f-wrap">${side}${main}</div>`;
+}
+
+/* ---- switcher ---- */
+const FORMATS = {
+  detailed: { label: "Detailed", build: null },
+  run:      { label: "Run sheet", build: renderRun },
+  dossier:  { label: "Dossier",   build: renderDossier }
+};
+
+function setFormat(key){
+  if (!FORMATS[key]) key = "detailed";
+  Object.keys(FORMATS).forEach(k => {
+    const el = $('view-' + k);
+    if (!el) return;
+    if (k === key && FORMATS[k].build && !el.dataset.built){
+      el.innerHTML = FORMATS[k].build();
+      el.dataset.built = "1";
+    }
+    el.classList.toggle("active", k === key);
+  });
+  document.querySelectorAll("#switcher button").forEach(b =>
+    b.classList.toggle("on", b.dataset.fmt === key));
+  try { localStorage.setItem("brizzy.fmt", key); } catch(e){}
+  window.scrollTo({ top: 0 });
+}
+
+$('switcher').innerHTML = Object.entries(FORMATS).map(([k, v]) =>
+  `<button type="button" data-fmt="${k}">${v.label}</button>`).join("");
+$('switcher').addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (b) setFormat(b.dataset.fmt);
+});
+
+let savedFmt = "detailed";
+try { savedFmt = localStorage.getItem("brizzy.fmt") || "detailed"; } catch(e){}
+setFormat(savedFmt);
 </script>
 </body>
 </html>
