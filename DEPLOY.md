@@ -79,6 +79,13 @@ stay, gig, itinerary, transport, picks, crew. Nothing else needs editing; the DO
 it, and any field left `null` shows as a visible "to confirm" placeholder rather than a gap.
 The countdown reads `TRIP.gig.date` + `TRIP.gig.doors`.
 
+## JAPAN (travel book, unlisted at staldex.com/japan)
+
+Single self-contained file, `site/japan.html` — no build step, no Worker; it ships with the
+normal site deploy. Unlisted on the same terms as LRMP, SEND IT and BRIZZY: no links from the
+homepage and a `noindex` meta tag. It loads Fraunces, Newsreader and Inter from Google Fonts,
+allowed for a standalone project page (the no-external-fonts rule binds the shell).
+
 ## Notes
 
 - Every submitted run is its own board entry — one player can hold multiple of the 10
