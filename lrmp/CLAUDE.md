@@ -3,9 +3,11 @@
 Keto meal planner for two. Paint a month by cooking mode → dishes drop in → **lunches are
 derived from dinner leftovers** → surplus rolls forward or gets banked in the freezer.
 
-**The serving model:** recipe quantities are for 1 serve, and **1 serve = 2 portions**
-(dinner for two). A cooked dinner = 1 serve + extra/2 (each leftover portion is half a
-serve). `core/recipes.js` owns this; the shopping list scales quantities with it.
+**The serving model:** **1 serve = 2 portions** (dinner for two). A cooked dinner needs
+1 serve + extra/2. Each recipe also declares how many serves its written quantities
+MAKE (`recipeServes`, default 1, settable on the recipe card) — planning a makes-2
+recipe defaults to 2 leftovers, and the shopping list scales by needed/written, so
+cooking it as written shops at the written amounts. `core/recipes.js` owns all of this.
 
 Vanilla JS + Vite. No framework. State is client-side first (localStorage via the adapter),
 with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route

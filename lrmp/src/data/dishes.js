@@ -93,12 +93,19 @@ export function metaOf(name) {
  * removed dish keeps its colour and recipe; removal only takes it out of the pools.
  * ---------------------------------------------------------------------------------- */
 
-let CUSTOM = {};          // { name: { mode, p, t, l, e, ing, steps } }
+let CUSTOM = {};          // { name: { mode, p, t, l, e, ing, steps, serves? } }
 let REMOVED = new Set();  // built-in dish names the user deleted
+let EDITS = {};           // the recipeEdits slice — needed by core/plan's defaultExtraFor
 
-export function setCatalog(custom = {}, removed = []) {
+export function setCatalog(custom = {}, removed = [], edits = {}) {
   CUSTOM = custom && typeof custom === 'object' ? custom : {};
   REMOVED = new Set(Array.isArray(removed) ? removed : []);
+  EDITS = edits && typeof edits === 'object' ? edits : {};
+}
+
+/** The registered recipeEdits — for core code that has no state access (plan defaults). */
+export function catalogEdits() {
+  return EDITS;
 }
 
 /** The full custom entry (with ing/steps) or null — used for recipe fallback. */

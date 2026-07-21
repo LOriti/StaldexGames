@@ -2,7 +2,7 @@ import { describe, it, expect, afterEach } from 'vitest';
 import {
   setCatalog, dishPool, allDishNames, metaOf, customEntry, isRemoved, removedIn, DISHES,
 } from '../src/data/dishes.js';
-import { pickDish } from '../src/core/plan.js';
+import { pickDish, defaultExtraFor, DEFAULT_EXTRA } from '../src/core/plan.js';
 import { ingredientsOf } from '../src/core/recipes.js';
 
 const SOUP_CUSTOM = {
@@ -56,5 +56,24 @@ describe('catalog overlay — custom recipes and removals', () => {
     expect(ingredientsOf("Nan's chicken soup")).toEqual(['1 whole chicken', '2L stock']);
     expect(ingredientsOf("Nan's chicken soup", { "Nan's chicken soup": ['edited line'] }))
       .toEqual(['edited line']);
+  });
+});
+
+describe('defaultExtraFor — makes-serves drives planning defaults', () => {
+  it('a recipe declared to make 2 serves defaults to 2 leftovers (dinner eats one serve)', () => {
+    setCatalog({}, [], { 'Tom kha gai': { serves: 2 } });
+    expect(defaultExtraFor('Tom kha gai')).toBe(2);
+    setCatalog({}, [], { 'Tom kha gai': { serves: 3 } });
+    expect(defaultExtraFor('Tom kha gai')).toBe(4);
+  });
+
+  it('a custom recipe carries its own makes-serves', () => {
+    setCatalog({ 'Chickpea curry': { mode: 'curry', ing: ['2 tins'], steps: [], serves: 2 } }, [], {});
+    expect(defaultExtraFor('Chickpea curry')).toBe(2);
+  });
+
+  it('with no serves declared, the leftover-class heuristic still applies', () => {
+    expect(defaultExtraFor('Tom kha gai')).toBe(DEFAULT_EXTRA.keeps);
+    expect(defaultExtraFor('Steak + charred greens')).toBe(DEFAULT_EXTRA.fresh);
   });
 });

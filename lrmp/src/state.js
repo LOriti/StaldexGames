@@ -52,8 +52,10 @@ export function commit({ plan = false, freezer = false, favourites = false, pins
   if (customs) {
     store.set(store.KEYS.CUSTOM_RECIPES, state.customRecipes);
     store.set(store.KEYS.REMOVED_DISHES, state.removedDishes);
-    setCatalog(state.customRecipes, state.removedDishes); // refresh pools before re-render
   }
+  // Catalog reads customs AND recipe edits (makes-serves drives plan defaults) —
+  // refresh it before emit so the re-render sees the new pools/defaults.
+  if (customs || recipes) setCatalog(state.customRecipes, state.removedDishes, state.recipeEdits);
   if (plan || freezer || favourites || pins || shopping || recipes || customs) schedulePush(snapshot());
   emit();
 }
@@ -94,12 +96,17 @@ export function applyRemote(data) {
   store.set(store.KEYS.RECIPE_EDITS, state.recipeEdits);
   store.set(store.KEYS.CUSTOM_RECIPES, state.customRecipes);
   store.set(store.KEYS.REMOVED_DISHES, state.removedDishes);
-  setCatalog(state.customRecipes, state.removedDishes);
+  setCatalog(state.customRecipes, state.removedDishes, state.recipeEdits);
   emit();
 }
 
+// Legacy shape { dish: [lines] } and current { dish: { ing?, serves? } } both pass —
+// core/recipes.editOf normalizes on read.
 function isValidEdits(e) {
-  return Boolean(e && typeof e === 'object' && Object.values(e).every(Array.isArray));
+  return Boolean(
+    e && typeof e === 'object' &&
+    Object.values(e).every((v) => Array.isArray(v) || (v && typeof v === 'object'))
+  );
 }
 
 function isValidCustoms(c) {
@@ -143,7 +150,7 @@ export async function hydrate() {
   state.recipeEdits = isValidEdits(recipeEdits) ? recipeEdits : {};
   state.customRecipes = isValidCustoms(customRecipes) ? customRecipes : {};
   state.removedDishes = Array.isArray(removedDishes) ? removedDishes : [];
-  setCatalog(state.customRecipes, state.removedDishes);
+  setCatalog(state.customRecipes, state.removedDishes, state.recipeEdits);
 
   // First run (or recovered from corrupt state): persist the seed immediately.
   if (!isValidPlan(plan)) store.set(store.KEYS.PLAN, state.plan);

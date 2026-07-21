@@ -20,7 +20,7 @@
  * Ingredient lines resolve through recipeEdits so user-edited recipes shop correctly.
  */
 
-import { ingredientsOf, servesFor, scaleQty, formatServes } from './recipes.js';
+import { ingredientsOf, servesFor, scaleQty, formatServes, recipeServes } from './recipes.js';
 
 export const dishKey = (week, dish) => `${week}|${dish}`;
 export const ingKey = (week, dish, i) => `${week}|${dish}|${i}`;
@@ -46,17 +46,24 @@ export function weekCooked(plan, week) {
   return out;
 }
 
-/** The full render model: every cooked dish with scaled ingredients and tick state. */
+/**
+ * The full render model: every cooked dish with scaled ingredients and tick state.
+ * Quantities scale by servesNeeded / servesWritten — a recipe written at 2 serves and
+ * cooked for 2 serves shops at exactly the written amounts.
+ */
 export function buildList(plan, week, shopping = { excluded: {}, have: {} }, edits = {}) {
-  return weekCooked(plan, week).map((e) => ({
-    ...e,
-    excluded: Boolean(shopping.excluded[dishKey(week, e.dish)]),
-    ing: ingredientsOf(e.dish, edits).map((text, i) => ({
-      text: scaleQty(text, e.serves),
-      i,
-      have: Boolean(shopping.have[ingKey(week, e.dish, i)]),
-    })),
-  }));
+  return weekCooked(plan, week).map((e) => {
+    const factor = e.serves / recipeServes(e.dish, edits);
+    return {
+      ...e,
+      excluded: Boolean(shopping.excluded[dishKey(week, e.dish)]),
+      ing: ingredientsOf(e.dish, edits).map((text, i) => ({
+        text: scaleQty(text, factor),
+        i,
+        have: Boolean(shopping.have[ingKey(week, e.dish, i)]),
+      })),
+    };
+  });
 }
 
 /** Count of ingredients still to buy (excluded dishes contribute nothing). */

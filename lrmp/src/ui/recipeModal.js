@@ -1,7 +1,7 @@
 import { RECIPES } from '../data/recipes.js';
 import { metaOf, customEntry, allDishNames } from '../data/dishes.js';
 import { MODE_BY_KEY } from '../data/modes.js';
-import { ingredientsOf, isEdited, PORTIONS_PER_SERVE } from '../core/recipes.js';
+import { ingredientsOf, isEdited, editOf, recipeServes, PORTIONS_PER_SERVE } from '../core/recipes.js';
 import { get, commit } from '../state.js';
 import { $, $$, escapeAttr, toast } from './dom.js';
 
@@ -19,12 +19,20 @@ export function openRecipe(name) {
   } else {
     const ing = ingredientsOf(name, recipeEdits);
     const edited = isEdited(name, recipeEdits);
+    const makes = recipeServes(name, recipeEdits);
     const steps = recipe.steps ?? [];
+    const servesOptions = [1, 2, 3, 4, 5, 6]
+      .map((n) => `<option value="${n}" ${n === makes ? 'selected' : ''}>${n}</option>`).join('');
     body.innerHTML = `
       <div class="m-eyebrow" style="color:${colour}">${mode ? `${mode.ico} ${mode.name}` : ''}${custom ? ' · your recipe' : ''}</div>
       <h3 class="m-title">${name}</h3>
       <div class="m-meta">${info && (info.dish.p || info.dish.t) ? [info.dish.p, info.dish.t].filter(Boolean).join(' · ') : ''}</div>
-      <div class="m-serves">Quantities are for <b>1 serve = ${PORTIONS_PER_SERVE} portions</b> — the shopping list scales them by how much you're cooking.</div>
+      <div class="m-serves">As written this makes
+        <select class="m-serves-sel" id="servesSel" aria-label="Serves this recipe makes">${servesOptions}</select>
+        <b>serve${makes === 1 ? '' : 's'} = ${makes * PORTIONS_PER_SERVE} portions</b> (1 serve = ${PORTIONS_PER_SERVE} portions).
+        ${makes > 1
+          ? `Planning it defaults to ${(makes - 1) * PORTIONS_PER_SERVE} leftovers — dinner eats one serve.`
+          : 'The shopping list scales quantities by how much you cook.'}</div>
       <div class="m-cols" style="--gc:${colour}">
         <div class="m-ing">
           <h4>Ingredients ${edited ? '<span class="m-edited">edited</span>' : ''}</h4>
@@ -43,6 +51,10 @@ export function openRecipe(name) {
       </div>
       ${recipe.note ? `<div class="m-note">${recipe.note}</div>` : ''}`;
 
+    body.querySelector('#servesSel').onchange = (ev) => {
+      setMakesServes(name, Number(ev.target.value), Boolean(custom));
+      openRecipe(name);
+    };
     const editIng = body.querySelector('[data-edit]');
     if (editIng) editIng.onclick = () => openIngredientEditor(name, ing);
     const editCustom = body.querySelector('[data-editcustom]');
@@ -60,6 +72,23 @@ export function openRecipe(name) {
 
   $('#recipeModal').hidden = false;
   document.body.style.overflow = 'hidden';
+}
+
+/** Persist how many serves a recipe's written quantities make. */
+function setMakesServes(name, serves, isCustom) {
+  const s = get();
+  if (isCustom) {
+    s.customRecipes[name].serves = serves;
+    commit({ customs: true });
+  } else {
+    const cur = editOf(s.recipeEdits, name) ?? {};
+    if (serves === 1) delete cur.serves;
+    else cur.serves = serves;
+    if (!Array.isArray(cur.ing) && cur.serves == null) delete s.recipeEdits[name];
+    else s.recipeEdits[name] = cur;
+    commit({ recipes: true });
+  }
+  toast(`Makes ${serves} serve${serves === 1 ? '' : 's'} now`);
 }
 
 /** Swap the ingredient list for a one-line-per-ingredient editor (built-in recipes). */
@@ -80,11 +109,14 @@ function openIngredientEditor(name, current) {
     const lines = ta.value.split('\n').map((l) => l.trim()).filter(Boolean);
     const s = get();
     const original = RECIPES[name]?.ing ?? [];
+    const cur = editOf(s.recipeEdits, name) ?? {};
     if (!lines.length || lines.join('\n') === original.join('\n')) {
-      delete s.recipeEdits[name]; // empty or identical to the book — no edit to keep
+      delete cur.ing; // empty or identical to the book — no ingredient edit to keep
     } else {
-      s.recipeEdits[name] = lines;
+      cur.ing = lines;
     }
+    if (!Array.isArray(cur.ing) && cur.serves == null) delete s.recipeEdits[name];
+    else s.recipeEdits[name] = cur;
     commit({ recipes: true });
     toast('Ingredients saved');
     openRecipe(name);
@@ -112,8 +144,11 @@ export function openRecipeForm(modeKey, existingName = null) {
         <label class="m-lab">Protein <span class="m-opt">optional</span><input class="m-in" data-f="p" maxlength="24" value="${escapeAttr(existing?.p ?? '')}" placeholder="e.g. Chicken thigh"></label>
         <label class="m-lab">Prep time <span class="m-opt">optional</span><input class="m-in" data-f="t" maxlength="16" value="${escapeAttr(existing?.t ?? '')}" placeholder="e.g. 25 min"></label>
       </div>
-      <label class="m-lab">Ingredients — one per line, for 1 serve (= ${PORTIONS_PER_SERVE} portions)
-        <textarea class="m-ta" data-f="ing" rows="8" spellcheck="false" placeholder="500g chicken thigh&#10;1 onion, diced">${(existing?.ing ?? []).join('\n')}</textarea>
+      <label class="m-lab">Makes — how many serves the quantities below yield (1 serve = ${PORTIONS_PER_SERVE} portions; more than 1 auto-sets leftovers when planned)
+        <select class="m-in" data-f="serves">${[1, 2, 3, 4, 5, 6].map((n) => `<option value="${n}" ${(existing?.serves ?? 1) === n ? 'selected' : ''}>${n} serve${n === 1 ? '' : 's'} = ${n * PORTIONS_PER_SERVE} portions</option>`).join('')}</select>
+      </label>
+      <label class="m-lab">Ingredients — one per line, for the serves above
+        <textarea class="m-ta" data-f="ing" rows="8" spellcheck="false" placeholder="2 tins chickpeas&#10;2 tins coconut milk&#10;1 onion, diced">${(existing?.ing ?? []).join('\n')}</textarea>
       </label>
       <label class="m-lab">Method — one step per line <span class="m-opt">optional</span>
         <textarea class="m-ta" data-f="steps" rows="5" spellcheck="false" placeholder="Brown the chicken.&#10;Add everything else; simmer.">${(existing?.steps ?? []).join('\n')}</textarea>
@@ -142,6 +177,7 @@ export function openRecipeForm(modeKey, existingName = null) {
       t: val('t').trim(),
       l: existing?.l ?? 'keeps',
       e: existing?.e ?? '',
+      serves: Math.max(1, Number(val('serves')) || 1),
       ing,
       steps: lines('steps'),
     };

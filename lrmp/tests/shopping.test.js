@@ -66,6 +66,21 @@ describe('buildList / remainingCount — tick state and scaling', () => {
     expect(d.ing[0].text).toBe('600g beef mince');
   });
 
+  it('a recipe written at 2 serves, cooked for 2 serves, shops at the written amounts', () => {
+    const plan = planWith({ 0: ['Beef keema', 2] }); // 4 portions needed = 2 serves
+    const edits = { 'Beef keema': { serves: 2 } };   // quantities as written ARE 2 serves
+    const [d] = buildList(plan, 0, empty(), edits);
+    expect(d.serves).toBe(2);
+    expect(d.ing[0].text).toBe('500g beef mince'); // factor 2/2 = 1 — no scaling
+  });
+
+  it('needing more than the recipe makes scales up from the written base', () => {
+    const plan = planWith({ 0: ['Beef keema', 2], 3: ['Beef keema', 2] }); // 4 serves needed
+    const edits = { 'Beef keema': { serves: 2 } };
+    const [d] = buildList(plan, 0, empty(), edits);
+    expect(d.ing[0].text).toBe('1000g beef mince'); // factor 4/2 = 2
+  });
+
   it('marks ticked ingredients and excluded dishes', () => {
     const plan = planWith({ 0: ['Butter chicken'], 1: ['Beef keema'] });
     const shopping = empty();

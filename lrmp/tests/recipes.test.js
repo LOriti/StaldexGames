@@ -1,8 +1,11 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import {
-  ingredientsOf, isEdited, servesFor, scaleQty, formatServes, PORTIONS_PER_SERVE,
+  ingredientsOf, isEdited, recipeServes, servesFor, scaleQty, formatServes, PORTIONS_PER_SERVE,
 } from '../src/core/recipes.js';
 import { RECIPES } from '../src/data/recipes.js';
+import { setCatalog } from '../src/data/dishes.js';
+
+afterEach(() => setCatalog({}, [], {}));
 
 describe('ingredientsOf — edit resolution', () => {
   it('falls back to the built-in recipe when there is no edit', () => {
@@ -11,14 +14,43 @@ describe('ingredientsOf — edit resolution', () => {
   });
 
   it('returns the edited list when one exists, without touching RECIPES', () => {
-    const edits = { 'Beef keema': ['600g beef mince'] };
+    const edits = { 'Beef keema': { ing: ['600g beef mince'] } };
     expect(ingredientsOf('Beef keema', edits)).toEqual(['600g beef mince']);
     expect(isEdited('Beef keema', edits)).toBe(true);
     expect(RECIPES['Beef keema'].ing[0]).toBe('500g beef mince'); // data untouched
   });
 
+  it('still reads the legacy bare-array edit shape (old synced data)', () => {
+    const edits = { 'Beef keema': ['600g beef mince'] };
+    expect(ingredientsOf('Beef keema', edits)).toEqual(['600g beef mince']);
+    expect(isEdited('Beef keema', edits)).toBe(true);
+  });
+
   it('unknown dishes resolve to an empty list, never throw', () => {
     expect(ingredientsOf('Bought lasagne')).toEqual([]);
+  });
+});
+
+describe('recipeServes — how many serves the written quantities make', () => {
+  it('defaults to 1', () => {
+    expect(recipeServes('Beef keema')).toBe(1);
+    expect(recipeServes('Beef keema', { 'Beef keema': ['600g mince'] })).toBe(1); // legacy shape
+  });
+
+  it('reads a serves override from recipeEdits', () => {
+    expect(recipeServes('Beef keema', { 'Beef keema': { serves: 2 } })).toBe(2);
+  });
+
+  it('reads serves from a custom recipe entry', () => {
+    setCatalog({ 'Chickpea curry': { mode: 'curry', ing: ['2 tins chickpeas'], steps: [], serves: 2 } }, [], {});
+    expect(recipeServes('Chickpea curry')).toBe(2);
+    // an explicit edit still wins over the custom entry
+    expect(recipeServes('Chickpea curry', { 'Chickpea curry': { serves: 3 } })).toBe(3);
+  });
+
+  it('ignores junk values', () => {
+    expect(recipeServes('Beef keema', { 'Beef keema': { serves: 0 } })).toBe(1);
+    expect(recipeServes('Beef keema', { 'Beef keema': { serves: 'lots' } })).toBe(1);
   });
 });
 

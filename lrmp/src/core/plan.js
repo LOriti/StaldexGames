@@ -28,7 +28,8 @@
  */
 
 import { MODES } from '../data/modes.js';
-import { dishPool, metaOf } from '../data/dishes.js';
+import { dishPool, metaOf, catalogEdits } from '../data/dishes.js';
+import { recipeServes, PORTIONS_PER_SERVE } from './recipes.js';
 
 export const DAYS = 28;
 export const DAY_NAMES = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
@@ -51,8 +52,15 @@ export function emptyPlan() {
   return Array.from({ length: DAYS }, () => ({ dinner: emptyDinner() }));
 }
 
-/** Default leftover count for a dish, from its leftover class. */
+/**
+ * Default leftover count for a dish. If its recipe declares that the written quantities
+ * make more than one serve ("never less than 2 tins of everything"), cooking it as
+ * written yields (makes - 1) serves of leftovers — dinner eats one. Otherwise fall back
+ * to the leftover-class heuristic.
+ */
 export function defaultExtraFor(dishName) {
+  const makes = recipeServes(dishName, catalogEdits());
+  if (makes > 1) return (makes - 1) * PORTIONS_PER_SERVE;
   const info = metaOf(dishName);
   return DEFAULT_EXTRA[info ? info.dish.l : 'fresh'] ?? 0;
 }
