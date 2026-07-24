@@ -176,7 +176,7 @@ const S = {
   counts:{}, spend:{drink:0,gear:0,food:0}, forkCount:0, usedHeat:new Set(), usedDJ:new Set(),
   cokeStreak:0, lastCoke:-99,
   lockin:false, lockinStart:0, bowloLock:false,
-  fake:false, fakeMs:0, fakeNext:0, fakeOffered:false,
+  fake:false, fakeMs:0, fakeNext:0, fakeOffered:false, moveStart:0, globalOffered:false, declareGlobal:false,
   bunkered:false, takeover:false, allegiance:0, milestone:0, usedBunker:new Set(),
   counterCd:12, usedCounter:new Set(), pendingQuiz:null, usedDerail:new Set(), pendingSober:false, galaxyTicks:0,
   lastFood:18*60, lastWater:18*60, hygieneWarned:false,
@@ -244,7 +244,7 @@ function benchBoy(id,ticks,status,msg){ const b=boy(id); if(!b||!b.up)return; b.
 /* The clock runs on absolute game-minutes, not ticks, because the rate changes by phase:
    5 min/tick out on the town, 20 min/tick at kick-ons so a house-party "day" is a real 24 hours
    while per-tick decay and event frequency still mirror the night before. */
-function minPerTick(){ return S.kickon?20:5; }
+function minPerTick(){ return (S.kickon||S.takeover)?20:5; }
 function clockStr(){ const m=S.clockMin; const h24=Math.floor(m/60)%24; const mm=(m%60).toString().padStart(2,"0"); const ap=h24>=12&&h24<24?"pm":"am"; let h=h24%12; if(h===0)h=12; return h+":"+mm+ap; }
 function hour(){ return Math.floor(S.clockMin/60)%24; }
 function isDaylight(){ const h=hour(); return h>=6 && h<19; }
@@ -953,14 +953,14 @@ function takeoverEvent(){
 }
 const MILESTONES=[
  {at:30*60, t:"The stream escapes",
-  p:"6am. The sun comes up on what should have been the end of the night — the hour you'd normally be climbing into a taxi for kick-ons at someone's flat. Instead the livestream has escaped containment. A clip of Pickles doing the worm across the bowling green to a sped-up song nobody has been able to identify is being reposted faster than anyone can watch it. Twelve thousand viewers. Comments in nine languages.",
+  p:"It has escaped containment. Somewhere in the last hour the livestream stopped being a joke and started being a broadcast. A clip of Pickles doing the worm across the bowling green to a sped-up song nobody has been able to identify is being reposted faster than anyone can watch it. Twelve thousand viewers. Comments in nine languages.",
   o:[["Address the people directly",()=>{ leg(18); S.allegiance+=14; say("You look down the lens: 'Everyone is welcome. Bring your own cup.' The count doubles mid-sentence. The movement has a face now, and it is yours, and it is sweating.","leg"); }],
      ["Keep it pure — phones down",()=>{ leg(12); S.allegiance+=10; say("You call a phones-down moment of presence. It backfires beautifully: the one grainy clip that escapes becomes the most-shared thing of the night precisely because it's the only one.","leg"); }]]},
  {at:34*60, t:"North Perth secedes",
   p:"The neighbours haven't called the police. The neighbours have brought a lasagne and asked to join. The entire suburb of North Perth has just voted, by show of hands on the green, to become an independent sesh-state. A man named Barry is Foreign Minister. Barry is doing very well.",
   o:[["Enshrine North Perth as founding province",()=>{ leg(20); S.allegiance+=16; say("North Perth is enshrined as the founding province of the movement. Barry gives a tearful acceptance speech from atop the drinks fridge. The retirement village next door pledges its bingo hall as an embassy.","leg"); }]]},
  {at:38*60, t:"Perth is on it",
-  p:"It's the middle of the afternoon — a full day since last drinks were called — and the whole city has heard. Cars are arriving from Joondalup, from Freo, from Mandurah. The bowlo car park is a refugee camp of pure joy. A traffic reporter has stopped reporting traffic to join in. Perth — sleepy, isolated, beautiful Perth — is fully on the sesh.",
+  p:"A full day in now, and the whole city has heard. Cars are arriving from Joondalup, from Freo, from Mandurah. The street outside is a refugee camp of pure joy. A traffic reporter has stopped reporting traffic to join in. Perth — sleepy, isolated, beautiful Perth — is fully on the sesh.",
   o:[["Address the nation of Perth",()=>{ leg(24); S.allegiance+=18; say("You climb the flagpole — the flag is now a Bintang singlet — and address Perth. 'You have always been the most isolated city on earth. Tonight you are the centre of it.' Perth roars. Somewhere, the bell tower rings itself.","leg"); }]]},
  {at:42*60, t:"Australia pledges allegiance",
   p:"Breaking: the Prime Minister has addressed the nation. Rather than condemn the movement, they have pledged allegiance to it and sent a keg 'from the people of Australia'. Parliament is suspended. The national broadcaster is now just the livestream.",
@@ -987,7 +987,12 @@ const MILESTONES=[
   o:[["Let the music make the argument",()=>{ leg(30); S.allegiance+=45; say("You don't counter the grey suit with words. You drop the track. Eight billion people move as one, and the man in the grey suit — watching, appalled — feels his own foot begin, against a lifetime of training, to tap. The vote swings.","leg"); }],
      ["Hand the mic to Bucko",()=>{ if(Math.random()<.7){ leg(26); S.allegiance+=70; say("Bucko takes the mic and says, simply: 'I just wanted a good night with the boys. Look what we did.' The planet votes yes through tears.","leg"); } else { heat(16); say("Bucko freezes. Dead air, planet-wide, for eight excruciating seconds. The grey suit smells blood. You'll have to win this one the hard way now.","bad"); } }]]},
 ];
-const GLOBAL_AT=5500;   // the last push after the ratification — ~4 more hours of holding it together
+const MOVE_LEAD=12, MOVE_GAP=21, MOVE_DAYS_TICKS=216;   // the movement runs a 3-day session at kick-on speed, then you declare the global Doof Republic
+function declareGlobalEvent(){
+  showEvent({t:"Declare the global Doof Republic",
+    p:"Three days since it began. The vote has carried, the last hold-out has folded, and every clock on earth now reads the same impossible time. There is nothing left to win — only to say it out loud, and make it true forever.",
+    o:[["Declare the global Doof Republic",()=>{ S.declareGlobal=true; }]]});
+}
 function globalGovEnd(){
   S.running=false;
   const bonus=Math.round(600 + S.allegiance/4); leg(bonus); S.degen+=500; S.foundersBonus=bonus; // founder's dividend
@@ -1249,17 +1254,22 @@ function sobrietyTest(){
       ["Have a water and come back in ten",()=>{ buzz(-10); heat(-6); leg(4); say("You take the loss, sit on a bollard with a bottle of water, and return ten minutes later a changed man. The doorman clocks the effort and respects it enormously. Genuinely elite behaviour.","gd"); }]
     ]});
 }
-const FAKE_GAP=30;   // the shadow republic moves slowly - long, dreamy gaps between "milestones"
-const FAKE_CAP=7;    // it can never get past The Graveyard shift
-function offerFakeRepublic(){
+const FAKE_CAP=7;    // the shadow version paces exactly like the real one (MOVE_GAP) but can never get past The Graveyard shift
+function offerMovement(){
   S.fakeOffered=true;
-  showEvent({t:"The shadow people have a proposal",
-    p:"Day "+S.day+", and the tall patient figures at the edge of every doorway have started to move differently. One of them - the one that has been standing past the laundry door since yesterday - leans in and speaks, which they have never done before. It explains, very reasonably, that what happened at that bowling club could happen here. That the flat could be the start of it. That the whole world is only ever one good party away from agreeing. It is the most sense anything has made in about sixty hours.",
+  showEvent({t:"Could this be the start of it?",
+    p:"Day "+S.day+", deep in the veil. The shadow people stand at the edges of the room as they have for hours - but the idea arrives on its own, and it will not leave: what happened at that bowling club could happen here. The flat could be the start of it. The whole world is only ever one good party away from agreeing. Maybe it is the sixty hours talking. Maybe it is not.",
     o:[
-      ["Start the movement here",()=>{ S.fake=true; S.fakeNext=S.tick+FAKE_GAP; S.aftersStart=S.tick; leg(20);
-          say("You climb onto Leroy's kitchen bench and declare the flat a sovereign state. The shadow people applaud without making any sound at all. Somebody starts a livestream. The numbers on it are extremely good and nobody looks closely at them.","leg"); }],
-      ["Decline, and have a glass of water",()=>{ buzz(-6); heat(-6); leg(10); S.lastWater=S.clockMin;
-          say("You tell the shadow person, politely, that you are going to have a glass of water instead. It nods as though it expected this, and steps back past the laundry door. The kitchen is just a kitchen again. You have almost certainly just saved your own life.","gd"); }]
+      ["Start the movement here",()=>{ S.aftersStart=S.tick; leg(20);
+          if(Math.random()<0.25){                                  // the shadow people had you the whole time
+            S.fake=true; S.fakeNext=S.tick+MOVE_GAP;
+            say("You climb onto Leroy's kitchen bench and declare the flat a sovereign state. The shadow people applaud without making a sound. Somebody starts a livestream. The numbers on it are extremely good, and nobody looks too closely at them.","leg");
+          } else {                                                 // it is, impossibly, real
+            S.bunkered=true; S.takeover=true; S.moveStart=S.tick;
+            say("You climb onto Leroy's kitchen bench and declare the flat a sovereign state - and, impossibly, it holds. A neighbour repeats it to another neighbour. Someone with real followers presses record. The number climbs, and every time you look closely it is still climbing.","leg");
+          } }],
+      ["Let it go, have a glass of water",()=>{ buzz(-6); heat(-6); leg(10); S.lastWater=S.clockMin;
+          say("You tell the room, and the shadow person at the edge of it, that you are going to have a glass of water instead. It nods as though it expected this, and steps back past the laundry door. The kitchen is just a kitchen again. You may have just saved your own life.","gd"); }]
     ]});
 }
 function fakeRepublicEnd(){
@@ -1529,11 +1539,12 @@ function step(){
   }
   // 2am: two hours into the lock-in, you declare sovereignty — the after-hours, instead of kick-ons.
   if(S.bowloLock && !S.bunkered && S.clockMin>=26*60){
-    S.bowloLock=false; S.bunkered=true; S.takeover=true; takeoverEvent(); paint(); return;
+    S.bowloLock=false; S.bunkered=true; S.takeover=true; S.moveStart=S.tick; takeoverEvent(); paint(); return;
   }
   // ===== THE BOWLO SUB-STORYLINE — sovereignty declared; the night pivots to a global takeover =====
   if(S.bunkered){
     if(S.walking>0){ paint(); return; }
+    if(S.declareGlobal){ globalGovEnd(); paint(); return; }
     if(S.counterCd>0)S.counterCd--;
     if(S.buzz>=40 && S.seated===0) S.allegiance += 4 + Math.floor(boysUp()/2) + Math.floor(S.buzz/12); // the movement feeds on the party
     if(S.milestone>=8) heat(-5);                                       // the last beats: the authorities ARE the party now, untouchable
@@ -1543,11 +1554,12 @@ function step(){
     }
     if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id,"tapped out at the bowlo","One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
     if(S.milestone>=2 && S.milestone<6){ const ooc=outOfControl(); if(ooc>0.2 && Math.random()<0.022*ooc){ fireDerail(); paint(); return; } } // unavoidable if you lose the plot
-    // Milestones run to the clock now: the stream escapes at 6am, then one every four hours.
-    if(S.milestone<MILESTONES.length && S.clockMin>=MILESTONES[S.milestone].at){
+    // Milestones fire on a tick schedule anchored to the takeover — the 10 beats span three days.
+    if(S.milestone<MILESTONES.length && S.tick>=S.moveStart+MOVE_LEAD+S.milestone*MOVE_GAP){
       const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
     }
-    if(S.milestone>=MILESTONES.length && S.allegiance>=GLOBAL_AT){ globalGovEnd(); paint(); return; }
+    // after the ratification and a full three days, you get to declare it for real
+    if(S.milestone>=MILESTONES.length && !S.globalOffered && S.tick>=S.moveStart+MOVE_DAYS_TICKS){ S.globalOffered=true; declareGlobalEvent(); paint(); return; }
     // counterinsurgency — the still-free world fights back between milestones; you must manage it
     if(S.milestone>=2 && S.milestone<10 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
     if(S.heat>=100){
@@ -1595,12 +1607,12 @@ function step(){
     if(S.buzz>=40 && S.seated===0) S.allegiance += 3 + Math.floor(boysUp()/2);
     if(S.tick>=S.fakeNext){
       if(S.fakeMs>=FAKE_CAP){ fakeRepublicEnd(); paint(); return; }
-      const m=MILESTONES[S.fakeMs]; S.fakeMs++; S.milestone=S.fakeMs; S.fakeNext=S.tick+FAKE_GAP;
+      const m=MILESTONES[S.fakeMs]; S.fakeMs++; S.milestone=S.fakeMs; S.fakeNext=S.tick+MOVE_GAP;
       showEvent(m); paint(); return;
     }
   }
-  if(S.kickon && !S.fake && !S.fakeOffered && S.shadow && S.day>=4 && Math.random()<.0055){
-    offerFakeRepublic(); paint(); return;
+  if(S.kickon && !S.fake && !S.fakeOffered && S.shadow && S.day>=4 && Math.random()<.0096){
+    offerMovement(); paint(); return;
   }
   // kick-on attrition — the further you push, the more the party takes. Scales per day.
   if(S.kickon){
