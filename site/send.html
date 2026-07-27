@@ -177,6 +177,7 @@ const S = {
   cokeStreak:0, lastCoke:-99,
   lockin:false, lockinStart:0, bowloLock:false,
   fake:false, fakeMs:0, fakeNext:0, fakeOffered:false, moveStart:0, globalOffered:false, declareGlobal:false,
+  atFlat:false, movementDecided:false, movementPending:false,
   bunkered:false, takeover:false, allegiance:0, milestone:0, usedBunker:new Set(),
   counterCd:12, usedCounter:new Set(), pendingQuiz:null, usedDerail:new Set(), pendingSober:false, galaxyTicks:0,
   lastFood:18*60, lastWater:18*60, hygieneWarned:false,
@@ -286,8 +287,8 @@ const ACTS=[
   {id:"cock", ico:"🍸", nm:"Cocktail", base:24, cd:4,  gear:false, do:()=>{ buzz(+16); leg(4); say(COCKTAILS[Math.floor(Math.random()*COCKTAILS.length)],"gd"); }},
   {id:"shot", ico:"🥃", nm:"Shots",    base:10, cd:2,  gear:false, do:()=>{ buzz(+12); if(Math.random()<.25){leg(6);say("Tequila for the table. Someone bites the lime, skin-side. Legend behaviour.","leg");} else say("A shot vanishes. Your future self files a complaint.","gd"); }},
   {id:"water",ico:"💧", nm:"Water",    base:0,  cd:4,  gear:false, do:()=>{ buzz(-8); heat(-3); const dry=(S.clockMin-S.lastWater)/60>24; S.lastWater=S.clockMin; say(dry?"First water in over a day. Your body sends up a flare of pure gratitude. Everything eases a notch.":"A tactical water. Genuinely elite move.","gd"); }},
-  {id:"kebab",ico:()=>S.kickon?"📱":"🥙", nm:()=>S.kickon?"Uber Eats":"Kebab", base:15, cd:10, gear:false, do:()=>{ S.soakTicks=10; heat(-3); const starved=(S.clockMin-S.lastFood)/60>24; S.lastFood=S.clockMin;
-      if(S.kickon){ say(starved?"First real food in over a day, and it takes a $19 delivery fee and forty minutes to arrive. The whole machine reboots anyway. Soakage acquired — the slide eases right off.":EATS[Math.floor(Math.random()*EATS.length)],"gd"); }
+  {id:"kebab",ico:()=>(S.kickon||S.bunkered)?"📱":"🥙", nm:()=>(S.kickon||S.bunkered)?"Uber Eats":"Kebab", base:15, cd:10, gear:false, do:()=>{ S.soakTicks=10; heat(-3); const starved=(S.clockMin-S.lastFood)/60>24; S.lastFood=S.clockMin;
+      if(S.kickon||S.bunkered){ say(starved?"First real food in over a day, and it takes a $19 delivery fee and forty minutes to arrive. The whole machine reboots anyway. Soakage acquired — the slide eases right off.":EATS[Math.floor(Math.random()*EATS.length)],"gd"); }
       else say(starved?"First real food in over a day. The whole machine reboots. Soakage acquired and, for once, actually needed — the slide eases right off.":"Soakage acquired. The kebab slows the slide. Buzz decay halved for a bit.","gd"); }},
   {id:"coke", ico:"❄️", nm:"Racks",    base:60, cd:10, gear:true,  do:()=>{
       // Racks sharpen you UP into the zone rather than blasting you over — a controlled boost.
@@ -987,7 +988,36 @@ const MILESTONES=[
   o:[["Let the music make the argument",()=>{ leg(30); S.allegiance+=45; say("You don't counter the grey suit with words. You drop the track. Eight billion people move as one, and the man in the grey suit — watching, appalled — feels his own foot begin, against a lifetime of training, to tap. The vote swings.","leg"); }],
      ["Hand the mic to Bucko",()=>{ if(Math.random()<.7){ leg(26); S.allegiance+=70; say("Bucko takes the mic and says, simply: 'I just wanted a good night with the boys. Look what we did.' The planet votes yes through tears.","leg"); } else { heat(16); say("Bucko freezes. Dead air, planet-wide, for eight excruciating seconds. The grey suit smells blood. You'll have to win this one the hard way now.","bad"); } }]]},
 ];
-const MOVE_LEAD=12, MOVE_GAP=21, MOVE_DAYS_TICKS=216;   // the movement runs a 3-day session at kick-on speed, then you declare the global Doof Republic
+const MILESTONES_FLAT=[
+ {t:"The group chat turns",
+  p:"Someone has been livestreaming the backyard to the group chat 'as a joke', and it has stopped being one. The link has left the chat. It is on a story, then another story, then a meme account with actual followers. The Hills Hoist, mid-spin, is content now. Four thousand strangers are watching Leroy's backyard and not one of them was invited.",
+  o:[["Address the phone directly",()=>{ leg(18); S.allegiance+=14; say("You look down the lens: 'Everyone's welcome. BYO, mind the dog.' The number doubles while you're still talking. The backyard has a face now, and it is yours, and it is sunburnt.","leg"); }],
+     ["Kill the stream, keep it sacred",()=>{ leg(12); S.allegiance+=10; say("You call for phones down. It backfires beautifully: the one blurry clip that already escaped becomes the most-shared thing of the week precisely because it is the only proof it happened.","leg"); }]]},
+ {t:"The cul-de-sac joins",
+  p:"The neighbours have not called the council. The neighbours have brought a card table, a slab each, and a folding chair. The whole cul-de-sac — six houses and a bloke from the flats behind — has quietly merged backyards. A section of colorbond has come down 'for access'. A retiree named Marg is running the esky with military precision.",
+  o:[["Enshrine the cul-de-sac as founding ground",()=>{ leg(20); S.allegiance+=16; say("The cul-de-sac is declared the founding ground of the movement. Marg accepts the role of Quartermaster from atop an upturned milk crate. The corner house offers its above-ground pool as neutral territory.","leg"); }]]},
+ {t:"The suburb is on it",
+  p:"A full day in, and it has jumped the postcode. Cars are parking three streets back. People arrive with directions screenshotted from the local Facebook group, which has abandoned its usual business of lost cats and bin-night reminders to coordinate the party. The bottle-o on the corner has sold out and reordered twice.",
+  o:[["Address the street from the verge",()=>{ leg(24); S.allegiance+=18; say("You stand on the verge — the ancient sacred ground of the Australian address — and speak. 'This used to be a quiet street. Look at it now.' The street roars. An off-duty councilman quietly joins the back.","leg"); }]]},
+ {t:"Australia pledges allegiance",
+  p:"Breaking: the Prime Minister has addressed the nation. Rather than send anyone to break it up, they have pledged allegiance and couriered 'a slab from the people of Australia'. Parliament is suspended. The national broadcaster has cut to a live feed of Leroy's backyard.",
+  o:[["Accept the national slab with grace",()=>{ leg(28); S.allegiance+=20; say("You accept the national slab on the nation's behalf. The Governor-General cracks the first one. Productivity nationwide hits zero and nobody has ever been happier. Bucko is, for reasons no one can explain, knighted on the trampoline.","leg"); }]]},
+ {t:"New Zealand, obviously",
+  p:"New Zealand has joined. Of course it has. They insist they were having backyard sessions before it was cool and, to be fair, they are probably right. They have flown over their own, superior chilly bins and will not stop bringing it up.",
+  o:[["Form the Trans-Tasman Backyard Union",()=>{ leg(26); S.allegiance+=22; say("You and the New Zealand delegation form the Trans-Tasman Backyard Union over the side fence. A haka and the Nutbush happen at once on the same lawn. The trampoline does not survive it, and dies a hero.","leg"); }]]},
+ {t:"The nations line up",
+  p:"It is cascading. Ireland pledged first, then the UK, then Brazil, then the whole Pacific. Backyards on six continents are streaming in. Someone has annexed the servo across the road for 'pie logistics'. Time zones are being renegotiated so the whole planet can have a Sunday session at once.",
+  o:[["Nationalise the servo pie warmer",()=>{ leg(28); S.allegiance+=24; say("The servo pie warmer is nationalised and scaled to the species: a hot pie in every hand on earth. Leroy runs the supply chain off one spreadsheet and a group chat. He has never been calmer.","leg"); }]]},
+ {t:"The graveyard shift",
+  p:"The nations have pledged — but they are made of people who cannot just down tools. Nurses mid-shift. The bloke alone at the servo you just nationalised. Air traffic controllers with planes actually up there. They watch the backyard stream on their phones with the specific ache of someone who wants in and cannot leave their post.",
+  o:[["Rolling shifts — relief crews, nobody misses out",()=>{ leg(28); S.allegiance+=55; say("Leroy drafts a global roster on the back of a pizza box: relief crews in, so the night nurse gets her hour on the lawn and the servo stays staffed. It works. The essential workers join in waves, each one roaring as they clock off. Quietly the best thing the whole thing has done.","leg"); }],
+     ["Down tools, the world can wait",()=>{ if(Math.random()<.35){ leg(14); S.allegiance+=40; say("Against all sense, it holds. Everything that absolutely had to keep running somehow did, staffed by volunteers who refused to go home. You got away with it, and everyone knows you got away with it.","leg"); } else { heat(14); S.allegiance=Math.max(0,S.allegiance-40); say("Three hours of genuine, unfunny chaos. A plane circles for forty minutes. The movement's first real mistake, and the people on the verge of joining fold their arms and step back.","bad"); } }]]},
+ {t:"The unconvinced",
+  p:"Not enemies — just the unconvinced. The designated drivers. The parents with a kid asleep two doors down who can hear every bar of it. Everyone who has ever hosted and had to hose the yard down the next morning. They stand at the edge of the light with their arms folded, deciding whether this is a party or a mess that has not happened yet.",
+  o:[["Show them the care, not the carnage",()=>{ leg(26); S.allegiance+=60; say("You do not turn it up. You show them the water station, the roster, the fact that nobody has been left alone or been sick in a good garden all night. Bucko explains, welling up, that no one has had to ring anyone's mum. The arms unfold. The sceptics bring, as they always do, the best esky on the street.","leg"); }],
+     ["Crank it, they'll come round",()=>{ if(Math.random()<.4){ leg(12); S.allegiance+=45; say("Sheer joy wins it. The wall of sound turns out to be exactly what the folded-arms brigade needed, and they file in grinning like they have been let off something.","leg"); } else { heat(12); S.allegiance=Math.max(0,S.allegiance-35); say("They came for reassurance and got volume. It confirms everything they feared. The arms stay folded, and a few who were leaning in quietly go home to bed.","bad"); } }]]},
+];
+const MOVE_LEAD=12, MOVE_GAP=21, MOVE_DAYS_TICKS=216, FLAT_CAP=8;
 function declareGlobalEvent(){
   showEvent({t:"Declare the global Doof Republic",
     p:"Three days since it began. The vote has carried, the last hold-out has folded, and every clock on earth now reads the same impossible time. There is nothing left to win — only to say it out loud, and make it true forever.",
@@ -1260,14 +1290,8 @@ function offerMovement(){
   showEvent({t:"Could this be the start of it?",
     p:"Day "+S.day+", deep in the veil. The shadow people stand at the edges of the room as they have for hours - but the idea arrives on its own, and it will not leave: what happened at that bowling club could happen here. The flat could be the start of it. The whole world is only ever one good party away from agreeing. Maybe it is the sixty hours talking. Maybe it is not.",
     o:[
-      ["Start the movement here",()=>{ S.aftersStart=S.tick; leg(20);
-          if(Math.random()<0.25){                                  // the shadow people had you the whole time
-            S.fake=true; S.fakeNext=S.tick+MOVE_GAP;
-            say("You climb onto Leroy's kitchen bench and declare the flat a sovereign state. The shadow people applaud without making a sound. Somebody starts a livestream. The numbers on it are extremely good, and nobody looks too closely at them.","leg");
-          } else {                                                 // it is, impossibly, real
-            S.bunkered=true; S.takeover=true; S.moveStart=S.tick;
-            say("You climb onto Leroy's kitchen bench and declare the flat a sovereign state - and, impossibly, it holds. A neighbour repeats it to another neighbour. Someone with real followers presses record. The number climbs, and every time you look closely it is still climbing.","leg");
-          } }],
+      ["Start the movement here",()=>{ S.bunkered=true; S.takeover=true; S.atFlat=true; S.moveStart=S.tick; S.aftersStart=S.tick; leg(20);
+          say("You climb onto Leroy's kitchen bench and declare the flat a sovereign state. Someone starts a livestream. The shadow people, at the edges of the room, go very still - and begin, without a sound, to watch.","leg"); }],
       ["Let it go, have a glass of water",()=>{ buzz(-6); heat(-6); leg(10); S.lastWater=S.clockMin;
           say("You tell the room, and the shadow person at the edge of it, that you are going to have a glass of water instead. It nods as though it expected this, and steps back past the laundry door. The kitchen is just a kitchen again. You may have just saved your own life.","gd"); }]
     ]});
@@ -1552,23 +1576,30 @@ function step(){
       if(S.milestone>=5) heat(-0.8);                                   // the tide turns — heat plateaus, so bad DECISIONS become the real threat
       if(S.milestone>=1 && Math.random()<.25) heat(2+Math.floor(S.milestone/2)+(S.buzz>85?6:0)); // crackdown grows, and running maggot draws it hard
     }
-    if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id,"tapped out at the bowlo","One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
-    if(S.milestone>=2 && S.milestone<6){ const ooc=outOfControl(); if(ooc>0.2 && Math.random()<0.022*ooc){ fireDerail(); paint(); return; } } // unavoidable if you lose the plot
-    // Milestones fire on a tick schedule anchored to the takeover — the 10 beats span three days.
-    if(S.milestone<MILESTONES.length && S.tick>=S.moveStart+MOVE_LEAD+S.milestone*MOVE_GAP){
-      const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
+    if(Math.random()<.01){ const up=S.boys.filter(b=>b.up&&b.id!=="bucko"); if(up.length>3) downBoy(up[Math.floor(Math.random()*up.length)].id, S.atFlat?"tapped out on a beanbag":"tapped out at the bowlo", S.atFlat?"One of the founding cabinet has gone quietly horizontal on a beanbag. A movement is a demanding thing.":"One of the founding cabinet has quietly gone horizontal on the seventh green. A movement is a demanding thing."); }
+    if(!S.atFlat && S.milestone>=2 && S.milestone<6){ const ooc=outOfControl(); if(ooc>0.2 && Math.random()<0.022*ooc){ fireDerail(); paint(); return; } } // bowlo only — unavoidable if you lose the plot
+    // The next beat is due on a tick schedule anchored to the takeover.
+    if(S.tick>=S.moveStart+MOVE_LEAD+S.milestone*MOVE_GAP){
+      if(S.atFlat){
+        // the flat can never really solidify: each beat is a 25% shadow-people collapse, hard ceiling at 80%
+        if(S.milestone>=FLAT_CAP || Math.random()<0.25){ fakeRepublicEnd(); paint(); return; }
+        const m=MILESTONES_FLAT[S.milestone]; S.milestone++; showEvent(m); paint(); return;
+      } else if(S.milestone<MILESTONES.length){
+        const m=MILESTONES[S.milestone]; S.milestone++; showEvent(m); paint(); return;
+      }
     }
-    // after the ratification and a full three days, you get to declare it for real
-    if(S.milestone>=MILESTONES.length && !S.globalOffered && S.tick>=S.moveStart+MOVE_DAYS_TICKS){ S.globalOffered=true; declareGlobalEvent(); paint(); return; }
+    // the bowlo: after the ratification and a full three days, you declare it for real
+    if(!S.atFlat && S.milestone>=MILESTONES.length && !S.globalOffered && S.tick>=S.moveStart+MOVE_DAYS_TICKS){ S.globalOffered=true; declareGlobalEvent(); paint(); return; }
     // counterinsurgency — the still-free world fights back between milestones; you must manage it
-    if(S.milestone>=2 && S.milestone<10 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
+    if(!S.atFlat && S.milestone>=2 && S.milestone<10 && S.counterCd<=0 && Math.random()<.5){ S.counterCd=13+Math.floor(Math.random()*8); if(fireCounter()){ paint(); return; } }
     if(S.heat>=100){
-      if(S.milestone>=3) endScreen("THE COUP","You got so big the old powers panicked, and somewhere someone pulled a plug they shouldn't have been able to reach. The greens fall silent. History will call it a coup. History will be wrong, but too sober to argue.",false,false);
+      if(S.atFlat) endScreen("THE WHOLE STREET CALLED IT IN","The cul-de-sac that joined you an hour ago has, to a house, called the council — then the police, then each other. Blue and red through the venetians. A movement that lives in a backyard ends the way they all do: a knock, a warning, and everyone very unconvincingly pretending to go home.",false,false);
+      else if(S.milestone>=3) endScreen("THE COUP","You got so big the old powers panicked, and somewhere someone pulled a plug they shouldn't have been able to reach. The greens fall silent. History will call it a coup. History will be wrong, but too sober to argue.",false,false);
       else endScreen("SHUT DOWN AT THE BOWLO","Before the movement could find its feet, the noise complaints won — the council, the cops, and a very determined man in a dressing gown. A beautiful idea, twenty minutes too early.",false,false);
       paint();return;
     }
-    if(S.buzz<=0 && S.tick>6){ endScreen("THE FIZZLE","A global movement needs a heartbeat, and yours flatlined. The sesh cannot run on an empty host. The streams cut out one by one and North Perth quietly goes back to being North Perth.",false,false); paint(); return; }
-    if(boysUp()<=2){ endScreen("LEADERSHIP VACUUM","The founding cabinet has been lost to taxis and beanbags. A movement of billions cannot run on two blokes. It dissolves as fast as it formed — into folklore and a very confused Monday.",false,false); paint(); return; }
+    if(S.buzz<=0 && S.tick>6){ endScreen(S.atFlat?"THE HOST WENT DOWN":"THE FIZZLE", S.atFlat?"A movement needs a heartbeat and yours flatlined face-down on Leroy's couch. The stream cuts to a view of the ceiling. The backyard goes quiet. You cannot run the world on an empty host, and the flat goes back to being a flat.":"A global movement needs a heartbeat, and yours flatlined. The sesh cannot run on an empty host. The streams cut out one by one and North Perth quietly goes back to being North Perth.",false,false); paint(); return; }
+    if(boysUp()<=2){ endScreen(S.atFlat?"EVERYONE WENT HOME":"LEADERSHIP VACUUM", S.atFlat?"The founding cabinet has been lost to Ubers, spare rooms and one strategic Irish goodbye. Two blokes and a Hills Hoist cannot govern a species. The whole thing dissolves before the kettle has even boiled.":"The founding cabinet has been lost to taxis and beanbags. A movement of billions cannot run on two blokes. It dissolves as fast as it formed — into folklore and a very confused Monday.",false,false); paint(); return; }
     paint(); return;
   }
   // the pub lock-in — held past close, then it bridges out to Leroy's kick-ons
@@ -1602,16 +1633,11 @@ function step(){
     else if(follow.length && Math.random()<.5) pool=follow;
     if(pool.length){ const ev=pool[Math.floor(Math.random()*pool.length)]; ev.used=true; showEvent(ev); paint(); return; }
   }
-  // the shadow republic: offered from day 4, capped at The Graveyard shift, and it always gets you
-  if(S.kickon && S.fake){
-    if(S.buzz>=40 && S.seated===0) S.allegiance += 3 + Math.floor(boysUp()/2);
-    if(S.tick>=S.fakeNext){
-      if(S.fakeMs>=FAKE_CAP){ fakeRepublicEnd(); paint(); return; }
-      const m=MILESTONES[S.fakeMs]; S.fakeMs++; S.milestone=S.fakeMs; S.fakeNext=S.tick+MOVE_GAP;
-      showEvent(m); paint(); return;
-    }
+  // the flat movement can be commenced from day 4 — a 50% coin flip for the run, then it finds you
+  if(S.kickon && !S.bunkered && !S.movementDecided && S.shadow && S.day>=4){
+    S.movementDecided=true; S.movementPending = Math.random()<0.5;
   }
-  if(S.kickon && !S.fake && !S.fakeOffered && S.shadow && S.day>=4 && Math.random()<.0096){
+  if(S.kickon && !S.bunkered && S.movementPending && !S.fakeOffered && Math.random()<0.07){
     offerMovement(); paint(); return;
   }
   // kick-on attrition — the further you push, the more the party takes. Scales per day.
