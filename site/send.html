@@ -182,7 +182,7 @@ const S = {
   counterCd:12, usedCounter:new Set(), pendingQuiz:null, usedDerail:new Set(), pendingSober:false, galaxyTicks:0,
   lastFood:18*60, lastWater:18*60, hygieneWarned:false,
   kCount:0, travisHole:0, rayDone:false, sandyCd:0,
-  jezCd:14, robinCd:11, leroyCd:17, picklesCd:9,
+  jezCd:14, robinCd:11, leroyCd:17, picklesCd:9, wallCd:0,
   reel:[],
   flags:{cone:false,deano:false,tattoo:false,bruce:false,rivals:false,rivalAlly:false,squad:false},
   boys:[
@@ -926,6 +926,58 @@ function bouncerQuiz(id){
   }
   render();
 }
+
+/* THE WALL — a sleep-deprivation lucidity check. Fires from day 2 of kick-ons, more often and
+   harder the deeper you push; at day 4+ a failure ends the run outright. Modelled on the door quiz. */
+const WALL=[
+ {q:"You have been staring at the kettle for either four seconds or forty minutes.", a:[["Four. Obviously four. Move on.",2],["Forty — and it never boiled.",0],["...what kettle?",-2]]},
+ {q:"Someone asks your name and there is a genuine, telling pause.", a:[["Say it fast, before the gap shows",2],["Laugh, buy a second, land it",1],["Give Bucko's name by mistake",-2]]},
+ {q:"The room tilts and you must not go over in front of everyone.", a:[["Find a wall, play it casual",2],["Sit down hard, call it 'resting'",0],["Go down like a demolished chimney",-2]]},
+ {q:"Your body is asking, with real authority, to lie down 'just for a sec'.", a:[["No. Absolutely not. Keep moving.",2],["A quick sit — eyes open, hands busy",0],["'Just five minutes' (the famous last words)",-2]]},
+ {q:"You have said a whole sentence and cannot confirm it was out loud.", a:[["Read the boys' faces for damage",2],["Commit to it being a normal thing to say",1],["Say it again, louder, to be sure",-1]]},
+ {q:"A microsleep just took you for one full second. Nobody noticed. Did they?", a:[["Blink hard, rejoin the room clean",2],["Cover it with a stretch and a laugh",1],["Ask what everyone's talking about",-1]]},
+ {q:"There is a sound only you can hear, and it is getting closer.", a:[["It's the fridge. It is definitely the fridge.",2],["Investigate calmly, water in hand",1],["Announce it to the room",-2]]},
+ {q:"Your phone shows a day you are fairly sure it is not.", a:[["Don't argue with the phone. Keep going.",1],["Do the maths out loud, get it right",2],["Do the maths out loud, get it wrong",-1]]},
+];
+const WALL_SHADOW=[
+ {q:"A shadow person is holding a pillow. Just holding it. Offering, almost.", a:[["Decline. Firmly. Kindly.",2],["Pretend not to see it",0],["Consider it, honestly, for a second too long",-2]]},
+ {q:"The tallest shadow person has started, in total silence, counting down from ten.", a:[["Beat it to zero — water, star jump, back in the room",2],["Match its energy, count along",-1],["Ask, out loud, what happens at zero",-2]]},
+ {q:"A shadow person stands where a door used to be, holding it open for you.", a:[["Stay inside. Put the kettle on.",2],["Wave politely, do not approach",1],["Follow it, just to be friendly",-2]]},
+ {q:"One of them is mouthing your name and pointing, gently, at the couch.", a:[["Point back at the dancefloor instead",2],["Shake your head, keep both feet moving",1],["Look at the couch. It looks so soft.",-2]]},
+];
+function wallCheck(){
+  S.running=false;
+  const d=S.day;
+  const src = S.shadow ? WALL.concat(WALL_SHADOW) : WALL;
+  const pool=[]; for(let i=0;i<src.length;i++) pool.push(i);
+  for(let i=pool.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); const t=pool[i];pool[i]=pool[j];pool[j]=t; }
+  const nQ = d<3?1 : d<5?2 : 3;
+  const qs = pool.slice(0, nQ); let score=0, step=0; const c=$("card");
+  function render(){
+    if(step>=qs.length){ resolve(); return; }
+    const Q=src[qs[step]];
+    c.innerHTML=`<h2>The wall</h2><p>Day ${d}. You have not slept in a very long time and your body has just presented the bill. Hold it together.</p><p style="color:var(--amber);font-weight:600">${Q.q}</p>`;
+    Q.a.forEach(([label,w])=>{ const btn=document.createElement("button"); btn.textContent=label; btn.onclick=()=>{ score+=w; step++; render(); }; c.appendChild(btn); });
+    $("overlay").classList.add("show");
+  }
+  function resolve(){
+    $("overlay").classList.remove("show");
+    const p=Math.max(0.08, Math.min(0.92, 0.60 + score*0.12 - (d-2)*0.10));   // harder to hold the deeper you are
+    if(Math.random()<p){
+      buzz(6); leg(8); heat(-3); say("You claw back from the edge — water, movement, one hard blink — and the room snaps into focus. Still up. Still going. Genuinely unbelievable.","leg");
+    } else if(d>=4){
+      endScreen("THE WALL","The sleep you have been outrunning for days finally catches you mid-sentence. You go down soft and total, somewhere between the kitchen and the couch, and no power on earth is bringing you back. The party carries on without you a while, then quietly doesn't. A hell of a run.",false,false); paint(); return;
+    } else if(d>=3){
+      buzz(-22); const up=S.boys.filter(b=>b.up&&b.id!=="bucko");
+      if(up.length>1){ const b=up[Math.floor(Math.random()*up.length)]; downBoy(b.id,"went down with you","You and "+b.n+" hit the wall at the same instant and fold onto the same couch. Two down, and the room feels the hole they leave."); }
+      else say("You hit the wall hard, sag against the fridge, and only just stay in the game. Only just.","bad");
+    } else {
+      buzz(-14); heat(4); say("You hit the wall and go grey for a second. Someone puts a water in your hand and walks you round the yard until it passes. You stay up — but that was a warning.","bad");
+    }
+    renderBoys(); S.running=true; paint();
+  }
+  render();
+}
 /* Midnight: the club shuts like the suburban club it is. Back into town, or stay for the lock-in. */
 function bowloCloseEvent(){
   const ci=VENUES.findIndex(v=>v.id==="connies"), di=VENUES.findIndex(v=>v.id==="dive");
@@ -1479,6 +1531,7 @@ function step(){
   if(S.seated>0){S.seated--; if(S.seated===0)say("You have risen from the seat. The seat will be missed.","gd");}
   S.boys.forEach(b=>{ if(!b.up && b.outTicks>0){ b.outTicks--; if(b.outTicks===0){ b.up=true; b.st=b.id==="pickles"?"loud American":"back in"; say(b.n+" has snuck back in through the smokers' area like it never happened.","gd"); renderBoys(); } } });
   let decay = S.kickon?2.8:2.2;
+  if(S.kickon && S.day>1) decay *= 1 + (S.day-1)*0.07;   // the further from sleep, the faster it all slides
   if(S.dexTicks>0){decay*=.45;S.dexTicks--; if(S.dexTicks===0){buzz(-6);say("The dexie focus evaporates. Your genius business idea suddenly looks completely unhinged on the back of the coaster.","bad");}}
   if(S.soakTicks>0){decay*=.5;S.soakTicks--; if(S.soakTicks===0) say("The kebab's protective magic wears off. The slide resumes at full speed.","hot");}
   if(S.ketTicks>0){decay*=.6;}                    // ket is potent — it holds your buzz right up
@@ -1643,6 +1696,9 @@ function step(){
   if(S.kickon && !S.bunkered && S.movementPending && !S.fakeOffered && Math.random()<0.07){
     offerMovement(); paint(); return;
   }
+  // THE WALL — the body's escalating attempts to shut you down; more frequent and harsher the deeper you are
+  if(S.wallCd>0)S.wallCd--;
+  if(S.kickon && !S.bunkered && S.day>=2 && S.wallCd<=0 && Math.random()<0.011*S.day){ S.wallCd=18; wallCheck(); paint(); return; }
   // kick-on attrition — the further you push, the more the party takes. Scales per day.
   if(S.kickon){
     if(Math.random() < .0075*S.day) heat(2+2*S.day);   // halved: days are now twice as many ticks
