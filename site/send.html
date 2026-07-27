@@ -1016,8 +1016,11 @@ const MILESTONES_FLAT=[
   p:"Not enemies — just the unconvinced. The designated drivers. The parents with a kid asleep two doors down who can hear every bar of it. Everyone who has ever hosted and had to hose the yard down the next morning. They stand at the edge of the light with their arms folded, deciding whether this is a party or a mess that has not happened yet.",
   o:[["Show them the care, not the carnage",()=>{ leg(26); S.allegiance+=60; say("You do not turn it up. You show them the water station, the roster, the fact that nobody has been left alone or been sick in a good garden all night. Bucko explains, welling up, that no one has had to ring anyone's mum. The arms unfold. The sceptics bring, as they always do, the best esky on the street.","leg"); }],
      ["Crank it, they'll come round",()=>{ if(Math.random()<.4){ leg(12); S.allegiance+=45; say("Sheer joy wins it. The wall of sound turns out to be exactly what the folded-arms brigade needed, and they file in grinning like they have been let off something.","leg"); } else { heat(12); S.allegiance=Math.max(0,S.allegiance-35); say("They came for reassurance and got volume. It confirms everything they feared. The arms stay folded, and a few who were leaning in quietly go home to bed.","bad"); } }]]},
+ {t:"The last hold-out",
+  p:"Continent by continent the planet gets on it, streamed from a backyard in the suburbs, which nobody can quite believe. One hold-out is left: the bloke three doors down who has kept his blinds shut and his reticulation running the entire time, the last person in range not out on a lawn somewhere. Even the space station has the stream up. He is the final piece.",
+  o:[["Wheel the speaker to his fence",()=>{ leg(30); S.allegiance+=26; say("You wheel the PA to his fence line and play, very quietly, the one song. The blinds twitch. Then his front door opens and he walks out in a dressing gown with a folding chair and a six-pack he had apparently been saving for exactly this. The whole street is unanimous.","leg"); }]]},
 ];
-const MOVE_LEAD=12, MOVE_GAP=21, MOVE_DAYS_TICKS=216, FLAT_CAP=8;
+const MOVE_LEAD=12, MOVE_GAP=21, MOVE_DAYS_TICKS=216, FLAT_CAP=9;
 function declareGlobalEvent(){
   showEvent({t:"Declare the global Doof Republic",
     p:"Three days since it began. The vote has carried, the last hold-out has folded, and every clock on earth now reads the same impossible time. There is nothing left to win — only to say it out loud, and make it true forever.",
