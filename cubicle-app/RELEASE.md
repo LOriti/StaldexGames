@@ -1,7 +1,8 @@
 # Release & Build Guide — Cubicle
 
-This documents how the Play-ready Android App Bundle was built on this machine, the
-signing credentials, and how to rebuild for future updates.
+This documents how the Play-ready Android App Bundle was built on this machine and how
+to rebuild future updates. Signing credentials belong in the team password manager,
+never in this repository.
 
 ## Versioning & release protocol
 
@@ -46,9 +47,9 @@ keystore/cubicle-upload.jks
 | Field | Value |
 |---|---|
 | Keystore file | `keystore/cubicle-upload.jks` |
-| Store password | `Cub1cle-V1tals365-Upload` |
+| Store password | Stored outside the repository |
 | Key alias | `cubicle-upload` |
-| Key password | `Cub1cle-V1tals365-Upload` |
+| Key password | Stored outside the repository |
 | Validity | 10,000 days |
 
 Certificate fingerprints (you may need these in Play Console):
@@ -58,15 +59,15 @@ SHA1:   FF:D3:82:C1:3D:1B:45:C8:4E:AC:5E:87:A8:B7:E9:10:39:78:C5:0E
 SHA256: 13:A8:8F:21:EB:79:4E:CB:01:FE:00:A4:47:2D:91:1C:2B:B2:72:80:EC:CD:94:CE:1E:74:E4:38:8E:F2:5B:5E
 ```
 
-**Back up `keystore/cubicle-upload.jks` and these passwords somewhere safe (password
+**Back up `keystore/cubicle-upload.jks` and its passwords somewhere safe (password
 manager, offline backup).** If you lose this key you cannot publish updates to the
 same app listing under the standard flow. (If you enrol in Google **Play App Signing** —
 recommended, and the default for new apps — Google holds the real app-signing key and
 this file becomes your *upload* key, which Google can help you reset if lost. Enrol on
 first upload.)
 
-The keystore and `android/keystore.properties` are git-ignored. They are the only
-secrets in the repo.
+The keystore and `android/keystore.properties` are git-ignored. Never document their
+values in tracked files or commit them, even temporarily.
 
 ## Uploading to Play
 

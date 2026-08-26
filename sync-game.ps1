@@ -16,6 +16,8 @@ $root = $PSScriptRoot
 
 Copy-Item "$root\site\cubicle.html" "$root\cubicle-app\www\index.html" -Force
 Write-Host "Synced site\cubicle.html -> cubicle-app\www\index.html" -ForegroundColor Green
+Copy-Item "$root\site\performance-review.html" "$root\cubicle-app\www\performance-review.html" -Force
+Write-Host "Synced site\performance-review.html -> cubicle-app\www\performance-review.html" -ForegroundColor Green
 
 if ($Android) {
   Push-Location "$root\cubicle-app"
