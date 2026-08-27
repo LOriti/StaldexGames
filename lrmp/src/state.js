@@ -12,6 +12,7 @@ import * as store from './storage/adapter.js';
 import { schedulePush } from './storage/sync.js';
 import { setCatalog } from './data/dishes.js';
 import { seedPlan, isValidPlan } from './core/plan.js';
+import { dateFromKey, timelineAnchor, rollPlan } from './core/timeline.js';
 
 const state = {
   plan: null,
@@ -22,6 +23,7 @@ const state = {
   recipeEdits: {}, // { dishName: [ingredient lines, per serve] } — see core/recipes.js
   customRecipes: {}, // { name: {mode, p, t, l, e, ing, steps} } — user-added dishes
   removedDishes: [], // built-in dish names deleted from cards + pools (restorable)
+  planAnchor: null, // local YYYY-MM-DD represented by plan[0] (normally today minus 3)
   tab: 'weekly', // 'recipes' | 'month' | 'weekly' | 'shopping'
   week: 0, // 0-3, which week the Weekly view is showing
 };
@@ -71,6 +73,7 @@ export function snapshot() {
     recipeEdits: state.recipeEdits,
     customRecipes: state.customRecipes,
     removedDishes: state.removedDishes,
+    planAnchor: state.planAnchor,
   };
 }
 
@@ -88,6 +91,10 @@ export function applyRemote(data) {
   if (isValidEdits(data.recipeEdits)) state.recipeEdits = data.recipeEdits;
   if (isValidCustoms(data.customRecipes)) state.customRecipes = data.customRecipes;
   if (Array.isArray(data.removedDishes)) state.removedDishes = data.removedDishes;
+  state.planAnchor = typeof data.planAnchor === 'string' && dateFromKey(data.planAnchor)
+    ? data.planAnchor
+    : timelineAnchor();
+  const rebased = rebasePlanToToday();
   store.set(store.KEYS.PLAN, state.plan);
   store.set(store.KEYS.FREEZER, state.freezer);
   store.set(store.KEYS.FAVOURITES, [...state.favourites]);
@@ -96,8 +103,22 @@ export function applyRemote(data) {
   store.set(store.KEYS.RECIPE_EDITS, state.recipeEdits);
   store.set(store.KEYS.CUSTOM_RECIPES, state.customRecipes);
   store.set(store.KEYS.REMOVED_DISHES, state.removedDishes);
+  store.set(store.KEYS.PLAN_ANCHOR, state.planAnchor);
   setCatalog(state.customRecipes, state.removedDishes, state.recipeEdits);
+  if (rebased) schedulePush(snapshot());
   emit();
+}
+
+function rebasePlanToToday() {
+  const target = timelineAnchor();
+  const rolled = rollPlan(state.plan, state.lunchPins, state.planAnchor, target);
+  state.planAnchor = target;
+  if (!rolled.changed) return false;
+  state.plan = rolled.plan;
+  state.lunchPins = rolled.pins;
+  // Shopping ticks are week-positioned, so they cannot safely follow a moving window.
+  state.shopping = { excluded: {}, have: {} };
+  return true;
 }
 
 // Legacy shape { dish: [lines] } and current { dish: { ing?, serves? } } both pass —
@@ -131,7 +152,7 @@ export function setUI(patch) {
 }
 
 export async function hydrate() {
-  const [plan, freezer, favourites, pins, shopping, recipeEdits, customRecipes, removedDishes] = await Promise.all([
+  const [plan, freezer, favourites, pins, shopping, recipeEdits, customRecipes, removedDishes, planAnchor] = await Promise.all([
     store.get(store.KEYS.PLAN, null),
     store.get(store.KEYS.FREEZER, {}),
     store.get(store.KEYS.FAVOURITES, []),
@@ -140,6 +161,7 @@ export async function hydrate() {
     store.get(store.KEYS.RECIPE_EDITS, null),
     store.get(store.KEYS.CUSTOM_RECIPES, null),
     store.get(store.KEYS.REMOVED_DISHES, null),
+    store.get(store.KEYS.PLAN_ANCHOR, null),
   ]);
 
   state.plan = isValidPlan(plan) ? plan : seedPlan();
@@ -150,10 +172,20 @@ export async function hydrate() {
   state.recipeEdits = isValidEdits(recipeEdits) ? recipeEdits : {};
   state.customRecipes = isValidCustoms(customRecipes) ? customRecipes : {};
   state.removedDishes = Array.isArray(removedDishes) ? removedDishes : [];
+  state.planAnchor = typeof planAnchor === 'string' && dateFromKey(planAnchor)
+    ? planAnchor
+    : timelineAnchor();
+  const rebased = rebasePlanToToday();
   setCatalog(state.customRecipes, state.removedDishes, state.recipeEdits);
 
   // First run (or recovered from corrupt state): persist the seed immediately.
   if (!isValidPlan(plan)) store.set(store.KEYS.PLAN, state.plan);
+  if (!planAnchor || rebased) {
+    store.set(store.KEYS.PLAN, state.plan);
+    store.set(store.KEYS.PINS, state.lunchPins);
+    store.set(store.KEYS.SHOPPING, state.shopping);
+    store.set(store.KEYS.PLAN_ANCHOR, state.planAnchor);
+  }
 
   return state;
 }

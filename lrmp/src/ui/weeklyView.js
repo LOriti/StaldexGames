@@ -7,6 +7,9 @@ import { get, commit, setUI } from '../state.js';
 import { escapeAttr, toast, beginDrag } from './dom.js';
 import { openRecipe } from './recipeModal.js';
 import { openDishPicker } from './dishPicker.js';
+import {
+  CONTEXT_DAYS, dateForIndex, dayContext, formatDate, formatDay, formatLongDate, formatRange,
+} from '../core/timeline.js';
 
 const colourOf = (dish) => {
   const info = metaOf(dish);
@@ -100,7 +103,7 @@ function freezerPanel(freezer) {
 function surplusRow(tokens, week) {
   const batches = groupSurplus(tokens);
   const terminal = week === 3;
-  const label = terminal ? 'Surplus / next month — Wk 1' : 'Surplus / next week';
+  const label = terminal ? 'Beyond the 28-day plan' : 'Surplus / next week';
 
   const tiles = batches.length
     ? batches.map((b) =>
@@ -110,7 +113,7 @@ function surplusRow(tokens, week) {
     : `<div class="surplus-none">nothing rolling over yet</div>`;
 
   const hint = terminal
-    ? 'A new month starts fresh — drag batches up into the freezer to keep them. Drop a dinner here to move it to next month’s Wk 1.'
+    ? 'This is the edge of the visible plan — drag batches up into the freezer to keep them. The window extends automatically as days pass.'
     : 'These portions roll forward as next week’s lunches. Drag a batch up into the freezer to bank it, or drop a dinner here to push it to next week.';
 
   return `<div class="surplus">
@@ -123,25 +126,52 @@ function surplusRow(tokens, week) {
 /* ---------- view ---------- */
 
 export function renderWeekly(root) {
-  const { plan, freezer, week, lunchPins } = get();
+  const { plan, freezer, week, lunchPins, planAnchor } = get();
   const { lunch, weekSurplus } = allocate(plan, lunchPins);
 
   const weekBtns = [0, 1, 2, 3]
-    .map((i) => `<button class="wk-btn ${i === week ? 'on' : ''}" data-wk="${i}">Wk ${i + 1}</button>`)
+    .map((i) => {
+      const start = dateForIndex(i * 7, planAnchor);
+      const end = dateForIndex(i * 7 + 6, planAnchor);
+      const label = i === 0 ? 'Now' : `+${i} wk${i === 1 ? '' : 's'}`;
+      return `<button class="wk-btn ${i === week ? 'on' : ''}" data-wk="${i}" title="${formatRange(start, end)}">${label}</button>`;
+    })
     .join('');
 
   const rows = DAY_NAMES.map((name, d) => {
     const idx = week * 7 + d;
-    return `<div class="brow">
-              <div class="bday">${name}</div>
+    const offset = idx - CONTEXT_DAYS;
+    const date = dateForIndex(idx, planAnchor);
+    const timing = offset === 0 ? 'is-today' : offset < 0 ? 'is-past' : 'is-future';
+    return `<div class="brow ${timing}">
+              <div class="bday">
+                <span class="bday-name">${formatDay(date)}</span>
+                <span class="bday-date">${formatDate(date)}</span>
+                <span class="bday-context">${dayContext(idx)}</span>
+              </div>
               <div class="slot dslot" data-idx="${idx}">${dinnerTile(plan, idx)}</div>
               <div class="slot lslot" data-idx="${idx}">${lunchTile(lunch, idx)}</div>
             </div>`;
   }).join('');
 
+  const start = dateForIndex(week * 7, planAnchor);
+  const end = dateForIndex(week * 7 + 6, planAnchor);
+  const today = dateForIndex(CONTEXT_DAYS, planAnchor);
+  const context = week === 0
+    ? `Showing ${formatRange(start, end)} · the previous 3 days stay visible for context`
+    : `Showing ${formatRange(start, end)} · ${week * 7 - CONTEXT_DAYS}–${week * 7 + 6 - CONTEXT_DAYS} days from today`;
+
   root.innerHTML = `
+    <section class="today-card" aria-label="Current planning date">
+      <div>
+        <span class="today-kicker">Today</span>
+        <strong>${formatLongDate(today)}</strong>
+        <span>${context}</span>
+      </div>
+      ${week === 0 ? '' : '<button class="today-jump" data-today>Back to today</button>'}
+    </section>
     ${freezerPanel(freezer)}
-    <div class="board-bar"><span class="bb-label">Week</span><div class="wk-seg">${weekBtns}</div></div>
+    <div class="board-bar"><span class="bb-label">Timeline</span><div class="wk-seg">${weekBtns}</div></div>
     <div class="board">
       <div class="brow bhead"><div class="bday"></div><div class="bcol">Dinner</div><div class="bcol">Lunch</div></div>
       ${rows}
@@ -212,6 +242,9 @@ function addToFreezer(root) {
 /* ---------- interaction ---------- */
 
 function wire(root) {
+  const today = root.querySelector('[data-today]');
+  if (today) today.onclick = () => setUI({ week: 0 });
+
   root.querySelectorAll('.wk-btn').forEach((b) => {
     b.onclick = () => setUI({ week: Number(b.dataset.wk) });
   });
@@ -311,8 +344,11 @@ function wire(root) {
 
       if (target.classList.contains('surplus') && payload.type === 'dinner') {
         const res = deferDinner(s.plan, payload.idx);
-        if (!res.ok) return toast('Next week has no empty day — clear one first');
-        toast(`Moved to ${res.wrapped ? 'next month · ' : ''}Wk ${Math.floor(res.idx / 7) + 1} ${DAY_NAMES[res.idx % 7]}`);
+        if (!res.ok) return toast(res.reason === 'horizon'
+          ? 'That day is already at the edge of the 28-day plan'
+          : 'Next week has no empty day — clear one first');
+        const movedDate = dateForIndex(res.idx, s.planAnchor);
+        toast(`Moved to ${formatDay(movedDate)} ${formatDate(movedDate)}`);
         return commit({ plan: true });
       }
 

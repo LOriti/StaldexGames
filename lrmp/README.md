@@ -3,7 +3,7 @@
 A keto meal planner for two where **lunches are derived from dinner leftovers**, not
 planned separately. Recipe quantities are per serve, and 1 serve = 2 portions.
 
-Paint a month by cooking mode → dishes drop in automatically → leftovers flow forward into
+Plan a rolling 28-day window by cooking mode → dishes drop in automatically → leftovers flow forward into
 lunch slots (earliest-cooked first) → whatever isn't eaten rolls into next week or gets
 banked in the freezer.
 
@@ -15,21 +15,21 @@ npm run dev       # http://localhost:5173
 ```
 
 ```bash
-npm test          # 38 tests
+npm test          # 94 tests
 npm run build     # -> dist/  (static, no backend — deploy anywhere)
 ```
 
-## The three views
+## The four views
 
 **Recipes** — all 40 dishes across the five cooking modes: Curry, Fry/BBQ, Assembly,
 Soup & Stew, Bake. Ingredients and method for each. Star your favourites.
 
-**Month** — a 4×7 grid. Tap a day to pick a dish: choose a cooking mode, then a recipe
+**28 days** — a 4×7 rolling grid from three days ago through the next 24 days. Tap a day to pick a dish: choose a cooking mode, then a recipe
 (or 🎲 surprise, which avoids same-week repeats). Tap a planned day to change or clear it,
 drag days to swap them, or drag into the bin to remove one. Blank days are fine — they're
 your leftover and freezer nights.
 
-**Weekly** — the working view. Each day shows Dinner and Lunch.
+**Weekly** — the working view. It opens around today, keeping the previous three days visible for context. Each day shows Dinner and Lunch.
 - **−/+** sets how many leftover portions a dinner yields.
 - Those portions **fill later lunches automatically**, earliest-cooked first. Not enough?
   You get a gap — which is honest information, not a bug.

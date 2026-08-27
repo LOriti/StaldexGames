@@ -6,7 +6,7 @@ import { $, escapeAttr, toast } from './dom.js';
 import { closeRecipe } from './recipeModal.js';
 
 /**
- * Tap-a-day dish picker (Weekly + Month views). Two clicks: mode → dish. The mode step
+ * Tap-a-day dish picker (Weekly + 28-day views). Two clicks: mode → dish. The mode step
  * IS the filter — you never scroll all 40+ dishes. Favourites float to the top; dishes
  * already planned that week are marked but still pickable.
  *
