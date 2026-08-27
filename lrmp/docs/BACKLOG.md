@@ -63,14 +63,11 @@ together.
 
 ---
 
-## 6. Real dates
+## 6. Real dates — shipped
 
-Weeks are abstract (Wk 1–4). Anchoring to real calendar dates would let the app know what
-"today" is, show the current week by default, and roll the plan forward automatically as
-weeks pass. This is the difference between a planner you consult and one you live in.
-
-**Trap:** it makes the 28-day array a *window* rather than the whole world, and the rolling
-surplus needs to survive the window sliding. Think it through before starting.
+The plan is now a rolling 28-day window: three days of context, Today, and 24 future days.
+Meals and lunch pins move with their calendar dates; expired days fall off and new future
+days enter empty. Shopping ticks reset when the window moves because they are week-scoped.
 
 ---
 

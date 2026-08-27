@@ -121,15 +121,14 @@ describe('plan — deferDinner (push to next week)', () => {
     expect(res.wrapped).toBe(false);
   });
 
-  it('wraps week 4 into week 1 (next month)', () => {
+  it('does not wrap the future edge into the history context', () => {
     const plan = seedPlan();
     expect(deferDinner(plan, 26).ok).toBe(false); // Sat wk3 is empty — nothing to defer
     plan[26].dinner = { cat: 'curry', dish: 'Keema', src: 'cook', extra: 2 }; // Sat wk3
-    plan[5].dinner = { cat: 'fry', dish: 'Steak', src: 'cook', extra: 0 }; // Sat wk0 occupied
     const res2 = deferDinner(plan, 26);
-    expect(res2.ok).toBe(true);
-    expect(res2.idx).toBe(6); // Sat wk0 taken -> first empty in wk0 is Sun (day 6)
-    expect(res2.wrapped).toBe(true);
+    expect(res2.ok).toBe(false);
+    expect(res2.reason).toBe('horizon');
+    expect(plan[26].dinner.dish).toBe('Keema');
   });
 
   it('refuses when the next week has no empty day', () => {

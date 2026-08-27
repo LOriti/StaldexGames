@@ -1,11 +1,12 @@
 import { MODE_BY_KEY } from '../data/modes.js';
-import { DAY_NAMES, shuffleAll, clearPlan, seedPlan, swapDinners, emptyDinner } from '../core/plan.js';
+import { shuffleAll, clearPlan, seedPlan, swapDinners, emptyDinner } from '../core/plan.js';
+import { CONTEXT_DAYS, dateForIndex, formatDate, formatDay, formatRange } from '../core/timeline.js';
 import { get, commit } from '../state.js';
 import { toast, beginDrag } from './dom.js';
 import { openDishPicker, clearDay } from './dishPicker.js';
 
 /**
- * Month view = the 4x7 grid. Tap any day to open the dish picker (mode click filters,
+ * 28-day view = the rolling 4x7 grid. Tap any day to open the dish picker (mode click filters,
  * then pick / surprise). Tapping an already-planned day jumps straight to its mode's
  * list with a "clear this day" option. Drag a day onto another to swap, or onto the
  * bin to remove it. There is no brush — the picker replaced it.
@@ -13,17 +14,19 @@ import { openDishPicker, clearDay } from './dishPicker.js';
  * This writes to the SAME plan array the Weekly view reads. There is no sync step.
  */
 export function renderMonth(root) {
-  const { plan } = get();
+  const { plan, planAnchor } = get();
 
   const cells = [];
   for (let w = 0; w < 4; w++) {
-    const row = [`<div class="mwk">W${w + 1}</div>`];
+    const range = formatRange(dateForIndex(w * 7, planAnchor), dateForIndex(w * 7 + 6, planAnchor));
+    const row = [`<div class="mwk"><span>${w === 0 ? 'Now' : `+${w}w`}</span><small>${range}</small></div>`];
     for (let d = 0; d < 7; d++) {
       const idx = w * 7 + d;
       const dinner = plan[idx].dinner;
       const mode = dinner.cat ? MODE_BY_KEY[dinner.cat] : null;
       row.push(`
-        <div class="mcell ${dinner.cat ? 'on' : ''} ${!dinner.dish && dinner.note ? 'noted' : ''}" data-idx="${idx}" ${mode ? `style="--gc:${mode.color}"` : ''}>
+        <div class="mcell ${idx === CONTEXT_DAYS ? 'is-today' : ''} ${idx < CONTEXT_DAYS ? 'is-past' : ''} ${dinner.cat ? 'on' : ''} ${!dinner.dish && dinner.note ? 'noted' : ''}" data-idx="${idx}" ${mode ? `style="--gc:${mode.color}"` : ''}>
+          <span class="mc-date">${formatDate(dateForIndex(idx, planAnchor))}${idx === CONTEXT_DAYS ? ' · Today' : ''}</span>
           ${mode ? `<div class="mc-ico">${mode.ico}</div>` : ''}
           <div class="mc-dish">${dinner.dish ?? (dinner.note ? `✎ ${dinner.note}` : '')}</div>
         </div>`);
@@ -33,17 +36,17 @@ export function renderMonth(root) {
 
   root.innerHTML = `
     <div class="brush-bar">
-      <span class="bb-label">Month</span>
+      <span class="bb-label">Rolling 28 days</span>
       <span class="spacer"></span>
       <button class="reset" data-cmd="shuffle">🎲 Shuffle all</button>
       <button class="reset" data-cmd="reset">Reset</button>
       <button class="reset" data-cmd="clear">Clear</button>
     </div>
     <div class="mgrid-scroll"><div class="mgrid">
-      <div class="mrow mhead2"><div class="mwk"></div>${DAY_NAMES.map((d) => `<div class="mdh">${d}</div>`).join('')}</div>
+      <div class="mrow mhead2"><div class="mwk"></div>${Array.from({ length: 7 }, (_, d) => `<div class="mdh">${formatDay(dateForIndex(d, planAnchor))}</div>`).join('')}</div>
       ${cells.join('')}
     </div></div>
-    <div class="mbin">🗑 Not this month — drag a day here to remove it</div>
+    <div class="mbin">🗑 Remove from the plan — drag a day here</div>
     <p class="board-note">Tap a day to pick a dish — choose a cooking mode, then a recipe (or 🎲 surprise).
       Tap a planned day to change or clear it. Drag a day onto another to swap them, or into the bin to remove it.
       Blank days are fine: they're your leftover/freezer nights. This feeds straight into the Weekly plan.</p>`;

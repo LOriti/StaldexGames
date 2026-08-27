@@ -1,6 +1,6 @@
 # L&R Meal Planner (LRMP) — working notes for Claude Code
 
-Keto meal planner for two. Paint a month by cooking mode → dishes drop in → **lunches are
+Keto meal planner for two. Plan a rolling 28-day window by cooking mode → dishes drop in → **lunches are
 derived from dinner leftovers** → surplus rolls forward or gets banked in the freezer.
 
 **The serving model:** **1 serve = 2 portions** (dinner for two). A cooked dinner needs
@@ -16,7 +16,7 @@ with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
 ```bash
 npm install
 npm run dev       # http://localhost:5173
-npm test          # 38 tests, all must stay green
+npm test          # 94 tests, all must stay green
 npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
 
@@ -59,6 +59,7 @@ src/
     freezer.js    freezer accounting
     shopping.js   weekly shopping list derived from the plan; week-scoped ticks
     recipes.js    serving maths (1 serve = 2 portions) + recipeEdits resolution/scaling
+    timeline.js   rolling date window: today sits at index 3; rollover preserves dates
   storage/
     adapter.js    persistence. See "Gotchas" — do not bypass this.
     sync.js       optional remote sync layer (Worker in ../worker-lrmp/). See Gotcha 1b.
@@ -84,7 +85,9 @@ fast and meaningful. Keep it that way.
 ## Domain model
 
 ### The plan
-Flat array of **28 days**. `index = week * 7 + dayOfWeek` (week 0–3, day 0–6 = Mon–Sun).
+Flat array of **28 days**. `planAnchor` is the local date represented by index 0; it is
+normally today minus three days, so index 3 is always Today. On a new local day the array
+rolls left, keeping meals attached to their dates and appending a new empty future day.
 
 ```js
 plan[i].dinner = {
@@ -97,7 +100,7 @@ plan[i].dinner = {
 }
 ```
 
-Month view and Weekly view render **the same array**. There is no sync layer because there
+28-day view and Weekly view render **the same array**. There is no sync layer because there
 is nothing to sync. Edit either, both update.
 
 ### Invariants (tests enforce these)
@@ -120,8 +123,7 @@ Pure: `(plan, lunchPins) → { lunch[28], weekSurplus[4] }`.
   information: cook more, or accept it.
 - **Rolling surplus.** Leftovers don't expire at week boundaries. Whatever is still queued
   when we cross into week W+1 is week W's surplus — it rolls forward. `weekSurplus[3]` is
-  terminal (a new month starts fresh — no wrap-feeding into Wk 1's lunches, that would be
-  eating this month's food before it's cooked), so the UI nudges freezing it.
+  terminal (it is beyond the visible rolling window), so the UI nudges freezing it.
 - **Pins.** `allocate(plan, pins)` honours sparse `{ dayIndex: dishName }` overrides.
   A pin reserves the earliest-cooked portion of that dish that exists by the pinned day,
   so plain FIFO days can't eat it first. No portion available by then → the pin renders
@@ -129,7 +131,7 @@ Pure: `(plan, lunchPins) → { lunch[28], weekSurplus[4] }`.
   between days; unpinning returns the day to derived.
 - **The surplus strip is also a drop zone.** Dropping a dinner tile on it defers that
   dinner to the next week (`deferDinner` in `core/plan.js`) — same weekday if free, else
-  first empty day. Wk 4 wraps to Wk 1, framed as "next month" (the board is reused).
+  first empty day. The final week cannot wrap into week 1 because that is history context.
 
 The default of **2 leftovers per `keeps` dish deliberately over-produces** relative to 7
 lunch slots. That's why surplus and the freezer exist. `DEFAULT_EXTRA` in `core/plan.js` is
@@ -216,7 +218,7 @@ controls to a tile.
 **Works:** month painting + auto-dish-selection, week board with derived lunches, leftover
 steppers, FIFO allocation with gaps, rolling weekly surplus, lunch pinning (drag a lunch to
 another day), freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
-to next week (drop it on the surplus strip; Wk 4 wraps to Wk 1), free-text day notes
+to next week (drop it on the surplus strip; the final period cannot wrap into history), free-text day notes
 ("dinner out") on empty days, all 40 recipes, persistence, mobile drag.
 
 **Not built yet:** see `docs/BACKLOG.md`. The top three are drag-from-freezer onto a

@@ -1,6 +1,6 @@
 /**
  * The plan is the single source of truth for the whole app.
- * The Month view and the Weekly view are two renderings of THIS array —
+ * The 28-day view and the Weekly view are two renderings of THIS array —
  * there is deliberately no sync layer between them, because there is nothing to sync.
  *
  * Shape: a flat array of 28 days (4 weeks x 7 days).
@@ -158,8 +158,8 @@ export function clearPlan(plan) {
 /**
  * Push a dinner out of its week into the NEXT week (the drag-onto-the-surplus-strip
  * action). Lands on the same weekday if that's free, otherwise the first empty day of
- * the target week. Week 3 wraps to week 0 — the board is reused month to month, so
- * "next week" after Wk 4 is next month's Wk 1.
+ * the target week. Week 3 is the end of the visible rolling window; it cannot wrap to
+ * week 0 because that would move a future dinner into the three-day history context.
  *
  * @returns {{ ok: boolean, idx?: number, wrapped?: boolean, reason?: string }}
  */
@@ -168,7 +168,8 @@ export function deferDinner(plan, idx) {
   if (!d.dish && !d.note) return { ok: false, reason: 'empty' };
 
   const week = Math.floor(idx / 7);
-  const targetWeek = (week + 1) % 4;
+  if (week === 3) return { ok: false, reason: 'horizon' };
+  const targetWeek = week + 1;
   const isFree = (gi) => !plan[gi].dinner.dish && !plan[gi].dinner.note;
 
   let target = -1;
@@ -184,7 +185,7 @@ export function deferDinner(plan, idx) {
 
   plan[target].dinner = d;
   plan[idx].dinner = emptyDinner();
-  return { ok: true, idx: target, wrapped: targetWeek < week };
+  return { ok: true, idx: target, wrapped: false };
 }
 
 /** Swap two days' dinners (the drag-to-reorder action). */

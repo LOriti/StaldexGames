@@ -45,7 +45,7 @@ export function renderShopping(root) {
 
   const body = list.length
     ? list.map((d) => dishCard(d, week)).join('')
-    : `<div class="shop-empty">No cooked dinners in Wk ${week + 1} yet — paint some days in the Month view first.
+    : `<div class="shop-empty">No cooked dinners in this period yet — plan some days in the 28-day view first.
        Freezer and leftover nights need no shopping.</div>`;
 
   root.innerHTML = `

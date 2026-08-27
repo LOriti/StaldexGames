@@ -100,4 +100,5 @@ export const KEYS = {
   RECIPE_EDITS: 'recipeEdits',
   CUSTOM_RECIPES: 'customRecipes',
   REMOVED_DISHES: 'removedDishes',
+  PLAN_ANCHOR: 'planAnchor',
 };
