@@ -1,14 +1,18 @@
 import {
-  STORAGE_KEY, AREAS, STATUS, REPEATS, initialState, normaliseState, areaFor,
-  todayISO, addDays, nextRecurrence, dayDelta, dueText, niceDate, uid,
+  STORAGE_KEY, AREAS, STATUS, REPEATS, EVENT_TYPES, EVENT_CONFIRMATIONS,
+  EVENT_TIMINGS, LOGISTICS, initialState, normaliseState, areaFor,
+  todayISO, addDays, nextRecurrence, dayDelta, dueText, niceDate, uid, parseDate,
   esc, safeLink, openTask, orderedTasks, metrics, projectProgress
 } from './core.js';
+import { renderNextDays, renderNextDaysPreview } from './schedule-view.js';
 
 const $ = id => document.getElementById(id);
 const viewEl = $('view');
 let state;
 let storageAvailable = true;
-let activeView = 'overview';
+let activeView = 'schedule';
+let scheduleOffset = 0;  // weeks from today's rolling horizon
+let scheduleSpan = 7;     // 7 or 14 days
 let editContext = null;
 let filter = { search: '', status: 'open', area: 'all', owner: 'all', project: 'all' };
 let toastTimeout;
@@ -153,6 +157,7 @@ function renderOverview() {
   const greeting = m.overdue ? 'Get the important things back in sight.' : m.open ? 'Know what matters. Then get on with living.' : 'A clear desk for everything that matters.';
   viewEl.innerHTML = [
     heading('THE BIGGER PICTURE', 'Life, in order.', 'Family, home, money, people and the thousand little things. One calm place to keep track.'),
+    renderNextDaysPreview(state),
     '<section class="hero"><div><p class="eyebrow">YOUR PERSONAL OPERATING SYSTEM</p><h2>' + esc(greeting) + '</h2>'
       + '<p>Choose three things that really matter this week. Keep the rest of life visible without carrying it all in your head.</p></div>'
       + '<div class="hero-aside"><span class="hero-big">' + m.open + '</span><span class="hero-meta">open actions across life</span></div></section>',
@@ -278,7 +283,10 @@ function renderReview() {
   ].join('');
 }
 function render() {
-  const labels = { overview:'Overview', tasks:'Actions', projects:'Outcomes', records:'Reference', review:'Weekly reset' };
+  const labels = { schedule:'Next days', overview:'Overview', tasks:'Actions', projects:'Outcomes', records:'Reference', review:'Weekly reset' };
+  const globalAdd = $('global-add');
+  globalAdd.dataset.action = activeView === 'schedule' ? 'new-event' : 'new-task';
+  globalAdd.innerHTML = activeView === 'schedule' ? '<span>＋</span> New activity' : '<span>＋</span> New action';
   $('breadcrumb').textContent = labels[activeView].toUpperCase();
   document.querySelectorAll('[data-view].nav-item').forEach(b => {
     const active = b.dataset.view === activeView;
@@ -286,14 +294,15 @@ function render() {
     if (active) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
-  if (activeView === 'tasks') renderTasks();
+  if (activeView === 'schedule') viewEl.innerHTML = renderNextDays(state, { offset: scheduleOffset, span: scheduleSpan });
+  else if (activeView === 'tasks') renderTasks();
   else if (activeView === 'projects') renderProjects();
   else if (activeView === 'records') renderRecords();
   else if (activeView === 'review') renderReview();
   else renderOverview();
 }
 function goto(view, status = '') {
-  if (!['overview','tasks','projects','records','review'].includes(view)) return;
+  if (!['schedule','overview','tasks','projects','records','review'].includes(view)) return;
   activeView = view;
   if (view === 'tasks' && status) filter = { search: '', status, area: 'all', owner: 'all', project: 'all' };
   render();
@@ -313,6 +322,29 @@ function textareaInput(name, value = '', max = 5000) {
   return '<textarea name="' + esc(name) + '" id="f-' + esc(name) + '" maxlength="' + max + '" rows="4">' + esc(value) + '</textarea>';
 }
 function formRows(kind, obj = {}) {
+  if (kind === 'event') {
+    return [
+      field('Activity / commitment', 'title', textInput('title', obj.title, 'text', true)),
+      '<div class="field-row">' + field('Starts on', 'date', dateInput('date', obj.date || todayISO()))
+      + field('Ends on (if multi-day)', 'endDate', dateInput('endDate', obj.endDate && obj.endDate !== obj.date ? obj.endDate : '')) + '</div>',
+      '<div class="field-row">' + field('Kind of activity', 'type', selectInput('type', EVENT_TYPES.map(t => opt(t.id,t.label,obj.type||'family')).join('')))
+      + field('Responsible / lead', 'owner', selectInput('owner', ownerOptions(obj.owner || ''))) + '</div>',
+      '<div class="field-row">' + field('Timing', 'timing', selectInput('timing', EVENT_TIMINGS.map(t => opt(t.id,t.label,obj.timing||'tbc')).join('')))
+      + field('Confirmation', 'confirmation', selectInput('confirmation', EVENT_CONFIRMATIONS.map(x => opt(x.id,x.label,obj.confirmation||'confirmed')).join(''))) + '</div>',
+      '<div class="field-row" id="event-time-fields">' + field('Starts at', 'start', textInput('start', obj.start, 'time'))
+      + field('Ends at (optional)', 'end', textInput('end', obj.end, 'time')) + '</div>',
+      '<div class="field-row">' + field('Repeats', 'repeat', selectInput('repeat', REPEATS.map(r => opt(r.id,r.label,obj.repeat||'none')).join('')))
+      + '<div id="event-until-field">' + field('Repeat until (optional)', 'until', dateInput('until', obj.until)) + '</div></div>',
+      field('Who is involved?', 'people', textInput('people', obj.people, 'text', false, 250), 'Names, guests, carers or anyone involved in making the plan work.'),
+      field('Where?', 'location', textInput('location', obj.location, 'text', false, 200)),
+      field('Transport / getting there', 'transport', textInput('transport', obj.transport, 'text', false, 300), 'Cars, parking, flights, pick-ups, access, accommodation, etc.'),
+      field('Care / handovers', 'care', textInput('care', obj.care, 'text', false, 300), 'Childcare, who has the kids, or handover arrangements.'),
+      field('Logistics readiness', 'logistics', selectInput('logistics', LOGISTICS.map(x => opt(x.id,x.label,obj.logistics||'needs')).join(''))),
+      field('Other notes', 'notes', textareaInput('notes', obj.notes)),
+      obj.id && obj.repeat !== 'none' ? '<p class="inline-legend">Editing this activity changes the entire repeating series. To skip just one date, use “Skip this occurrence” on that day.</p>' : '',
+      obj.id ? '<button type="button" class="danger-button" data-action="remove-event" data-id="' + esc(obj.id) + '" style="align-self:flex-start">Delete ' + (obj.repeat !== 'none' ? 'entire series' : 'activity') + '</button>' : ''
+    ].join('');
+  }
   if (kind === 'task') {
     return [
       field('Action title', 'title', textInput('title', obj.title, 'text', true)),
@@ -347,16 +379,25 @@ function formRows(kind, obj = {}) {
   ].join('');
 }
 function edit(kind, id = '', preset = {}) {
-  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects : state.records;
+  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects
+    : kind === 'record' ? state.records : state.events;
   const obj = id ? collection.find(x => x.id === id) : preset;
   if (!obj) return;
   editContext = { kind, id };
-  const title = kind === 'task' ? 'action' : kind === 'project' ? 'outcome' : 'reference';
+  const title = kind === 'task' ? 'action' : kind === 'project' ? 'outcome'
+    : kind === 'event' ? 'activity' : 'reference';
   $('dialog-title').textContent = id ? 'Edit ' + title : 'New ' + title;
   $('submit-entity').textContent = id ? 'Save changes' : 'Create ' + title;
   $('form-fields').innerHTML = formRows(kind, obj);
+  if (kind === 'event') toggleEventFormFields();
   $('entity-dialog').showModal();
   $('form-fields').querySelector('input[name="title"]')?.focus();
+}
+function toggleEventFormFields() {
+  const timeFields = $('event-time-fields');
+  const repeatUntil = $('event-until-field');
+  if (timeFields) timeFields.hidden = $('f-timing')?.value !== 'timed';
+  if (repeatUntil) repeatUntil.hidden = $('f-repeat')?.value === 'none';
 }
 function saveEntity(event) {
   event.preventDefault();
