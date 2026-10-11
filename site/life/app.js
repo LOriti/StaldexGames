@@ -408,10 +408,27 @@ function saveEntity(event) {
   if (!title) return showToast('Add a title first.');
   if (kind === 'task' && vals.repeat !== 'none' && !vals.due) return showToast('Repeating actions need a due date.');
   if (kind === 'record' && vals.link && !safeLink(vals.link)) return showToast('Please enter an http:// or https:// link.');
-  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects : state.records;
+  if (kind === 'event') {
+    if (!parseDate(vals.date)) return showToast('Select a valid activity date.');
+    if (vals.endDate && (!parseDate(vals.endDate) || vals.endDate < vals.date || dayDelta(vals.endDate, vals.date) > 30)) {
+      return showToast('End date must be within 30 days of the start.');
+    }
+    if (vals.repeat !== 'none' && vals.until && (!parseDate(vals.until) || vals.until < vals.date)) {
+      return showToast('Repeat-until must be on or after the start date.');
+    }
+    if (vals.timing === 'timed' && !vals.start) return showToast('Enter the activity start time.');
+    if (vals.timing === 'timed' && vals.end && vals.end <= vals.start && (!vals.endDate || vals.endDate === vals.date)) {
+      return showToast('End time must come after the start time. For overnight plans use a multi-day activity.');
+    }
+  }
+  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects
+    : kind === 'record' ? state.records : state.events;
   const old = editContext.id ? collection.find(item => item.id === editContext.id) : null;
   const base = old || { id: uid(), createdAt: new Date().toISOString() };
-  const shared = { ...base, title, area: vals.area, owner: vals.owner || '', updatedAt: new Date().toISOString() };
+  const eventAreas = { family:'family', care:'family', work:'ventures', social:'people',
+    appointment:'health', home:'home', travel:'travel', personal:'personal', other:'personal' };
+  const shared = { ...base, title, area: kind === 'event' ? (eventAreas[vals.type] || 'personal') : vals.area,
+    owner: vals.owner || '', updatedAt: new Date().toISOString() };
   let item;
   if (kind === 'task') {
     item = { ...shared, due: vals.due || '', notes: vals.notes || '', priority: vals.priority,
@@ -433,6 +450,17 @@ function saveEntity(event) {
     }
   } else if (kind === 'project') {
     item = { ...shared, due: vals.due || '', notes: vals.notes || '', status: vals.status };
+  } else if (kind === 'event') {
+    item = {
+      ...shared, date: vals.date, endDate: vals.endDate || vals.date,
+      type: vals.type, people: vals.people || '', location: vals.location || '',
+      transport: vals.transport || '', care: vals.care || '', notes: vals.notes || '',
+      timing: vals.timing, start: vals.timing === 'timed' ? vals.start : '',
+      end: vals.timing === 'timed' ? vals.end : '',
+      confirmation: vals.confirmation, logistics: vals.logistics,
+      repeat: vals.repeat, until: vals.repeat !== 'none' ? (vals.until || '') : '',
+      skip: old && old.date === vals.date && old.repeat === vals.repeat ? [...(old.skip || [])] : []
+    };
   } else {
     item = { ...shared, date: vals.date || '', link: safeLink(vals.link), details: vals.details || '' };
   }
@@ -479,16 +507,35 @@ function focusTask(id) {
   showToast(task.focus ? 'Added to your top three.' : 'Removed from your top three.');
 }
 function deleteEntity(kind, id) {
-  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects : state.records;
+  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects
+    : kind === 'record' ? state.records : state.events;
   const item = collection.find(x => x.id === id);
   if (!item) return;
-  const extra = kind === 'project' ? ' Its actions will be kept, but unlinked.' : '';
+  const extra = kind === 'project' ? ' Its actions will be kept, but unlinked.'
+    : kind === 'event' && item.repeat !== 'none' ? ' All recurring occurrences will be removed.' : '';
   if (!window.confirm('Delete "' + item.title + '"?' + extra + ' This cannot be undone.')) return;
   collection.splice(collection.indexOf(item), 1);
   if (kind === 'project') state.tasks.forEach(t => { if (t.projectId === id) t.projectId = ''; });
   persist();
   if ($('entity-dialog').open) $('entity-dialog').close();
   render(); showToast('Deleted.');
+}
+function skipEventOccurrence(id, date) {
+  const event = state.events.find(e => e.id === id);
+  if (!event || event.repeat === 'none' || !parseDate(date)) return;
+  if (!window.confirm('Skip "' + event.title + '" on ' + niceDate(date, { day:'numeric', month:'short', year:'numeric' })
+    + '? Other occurrences will remain.')) return;
+  event.skip = [...new Set([...(event.skip || []), date])];
+  event.updatedAt = new Date().toISOString();
+  persist(); render(); showToast('Skipped only this occurrence.');
+}
+function showScheduleDay(date) {
+  if (!parseDate(date)) return;
+  scheduleOffset = Math.floor(dayDelta(date, todayISO()) / 7);
+  if (activeView !== 'schedule') goto('schedule');
+  else render();
+  const target = document.getElementById('day-' + date);
+  if (target) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 function saveOwners() {
   const owners = $('owner-settings').value.split(/\r?\n/).map(n=>n.trim().slice(0,70)).filter(Boolean);
@@ -514,12 +561,13 @@ async function importBackup(file) {
   if (file.size > 2 * 1024 * 1024) return showToast('That backup is too large (2 MB limit).');
   try {
     const imported = normaliseState(JSON.parse(await file.text()));
-    if (!window.confirm('Replace everything in this browser with ' + imported.tasks.length + ' actions, '
-      + imported.projects.length + ' outcomes and ' + imported.records.length + ' reference cards? Export a backup first if needed.')) return;
+    if (!window.confirm('Replace everything in this browser with ' + imported.events.length + ' activities, '
+      + imported.tasks.length + ' actions, ' + imported.projects.length + ' outcomes and '
+      + imported.records.length + ' reference cards? Export a backup first if needed.')) return;
     state = imported;
     persist(); $('settings-dialog').close();
     filter = { search: '', status: 'open', area: 'all', owner: 'all', project: 'all' };
-    goto('overview');
+    scheduleOffset = 0; scheduleSpan = 7; goto('schedule');
     showToast('Backup imported successfully.');
   } catch (err) { showToast('Import failed: ' + err.message); }
   finally { $('import-file').value = ''; }
@@ -527,7 +575,8 @@ async function importBackup(file) {
 function resetWorkspace() {
   if (window.prompt('This will erase all Life Admin data in this browser. Type CLEAR to continue:') !== 'CLEAR') return;
   state = initialState(); persist();
-  $('settings-dialog').close(); goto('overview'); showToast('Workspace cleared.');
+  $('settings-dialog').close(); scheduleOffset = 0; scheduleSpan = 7;
+  goto('schedule'); showToast('Workspace cleared.');
 }
 function openSettings() {
   $('owner-settings').value = state.settings.owners.join('\n');
@@ -540,9 +589,17 @@ document.addEventListener('click', event => {
   if (!button) return;
   const { action, id } = button.dataset;
   if (action === 'goto') { goto(button.dataset.view || 'tasks', button.dataset.status || ''); return; }
+  if (action === 'goto-day' || action === 'jump-day') return showScheduleDay(button.dataset.date);
+  if (action === 'schedule-prev') { scheduleOffset--; render(); return; }
+  if (action === 'schedule-next') { scheduleOffset++; render(); return; }
+  if (action === 'schedule-today') { scheduleOffset = 0; render(); return; }
   if (action === 'area') { filter.area = id; filter.status = 'open'; filter.project = 'all'; goto('tasks'); return; }
   if (action === 'view-project') { filter.project = id; filter.area = 'all'; filter.status = 'all'; goto('tasks'); return; }
   if (action === 'clear-project') { filter.project = 'all'; render(); return; }
+  if (action === 'new-event') return edit('event', '', { date: todayISO(), type:'family', timing:'tbc', logistics:'needs' });
+  if (action === 'new-event-date') return edit('event', '', { date: button.dataset.date, type:'family', timing:'tbc', logistics:'needs' });
+  if (action === 'edit-event') return edit('event', id);
+  if (action === 'skip-event') return skipEventOccurrence(id, button.dataset.date);
   if (action === 'new-task') return edit('task');
   if (action === 'new-project') return edit('project');
   if (action === 'new-record') return edit('record');
@@ -552,6 +609,7 @@ document.addEventListener('click', event => {
   if (action === 'edit-record') return edit('record',id);
   if (action === 'check-task') return completeTask(id);
   if (action === 'focus-task') return focusTask(id);
+  if (action === 'remove-event') return deleteEntity('event',id);
   if (action === 'remove-task') return deleteEntity('task',id);
   if (action === 'remove-project') return deleteEntity('project',id);
   if (action === 'remove-record') return deleteEntity('record',id);
@@ -585,6 +643,8 @@ document.addEventListener('input', event => {
   }
 });
 document.addEventListener('change', event => {
+  if (event.target.id === 'f-timing' || event.target.id === 'f-repeat') toggleEventFormFields();
+  if (event.target.id === 'schedule-span') { scheduleSpan = Number(event.target.value) === 14 ? 14 : 7; render(); }
   if (event.target.id === 'task-status') { filter.status = event.target.value; renderTaskListOnly(); }
   if (event.target.id === 'task-area') { filter.area = event.target.value; renderTaskListOnly(); }
   if (event.target.id === 'task-owner') { filter.owner = event.target.value; renderTaskListOnly(); }
@@ -596,6 +656,12 @@ window.addEventListener('storage', event => {
   if (event.key !== STORAGE_KEY || !event.newValue) return;
   try { state = normaliseState(JSON.parse(event.newValue)); render(); showToast('Workspace updated from another tab.'); }
   catch (error) { console.warn('Ignoring invalid storage update', error); }
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    $('current-date').textContent = new Intl.DateTimeFormat('en-AU',{ weekday:'short',day:'numeric',month:'short',year:'numeric' }).format(new Date());
+    render();
+  }
 });
 state = load();
 checkStorage();
