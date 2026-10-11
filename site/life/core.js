@@ -321,8 +321,8 @@ export function eventsInRange(events, start, end) {
 export function scheduleDays(state, from = todayISO(), count = 7) {
   const days = Math.max(1, Math.min(31, Math.trunc(count) || 7));
   const end = addDays(from, days - 1);
-  const occurrences = eventsInRange(state.events || [], from, end)
-    .filter(e => e.confirmation !== 'cancelled');
+  // Keep cancelled plans visible but subdued so they can be reactivated or removed.
+  const occurrences = eventsInRange(state.events || [], from, end);
   return Array.from({length:days}, (_, index) => {
     const date = addDays(from,index);
     return {
@@ -347,7 +347,7 @@ export function possibleClashes(day) {
   const timed = day.events.filter(e => e.timing === 'timed' && !e.continuation && e.start && e.end && e.end > e.start);
   const persons = e => new Set([e.owner, ...(e.people || '').split(/[,;&+]/)]
     .map(n => n.trim().toLocaleLowerCase('en-AU'))
-    .filter(n => n && !['shared', 'everyone', 'all', 'me', 'partner'].includes(n)));
+    .filter(n => n && !['shared', 'everyone', 'all'].includes(n)));
   const clashes = [];
   for (let i = 0; i < timed.length; i++) {
     for (let j = i + 1; j < timed.length; j++) {
