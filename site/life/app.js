@@ -607,6 +607,7 @@ document.addEventListener('click', event => {
   if (action === 'clear-project') { filter.project = 'all'; render(); return; }
   if (action === 'new-event') return edit('event', '', { date: todayISO(), type:'family', timing:'tbc', logistics:'needs' });
   if (action === 'new-event-date') return edit('event', '', { date: button.dataset.date, type:'family', timing:'tbc', logistics:'needs' });
+  if (action === 'new-task-date') return edit('task', '', { due: button.dataset.date, area:'personal' });
   if (action === 'edit-event') return edit('event', id);
   if (action === 'skip-event') return skipEventOccurrence(id, button.dataset.date);
   if (action === 'new-task') return edit('task');
