@@ -174,7 +174,8 @@ function renderOverview() {
     sectionHeader('Outcomes in motion', '<button type="button" class="link-button" data-action="goto" data-view="projects">See outcomes →</button>'),
     activeProjects.length ? '<div class="project-grid">' + activeProjects.map(projectCard).join('') + '</div>'
       : empty('Bigger than a to-do', 'Add an outcome to group several actions under a shared goal — like a move, a holiday, or an important life change.', btn('new-project','＋ Create outcome')),
-    '<div class="inline-legend" style="margin-top:21px">Tip: use Actions for things to do, Outcomes for what you are trying to achieve, and Reference for things you need to remember.</div>'
+    '<div class="inline-legend" style="margin-top:21px">Tip: use Actions for things to do, Outcomes for what you are trying to achieve, and Reference for things you need to remember.</div>',
+    '<div class="tool-link"><div><strong>A useful piece already on Staldex</strong><p>Meal planning and the grocery list have their own dedicated space.</p></div><a href="https://staldex.com/lrmp/">Open meal planner ↗</a></div>'
   ].join('');
 }
 function getFilteredTasks() {
@@ -294,7 +295,7 @@ function render() {
 function goto(view, status = '') {
   if (!['overview','tasks','projects','records','review'].includes(view)) return;
   activeView = view;
-  if (view === 'tasks' && status) filter.status = status;
+  if (view === 'tasks' && status) filter = { search: '', status, area: 'all', owner: 'all', project: 'all' };
   render();
   window.scrollTo({ top: 0, behavior: 'instant' });
 }
@@ -375,9 +376,20 @@ function saveEntity(event) {
     item = { ...shared, due: vals.due || '', notes: vals.notes || '', priority: vals.priority,
       status: vals.status, repeat: vals.repeat, projectId: vals.projectId || '', focus: old?.focus || false,
       completedAt: old?.completedAt || '', lastCompletedAt: old?.lastCompletedAt || '', completionCount: old?.completionCount || 0 };
-    if (item.status === 'done' && old?.status !== 'done') item.completedAt = new Date().toISOString();
-    if (item.status !== 'done') item.completedAt = '';
-    if (item.status === 'done') item.focus = false;
+    if (item.status === 'done' && item.repeat !== 'none' && item.due) {
+      const next = nextRecurrence(item.due, item.repeat);
+      if (!next) return showToast('Could not calculate the next due date.');
+      item.due = next;
+      item.status = 'todo';
+      item.lastCompletedAt = new Date().toISOString();
+      item.completionCount += 1;
+      item.completedAt = '';
+      item.focus = false;
+    } else {
+      if (item.status === 'done' && old?.status !== 'done') item.completedAt = new Date().toISOString();
+      if (item.status !== 'done') item.completedAt = '';
+      if (item.status === 'done') item.focus = false;
+    }
   } else if (kind === 'project') {
     item = { ...shared, due: vals.due || '', notes: vals.notes || '', status: vals.status };
   } else {
@@ -434,7 +446,7 @@ function deleteEntity(kind, id) {
   collection.splice(collection.indexOf(item), 1);
   if (kind === 'project') state.tasks.forEach(t => { if (t.projectId === id) t.projectId = ''; });
   persist();
-  $('entity-dialog').close();
+  if ($('entity-dialog').open) $('entity-dialog').close();
   render(); showToast('Deleted.');
 }
 function saveOwners() {
