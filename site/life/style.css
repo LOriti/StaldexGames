@@ -334,3 +334,16 @@ a { color: inherit; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; }
 }
+
+.tool-link {
+  margin-top: 18px; padding: 17px 21px; border-radius: 15px;
+  display: flex; align-items: center; justify-content: space-between; gap: 14px;
+  border: 1px solid #d9e6da; background: #eef5ed;
+}
+.tool-link strong { color: #30583a; font-size: 13px; }
+.tool-link p { font-size: 12px; color: #758c78; margin: 4px 0 0; }
+.tool-link a { text-decoration: none; white-space: nowrap; color: #2a6642; font-weight: 780; font-size: 12px; }
+.tool-link a:hover { text-decoration: underline; }
+@media (max-width: 700px) {
+  .tool-link { flex-direction: column; align-items: flex-start; }
+}
