@@ -105,7 +105,7 @@ calendar or a secure personal records vault.
 
 Tests (repo root):
 
-    node --test tests/life-admin.test.mjs tests/life-schedule.test.mjs
+    node --test tests/life-admin.test.mjs tests/life-schedule.test.mjs tests/life-schedule-view.test.mjs
 
 ## Notes
 
