@@ -103,7 +103,7 @@ export function initialState() {
     tasks: [],
     projects: [],
     records: [],
-    settings: { owners: ['Leon', 'Rahana', 'Shared'] },
+    settings: { owners: ['Me', 'Partner', 'Shared'] },
     reviewNote: '',
     updatedAt: new Date().toISOString()
   };
