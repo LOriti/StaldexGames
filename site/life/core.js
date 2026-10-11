@@ -155,7 +155,7 @@ function txt(input, max = 200) { return String(input ?? '').trim().slice(0, max)
 function dateOrBlank(input) { const v = txt(input, 10); return parseDate(v) ? v : ''; }
 function timeOrBlank(input) {
   const v = txt(input, 5);
-  return /^([01]\\d|2[0-3]):[0-5]\\d$/.test(v) ? v : '';
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : '';
 }
 function enumOr(input, allowed, fallback) { return allowed.has(input) ? input : fallback; }
 function isoOrBlank(input) {
