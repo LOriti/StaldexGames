@@ -66,7 +66,7 @@ No app/framework build or package installation is needed.
 
 Run model tests from repo root with:
 
-    node --test tests/life-admin.test.mjs tests/life-schedule.test.mjs
+    node --test tests/life-admin.test.mjs tests/life-schedule.test.mjs tests/life-schedule-view.test.mjs
 
 Smoke test in a modern browser: start on Next Days, add timed care and work
 activities, make one weekly, skip a single occurrence, add a multi-day trip,
