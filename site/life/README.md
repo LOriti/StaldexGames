@@ -22,7 +22,7 @@ site/life/, so Cloudflare Pages serves it without a build step.
 - **Backup** — JSON export, validated import, browser-local data and a
   deliberate CLEAR-to-reset flow.
 
-Areas are preconfigured; owners start as Leon, Rahana and Shared and can be
+Areas are preconfigured; owners start as Me, Partner and Shared and can be
 changed in Settings.
 
 ## Privacy and persistence
