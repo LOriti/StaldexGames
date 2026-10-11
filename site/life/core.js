@@ -28,6 +28,36 @@ export const REPEATS = [
   { id: 'quarterly', label: 'Every 3 months' },
   { id: 'yearly', label: 'Yearly' }
 ];
+export const EVENT_TYPES = [
+  { id: 'family', label: 'Family', colour: '#a56b70', icon: '♡' },
+  { id: 'care', label: 'Care & handovers', colour: '#ae7b56', icon: '⌂' },
+  { id: 'work', label: 'Work', colour: '#597b87', icon: '▣' },
+  { id: 'social', label: 'Social', colour: '#917e9f', icon: '✳' },
+  { id: 'appointment', label: 'Appointment', colour: '#638e8c', icon: '◷' },
+  { id: 'home', label: 'Home', colour: '#597f69', icon: '◇' },
+  { id: 'travel', label: 'Travel', colour: '#6c86ac', icon: '↗' },
+  { id: 'personal', label: 'Personal', colour: '#819562', icon: '◎' },
+  { id: 'other', label: 'Other', colour: '#728477', icon: '•' }
+];
+export const EVENT_CONFIRMATIONS = [
+  { id: 'confirmed', label: 'Confirmed' },
+  { id: 'tentative', label: 'Tentative / awaiting confirmation' },
+  { id: 'cancelled', label: 'Cancelled' }
+];
+export const EVENT_TIMINGS = [
+  { id: 'timed', label: 'Set time' },
+  { id: 'all-day', label: 'All-day / day blocked' },
+  { id: 'tbc', label: 'Time still to confirm' }
+];
+export const LOGISTICS = [
+  { id: 'clear', label: 'Arrangements sorted' },
+  { id: 'needs', label: 'Needs organising' },
+  { id: 'none', label: 'No logistics needed' }
+];
+const eventTypeIds = new Set(EVENT_TYPES.map(e => e.id));
+const confirmationIds = new Set(EVENT_CONFIRMATIONS.map(e => e.id));
+const timingIds = new Set(EVENT_TIMINGS.map(e => e.id));
+const logisticIds = new Set(LOGISTICS.map(e => e.id));
 const areaIds = new Set(AREAS.map(a => a.id));
 const statusIds = new Set(STATUS.map(s => s.id));
 const repeatIds = new Set(REPEATS.map(s => s.id));
@@ -103,6 +133,7 @@ export function initialState() {
     tasks: [],
     projects: [],
     records: [],
+    events: [],
     settings: { owners: ['Me', 'Partner', 'Shared'] },
     reviewNote: '',
     updatedAt: new Date().toISOString()
@@ -122,6 +153,10 @@ export function safeLink(input) {
 }
 function txt(input, max = 200) { return String(input ?? '').trim().slice(0, max); }
 function dateOrBlank(input) { const v = txt(input, 10); return parseDate(v) ? v : ''; }
+function timeOrBlank(input) {
+  const v = txt(input, 5);
+  return /^([01]\d|2[0-3]):[0-5]\d$/.test(v) ? v : '';
+}
 function enumOr(input, allowed, fallback) { return allowed.has(input) ? input : fallback; }
 function isoOrBlank(input) {
   const text = txt(input, 40);
@@ -152,7 +187,10 @@ export function normaliseState(raw) {
     || !Array.isArray(raw.tasks) || !Array.isArray(raw.projects) || !Array.isArray(raw.records)) {
     throw new Error('Not a Life Admin version 1 backup.');
   }
-  if (raw.tasks.length > 10000 || raw.projects.length > 2000 || raw.records.length > 5000) {
+  // V1 backups created before the schedule existed have no events key.
+  if (raw.events !== undefined && !Array.isArray(raw.events)) throw new Error('Invalid events in backup.');
+  if (raw.tasks.length > 10000 || raw.projects.length > 2000
+    || raw.records.length > 5000 || (raw.events?.length || 0) > 5000) {
     throw new Error('Backup exceeds supported record limits.');
   }
   const projects = dedupe(raw.projects.filter(x => x && typeof x === 'object').map(x => ({
@@ -181,9 +219,35 @@ export function normaliseState(raw) {
     date: dateOrBlank(x.date),
     link: safeLink(x.link)
   })).filter(x => x.title));
+  const events = dedupe((raw.events || []).filter(x => x && typeof x === 'object').map(x => {
+    const timing = enumOr(x.timing, timingIds, 'tbc');
+    const date = dateOrBlank(x.date);
+    return {
+      ...base(x),
+      date,
+      endDate: (dateOrBlank(x.endDate) >= date && dayDelta(dateOrBlank(x.endDate), date) <= 30)
+        ? dateOrBlank(x.endDate) : date,
+      type: enumOr(x.type, eventTypeIds, 'family'),
+      confirmation: enumOr(x.confirmation, confirmationIds, 'confirmed'),
+      timing,
+      start: timing === 'timed' ? timeOrBlank(x.start) : '',
+      end: timing === 'timed' ? timeOrBlank(x.end) : '',
+      people: txt(x.people, 250),
+      location: txt(x.location, 200),
+      transport: txt(x.transport, 300),
+      care: txt(x.care, 300),
+      notes: txt(x.notes, 5000),
+      logistics: enumOr(x.logistics, logisticIds, 'none'),
+      repeat: enumOr(x.repeat, repeatIds, 'none'),
+      until: dateOrBlank(x.until),
+      skip: Array.isArray(x.skip)
+        ? [...new Set(x.skip.slice(0, 500).map(dateOrBlank).filter(Boolean))]
+        : []
+    };
+  }).filter(x => x.title && x.date && (!x.until || x.until >= x.date)));
   const owners = Array.isArray(raw.settings?.owners) ? raw.settings.owners.map(o => txt(o, 70)).filter(Boolean).slice(0, 12) : [];
   return {
-    version: 1, tasks, projects, records,
+    version: 1, tasks, projects, records, events,
     settings: { owners: [...new Set(owners)].length ? [...new Set(owners)] : ['Me', 'Shared'] },
     reviewNote: txt(raw.reviewNote, 5000),
     updatedAt: isoOrBlank(raw.updatedAt) || new Date().toISOString()
@@ -219,4 +283,79 @@ export function projectProgress(state, projectId) {
   const tasks = state.tasks.filter(t => t.projectId === projectId);
   const done = tasks.filter(t => t.status === 'done').length;
   return { done, total: tasks.length, pct: tasks.length ? Math.round(done * 100 / tasks.length) : 0 };
+}
+
+// Expand activities over a rolling calendar window. Recurrences are anchored to
+// the original date; skipped occurrences never mutate the underlying series.
+export function eventsInRange(events, start, end) {
+  if (!parseDate(start) || !parseDate(end) || start > end) return [];
+  const out = [];
+  for (const event of events) {
+    if (!parseDate(event.date)) continue;
+    const repeat = repeatIds.has(event.repeat) ? event.repeat : 'none';
+    const duration = Math.max(0, Math.min(30, dayDelta(event.endDate || event.date, event.date)));
+    const searchStart = addDays(start, -duration);
+    if (event.date > end || (event.until && event.until < searchStart)) continue;
+    let at = event.date < searchStart && repeat !== 'none'
+      ? nextRecurrence(event.date, repeat, addDays(searchStart, -1))
+      : event.date;
+    for (let i = 0; at && at <= end && i < 3660; i++) {
+      if ((!event.until || at <= event.until) && !(event.skip || []).includes(at)) {
+        for (let j = 0; j <= duration; j++) {
+          const date = addDays(at, j);
+          if (date >= start && date <= end) {
+            out.push({ ...event, occurrenceDate: date, seriesDate: at, continuation: j > 0 });
+          }
+        }
+      }
+      if (repeat === 'none' || (event.until && at >= event.until)) break;
+      at = nextRecurrence(event.date, repeat, at);
+    }
+  }
+  return out.sort((a,b) => a.occurrenceDate.localeCompare(b.occurrenceDate)
+    || (a.continuation ? '0' : '1').localeCompare(b.continuation ? '0' : '1')
+    || (a.timing === 'timed' ? '1' : '0').localeCompare(b.timing === 'timed' ? '1' : '0')
+    || (a.start || '').localeCompare(b.start || '')
+    || a.title.localeCompare(b.title));
+}
+export function scheduleDays(state, from = todayISO(), count = 7) {
+  const days = Math.max(1, Math.min(31, Math.trunc(count) || 7));
+  const end = addDays(from, days - 1);
+  // Keep cancelled plans visible but subdued so they can be reactivated or removed.
+  const occurrences = eventsInRange(state.events || [], from, end);
+  return Array.from({length:days}, (_, index) => {
+    const date = addDays(from,index);
+    return {
+      date,
+      events: occurrences.filter(e => e.occurrenceDate === date),
+      tasks: orderedTasks((state.tasks || []).filter(t => t.due === date && openTask(t))),
+      records: (state.records || []).filter(r => r.date === date)
+    };
+  });
+}
+export function coordinationReasons(e) {
+  if (e.confirmation === 'cancelled') return [];
+  const reasons = [];
+  if (e.confirmation === 'tentative') reasons.push('Confirm activity');
+  if (e.timing === 'tbc') reasons.push('Confirm time');
+  if (e.logistics === 'needs') reasons.push('Organise logistics');
+  return reasons;
+}
+// Flags potential overlapping timed activities only when they have an owner or
+// a named participant in common. Distinct people having parallel plans is fine.
+export function possibleClashes(day) {
+  const timed = day.events.filter(e => e.confirmation !== 'cancelled' && e.timing === 'timed' && !e.continuation && e.start && e.end && e.end > e.start);
+  const persons = e => new Set([e.owner, ...(e.people || '').split(/[,;&+]/)]
+    .map(n => n.trim().toLocaleLowerCase('en-AU'))
+    .filter(n => n && !['shared', 'everyone', 'all'].includes(n)));
+  const clashes = [];
+  for (let i = 0; i < timed.length; i++) {
+    for (let j = i + 1; j < timed.length; j++) {
+      const a = timed[i], b = timed[j];
+      if (a.start >= b.end || b.start >= a.end) continue;
+      const names = persons(a), common = [...persons(b)].filter(name => names.has(name));
+      if (common.length) clashes.push({ first: a, second: b, common });
+    }
+  }
+  return clashes;
 }

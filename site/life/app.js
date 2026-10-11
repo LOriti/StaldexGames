@@ -1,14 +1,18 @@
 import {
-  STORAGE_KEY, AREAS, STATUS, REPEATS, initialState, normaliseState, areaFor,
-  todayISO, addDays, nextRecurrence, dayDelta, dueText, niceDate, uid,
+  STORAGE_KEY, AREAS, STATUS, REPEATS, EVENT_TYPES, EVENT_CONFIRMATIONS,
+  EVENT_TIMINGS, LOGISTICS, initialState, normaliseState, areaFor,
+  todayISO, addDays, nextRecurrence, dayDelta, dueText, niceDate, uid, parseDate,
   esc, safeLink, openTask, orderedTasks, metrics, projectProgress
 } from './core.js';
+import { renderNextDays, renderNextDaysPreview, schedulePlainText } from './schedule-view.js';
 
 const $ = id => document.getElementById(id);
 const viewEl = $('view');
 let state;
 let storageAvailable = true;
-let activeView = 'overview';
+let activeView = 'schedule';
+let scheduleOffset = 0;  // weeks from today's rolling horizon
+let scheduleSpan = 7;     // 7 or 14 days
 let editContext = null;
 let filter = { search: '', status: 'open', area: 'all', owner: 'all', project: 'all' };
 let toastTimeout;
@@ -153,6 +157,7 @@ function renderOverview() {
   const greeting = m.overdue ? 'Get the important things back in sight.' : m.open ? 'Know what matters. Then get on with living.' : 'A clear desk for everything that matters.';
   viewEl.innerHTML = [
     heading('THE BIGGER PICTURE', 'Life, in order.', 'Family, home, money, people and the thousand little things. One calm place to keep track.'),
+    renderNextDaysPreview(state),
     '<section class="hero"><div><p class="eyebrow">YOUR PERSONAL OPERATING SYSTEM</p><h2>' + esc(greeting) + '</h2>'
       + '<p>Choose three things that really matter this week. Keep the rest of life visible without carrying it all in your head.</p></div>'
       + '<div class="hero-aside"><span class="hero-big">' + m.open + '</span><span class="hero-meta">open actions across life</span></div></section>',
@@ -278,7 +283,10 @@ function renderReview() {
   ].join('');
 }
 function render() {
-  const labels = { overview:'Overview', tasks:'Actions', projects:'Outcomes', records:'Reference', review:'Weekly reset' };
+  const labels = { schedule:'Next days', overview:'Overview', tasks:'Actions', projects:'Outcomes', records:'Reference', review:'Weekly reset' };
+  const globalAdd = $('global-add');
+  globalAdd.dataset.action = activeView === 'schedule' ? 'new-event' : 'new-task';
+  globalAdd.innerHTML = activeView === 'schedule' ? '<span>＋</span> New activity' : '<span>＋</span> New action';
   $('breadcrumb').textContent = labels[activeView].toUpperCase();
   document.querySelectorAll('[data-view].nav-item').forEach(b => {
     const active = b.dataset.view === activeView;
@@ -286,14 +294,15 @@ function render() {
     if (active) b.setAttribute('aria-current', 'page');
     else b.removeAttribute('aria-current');
   });
-  if (activeView === 'tasks') renderTasks();
+  if (activeView === 'schedule') viewEl.innerHTML = renderNextDays(state, { offset: scheduleOffset, span: scheduleSpan });
+  else if (activeView === 'tasks') renderTasks();
   else if (activeView === 'projects') renderProjects();
   else if (activeView === 'records') renderRecords();
   else if (activeView === 'review') renderReview();
   else renderOverview();
 }
 function goto(view, status = '') {
-  if (!['overview','tasks','projects','records','review'].includes(view)) return;
+  if (!['schedule','overview','tasks','projects','records','review'].includes(view)) return;
   activeView = view;
   if (view === 'tasks' && status) filter = { search: '', status, area: 'all', owner: 'all', project: 'all' };
   render();
@@ -313,6 +322,29 @@ function textareaInput(name, value = '', max = 5000) {
   return '<textarea name="' + esc(name) + '" id="f-' + esc(name) + '" maxlength="' + max + '" rows="4">' + esc(value) + '</textarea>';
 }
 function formRows(kind, obj = {}) {
+  if (kind === 'event') {
+    return [
+      field('Activity / commitment', 'title', textInput('title', obj.title, 'text', true)),
+      '<div class="field-row">' + field('Starts on', 'date', dateInput('date', obj.date || todayISO()))
+      + field('Ends on (if multi-day)', 'endDate', dateInput('endDate', obj.endDate && obj.endDate !== obj.date ? obj.endDate : '')) + '</div>',
+      '<div class="field-row">' + field('Kind of activity', 'type', selectInput('type', EVENT_TYPES.map(t => opt(t.id,t.label,obj.type||'family')).join('')))
+      + field('Responsible / lead', 'owner', selectInput('owner', ownerOptions(obj.owner || ''))) + '</div>',
+      '<div class="field-row">' + field('Timing', 'timing', selectInput('timing', EVENT_TIMINGS.map(t => opt(t.id,t.label,obj.timing||'tbc')).join('')))
+      + field('Confirmation', 'confirmation', selectInput('confirmation', EVENT_CONFIRMATIONS.map(x => opt(x.id,x.label,obj.confirmation||'confirmed')).join(''))) + '</div>',
+      '<div class="field-row" id="event-time-fields">' + field('Starts at', 'start', textInput('start', obj.start, 'time'))
+      + field('Ends at (optional)', 'end', textInput('end', obj.end, 'time')) + '</div>',
+      '<div class="field-row">' + field('Repeats', 'repeat', selectInput('repeat', REPEATS.map(r => opt(r.id,r.label,obj.repeat||'none')).join('')))
+      + '<div id="event-until-field">' + field('Repeat until (optional)', 'until', dateInput('until', obj.until)) + '</div></div>',
+      field('Who is involved?', 'people', textInput('people', obj.people, 'text', false, 250), 'Names, guests, carers or anyone involved in making the plan work.'),
+      field('Where?', 'location', textInput('location', obj.location, 'text', false, 200)),
+      field('Transport / getting there', 'transport', textInput('transport', obj.transport, 'text', false, 300), 'Cars, parking, flights, pick-ups, access, accommodation, etc.'),
+      field('Care / handovers', 'care', textInput('care', obj.care, 'text', false, 300), 'Childcare, who has the kids, or handover arrangements.'),
+      field('Logistics readiness', 'logistics', selectInput('logistics', LOGISTICS.map(x => opt(x.id,x.label,obj.logistics||'needs')).join(''))),
+      field('Other notes', 'notes', textareaInput('notes', obj.notes)),
+      obj.id && obj.repeat !== 'none' ? '<p class="inline-legend">Editing this activity changes the entire repeating series. To skip just one date, use “Skip this occurrence” on that day.</p>' : '',
+      obj.id ? '<button type="button" class="danger-button" data-action="remove-event" data-id="' + esc(obj.id) + '" style="align-self:flex-start">Delete ' + (obj.repeat !== 'none' ? 'entire series' : 'activity') + '</button>' : ''
+    ].join('');
+  }
   if (kind === 'task') {
     return [
       field('Action title', 'title', textInput('title', obj.title, 'text', true)),
@@ -347,16 +379,25 @@ function formRows(kind, obj = {}) {
   ].join('');
 }
 function edit(kind, id = '', preset = {}) {
-  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects : state.records;
+  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects
+    : kind === 'record' ? state.records : state.events;
   const obj = id ? collection.find(x => x.id === id) : preset;
   if (!obj) return;
   editContext = { kind, id };
-  const title = kind === 'task' ? 'action' : kind === 'project' ? 'outcome' : 'reference';
+  const title = kind === 'task' ? 'action' : kind === 'project' ? 'outcome'
+    : kind === 'event' ? 'activity' : 'reference';
   $('dialog-title').textContent = id ? 'Edit ' + title : 'New ' + title;
   $('submit-entity').textContent = id ? 'Save changes' : 'Create ' + title;
   $('form-fields').innerHTML = formRows(kind, obj);
+  if (kind === 'event') toggleEventFormFields();
   $('entity-dialog').showModal();
   $('form-fields').querySelector('input[name="title"]')?.focus();
+}
+function toggleEventFormFields() {
+  const timeFields = $('event-time-fields');
+  const repeatUntil = $('event-until-field');
+  if (timeFields) timeFields.hidden = $('f-timing')?.value !== 'timed';
+  if (repeatUntil) repeatUntil.hidden = $('f-repeat')?.value === 'none';
 }
 function saveEntity(event) {
   event.preventDefault();
@@ -367,10 +408,27 @@ function saveEntity(event) {
   if (!title) return showToast('Add a title first.');
   if (kind === 'task' && vals.repeat !== 'none' && !vals.due) return showToast('Repeating actions need a due date.');
   if (kind === 'record' && vals.link && !safeLink(vals.link)) return showToast('Please enter an http:// or https:// link.');
-  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects : state.records;
+  if (kind === 'event') {
+    if (!parseDate(vals.date)) return showToast('Select a valid activity date.');
+    if (vals.endDate && (!parseDate(vals.endDate) || vals.endDate < vals.date || dayDelta(vals.endDate, vals.date) > 30)) {
+      return showToast('End date must be within 30 days of the start.');
+    }
+    if (vals.repeat !== 'none' && vals.until && (!parseDate(vals.until) || vals.until < vals.date)) {
+      return showToast('Repeat-until must be on or after the start date.');
+    }
+    if (vals.timing === 'timed' && !vals.start) return showToast('Enter the activity start time.');
+    if (vals.timing === 'timed' && vals.end && vals.end <= vals.start && (!vals.endDate || vals.endDate === vals.date)) {
+      return showToast('End time must come after the start time. For overnight plans use a multi-day activity.');
+    }
+  }
+  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects
+    : kind === 'record' ? state.records : state.events;
   const old = editContext.id ? collection.find(item => item.id === editContext.id) : null;
   const base = old || { id: uid(), createdAt: new Date().toISOString() };
-  const shared = { ...base, title, area: vals.area, owner: vals.owner || '', updatedAt: new Date().toISOString() };
+  const eventAreas = { family:'family', care:'family', work:'ventures', social:'people',
+    appointment:'health', home:'home', travel:'travel', personal:'personal', other:'personal' };
+  const shared = { ...base, title, area: kind === 'event' ? (eventAreas[vals.type] || 'personal') : vals.area,
+    owner: vals.owner || '', updatedAt: new Date().toISOString() };
   let item;
   if (kind === 'task') {
     item = { ...shared, due: vals.due || '', notes: vals.notes || '', priority: vals.priority,
@@ -392,6 +450,17 @@ function saveEntity(event) {
     }
   } else if (kind === 'project') {
     item = { ...shared, due: vals.due || '', notes: vals.notes || '', status: vals.status };
+  } else if (kind === 'event') {
+    item = {
+      ...shared, date: vals.date, endDate: vals.endDate || vals.date,
+      type: vals.type, people: vals.people || '', location: vals.location || '',
+      transport: vals.transport || '', care: vals.care || '', notes: vals.notes || '',
+      timing: vals.timing, start: vals.timing === 'timed' ? vals.start : '',
+      end: vals.timing === 'timed' ? vals.end : '',
+      confirmation: vals.confirmation, logistics: vals.logistics,
+      repeat: vals.repeat, until: vals.repeat !== 'none' ? (vals.until || '') : '',
+      skip: old && old.date === vals.date && old.repeat === vals.repeat ? [...(old.skip || [])] : []
+    };
   } else {
     item = { ...shared, date: vals.date || '', link: safeLink(vals.link), details: vals.details || '' };
   }
@@ -438,16 +507,35 @@ function focusTask(id) {
   showToast(task.focus ? 'Added to your top three.' : 'Removed from your top three.');
 }
 function deleteEntity(kind, id) {
-  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects : state.records;
+  const collection = kind === 'task' ? state.tasks : kind === 'project' ? state.projects
+    : kind === 'record' ? state.records : state.events;
   const item = collection.find(x => x.id === id);
   if (!item) return;
-  const extra = kind === 'project' ? ' Its actions will be kept, but unlinked.' : '';
+  const extra = kind === 'project' ? ' Its actions will be kept, but unlinked.'
+    : kind === 'event' && item.repeat !== 'none' ? ' All recurring occurrences will be removed.' : '';
   if (!window.confirm('Delete "' + item.title + '"?' + extra + ' This cannot be undone.')) return;
   collection.splice(collection.indexOf(item), 1);
   if (kind === 'project') state.tasks.forEach(t => { if (t.projectId === id) t.projectId = ''; });
   persist();
   if ($('entity-dialog').open) $('entity-dialog').close();
   render(); showToast('Deleted.');
+}
+function skipEventOccurrence(id, date) {
+  const event = state.events.find(e => e.id === id);
+  if (!event || event.repeat === 'none' || !parseDate(date)) return;
+  if (!window.confirm('Skip "' + event.title + '" on ' + niceDate(date, { day:'numeric', month:'short', year:'numeric' })
+    + '? Other occurrences will remain.')) return;
+  event.skip = [...new Set([...(event.skip || []), date])];
+  event.updatedAt = new Date().toISOString();
+  persist(); render(); showToast('Skipped only this occurrence.');
+}
+function showScheduleDay(date) {
+  if (!parseDate(date)) return;
+  scheduleOffset = Math.floor(dayDelta(date, todayISO()) / 7);
+  if (activeView !== 'schedule') goto('schedule');
+  else render();
+  const target = document.getElementById('day-' + date);
+  if (target) target.scrollIntoView({ block: 'start', behavior: 'smooth' });
 }
 function saveOwners() {
   const owners = $('owner-settings').value.split(/\r?\n/).map(n=>n.trim().slice(0,70)).filter(Boolean);
@@ -473,12 +561,13 @@ async function importBackup(file) {
   if (file.size > 2 * 1024 * 1024) return showToast('That backup is too large (2 MB limit).');
   try {
     const imported = normaliseState(JSON.parse(await file.text()));
-    if (!window.confirm('Replace everything in this browser with ' + imported.tasks.length + ' actions, '
-      + imported.projects.length + ' outcomes and ' + imported.records.length + ' reference cards? Export a backup first if needed.')) return;
+    if (!window.confirm('Replace everything in this browser with ' + imported.events.length + ' activities, '
+      + imported.tasks.length + ' actions, ' + imported.projects.length + ' outcomes and '
+      + imported.records.length + ' reference cards? Export a backup first if needed.')) return;
     state = imported;
     persist(); $('settings-dialog').close();
     filter = { search: '', status: 'open', area: 'all', owner: 'all', project: 'all' };
-    goto('overview');
+    scheduleOffset = 0; scheduleSpan = 7; goto('schedule');
     showToast('Backup imported successfully.');
   } catch (err) { showToast('Import failed: ' + err.message); }
   finally { $('import-file').value = ''; }
@@ -486,7 +575,8 @@ async function importBackup(file) {
 function resetWorkspace() {
   if (window.prompt('This will erase all Life Admin data in this browser. Type CLEAR to continue:') !== 'CLEAR') return;
   state = initialState(); persist();
-  $('settings-dialog').close(); goto('overview'); showToast('Workspace cleared.');
+  $('settings-dialog').close(); scheduleOffset = 0; scheduleSpan = 7;
+  goto('schedule'); showToast('Workspace cleared.');
 }
 function openSettings() {
   $('owner-settings').value = state.settings.owners.join('\n');
@@ -499,9 +589,27 @@ document.addEventListener('click', event => {
   if (!button) return;
   const { action, id } = button.dataset;
   if (action === 'goto') { goto(button.dataset.view || 'tasks', button.dataset.status || ''); return; }
+  if (action === 'goto-day' || action === 'jump-day') return showScheduleDay(button.dataset.date);
+  if (action === 'schedule-prev') { scheduleOffset--; render(); return; }
+  if (action === 'schedule-next') { scheduleOffset++; render(); return; }
+  if (action === 'schedule-today') { scheduleOffset = 0; render(); return; }
+  if (action === 'print-schedule') { window.print(); return; }
+  if (action === 'copy-schedule') {
+    if (!navigator.clipboard?.writeText) return showToast('Clipboard unavailable in this browser. Use Print instead.');
+    const agenda = schedulePlainText(state, addDays(todayISO(), scheduleOffset * 7), scheduleSpan);
+    navigator.clipboard.writeText(agenda)
+      .then(() => showToast('Agenda copied. Paste it into a message or note.'))
+      .catch(() => showToast('Could not copy. Try Print instead.'));
+    return;
+  }
   if (action === 'area') { filter.area = id; filter.status = 'open'; filter.project = 'all'; goto('tasks'); return; }
   if (action === 'view-project') { filter.project = id; filter.area = 'all'; filter.status = 'all'; goto('tasks'); return; }
   if (action === 'clear-project') { filter.project = 'all'; render(); return; }
+  if (action === 'new-event') return edit('event', '', { date: todayISO(), type:'family', timing:'tbc', logistics:'needs' });
+  if (action === 'new-event-date') return edit('event', '', { date: button.dataset.date, type:'family', timing:'tbc', logistics:'needs' });
+  if (action === 'new-task-date') return edit('task', '', { due: button.dataset.date, area:'personal' });
+  if (action === 'edit-event') return edit('event', id);
+  if (action === 'skip-event') return skipEventOccurrence(id, button.dataset.date);
   if (action === 'new-task') return edit('task');
   if (action === 'new-project') return edit('project');
   if (action === 'new-record') return edit('record');
@@ -511,6 +619,7 @@ document.addEventListener('click', event => {
   if (action === 'edit-record') return edit('record',id);
   if (action === 'check-task') return completeTask(id);
   if (action === 'focus-task') return focusTask(id);
+  if (action === 'remove-event') return deleteEntity('event',id);
   if (action === 'remove-task') return deleteEntity('task',id);
   if (action === 'remove-project') return deleteEntity('project',id);
   if (action === 'remove-record') return deleteEntity('record',id);
@@ -544,6 +653,8 @@ document.addEventListener('input', event => {
   }
 });
 document.addEventListener('change', event => {
+  if (event.target.id === 'f-timing' || event.target.id === 'f-repeat') toggleEventFormFields();
+  if (event.target.id === 'schedule-span') { scheduleSpan = Number(event.target.value) === 14 ? 14 : 7; render(); }
   if (event.target.id === 'task-status') { filter.status = event.target.value; renderTaskListOnly(); }
   if (event.target.id === 'task-area') { filter.area = event.target.value; renderTaskListOnly(); }
   if (event.target.id === 'task-owner') { filter.owner = event.target.value; renderTaskListOnly(); }
@@ -555,6 +666,12 @@ window.addEventListener('storage', event => {
   if (event.key !== STORAGE_KEY || !event.newValue) return;
   try { state = normaliseState(JSON.parse(event.newValue)); render(); showToast('Workspace updated from another tab.'); }
   catch (error) { console.warn('Ignoring invalid storage update', error); }
+});
+document.addEventListener('visibilitychange', () => {
+  if (!document.hidden) {
+    $('current-date').textContent = new Intl.DateTimeFormat('en-AU',{ weekday:'short',day:'numeric',month:'short',year:'numeric' }).format(new Date());
+    render();
+  }
 });
 state = load();
 checkStorage();
