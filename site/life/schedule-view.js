@@ -207,7 +207,7 @@ export function schedulePlainText(state, from = todayISO(), count = 7) {
   const days = scheduleDays(state, from, count);
   const lines = ['LIFE ADMIN · ' + dateLong(from) + ' – ' + dateLong(addDays(from, count - 1))];
   for (const day of days) {
-    lines.push('', humanDay(day.date, from) + ', ' + dateLong(day.date));
+    lines.push('', humanDay(day.date, todayISO()) + ', ' + dateLong(day.date));
     const events = day.events.filter(activeEvent);
     if (!events.length && !day.tasks.length && !day.records.length) lines.push('  No plans recorded');
     for (const e of events) {
