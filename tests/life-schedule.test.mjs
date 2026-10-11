@@ -29,7 +29,7 @@ test('existing v1 exports import without activity data loss', () => {
 
 test('event import validates times, dates, statuses and unknown fields', () => {
   const loaded = withEvents([
-    event({ start:'09:45', end:'17:30', surprise:'unsafe', until:'2026-10-10',repeat:'weekly' }),
+    event({ start:'09:45', end:'17:30', surprise:'unsafe', until:'2026-11-10',repeat:'weekly' }),
     event({ id:'event-2', start:'29:30', end:'72:00', type:'unknown', timing:'tbc',
       title:'<img src=x>', transport:'<script>alert(1)</script>' }),
     event({ id:'event-3', date:'2026-02-30' })
