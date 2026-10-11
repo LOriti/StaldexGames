@@ -209,3 +209,14 @@
   .plan-aside { display:block; margin-top:16px; }
   .plan-watch { page-break-inside:avoid; }
 }
+
+.plan-day-footer {
+  border-top:1px solid #e9eee6; padding:9px 13px 11px; background:#fafcf8;
+  display:flex; flex-wrap:wrap; gap:7px; justify-content:flex-start;
+}
+.plan-day-footer button {
+  background:transparent; border:1px solid #d8e3d6; color:#56815f; font-size:10px;
+  font-weight:800; border-radius:7px; padding:6px 9px;
+}
+.plan-day-footer button:hover { background:#eaf3e5; }
+@media print { .plan-day-footer { display:none !important; } }
