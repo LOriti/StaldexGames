@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#173b2d">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="description" content="A private-by-default local life admin workspace for tasks, projects, recurring responsibilities and useful references.">
+  <title>Life Admin — Staldex</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <div class="shell">
+    <aside class="sidebar" aria-label="Primary navigation">
+      <a class="brand" href="https://staldex.com/" aria-label="Staldex home">
+        <span class="brand-mark">S<span>.</span></span>
+        <span class="brand-copy">STALDEX <small>THE PERSONAL DESK</small></span>
+      </a>
+      <div class="sidebar-heading">LIFE ADMIN <span>01 / 05</span></div>
+      <nav class="nav" id="main-nav" aria-label="Life Admin views">
+        <button type="button" data-view="overview" class="nav-item active"><span class="nav-icon">◫</span> Overview <span class="nav-no">01</span></button>
+        <button type="button" data-view="tasks" class="nav-item"><span class="nav-icon">☑</span> Actions <span class="nav-no">02</span></button>
+        <button type="button" data-view="projects" class="nav-item"><span class="nav-icon">▦</span> Outcomes <span class="nav-no">03</span></button>
+        <button type="button" data-view="records" class="nav-item"><span class="nav-icon">▤</span> Reference <span class="nav-no">04</span></button>
+        <button type="button" data-view="review" class="nav-item"><span class="nav-icon">◷</span> Weekly reset <span class="nav-no">05</span></button>
+      </nav>
+      <div class="sidebar-bottom">
+        <div class="storage-line"><span class="status-dot" id="storage-dot"></span><span id="storage-label">Checking local storage…</span></div>
+        <p>Your information stays in this browser. Export a backup to keep a copy.</p>
+        <a href="https://staldex.com/lrmp/">Open meal planner ↗</a>
+      </div>
+    </aside>
+    <div class="workspace">
+      <header class="topbar">
+        <div class="mobile-logo">STALDEX <span>/ LIFE</span></div>
+        <div class="topbar-trail">PERSONAL / OPERATIONS / <strong id="breadcrumb">OVERVIEW</strong></div>
+        <div class="topbar-actions">
+          <span class="today-chip" id="current-date"></span>
+          <button class="icon-button" id="settings-trigger" type="button" aria-label="Settings and backup" title="Settings and backup">⚙</button>
+          <button class="primary-button add-button" data-action="new-task" type="button"><span>＋</span> New action</button>
+        </div>
+      </header>
+      <div id="storage-warning" class="warning-banner" hidden role="alert">Local storage is unavailable. Changes will not survive a reload. Please enable storage before relying on this page.</div>
+      <main id="view" class="main-content" tabindex="-1">
+        <div class="loading-state">Opening your workspace…</div>
+      </main>
+      <footer class="page-footer">
+        <span>STALDEX / LIFE ADMIN · V1</span>
+        <span>Local-first. No account, no syncing, no silent sharing.</span>
+      </footer>
+    </div>
+  </div>
+
+  <dialog id="entity-dialog" class="editor-dialog" aria-labelledby="dialog-title">
+    <form id="entity-form">
+      <div class="dialog-heading">
+        <div><p class="kicker">LIFE ADMIN / EDITOR</p><h2 id="dialog-title">New action</h2></div>
+        <button type="button" class="close-button" data-action="close-editor" aria-label="Close editor">×</button>
+      </div>
+      <div id="form-fields" class="form-fields"></div>
+      <div class="dialog-footer">
+        <button type="button" class="quiet-button" data-action="close-editor">Cancel</button>
+        <button type="submit" class="primary-button" id="submit-entity">Save</button>
+      </div>
+    </form>
+  </dialog>
+
+  <dialog id="settings-dialog" class="editor-dialog settings-dialog" aria-labelledby="settings-title">
+    <div class="dialog-heading">
+      <div><p class="kicker">YOUR SPACE</p><h2 id="settings-title">Settings & backup</h2></div>
+      <button type="button" class="close-button" data-action="close-settings" aria-label="Close settings">×</button>
+    </div>
+    <div class="form-fields">
+      <div class="settings-panel">
+        <h3>People</h3>
+        <p>Used for assigning actions, outcomes and reminders. One name per line.</p>
+        <label for="owner-settings">Available owners</label>
+        <textarea id="owner-settings" rows="4" maxlength="500" spellcheck="false"></textarea>
+        <button type="button" class="secondary-button" data-action="save-owners">Save people</button>
+      </div>
+      <div class="settings-panel">
+        <h3>Your data</h3>
+        <p>All actions, outcomes, reference cards and your weekly note are stored locally on this device and browser. There is no cloud sync or login in this version.</p>
+        <div class="action-pair">
+          <button type="button" class="secondary-button" data-action="export">↓ Export JSON backup</button>
+          <button type="button" class="secondary-button" data-action="import">↑ Import backup</button>
+        </div>
+        <p class="fine-print">Imported data replaces the current workspace. Exports contain everything, so store them somewhere secure.</p>
+      </div>
+      <div class="settings-panel">
+        <h3>Privacy & practicalities</h3>
+        <p>This page is unlisted but not password-protected. Don't store passwords, identity numbers, banking credentials or detailed medical records. Clearing browser data may erase local changes.</p>
+        <button type="button" class="danger-button" data-action="reset">Clear this workspace</button>
+      </div>
+    </div>
+    <div class="dialog-footer"><button type="button" class="primary-button" data-action="close-settings">Done</button></div>
+  </dialog>
+
+  <input id="import-file" type="file" accept=".json,application/json" hidden>
+  <div id="toast" class="toast" role="status" aria-live="polite" hidden></div>
+</body>
+</html>
