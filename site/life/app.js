@@ -4,7 +4,7 @@ import {
   todayISO, addDays, nextRecurrence, dayDelta, dueText, niceDate, uid, parseDate,
   esc, safeLink, openTask, orderedTasks, metrics, projectProgress
 } from './core.js';
-import { renderNextDays, renderNextDaysPreview } from './schedule-view.js';
+import { renderNextDays, renderNextDaysPreview, schedulePlainText } from './schedule-view.js';
 
 const $ = id => document.getElementById(id);
 const viewEl = $('view');
@@ -593,6 +593,15 @@ document.addEventListener('click', event => {
   if (action === 'schedule-prev') { scheduleOffset--; render(); return; }
   if (action === 'schedule-next') { scheduleOffset++; render(); return; }
   if (action === 'schedule-today') { scheduleOffset = 0; render(); return; }
+  if (action === 'print-schedule') { window.print(); return; }
+  if (action === 'copy-schedule') {
+    if (!navigator.clipboard?.writeText) return showToast('Clipboard unavailable in this browser. Use Print instead.');
+    const agenda = schedulePlainText(state, addDays(todayISO(), scheduleOffset * 7), scheduleSpan);
+    navigator.clipboard.writeText(agenda)
+      .then(() => showToast('Agenda copied. Paste it into a message or note.'))
+      .catch(() => showToast('Could not copy. Try Print instead.'));
+    return;
+  }
   if (action === 'area') { filter.area = id; filter.status = 'open'; filter.project = 'all'; goto('tasks'); return; }
   if (action === 'view-project') { filter.project = id; filter.area = 'all'; filter.status = 'all'; goto('tasks'); return; }
   if (action === 'clear-project') { filter.project = 'all'; render(); return; }
