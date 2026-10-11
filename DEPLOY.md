@@ -86,6 +86,27 @@ normal site deploy. Unlisted on the same terms as LRMP, SEND IT and BRIZZY: no l
 homepage and a `noindex` meta tag. It loads Fraunces, Newsreader and Inter from Google Fonts,
 allowed for a standalone project page (the no-external-fonts rule binds the shell).
 
+## LIFE ADMIN (personal planning, unlisted at staldex.com/life/)
+
+Static ES module site in site/life/ — no bundler or Worker. Cloudflare Pages
+serves index.html from /life/. No homepage link; it has noindex/nofollow and
+should remain unlisted.
+
+The default landing view is **Next days**, a rolling 7-/14-day activity board
+with recurring routines, multi-day plans, handovers, transport, due actions,
+coordination flags, copyable text agenda and print/PDF. The previous Overview,
+Actions, Outcomes, Reference and Weekly reset remain available.
+
+**Persistence is browser-local, not server-backed.** Existing version 1 JSON
+backups (which have no events field) import without dropping their tasks.
+No family or personal details belong in this public Git repo. Until this
+gets authenticated multi-device storage, it must not be described as a shared
+calendar or a secure personal records vault.
+
+Tests (repo root):
+
+    node --test tests/life-admin.test.mjs tests/life-schedule.test.mjs
+
 ## Notes
 
 - Every submitted run is its own board entry — one player can hold multiple of the 10
