@@ -88,6 +88,8 @@ function dayCard(day, today) {
       : '<div class="plan-day-empty"><span>Nothing planned yet</span><button type="button" data-action="new-event-date" data-date="' + esc(day.date) + '">＋ Plan something</button></div>')
     + (day.records.length ? '<div class="plan-day-section"><p class="plan-day-section-label">Important dates</p>' + day.records.map(recordSnippet).join('') + '</div>' : '')
     + (day.tasks.length ? '<div class="plan-day-section"><p class="plan-day-section-label">Actions due</p>' + day.tasks.map(taskSnippet).join('') + '</div>' : '')
+    + '<div class="plan-day-footer"><button type="button" data-action="new-event-date" data-date="' + esc(day.date) + '">＋ Activity</button>'
+    + '<button type="button" data-action="new-task-date" data-date="' + esc(day.date) + '">＋ Action due</button></div>'
     + '</section>';
 }
 function dayRail(day, today) {
