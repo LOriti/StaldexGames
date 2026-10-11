@@ -344,7 +344,7 @@ export function coordinationReasons(e) {
 // Flags potential overlapping timed activities only when they have an owner or
 // a named participant in common. Distinct people having parallel plans is fine.
 export function possibleClashes(day) {
-  const timed = day.events.filter(e => e.timing === 'timed' && !e.continuation && e.start && e.end && e.end > e.start);
+  const timed = day.events.filter(e => e.confirmation !== 'cancelled' && e.timing === 'timed' && !e.continuation && e.start && e.end && e.end > e.start);
   const persons = e => new Set([e.owner, ...(e.people || '').split(/[,;&+]/)]
     .map(n => n.trim().toLocaleLowerCase('en-AU'))
     .filter(n => n && !['shared', 'everyone', 'all'].includes(n)));
