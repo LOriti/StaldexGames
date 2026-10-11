@@ -16,24 +16,25 @@ const view = await import(viewUrl);
 
 function sample() {
   const s=core.initialState();
+  const day=core.todayISO();
   s.events=[
     {
       id:'carer',title:'Carer shift',area:'family',type:'care',owner:'Me',people:'Alex',
-      date:'2026-10-12',endDate:'2026-10-12',timing:'timed',start:'13:00',end:'17:00',
+      date:day,endDate:day,timing:'timed',start:'13:00',end:'17:00',
       location:'Home',transport:'',care:'Alex covers childcare',
       notes:'Confirm at 12',logistics:'needs',repeat:'weekly',until:'',
       skip:[],confirmation:'tentative'
     },
     {
       id:'trip',title:'Weekend away',type:'travel',owner:'Partner',
-      date:'2026-10-12',endDate:'2026-10-15',timing:'all-day',
+      date:day,endDate:core.addDays(day,3),timing:'all-day',
       confirmation:'confirmed',logistics:'clear',repeat:'none',skip:[],
       location:'Regional WA'
     }
   ];
   s.tasks=[{
     id:'task',title:'Buy groceries',status:'todo',priority:'high',
-    due:'2026-10-12',owner:'Me',area:'home'
+    due:day,owner:'Me',area:'home'
   }];
   return core.normaliseState(s);
 }
@@ -50,7 +51,7 @@ test('rolling dayboard displays logistics with separate actions',()=>{
   assert.match(markup,/id="schedule-span"/);
 });
 test('agenda export contains activity, care, transport and due actions',()=>{
-  const text=view.schedulePlainText(sample(),'2026-10-12',7);
+  const text=view.schedulePlainText(sample(),core.todayISO(),7);
   assert.match(text,/Carer shift/);
   assert.match(text,/Care: Alex covers childcare/);
   assert.match(text,/To coordinate: Confirm activity, Organise logistics/);
