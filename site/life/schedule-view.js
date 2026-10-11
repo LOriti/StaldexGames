@@ -68,7 +68,6 @@ function recordSnippet(record) {
 function dayCard(day, today) {
   const dayId = 'day-' + day.date;
   const scheduled = day.events.filter(activeEvent);
-  const care = scheduled.filter(e => e.type === 'care').length;
   const coordination = scheduled.filter(e => coordinationReasons(e).length).length;
   const clashes = possibleClashes(day);
   const isToday = day.date === today;
@@ -89,7 +88,6 @@ function dayCard(day, today) {
       : '<div class="plan-day-empty"><span>Nothing planned yet</span><button type="button" data-action="new-event-date" data-date="' + esc(day.date) + '">＋ Plan something</button></div>')
     + (day.records.length ? '<div class="plan-day-section"><p class="plan-day-section-label">Important dates</p>' + day.records.map(recordSnippet).join('') + '</div>' : '')
     + (day.tasks.length ? '<div class="plan-day-section"><p class="plan-day-section-label">Actions due</p>' + day.tasks.map(taskSnippet).join('') + '</div>' : '')
-    + (care && !day.tasks.length ? '' : '')
     + '</section>';
 }
 function dayRail(day, today) {
@@ -164,6 +162,8 @@ export function renderNextDays(state, settings = {}) {
     + '<button type="button" class="secondary-button" data-action="schedule-prev" title="Previous week">←</button>'
     + '<button type="button" class="secondary-button" data-action="schedule-today"' + (offset===0?' disabled':'') + '>Today</button>'
     + '<button type="button" class="secondary-button" data-action="schedule-next" title="Next week">→</button>'
+    + '<button type="button" class="secondary-button" data-action="copy-schedule" title="Copy a plain-text summary to share">Copy</button>'
+    + '<button type="button" class="secondary-button" data-action="print-schedule" title="Print or save a PDF">Print</button>'
     + '<label class="sr-only" for="schedule-span">Days shown</label><select id="schedule-span" aria-label="Days shown">'
     + '<option value="7"' + (count===7?' selected':'') + '>7 days</option>'
     + '<option value="14"' + (count===14?' selected':'') + '>14 days</option>'
@@ -198,4 +198,31 @@ export function renderNextDaysPreview(state) {
     }).join('') + '</div>'
     + (!n ? '<p class="plan-preview-hint">Start by adding the regular pattern — work days, carers, school runs, family commitments and travel.</p>' : '')
     + '</section>';
+}
+
+
+// Creates a shareable agenda without transmitting any data; callers decide
+// whether to copy or print. Do not include cancelled items in shared summaries.
+export function schedulePlainText(state, from = todayISO(), count = 7) {
+  const days = scheduleDays(state, from, count);
+  const lines = ['LIFE ADMIN · ' + dateLong(from) + ' – ' + dateLong(addDays(from, count - 1))];
+  for (const day of days) {
+    lines.push('', humanDay(day.date, from) + ', ' + dateLong(day.date));
+    const events = day.events.filter(activeEvent);
+    if (!events.length && !day.tasks.length && !day.records.length) lines.push('  No plans recorded');
+    for (const e of events) {
+      const kind = kindOf(e.type).label;
+      lines.push('  ' + eventTime(e) + ' · ' + e.title + ' [' + kind + ']'
+        + (e.confirmation === 'tentative' ? ' (tentative)' : ''));
+      if (e.people || e.owner) lines.push('    Who: ' + (e.people || e.owner));
+      if (e.location) lines.push('    Where: ' + e.location);
+      if (e.transport) lines.push('    Transport: ' + e.transport);
+      if (e.care) lines.push('    Care: ' + e.care);
+      const reasons = coordinationReasons(e);
+      if (reasons.length) lines.push('    To coordinate: ' + reasons.join(', '));
+    }
+    for (const record of day.records) lines.push('  Important date: ' + record.title);
+    for (const task of day.tasks) lines.push('  Action due: ' + task.title + (task.owner ? ' (' + task.owner + ')' : ''));
+  }
+  return lines.join('\n');
 }
