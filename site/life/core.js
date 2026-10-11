@@ -225,6 +225,8 @@ export function normaliseState(raw) {
     return {
       ...base(x),
       date,
+      endDate: (dateOrBlank(x.endDate) >= date && dayDelta(dateOrBlank(x.endDate), date) <= 30)
+        ? dateOrBlank(x.endDate) : date,
       type: enumOr(x.type, eventTypeIds, 'family'),
       confirmation: enumOr(x.confirmation, confirmationIds, 'confirmed'),
       timing,
@@ -291,22 +293,27 @@ export function eventsInRange(events, start, end) {
   for (const event of events) {
     if (!parseDate(event.date)) continue;
     const repeat = repeatIds.has(event.repeat) ? event.repeat : 'none';
-    if (event.date > end || (event.until && event.until < start)) continue;
-    let at = event.date < start && repeat !== 'none'
-      ? nextRecurrence(event.date, repeat, addDays(start, -1))
+    const duration = Math.max(0, Math.min(30, dayDelta(event.endDate || event.date, event.date)));
+    const searchStart = addDays(start, -duration);
+    if (event.date > end || (event.until && event.until < searchStart)) continue;
+    let at = event.date < searchStart && repeat !== 'none'
+      ? nextRecurrence(event.date, repeat, addDays(searchStart, -1))
       : event.date;
-    // The requested UI range is at most 14 days, but this also safely handles
-    // larger ranges with a finite iteration guard.
     for (let i = 0; at && at <= end && i < 3660; i++) {
-      if (at >= start && (!event.until || at <= event.until)
-        && !(event.skip || []).includes(at)) {
-        out.push({ ...event, occurrenceDate: at });
+      if ((!event.until || at <= event.until) && !(event.skip || []).includes(at)) {
+        for (let j = 0; j <= duration; j++) {
+          const date = addDays(at, j);
+          if (date >= start && date <= end) {
+            out.push({ ...event, occurrenceDate: date, seriesDate: at, continuation: j > 0 });
+          }
+        }
       }
       if (repeat === 'none' || (event.until && at >= event.until)) break;
       at = nextRecurrence(event.date, repeat, at);
     }
   }
   return out.sort((a,b) => a.occurrenceDate.localeCompare(b.occurrenceDate)
+    || (a.continuation ? '0' : '1').localeCompare(b.continuation ? '0' : '1')
     || (a.timing === 'timed' ? '1' : '0').localeCompare(b.timing === 'timed' ? '1' : '0')
     || (a.start || '').localeCompare(b.start || '')
     || a.title.localeCompare(b.title));
@@ -337,7 +344,7 @@ export function coordinationReasons(e) {
 // Flags potential overlapping timed activities only when they have an owner or
 // a named participant in common. Distinct people having parallel plans is fine.
 export function possibleClashes(day) {
-  const timed = day.events.filter(e => e.timing === 'timed' && e.start && e.end && e.end > e.start);
+  const timed = day.events.filter(e => e.timing === 'timed' && !e.continuation && e.start && e.end && e.end > e.start);
   const persons = e => new Set([e.owner, ...(e.people || '').split(/[,;&+]/)]
     .map(n => n.trim().toLocaleLowerCase('en-AU'))
     .filter(n => n && !['shared', 'everyone', 'all', 'me', 'partner'].includes(n)));
