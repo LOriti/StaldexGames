@@ -107,6 +107,23 @@ Tests (repo root):
 
     node --test tests/life-admin.test.mjs tests/life-schedule.test.mjs tests/life-schedule-view.test.mjs
 
+## BRAIN (private portfolio state, behind login at staldex.com/brain/)
+
+Unlike everything above, this is **authenticated, not just unlisted**. The page shell
+(`site/brain/`) ships with the normal Pages deploy but contains no Brain content; it reads the
+private `LOriti/brain` repo live through its own read-only Worker (`worker-brain/`, route
+`staldex.com/api/brain/*`) using a GitHub token stored as a Worker secret. Cloudflare Access
+gates both `/brain` and `/api/brain`, and the Worker re-verifies the Access token, so it serves
+nothing until Access is configured. Never commit Brain content, the token, or an email
+allowlist to this repo.
+
+One-time setup (Access app, two `wrangler.toml` values, a fine-grained read-only token, Git
+connect with root directory `worker-brain/`) and the smoke test: `worker-brain/README.md`.
+
+Tests (repo root):
+
+    node --test tests/brain-worker.test.mjs tests/brain-markdown.test.mjs
+
 ## Notes
 
 - Every submitted run is its own board entry — one player can hold multiple of the 10

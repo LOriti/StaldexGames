@@ -1,0 +1,26 @@
+name = "brain-viewer"
+main = "src/index.js"
+compatibility_date = "2026-06-01"
+
+# Same pattern as worker/ and worker-lrmp/: served under the main site's domain, deployed
+# via Cloudflare's Git-connected build with root directory `worker-brain/`.
+#
+# Unlike LRMP this is NOT protected by an unlisted URL. Cloudflare Access must sit in
+# front of both staldex.com/brain and staldex.com/api/brain (see README.md), and the
+# Worker re-verifies the Access token itself, so it fails closed if Access is missing.
+routes = [
+  { pattern = "staldex.com/api/brain/*", zone_name = "staldex.com" }
+]
+
+# Dashboard-set values survive Git-connected deploys only with this on. Set GITHUB_TOKEN
+# as a secret and (optionally) ALLOWED_EMAILS as a variable under Settings → Variables
+# and Secrets. Neither belongs in this public file — a value here would override them.
+keep_vars = true
+
+[vars]
+# Zero Trust → Settings → Custom pages shows the team domain, e.g. "leon.cloudflareaccess.com".
+ACCESS_TEAM_DOMAIN = "REPLACE_ME"
+# Zero Trust → Access → Applications → Brain → Overview → "Application Audience (AUD) Tag".
+ACCESS_AUD = "REPLACE_ME"
+BRAIN_REPO = "LOriti/brain"
+BRAIN_REF = "main"
