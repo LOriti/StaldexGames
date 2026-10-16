@@ -4,6 +4,17 @@ A summary of every system change made across the build, from the first prototype
 
 ---
 
+## Unreleased — fix: game freezing mid-day
+
+- **Mid-day freeze fixed**: if a follow-up event (pre-workout crash, Imodium rebound,
+  two-scoops, etc.) or a stim crash came due during the short cooldown after an event,
+  the game flashed "EVENT INCOMING", showed nothing, and then ignored every button for
+  the rest of the run. The input lock is now always released, and the follow-up fires
+  on the next action once the cooldown ends. "EVENT INCOMING" also no longer flashes
+  when nothing is actually about to fire.
+
+---
+
 ## v1.0.5 (versionCode 6) — UI pass, leaderboard, project moved into GitHub
 
 > **Status: web-only.** This version shipped to staldex.com/cubicle but was never built
