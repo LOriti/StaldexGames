@@ -270,6 +270,26 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .hand{position:fixed;z-index:59;pointer-events:none;font-family:var(--emoji);font-size:38px;line-height:1;margin-top:6px;filter:drop-shadow(0 3px 0 var(--ink));transform:translate(-30%,0)}
 @media (prefers-reduced-motion: reduce){ .spot,.btn.spot,.coach.in{animation:none} .spot{box-shadow:0 0 0 3px var(--pink)} }
 
+/* intro pages */
+.dots{display:flex;justify-content:center;gap:6px}
+.dots i{width:8px;height:8px;border-radius:50%;border:2px solid var(--ink);background:transparent}
+.dots i.on{background:var(--ink);width:20px;border-radius:99px}
+.diag{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+.dg.now,.dg.then{border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center}
+.dg.now{background:var(--sun-soft)}
+.dg.then{background:var(--film);color:var(--vhs)}
+.dg b{font-family:var(--font-display);font-weight:400;font-size:16px;line-height:1}
+.dg span{font-size:12px;opacity:.8;grid-row:2}
+.dg.then b{font-family:var(--font-vhs);font-size:20px;letter-spacing:.04em}
+.dgp{grid-column:2;grid-row:1/3;display:flex;align-items:center;gap:5px;font-family:var(--emoji);font-size:24px}
+.dgp em{font-style:normal;font-family:var(--font-display);font-size:16px}
+.dgp i.t{font-style:normal;background:var(--sun);border:2px solid var(--ink);border-radius:9px;width:34px;height:34px;display:grid;place-items:center;font-size:20px}
+.dgp i{font-style:normal}
+.dg.up{align-self:center;font-family:var(--font-display);font-size:14px;color:var(--pink);animation:upbob 1s ease-in-out infinite}
+@keyframes upbob{50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion: reduce){ .dg.up{animation:none} }
+.dg b{white-space:nowrap} .dg.then b{font-size:18px}
+
 </style>
 </head>
 <body>
@@ -524,6 +544,25 @@ RZ.data = {
     ],
   },
 
+  /* Opening story, shown as swipe-through cards before the tutorial. diagram: true draws the 1986 → 2026 explainer. */
+  intro: [
+    { kicker: "2026 · Bev's Beasts Sanctuary", title: 'Meet Kev', art: '🧑 🪶 🛒',
+      text: ["Kev runs his Nan's old animal sanctuary. It has one sad feather, a shopping trolley in the pond and an online review that just says “why”.",
+             "The bank wants it shut by the end of the season."] },
+    { kicker: '1986 · The tape', title: "Nan Bev's camcorder", art: '📼 👵 🐦',
+      text: ["Clearing out the shed, Kev finds Nan Bev's old camcorder. The tape inside is from 1986, the summer she opened Bev's Beasts.",
+             "Kev presses play, and something strange happens. Whatever happens on the tape changes today."] },
+    { kicker: 'How it works', title: 'Merge in 1986. Fix 2026.', diagram: true,
+      text: ["The bottom of the screen is Nan Bev's tape. Drag two matching animals together there to merge them into a better one.",
+             "Every new animal ripples forward in time and fixes part of Kev's sanctuary at the top."] },
+    { kicker: 'The catch', title: 'The Butterfly Effect', art: '🦋 ⏳ 🐦',
+      text: ["Every fix changes something else in 2026 too. Sometimes it's a new gift shop. Sometimes Kev suddenly has a moustache.",
+             "And keep an eye on Doug the pigeon. He's on every tape, in every year. He hasn't aged a feather."] },
+    { kicker: 'Your first job', title: 'Fix the Coop and the Pond', art: '🪶 ➜ 🐔   🛒 ➜ 🐠',
+      text: ["Start small: two areas and a crate of 1986 animals. Each move gets shown to you the first time you need it."],
+      button: 'Press REC' },
+  ],
+
   /* Tutorial: the first steps, shown with a pointing hand. */
   tutorial: [
     { title: 'Press play on 1986', text: 'Tap the Crate to drop an animal onto Nan Bev\'s 1986 tape.' },
@@ -737,15 +776,36 @@ RZ.data = {
   }
   function close() { const m = modal(); m.hidden = true; m.innerHTML = ''; }
 
-  function intro() {
-    open(`<div class="kicker">Bev's Beasts Sanctuary · 2026</div>
-      <h2>Rewind Zoo</h2>
-      <div class="art">🪶 🛒<small>● REC  JUN 14 1986</small></div>
-      <p>Kev's animal sanctuary has one feather, a trolley in the pond and a review that just says "why".</p>
-      <p>Then he finds Nan Bev's camcorder from 1986. Whatever happens on her tape echoes into today. Not always how you'd expect.</p>
-      <div class="row"><button class="btn go" id="go">Press REC</button></div>`, m => {
-      m.querySelector('#go').onclick = () => { close(); RZ.game.introDone(); };
-    });
+  /* opening story: swipe-through cards. replay = true when opened again from the story log */
+  function intro(replay) {
+    const pages = D.intro;
+    let i = 0, x0 = null;
+    const diagram = `<div class="diag" aria-label="Merge animals on the 1986 tape at the bottom; the ripple fixes the 2026 sanctuary at the top">
+        <div class="dg now"><b>2026 · Now</b><span>Kev's sanctuary</span><div class="dgp"><i>🪶</i><em>➜</em><i>🐣</i></div></div>
+        <div class="dg up">ripple ⬆</div>
+        <div class="dg then"><b>1986 · Then</b><span>Nan Bev's tape</span><div class="dgp"><i class="t">🥚</i><em>+</em><i class="t">🥚</i><em>=</em><i class="t">🐣</i></div></div>
+      </div>`;
+    const render = () => {
+      const pg = pages[i], last = i === pages.length - 1;
+      open(`<div class="kicker">${pg.kicker}</div><h2>${pg.title}</h2>
+        ${pg.diagram ? diagram : `<div class="art">${pg.art}${i === 0 ? '<small>● REC  JUN 14 1986</small>' : ''}</div>`}
+        ${pg.text.map(t => `<p>${t}</p>`).join('')}
+        <div class="dots" aria-label="Page ${i + 1} of ${pages.length}">${pages.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+        <div class="row">${last ? '' : `<button class="btn quiet" id="skip">${replay ? 'Close' : 'Skip'}</button>`}
+          <button class="btn go" id="next">${last ? (replay ? 'Close' : (pg.button || 'Start')) : 'Next'}</button></div>`, m => {
+        const card = m.querySelector('.card');
+        const done = () => { close(); if (!replay) RZ.game.introDone(); };
+        m.querySelector('#next').onclick = () => { if (last) done(); else { i++; render(); } };
+        const sk = m.querySelector('#skip'); if (sk) sk.onclick = replay ? close : done;
+        card.addEventListener('pointerdown', e => { x0 = e.clientX; });
+        card.addEventListener('pointerup', e => {   // swipe between pages
+          if (x0 === null) return; const dx = e.clientX - x0; x0 = null;
+          if (dx < -50 && i < pages.length - 1) { i++; render(); } else if (dx > 50 && i > 0) { i--; render(); }
+        });
+      });
+      RZ.sfx.select();
+    };
+    render();
   }
 
   /* full reference, reachable from the story log */
@@ -875,10 +935,12 @@ RZ.data = {
       .map(([w, t]) => `<li><span class="av ${w}">${W[w][0]}</span><span><b>${W[w][1]}</b>${t}</span></li>`).join('')
       || '<li>Nothing on the tape yet.</li>';
     open(`<div class="kicker">Story so far</div><h2>The tape</h2><ul class="log">${items}</ul>
-      <div class="row"><button class="btn quiet" id="how">How to play</button><button class="btn go" id="x">Close</button></div>
+      <div class="row"><button class="btn quiet" id="story">Story intro</button><button class="btn quiet" id="how">How to play</button></div>
+      <div class="row"><button class="btn go" id="x">Close</button></div>
       <div class="row"><button class="btn quiet small" id="reset">Restart game</button></div>`, m => {
       m.querySelector('#x').onclick = close;
       m.querySelector('#how').onclick = howto;
+      m.querySelector('#story').onclick = () => intro(true);
       const r = m.querySelector('#reset'); let armed = false;
       r.onclick = () => {
         if (!armed) { armed = true; r.textContent = 'Tap again to wipe progress'; return; }
