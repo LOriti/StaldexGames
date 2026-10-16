@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="robots" content="noindex, nofollow, noarchive">
+  <meta name="referrer" content="no-referrer">
+  <meta name="color-scheme" content="light dark">
+  <meta name="theme-color" content="#f4f2ec" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#141613" media="(prefers-color-scheme: dark)">
+  <title>Brain — Staldex</title>
+  <link rel="stylesheet" href="./style.css">
+  <script type="module" src="./app.js"></script>
+</head>
+<body>
+  <!-- Empty shell. Every word of Brain arrives from /api/brain behind Cloudflare Access;
+       nothing private is ever committed to this public repo. -->
+  <div class="shell" id="shell">
+    <aside class="side" id="side" aria-label="Brain files">
+      <div class="side-head">
+        <a class="mark" href="#/INDEX.md" aria-label="Brain portfolio index">
+          <span class="mark-glyph" aria-hidden="true">B</span>
+          <span class="mark-text">Brain <small>read-only</small></span>
+        </a>
+        <button type="button" class="icon-btn side-close" id="side-close" aria-label="Close file list">✕</button>
+      </div>
+      <label class="filter">
+        <span class="visually-hidden">Filter files</span>
+        <input type="search" id="filter" placeholder="Filter files  /" autocomplete="off" spellcheck="false">
+      </label>
+      <nav id="nav" class="nav" aria-label="Brain files"></nav>
+      <footer class="side-foot" id="side-foot"></footer>
+    </aside>
+
+    <div class="scrim" id="scrim" hidden></div>
+
+    <main class="main" id="main">
+      <header class="bar">
+        <button type="button" class="icon-btn menu" id="menu" aria-label="Open file list" aria-controls="side" aria-expanded="false">☰</button>
+        <ol class="crumbs" id="crumbs" aria-label="Current file"></ol>
+        <div class="bar-actions">
+          <button type="button" class="text-btn" id="refresh" title="Fetch the latest commit">Refresh</button>
+          <a class="text-btn" id="source" href="#" target="_blank" rel="noopener noreferrer" hidden>GitHub ↗</a>
+        </div>
+      </header>
+
+      <article class="doc" id="doc" aria-live="polite">
+        <p class="status">Loading Brain…</p>
+      </article>
+    </main>
+  </div>
+</body>
+</html>
