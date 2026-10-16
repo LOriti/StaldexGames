@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rewind Zoo</title>
-<meta name="description" content="Rewind Zoo: an animal merge game across two timelines. Merge on a 1986 camcorder tape and every new animal ripples forward to fix a 2026 sanctuary.">
+<meta name="description" content="Rewind Zoo: an animal merge game across two timelines. Merge on a 1986 camcorder tape and every new animal ripples forward to fix a 2026 sanctuary. Two seasons, then endless episodes.">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#A6E4FF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -249,6 +249,8 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 }
 
 .coin .e{font-size:9px}
+.pips .rn{font-style:normal;font-size:9px;font-weight:700;line-height:8px;margin-left:2px;white-space:nowrap}
+.av.tl{background:var(--aqua);font-family:var(--emoji);font-size:14px}
 
 </style>
 </head>
@@ -357,38 +359,150 @@ RZ.data = {
         "There's a dragon. I've filed form 27B: 'large lizard, flammable'."] },
   ],
 
-  /* goal types: all (every unlocked area to n stars), area (one area to n), combo (hit xN), golden (n golden merges), orders (fill n visitor requests) */
+  /* goal types: all (every unlocked area to n stars), area (one area to n), combo (hit xN), golden (n golden merges), orders (fill n visitor requests),
+     deliver (send n legendaries, optional area), fans (earn n fans this chapter). After these, endless episodes are generated forever. */
   chapters: [
+    /* ===== SEASON 1 · THE BUTTERFLY EFFECT ===== */
     { name: 'Opening Day', goal: { type: 'all', n: 2 }, title: 'Opening Day (again)', reward: { fans: 120, tape: 10 },
       text: ["Bev's Beasts reopens. Fourteen visitors turn up, plus one goat-shaped balloon nobody brought.",
-             "First review: 3 stars, a pigeon stole my chip. Kev frames it."],
+             "Side effect: everyone in town now says 'g'day' slightly too loud. Nobody can explain it."],
       next: "Visitors are queuing! See the bubbles? Drag the animal they want up to their area." },
     { name: 'First Customers', goal: { type: 'orders', n: 4 }, title: 'First Customers', reward: { fans: 150, tape: 15 },
       text: ["Real visitors, with real money, asking for real animals.",
-             "One family drove four hours to meet a Pufferfish. The Pufferfish was unimpressed. They loved it anyway."],
+             "Side effect: Kev's car is now blue. It was never blue. Kev has the photos."],
       next: "Next up: Going Viral. Get every area to ★★★." },
     { name: 'Going Viral', goal: { type: 'all', n: 3 }, title: 'Going Viral', reward: { fans: 250, tape: 15 }, unlock: 4,
       text: ["A clip of the poodle blow-drying the dolphin hits 2 million views.",
-             "Doug is in the background of every single video. Nobody can work out how."],
-      next: "There's a SWAMP on the tape?! Next: get the Swamp to ★★★." },
+             "Side effect: Kev now has a moustache. Everyone insists he always did. His mum has framed it."],
+      next: "There's a SWAMP behind the shed. There was no swamp yesterday. Get the Swamp to ★★★." },
     { name: 'Swamp Thing', goal: { type: 'area', area: 4, n: 3 }, title: 'Swamp Thing', reward: { fans: 300, tape: 15 },
-      text: ["The frog choir drops a one-note single. It goes to number one in Bayswater.",
-             "Nan Bev admits she 'popped a caterpillar in the creek' in 1986. That explains a lot."],
+      text: ["The frog choir drops a one-note single. It goes to number one.",
+             "Nan Bev admits she 'popped a caterpillar in the creek' in 1986. Apparently that's how swamps work now."],
       next: "Next: Chain Reaction. Hit a ×5 combo. Park twins side by side to set off cascades." },
     { name: 'Chain Reaction', goal: { type: 'combo', n: 5 }, title: 'Chain Reaction', reward: { fans: 350, tape: 20 },
-      text: ["One merge sets off every animal at once. The security camera files a complaint.",
-             "Doug watches the replay eleven times. He's taking notes."],
+      text: ["One merge set off every animal at once. The ripple renamed the town for six minutes.",
+             "Doug watched the replay eleven times. He's taking notes. On what, nobody knows."],
       next: "Next: Gold Rush. Make 4 golden merges. Gold comes from crates and mystery boxes." },
     { name: 'Gold Rush', goal: { type: 'golden', n: 4 }, title: 'Gold Rush', reward: { fans: 400, tape: 20 },
       text: ["Golden animals keep turning up. A jeweller has started following the peacock around.",
-             "Nan Bev swears she only spray-painted ONE egg in 1986."],
+             "Side effect: Kev's teeth are now slightly gold. The dentist says it's 'a 1986 thing'."],
       next: "Final: make every area legendary. ★★★★" },
-    { name: 'Season Finale', goal: { type: 'all', n: 4 }, title: 'Season Finale', reward: { fans: 800, tape: 40 },
+    { name: 'Season Finale', goal: { type: 'all', n: 4 }, title: 'Season 1 Finale', reward: { fans: 800, tape: 40 }, endsSeason: 1,
       text: ["A whale, a wolf, a lion, a peacock and a dragon walk into a sanctuary. It isn't a joke. It's a 5-star review.",
-             "In 1986, Nan Bev finally stops recording. “See you in forty years, love.” Doug winks. Pigeons can't wink.",
-             "Next season: the label on the tape says 1886."],
-      next: "Season 1 done. Doug is staring at the VCR like he knows something." },
+             "Nan Bev finally stops recording. “See you in forty years, love.” Doug winks. Pigeons can't wink.",
+             "Then the tape rewinds by itself. Too far. Kev wakes up somewhere that looks like home. It isn't."],
+      next: "Where am I? Why does everything have a logo? Get every area back to ★★." },
+
+    /* ===== SEASON 2 · WRONG KEV ===== */
+    { name: 'Wrong Kev', goal: { type: 'all', n: 2 }, title: 'Wrong Kev', reward: { fans: 900, tape: 30 },
+      text: ["In this 2026, Bev's Beasts is Bev's Beasts World™, a theme park run by Kevin. CEO. Kev's other self. He wears a headset to breakfast.",
+             "The animals are back where they belong. Kevin calls this 'a disruption event'."],
+      next: "Kevin is trying to buy the visitors back. Fill 6 requests before he does." },
+    { name: 'Hostile Takeover', goal: { type: 'orders', n: 6 }, title: 'Hostile Takeover', reward: { fans: 1000, tape: 30 },
+      text: ["The visitors chose real animals over Kevin's animatronic koala. The koala has filed for unemployment.",
+             "Side effect: every corporate slogan in town now ends with 'and also a pufferfish'."],
+      next: "The animals have unionised. Back them up: every area to ★★★." },
+    { name: 'Strike!', goal: { type: 'all', n: 3 }, title: 'Strike!', reward: { fans: 1100, tape: 30 },
+      text: ["The cats run HR now. Kevin has had three performance reviews this week. He failed all of them.",
+             "Doug was spotted wearing a tiny lanyard that says 'CONSULTANT'."],
+      next: "Legends draw crowds. Send 3 legendaries to 2026." },
+    { name: 'Legend Has It', goal: { type: 'deliver', n: 3 }, title: 'Legend Has It', reward: { fans: 1200, tape: 35 },
+      text: ["Three legendaries arrive through the VCR. Kevin's board of directors resigns on the spot.",
+             "Side effect: the park map now has a section labelled 'here be Doug'."],
+      next: "Kevin's last asset is gold. Make 5 golden merges and corner the market." },
+    { name: 'Gold Standard', goal: { type: 'golden', n: 5 }, title: 'Gold Standard', reward: { fans: 1300, tape: 35 },
+      text: ["The golden peacock is now worth more than the park. Kevin tries to put it on a mug. The peacock declines.",
+             "Nan Bev's 1986 tape shows her winking at the camera. She knows. She always knew."],
+      next: "One more push. Hit a ×6 combo to break Kevin's spreadsheet." },
+    { name: 'Combo Breaker', goal: { type: 'combo', n: 6 }, title: 'Combo Breaker', reward: { fans: 1400, tape: 40 },
+      text: ["The ripple from that combo hits so hard Kevin's spreadsheet becomes a drawing of a horse.",
+             "Kevin admits, quietly, that he misses the trolley in the pond."],
+      next: "Final: every area legendary ★★★★. Two Kevs. One timeline." },
+    { name: 'The Merger', goal: { type: 'all', n: 4 }, title: 'Season 2 Finale: The Merger', reward: { fans: 2500, tape: 60 }, endsSeason: 2,
+      text: ["Every area is legendary. The two timelines line up. Kev and Kevin meet in the car park and, it's a merge game, they merge.",
+             "The new Kev has the moustache, the headset and none of the spreadsheets. Visitors say he's 'a tier 5 Kev'.",
+             "The tape keeps rolling. From here, every episode 2026 comes out a little different. Forever."],
+      next: "The tape won't stop. Endless episodes start now. Every one changes 2026 a bit." },
   ],
+
+  /* Season 2: same animals, different 2026. Each area starts as Kevin's corporate version and gets set free. */
+  season2: {
+    title: 'Season 2: Wrong Kev',
+    text: ["The tape rewound too far. This is a 2026 where Kev became Kevin, a CEO who turned Bev's Beasts into a theme park.",
+           "Every area is back to square one, corporate edition. Same animals on the 1986 tape. Every merge ripples into this timeline now."],
+    areas: [
+      { stages: [['🏭', 'Egg-Co plant'], ['🐣', 'Chicks unionise'], ['🐔', 'Free range'], ['🐓', 'Rooster strike'], ['🦚', 'Peacock CEO']],
+        lines: [null, "The Egg-Co plant has chicks in it. Real ones. Kevin is furious. I love them.",
+          "The hens walked out of the factory. Kevin calls it 'free range'. It is.",
+          "The rooster now crows at Kevin's 5am board meetings. Specifically at Kevin.",
+          "The peacock has been appointed CEO. His first act was to cancel Mondays."] },
+      { stages: [['🎢', 'Splash ride'], ['🐠', 'Fish freed'], ['🐡', 'Puffer protest'], ['🐬', 'Dolphins quit'], ['🐳', 'Whale buys park']],
+        lines: [null, "Real fish in the splash ride. Kevin's 'Aqua Thrill Zone' is just a pond again.",
+          "The pufferfish are protesting the gift shop. They inflate at anyone holding a mug.",
+          "The dolphins quit showbiz and opened a swim school. Waitlist is three years.",
+          "A whale has bought the park. In cash. Kevin doesn't know where the whale got cash."] },
+      { stages: [['🤖', 'Robo-dog store'], ['🐶', 'Real puppies'], ['🐕', 'Good boy uprising'], ['🐩', 'Salon co-op'], ['🐺', 'Wolf security']],
+        lines: [null, "Kevin's Robo-Dog store is full of real puppies. The robots have been adopted by the puppies.",
+          "The good boys have formed a union. Their demands: walks, and that's it.",
+          "The poodle salon is now a co-op. Kevin's haircut was voted on. He lost.",
+          "A wolf now runs security. Shoplifting is down 100%. So is Kevin's confidence."] },
+      { stages: [['📺', 'Cat ad screens'], ['🐱', 'Kitten coup'], ['🐈', 'Cats run HR'], ['🐆', 'Spotty board'], ['🦁', 'Lion chairman']],
+        lines: [null, "A kitten sat on Kevin's keyboard and deleted every ad. Hero.",
+          "The cats run HR now. Mandatory nap policy approved unanimously.",
+          "The board is now entirely spotty cats. Meetings are short. Very short.",
+          "The lion is chairman. He fits in the chairman's box. Science still can't explain it."] },
+      { stages: [['🚧', 'Swamp car park'], ['🦋', 'Butterflies back'], ['🐸', 'Frog jingle'], ['🐊', 'Croc lawyers'], ['🐉', 'Dragon IPO']],
+        lines: [null, "Butterflies broke through the car park. Kevin's parking app now just shows butterflies.",
+          "The frogs re-recorded Kevin's jingle with one note. Sales tripled.",
+          "The crocs became lawyers. Kevin is being sued by a croc. The croc is winning.",
+          "The dragon floated on the stock exchange. Literally. It's hovering over the building."] },
+    ],
+  },
+
+  /* Endless episodes: generated after the hand-written chapters, forever.
+     {animal} {Animal} {area} {n} are filled in per episode. Add lines freely. */
+  endless: {
+    titles: ['The Moustache Incident', 'Pond Politics', 'Night of the Puffers', "Doug's Day Off", 'Gift Shop Wars',
+      'The Great Egg Recount', 'Kev vs the Council', 'Feathergate', 'Swamp Election', 'Rewind, Rewind',
+      'The Long Weekend', 'Influencer Season', 'Paradox Picnic', 'Wrong Kev', 'The Lost Weekend Tape',
+      'School Excursion', 'Health Inspector', 'Heatwave', 'The Sequel Nobody Asked For', 'Opening Day (Again, Again)'],
+    scenes: [
+      "Something rippled. Kev now has a moustache, and the {area} visitors insist he always did.",
+      "In this version of 2026 the council is run by a {animal}. Approval ratings have never been higher.",
+      "The {area} gift shop now only sells {animal} hats. They sold out in nine minutes.",
+      "Kev woke up fluent in {animal}. It's mostly complaints about the weather.",
+      "Weather report: 30% chance of {animals}, clearing by lunch.",
+      "Front page of the local paper: '{Animal} Elected Mayor (Again)'.",
+      "Every clock in town now runs eleven minutes slow. Experts blame the {animal}.",
+      "Kev's mum now remembers him as 'the one with the {animal}'.",
+      "A school excursion arrived. 40 kids, 1 {animal}, 0 intact plush toys.",
+      "Nan Bev's tape shows her teaching a {animal} to moonwalk. Nobody knows when she found the time.",
+      "A {animal} statue appeared in the town square overnight. The plaque just says 'you know what you did'.",
+      "The {area} now has its own podcast. Episode 1: 'Why we don't talk about the trolley'.",
+      "Kev's phone autocorrects every word to '{animal}'. He's leaning into it.",
+      "The Wi-Fi password is now {animal}{n}. Nobody changed it.",
+      "A film crew wants a documentary about the {area}. The {animal} has demanded top billing.",
+      "The {area} queue is so long it has its own food truck. The food truck has its own queue.",
+      "A ripple turned the car park into a second {area}. Parking is now a lot more interesting.",
+      "Kev tried to explain time travel to the health inspector. She left with a {animal} and no notes.",
+      "Someone started a rumour the {animal} can predict the footy. It went 9 from 9.",
+      "The {area} was voted 'Best Place to Feel Something' by a magazine that doesn't exist yet.",
+      "A {animal} now runs the morning tour. It is better at it than Kev. Everyone has noticed.",
+      "Kev's reflection is a few seconds behind him now. It waves at the {animal}.",
+      "Tourists keep asking for the 'famous {animal}'. There are now four famous {animals}. Nobody can tell them apart.",
+      "The {area} has started a union. Their first demand is more {animals}.",
+    ],
+    doug: [
+      "Doug was spotted in the background of a 1946 newspaper photo. Same Doug.",
+      "Doug's leg band reads 'PROPERTY OF 2086'.",
+      "Kev found a second camcorder. Tiny pigeon footprints all over it.",
+      "Doug left a note on the VCR: 'not yet'. Pigeons can't write.",
+      "Every tape ends with three seconds of Doug staring into the lens.",
+      "Doug has been on every tape since 1886. He hasn't aged a feather.",
+      "Doug has started bringing his own crates.",
+      "Doug was seen arguing with a seagull. The seagull lost.",
+    ],
+  },
 
   /* mystery crate outcomes, weighted */
   mystery: [
@@ -410,7 +524,7 @@ RZ.data = {
             "Gift shop sold out of {a} plushies. Riot narrowly avoided.", "My kid now wants to BE a {a}. Thanks a lot. 5 stars.",
             "Took 400 photos of the {a}. Deleted none.", "The {a} was everything the brochure promised. There was no brochure."],
   doug: ["coo.", "coo. (he has seen everything)", "*stares directly into the camcorder*", "coo coo. (ominous)"],
-  who: { kev: ['K', 'Kev · 2026'], bev: ['B', 'Nan Bev · 1986'], doug: ['D', 'Doug · both years, somehow'], fan: ['★', 'Visitor · 2026'] },
+  who: { kev: ['K', 'Kev · 2026'], bev: ['B', 'Nan Bev · 1986'], doug: ['D', 'Doug · both years, somehow'], fan: ['★', 'Visitor · 2026'], tl: ['⏳', 'Timeline · side effect'] },
 };
 
 </script>
@@ -582,7 +696,7 @@ RZ.data = {
       <h2>Rewind Zoo</h2>
       <div class="art">🪶 🛒 🕸️ 📦<small>● REC  JUN 14 1986</small></div>
       <p>Kev's animal sanctuary has one feather, a trolley in the pond and a review that just says "why".</p>
-      <p>Then he finds Nan Bev's camcorder from 1986. Whatever happens on her tape echoes into today.</p>
+      <p>Then he finds Nan Bev's camcorder from 1986. Whatever happens on her tape echoes into today. Not always how you'd expect.</p>
       <ol class="how">
         <li>Tap Crate to drop 1986 animals onto the tape.</li>
         <li>Drag two matching animals together to merge them. Or tap one, then the other.</li>
@@ -623,16 +737,16 @@ RZ.data = {
   }
 
   function chapter() {
-    const S = RZ.S, ch = D.chapters[S.chapter];
-    const art = D.chains.slice(0, S.areas).map((c, i) => c.stages[S.stage[i]][0]).join(' ');
+    const S = RZ.S, ch = RZ.game.chapter(), f = RZ.game.fmt;
+    const art = D.chains.slice(0, S.areas).map((c, i) => RZ.game.stagesOf(i)[S.stage[i]][0]).join(' ');
     RZ.sfx.fanfare(); RZ.buzz([20, 60, 20, 60, 40]); RZ.fx.confetti(90);
-    open(`<div class="kicker">Chapter ${S.chapter + 1} complete</div><h2>${ch.title}</h2>
+    open(`<div class="kicker">${ch.endless ? `Episode ${ch.ep} complete · endless tape` : `${RZ.game.chapterLabel()} complete`}</div><h2>${ch.title}</h2>
       <div class="art">${art}<small>2026 · BEV'S BEASTS</small></div>
       ${ch.text.map(t => `<p>${t}</p>`).join('')}
-      <div class="reward">+${ch.reward.fans} 🎟 &nbsp; +${ch.reward.tape} 📼</div>
+      <div class="reward">+${f(ch.reward.fans)} 🎟 &nbsp; +${ch.reward.tape} 📼</div>
       <div class="row"><button class="btn alt" id="dbl">Watch ad · 2× fans</button><button class="btn go" id="take">Collect</button></div>`, m => {
       m.querySelector('#take').onclick = () => { close(); RZ.game.completeChapter(1); };
-      m.querySelector('#dbl').onclick = () => ad(`+${ch.reward.fans * 2} 🎟`, () => RZ.game.completeChapter(2));
+      m.querySelector('#dbl').onclick = () => ad(`+${f(ch.reward.fans * 2)} 🎟`, () => RZ.game.completeChapter(2));
     });
   }
 
@@ -643,6 +757,17 @@ RZ.data = {
       <div class="art">${c.stages[0][0]} ${c.items.map(i => i[0]).join(' ')}<small>NEW CHAIN ON THE TAPE</small></div>
       <p>Kev found a swamp behind the shed. It has one log. The log has a caterpillar. The caterpillar has big plans.</p>
       <div class="row"><button class="btn go" id="go">Let's go</button></div>`, m => {
+      m.querySelector('#go').onclick = () => { close(); after && after(); };
+    });
+  }
+
+  function season(after) {
+    const s2 = D.season2;
+    RZ.sfx.jackpot(); RZ.fx.confetti(180); RZ.buzz([30, 60, 30, 60, 30]);
+    open(`<div class="kicker">New season</div><h2>${s2.title}</h2>
+      <div class="art">${s2.areas.map(a => a.stages[0][0]).join(' ')}<small>2026 · BEV'S BEASTS WORLD™</small></div>
+      ${s2.text.map(t => `<p>${t}</p>`).join('')}
+      <div class="row"><button class="btn go" id="go">Fix this timeline</button></div>`, m => {
       m.querySelector('#go').onclick = () => { close(); after && after(); };
     });
   }
@@ -702,7 +827,7 @@ RZ.data = {
     }, 2300);
   }
 
-  RZ.ui = { open, close, intro, ad, outOfTape, chapter, unlock, log, album, toast };
+  RZ.ui = { open, close, intro, ad, outOfTape, chapter, unlock, season, log, album, toast };
 })();
 
 </script>
@@ -721,19 +846,28 @@ RZ.data = {
   function fresh() {
     const g = Array(N).fill(null);
     [[6,0,1],[8,0,1],[12,1,1],[17,1,1],[11,2,2],[13,3,1],[19,3,1],[16,2,1]].forEach(([i, c, t]) => g[i] = { c, t });
-    return { v: 2, grid: g, stage: [0,0,0,0,0], areas: 4, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
+    return { v: 3, season: 1, grid: g, stage: [0,0,0,0,0], areas: 4, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
       intro: false, muted: false, log: [], found: [], regenAt: Date.now(),
-      req: [null,null,null,null,null], reqAt: [0,0,0,0,0], visit: [0,0,0,0,0], happy: [0,0,0,0,0], visitAt: Date.now(),
-      stats: { golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0 } };
+      req: [null,null,null,null,null], reqAt: [0,0,0,0,0], visit: [0,0,0,0,0], happy: [0,0,0,0,0], renown: [0,0,0,0,0], visitAt: Date.now(),
+      seed: Math.floor(Math.random() * 1e9),
+      stats: { golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0 } };
   }
   function migrate(s) {
     s.stage = s.stage || []; while (s.stage.length < 5) s.stage.push(0);
     s.areas = s.areas || (s.chapter >= 2 ? 5 : 4);
     if (!s.v) { if (s.chapter >= 1) s.chapter++; s.v = 2; }   // v2 inserted the First Customers chapter
-    for (const k of ['req', 'reqAt', 'visit', 'happy']) { s[k] = s[k] || []; while (s[k].length < 5) s[k].push(k === 'req' ? null : 0); }
+    if (s.v === 2) {   // v3 added Season 2 after the Season 1 finale (index 7)
+      s.season = s.chapter >= 7 ? 2 : 1;
+      if (s.chapter >= 7) { s.chapter = 7; s.stage = [0,0,0,0,0]; s.req = [null,null,null,null,null]; s.reqAt = [0,0,0,0,0]; }
+      s.v = 3;
+    }
+    s.season = s.season || 1;
+    for (const k of ['req', 'reqAt', 'visit', 'happy', 'renown']) { s[k] = s[k] || []; while (s[k].length < 5) s[k].push(k === 'req' ? null : 0); }
     s.visitAt = s.visitAt || Date.now();
+    if (s.seed === undefined) s.seed = Math.floor(Math.random() * 1e9);
+    if (!Array.isArray(s.stats && s.stats.chDel)) { s.stats = s.stats || {}; s.stats.chDel = [0,0,0,0,0]; }
     s.found = s.found || []; s.log = s.log || [];
-    s.stats = Object.assign({ golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0 }, s.stats || {});
+    s.stats = Object.assign({ golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0 }, s.stats || {});
     s.level = s.level || 1; s.regenAt = s.regenAt || Date.now();
     s.grid = s.grid.map(v => (v && typeof v === 'object') ? v : null);
     return s;
@@ -756,6 +890,20 @@ RZ.data = {
   const plotAt = c => plotsEl.querySelector(`[data-plot="${c}"]`);
   const emptyCells = () => range(N).filter(i => !S.grid[i]);
   const canMerge = (A, B) => A && B && !A.m && !B.m && A.c === B.c && A.t === B.t && A.t < 5;
+  function fmt(n) {
+    n = Math.round(n);
+    if (n < 10000) return n.toLocaleString();
+    const u = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'k']].find(([v]) => n >= v);
+    const x = n / u[0];
+    return (x >= 100 ? Math.round(x) : x.toFixed(1)) + u[1];
+  }
+  function rng(seed) {   // mulberry32: same seed, same sequence, so an episode is stable across reloads
+    let a = seed >>> 0;
+    return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const stagesOf = c => (S.season >= 2 ? D.season2.areas[c].stages : D.chains[c].stages);
+  const linesOf = c => (S.season >= 2 ? D.season2.areas[c].lines : D.chains[c].lines);
+  const S2_START = D.chapters.findIndex(c => c.endsSeason === 1) + 1;
   const need = l => 60 * (l - 1) * l;               // fans needed to reach level l
   function levelOf(f) { let l = 1; while (f >= need(l + 1)) l++; return l; }
   function weighted(list, w) { const tot = w.reduce((a, b) => a + b, 0); let r = Math.random() * tot, i = 0; while (r >= w[i]) { r -= w[i]; i++; } return list[i]; }
@@ -769,49 +917,103 @@ RZ.data = {
   }
 
   /* ---------- goals ---------- */
-  const chapter = () => D.chapters[S.chapter];
+  const HAND = D.chapters.length;
+  const ENDLESS = ['orders', 'combo', 'golden', 'deliver', 'fans', 'deliverArea'];
+  const ROMAN = ['', '', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  const epCache = new Map();
+  const typeFor = n => ENDLESS[Math.floor(rng(S.seed * 31 + n * 7919)() * ENDLESS.length)];
+  function genEpisode(n) {
+    const key = S.seed + ':' + n + ':' + S.areas;
+    if (epCache.has(key)) return epCache.get(key);
+    const R = rng(S.seed * 131 + n * 104729), E = D.endless;
+    let type = typeFor(n);
+    if (n > 0 && type === typeFor(n - 1)) type = ENDLESS[(ENDLESS.indexOf(type) + 1) % ENDLESS.length];
+    if (n === 0) type = 'orders';   // ease into the endless tape with something familiar
+    let goal;
+    if (type === 'orders') goal = { type, n: Math.min(20, 4 + Math.floor(n / 2)) };
+    else if (type === 'combo') goal = { type, n: Math.min(10, 5 + Math.floor(n / 4)) };
+    else if (type === 'golden') goal = { type, n: Math.min(15, 3 + Math.floor(n / 2)) };
+    else if (type === 'deliver') goal = { type, n: Math.min(10, 1 + Math.floor(n / 3)) };
+    else if (type === 'deliverArea') goal = { type: 'deliver', n: Math.min(6, 1 + Math.floor(n / 5)), area: Math.floor(R() * S.areas) };
+    else goal = { type: 'fans', n: 800 + 300 * n };
+    const animal = () => { const c = Math.floor(R() * S.areas), t = 1 + Math.floor(R() * 5); return D.chains[c].items[t - 1][1].replace(/\s*\(.*\)/, '').toLowerCase(); };
+    const plural = a => /(fish|sheep)$/.test(a) ? a : /wolf$/.test(a) ? a.slice(0, -1) + 'ves' : /[^aeiou]y$/.test(a) ? a.slice(0, -1) + 'ies' : a + 's';
+    const fill = str => {   // one animal and one area per line, so the joke stays consistent
+      const a = animal(), ar = D.chains[Math.floor(R() * S.areas)].area;
+      return str.replace(/\{animals\}/g, plural(a)).replace(/\{Animal\}/g, a[0].toUpperCase() + a.slice(1))
+        .replace(/\{animal\}/g, a).replace(/\{area\}/g, ar).replace(/\{n\}/g, String(n + 1));
+    };
+    const picks = [];
+    while (picks.length < 2) { const i = Math.floor(R() * E.scenes.length); if (!picks.includes(i)) picks.push(i); }
+    const text = picks.map(i => fill(E.scenes[i]));
+    if (n % 3 === 2) { const k = Math.floor(n / 3); text.push((k >= E.doug.length ? 'Again: ' : '') + E.doug[k % E.doug.length]); }
+    const lap = Math.floor(n / E.titles.length) + 1;
+    const title = E.titles[n % E.titles.length] + (lap > 1 ? ' ' + (ROMAN[lap] || 'Part ' + lap) : '');
+    const ep = { endless: true, ep: n + 1, name: `Episode ${n + 1}`, title: `Ep ${n + 1}: ${title}`, goal, text,
+      reward: { fans: 300 + 120 * n, tape: Math.min(60, 20 + 2 * n) } };
+    epCache.set(key, ep);
+    return ep;
+  }
+  const chapter = () => S.chapter < HAND ? D.chapters[S.chapter] : genEpisode(S.chapter - HAND);
+  function sideEffect() {   // Butterfly Effect: every ripple changes something else in 2026
+    const R = Math.random, E = D.endless.scenes;
+    const c = Math.floor(R() * S.areas), a = D.chains[c].items[Math.floor(R() * 5)][1].replace(/\s*\(.*\)/, '').toLowerCase();
+    const pl = /(fish|sheep)$/.test(a) ? a : /wolf$/.test(a) ? a.slice(0, -1) + 'ves' : /[^aeiou]y$/.test(a) ? a.slice(0, -1) + 'ies' : a + 's';
+    return E[Math.floor(R() * E.length)].replace(/\{animals\}/g, pl).replace(/\{Animal\}/g, a[0].toUpperCase() + a.slice(1))
+      .replace(/\{animal\}/g, a).replace(/\{area\}/g, D.chains[Math.floor(R() * S.areas)].area).replace(/\{n\}/g, String(1 + Math.floor(R() * 99)));
+  }
+  function goalText(g) {
+    const stars = n => '★'.repeat(n);
+    if (g.type === 'all') return `Every area to ${stars(g.n)}`;
+    if (g.type === 'area') return `${D.chains[g.area].area} to ${stars(g.n)}`;
+    if (g.type === 'combo') return `Hit a ×${g.n} combo`;
+    if (g.type === 'orders') return `Fill ${g.n} visitor requests`;
+    if (g.type === 'golden') return `Make ${g.n} golden merges`;
+    if (g.type === 'fans') return `Earn ${fmt(g.n)} fans`;
+    if (g.area !== undefined) return `Send ${g.n} ${D.chains[g.area].area} legendar${g.n > 1 ? 'ies' : 'y'}`;
+    return `Send ${g.n} legendar${g.n > 1 ? 'ies' : 'y'} to 2026`;
+  }
   function goalInfo() {
-    const ch = chapter(), stars = n => '★'.repeat(n);
-    if (!ch) return { text: 'Season 2: the tape says 1886', num: `${S.found.length}/25 found`, frac: 1, target: 0, over: true };
-    const g = ch.goal;
+    const ch = chapter(), g = ch.goal, text = goalText(g), cnt = (b, n) => ({ num: `${Math.min(b, n)}/${n}`, frac: Math.min(b, n) / n });
     if (g.type === 'all') {
       const st = S.stage.slice(0, S.areas);
-      return { text: `Every area to ${stars(g.n)}`, num: `${st.filter(s => s >= g.n).length}/${S.areas} areas`,
+      return { text, num: `${st.filter(s => s >= g.n).length}/${S.areas} areas`,
         frac: st.reduce((a, s) => a + Math.min(s, g.n), 0) / (S.areas * g.n), target: g.n };
     }
-    if (g.type === 'area') {
-      const s = S.stage[g.area];
-      return { text: `${D.chains[g.area].area} to ${stars(g.n)}`, num: `${Math.min(s, g.n)}/${g.n}`, frac: Math.min(s, g.n) / g.n, target: g.n, area: g.area };
-    }
-    if (g.type === 'combo') {
-      const b = S.stats.chCombo;
-      return { text: `Hit a ×${g.n} combo`, num: `best ×${b}`, frac: Math.min(b, g.n) / g.n, target: 0 };
-    }
-    if (g.type === 'orders') {
-      const b = S.stats.chOrders;
-      return { text: `Fill ${g.n} visitor requests`, num: `${Math.min(b, g.n)}/${g.n}`, frac: Math.min(b, g.n) / g.n, target: 0 };
-    }
-    const b = S.stats.chGolden;
-    return { text: `Make ${g.n} golden merges`, num: `${Math.min(b, g.n)}/${g.n}`, frac: Math.min(b, g.n) / g.n, target: 0 };
+    if (g.type === 'area') return { text, ...cnt(S.stage[g.area], g.n), target: g.n, area: g.area };
+    if (g.type === 'combo') return { text, num: `best ×${S.stats.chCombo}`, frac: Math.min(S.stats.chCombo, g.n) / g.n, target: 0 };
+    if (g.type === 'orders') return { text, ...cnt(S.stats.chOrders, g.n), target: 0 };
+    if (g.type === 'golden') return { text, ...cnt(S.stats.chGolden, g.n), target: 0 };
+    if (g.type === 'fans') return { text, num: `${fmt(Math.min(S.stats.chFans, g.n))}/${fmt(g.n)}`, frac: Math.min(S.stats.chFans, g.n) / g.n, target: 0 };
+    const b = g.area !== undefined ? S.stats.chDel[g.area] : S.stats.chDelivered;
+    return { text, ...cnt(b, g.n), target: 0 };
   }
   function checkChapter() {
-    if (chapterOpen || !chapter()) return;
+    if (chapterOpen) return;
     if (goalInfo().frac >= 0.9999) { chapterOpen = true; setTimeout(ui.chapter, fx.RM ? 200 : 1000); }
   }
   function completeChapter(mult) {
-    const ch = chapter(); if (!ch) return;
+    const ch = chapter();
     S.tape += ch.reward.tape;
-    S.chapter++; S.stats.chCombo = 0; S.stats.chGolden = 0; S.stats.chOrders = 0; chapterOpen = false;
     addFans(ch.reward.fans * mult);
+    S.chapter++; chapterOpen = false;
+    Object.assign(S.stats, { chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0 });
+    const next = ch.endless || S.chapter >= HAND && !ch.next ? `Episode ${S.chapter - HAND + 1}: ${goalText(chapter().goal)}.` : ch.next;
     renderAll(); sfx.ripple();
-    const [x, y] = fx.center($('#fans')); fx.floatText(x, y + 26, `+${ch.reward.fans * mult}`, 'big');
+    const [x, y] = fx.center($('#fans')); fx.floatText(x, y + 26, `+${fmt(ch.reward.fans * mult)}`, 'big');
     save();
-    if (ch.unlock !== undefined) {
-      S.areas = Math.max(S.areas, ch.unlock + 1); newRequest(ch.unlock); S.visitAt = Date.now(); renderPlots(ch.unlock); save();
-      setTimeout(() => ui.unlock(ch.unlock, () => { say('kev', ch.next); save(); checkChapter(); }), 450);
+    if (ch.endsSeason === 1) {
+      S.season = 2; S.stage = [0,0,0,0,0]; S.req = [null,null,null,null,null]; S.reqAt = [0,0,0,0,0];
+      S.areas = Math.max(S.areas, 5); save(); renderAll();
+      setTimeout(() => ui.season(() => { say('kev', next); save(); checkChapter(); }), 450);
       return;
     }
-    say('kev', ch.next); save(); checkChapter();
+    if (ch.unlock !== undefined) {
+      S.areas = Math.max(S.areas, ch.unlock + 1); newRequest(ch.unlock); S.visitAt = Date.now(); renderPlots(ch.unlock); save();
+      setTimeout(() => ui.unlock(ch.unlock, () => { say('kev', next); save(); checkChapter(); }), 450);
+      return;
+    }
+    say('kev', next); save(); checkChapter();
   }
 
   /* ---------- render ---------- */
@@ -843,10 +1045,10 @@ RZ.data = {
       if (i >= S.areas) return `<div class="plot locked" data-plot="${i}"><div class="pe">🔒</div><div class="pn">${c.area}</div><div class="pc">Opens Ch ${unlockCh}</div><div class="pips"><i></i><i></i><i></i><i></i></div></div>`;
       const s = S.stage[i], r = S.req[i];
       const marked = gi.target && (gi.area === undefined || gi.area === i);
-      const pips = [1, 2, 3, 4].map(k => `<i class="${k <= s ? 'on' : ''}${marked && k === gi.target ? ' goal' : ''}"></i>`).join('');
+      const pips = [1, 2, 3, 4].map(k => `<i class="${k <= s ? 'on' : ''}${marked && k === gi.target ? ' goal' : ''}"></i>`).join('') + (S.renown[i] ? `<em class="rn" title="Renown">👑${S.renown[i]}</em>` : '');
       const bubble = r ? `<span class="req" title="Wants a ${c.items[r.t - 1][1]}">${c.items[r.t - 1][0]}</span>` : '';
       return `<div class="plot c${i}${s > 0 ? ' lit' : ''}${s === 4 ? ' max' : ''}${bump === i ? ' bump' : ''}" data-plot="${i}" data-s="${s}" role="button" tabindex="0" aria-label="${c.area}">
-        ${bubble}<div class="pe">${c.stages[s][0]}</div><div class="pn">${c.area}</div><div class="pc">${c.stages[s][1]}</div><div class="pips">${pips}</div>
+        ${bubble}<div class="pe">${stagesOf(i)[s][0]}</div><div class="pn">${c.area}</div><div class="pc">${stagesOf(i)[s][1]}</div><div class="pips">${pips}</div>
         <span class="coin" hidden><span class="e">🎟</span><b>0</b></span></div>`;
     }).join('');
     refreshPlots();
@@ -869,7 +1071,7 @@ RZ.data = {
     (function step(t) {
       const k = d ? Math.min(1, (t - t0) / d) : 1;
       shownFans = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
-      el.textContent = shownFans >= 10000 ? (shownFans / 1000).toFixed(shownFans >= 100000 ? 0 : 1) + 'k' : shownFans.toLocaleString();
+      el.textContent = fmt(shownFans);
       if (k < 1) fansRaf = requestAnimationFrame(step);
     })(t0);
   }
@@ -881,7 +1083,7 @@ RZ.data = {
     $('#lvlBar').style.width = Math.min(100, (S.fans - lo) / (hi - lo) * 100) + '%';
     $('#albumN').textContent = S.found.length;
     const gi = goalInfo();
-    $('#goalText').textContent = (gi.over ? 'Season 1 done · ' : `Ch ${S.chapter + 1} · `) + gi.text;
+    $('#goalText').textContent = (S.chapter < S2_START ? `S1 Ch ${S.chapter + 1} · ` : S.chapter < HAND ? `S2 Ch ${S.chapter - S2_START + 1} · ` : `Ep ${S.chapter - HAND + 1} · `) + gi.text;
     $('#goalNum').textContent = gi.num;
     $('#goalBar').style.width = Math.min(100, gi.frac * 100) + '%';
     $('#mute').textContent = S.muted ? '🔇' : '🔊';
@@ -890,7 +1092,7 @@ RZ.data = {
 
   /* ---------- economy ---------- */
   function addFans(n) {
-    S.fans += n;
+    S.fans += n; S.stats.chFans += n;
     const l = levelOf(S.fans);
     if (l > S.level) { S.level = l; levelUp(l); }
     renderHUD();
@@ -1000,7 +1202,8 @@ RZ.data = {
       const [px, py] = fx.center(plotAt(c));
       fx.floatText(px, py - 6, 'RIPPLE!', 'big');
       sfx.ripple(); buzz([10, 40, 14]);
-      say('kev', D.chains[c].lines[ns]);
+      say('kev', linesOf(c)[ns]);
+      setTimeout(() => say('tl', sideEffect()), 2600);
       const bonus = 20 * ns; setTimeout(() => fx.floatText(px, py + 18, `+${bonus}`), 180);
       addFans(bonus); save(); checkChapter();
     });
@@ -1068,14 +1271,18 @@ RZ.data = {
   function deliver(i) {
     const it = S.grid[i]; if (!it || it.m || it.t !== 5) return;
     const name = D.chains[it.c].items[4][1], from = fx.center(cellAt(i));
-    S.grid[i] = null; if (sel === i) sel = null; S.stats.delivered++;
+    S.grid[i] = null; if (sel === i) sel = null;
+    S.stats.delivered++; S.stats.chDelivered++; S.stats.chDel[it.c]++;
+    const rn = ++S.renown[it.c], pay = (150 + 50 * (rn - 1)) * (it.g ? 3 : 1);
     renderCell(i); fx.burst(from[0], from[1], D.COL[it.c], 14);
     fx.floatText(from[0], from[1], 'SENT TO 2026!', 'big');
+    save();
     fx.fly(from, plotAt(it.c), D.COL[it.c], () => {
       renderPlots(it.c); fx.glitch(); sfx.ripple(); buzz([10, 40, 14]);
-      const [px, py] = fx.center(plotAt(it.c)); fx.floatText(px, py, it.g ? '+450' : '+150', 'big');
-      say('kev', `A legendary ${it.g ? 'golden ' : ''}${name} just came out of the VCR. It's still warm.`);
-      addFans(it.g ? 450 : 150); save();
+      const [px, py] = fx.center(plotAt(it.c)); fx.floatText(px, py, `+${fmt(pay)}`, 'big');
+      setTimeout(() => fx.floatText(px, py + 22, `👑 ${rn}`, 'small'), 220);
+      say('kev', `A legendary ${it.g ? 'golden ' : ''}${name} just came out of the VCR. It's still warm. ${D.chains[it.c].area} renown ${rn}.`);
+      addFans(pay); save(); checkChapter();
     });
   }
 
@@ -1085,8 +1292,8 @@ RZ.data = {
     S.req[c] = { t: lo + Math.floor(Math.random() * (hi - lo + 1)) };
     S.reqAt[c] = 0;
   }
-  const visitRate = c => S.stage[c] ? S.stage[c] * 0.1 + S.happy[c] * 0.04 : 0;     // fans per second
-  const visitCap = c => 40 + S.stage[c] * 40 + S.happy[c] * 10;
+  const visitRate = c => S.stage[c] ? S.stage[c] * 0.1 + S.happy[c] * 0.04 + S.renown[c] * 0.05 : 0;     // fans per second
+  const visitCap = c => 40 + S.stage[c] * 40 + S.happy[c] * 10 + S.renown[c] * 20;
 
   function fulfill(i, c) {
     const it = S.grid[i], r = S.req[c];
@@ -1140,7 +1347,7 @@ RZ.data = {
       if (i >= 0) { fulfill(i, c); return; }
       say('kev', `${ch.area} visitors want a ${ch.items[r.t - 1][0]} ${ch.items[r.t - 1][1]}. Merge one up and drag it here.`, false);
       poke(plotAt(c).querySelector('.req'));
-    } else say('kev', `${ch.area}: ${ch.stages[S.stage[c]][1]}. New visitor request coming soon.`, false);
+    } else say('kev', `${ch.area}: ${stagesOf(c)[S.stage[c]][1]}. New visitor request coming soon.`, false);
   }
 
   function adForTape() {
@@ -1263,7 +1470,7 @@ RZ.data = {
   /* ---------- boot ---------- */
   function markStarters() { S.grid.forEach(v => { if (v && !v.m) { const k = keyOf(v.c, v.t); if (!S.found.includes(k)) S.found.push(k); } }); }
 
-  RZ.game = { completeChapter, adForTape, introDone, reset, goalInfo };
+  RZ.game = { completeChapter, adForTape, introDone, reset, goalInfo, chapter, fmt, checkChapter, stagesOf, chapterLabel: () => S.chapter < S2_START ? `Season 1 · Chapter ${S.chapter + 1}` : `Season 2 · Chapter ${S.chapter - S2_START + 1}` };
 
   gridEl.innerHTML = range(N).map(i => `<div class="cell" data-cell="${i}"></div>`).join('');
   markStarters();
