@@ -252,12 +252,30 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .pips .rn{font-style:normal;font-size:9px;font-weight:700;line-height:8px;margin-left:2px;white-space:nowrap}
 .av.tl{background:var(--aqua);font-family:var(--emoji);font-size:14px}
 
+/* coach marks: tutorial and one-time tips */
+.coach{position:fixed;z-index:58;left:50%;transform:translateX(-50%);width:min(380px,calc(100% - 32px));background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.coach.top{top:calc(52px + env(safe-area-inset-top,0px))}
+.coach.bottom{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.coach.in{animation:coachIn .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes coachIn{from{transform:translate(-50%,14px) scale(.94);opacity:0}}
+.coach .ck{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:19px;line-height:1.1}
+.coach .ck span{font-family:var(--font-body);font-size:11px;font-weight:700;background:var(--sun);border:2px solid var(--ink);border-radius:999px;padding:1px 7px;letter-spacing:.04em}
+.coach p{margin:0;font-size:14px;line-height:1.4}
+.coach .btn{align-self:flex-end;font-family:var(--font-display);font-size:16px;padding:6px 16px;border-radius:14px;box-shadow:0 3px 0 var(--ink)}
+.spot{z-index:3;animation:spot 1.2s ease-in-out infinite}
+.goal.spot,.pill.spot{position:relative}
+@keyframes spot{0%,100%{box-shadow:0 0 0 3px var(--pink),0 0 0 7px rgba(255,122,176,.35)}50%{box-shadow:0 0 0 4px var(--pink),0 0 0 14px rgba(255,122,176,0)}}
+.btn.spot{animation:spotBtn 1.2s ease-in-out infinite}
+@keyframes spotBtn{0%,100%{box-shadow:0 5px 0 var(--ink),0 0 0 3px var(--pink)}50%{box-shadow:0 5px 0 var(--ink),0 0 0 10px rgba(255,122,176,.2)}}
+.hand{position:fixed;z-index:59;pointer-events:none;font-family:var(--emoji);font-size:38px;line-height:1;margin-top:6px;filter:drop-shadow(0 3px 0 var(--ink));transform:translate(-30%,0)}
+@media (prefers-reduced-motion: reduce){ .spot,.btn.spot,.coach.in{animation:none} .spot{box-shadow:0 0 0 3px var(--pink)} }
+
 </style>
 </head>
 <body>
 <div class="app" id="app">
   <div class="hud">
-    <div class="pill lvl" title="Sanctuary level"><b id="lvl">Lv 1</b><span class="lbar"><i id="lvlBar"></i></span></div>
+    <div class="pill lvl" id="lvlPill" title="Sanctuary level" hidden><b id="lvl">Lv 1</b><span class="lbar"><i id="lvlBar"></i></span></div>
     <span class="pill" title="Fans"><span class="e">🎟</span><span id="fans">0</span></span>
     <span class="pill tape" title="Tape (energy)"><span class="e">📼</span><span id="tape">40</span><button class="plus" id="adBtn" aria-label="Watch an ad for more tape">+</button></span>
     <button class="chip" id="albumBtn" aria-label="Open animal album"><span class="e">📖</span><span id="albumN">0</span></button>
@@ -291,6 +309,8 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 </div>
 
 <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="coach" id="coach" role="status" aria-live="polite" hidden></div>
+<div class="hand" id="hand" aria-hidden="true" hidden>👆</div>
 <div id="fx"></div>
 <div class="modal" id="modal" hidden></div>
 
@@ -312,7 +332,7 @@ RZ.data = {
   COL: ['--sun', '--aqua', '--pink', '--mint', '--lime'],
 
   chains: [
-    { area: 'Coop',
+    { area: 'Coop', unlockText: "The Coop is where it all started.",
       items: [['🥚','Suspicious Egg'],['🐣','Chick'],['🐔','Hen'],['🐓','Rooster'],['🦚','Peacock (somehow)']],
       flavor: ['Ticks occasionally. Nan says that is normal.','Has one setting: chirp.','Lays eggs, takes names.','Alarm clock with no snooze button.','Nobody knows how. He will not explain.'],
       stages: [['🪶','One sad feather'],['🐣','Chick squad'],['🐔','Free eggs'],['🐓','5am alarm'],['🦚','Peacock runway']],
@@ -321,7 +341,7 @@ RZ.data = {
         "Free eggs! I've had an omelette every meal. Send help. Or toast.",
         "A rooster now wakes me at 5am. Thanks, I hate it.",
         "There is a PEACOCK. He has 40k followers. He won't follow me back."] },
-    { area: 'Pond',
+    { area: 'Pond', unlockText: "The Pond has a shopping trolley in it. That's the whole pond.",
       items: [['🐟','Goldfish'],['🐠','Fancy Fish'],['🐡','Pufferfish'],['🐬','Dolphin'],['🐳','Whale']],
       flavor: ['Three-second memory. Thinks you are new every time.','Wears stripes to every occasion.','Inflates when emotionally overwhelmed. Relatable.','Smarter than Kev. Kev agrees.','Technically a pond resident.'],
       stages: [['🛒','Trolley pond'],['🐠','Actual fish'],['🐡','Puffer drama'],['🐬','Dolphin show'],['🐳','Whale (?)']],
@@ -330,7 +350,7 @@ RZ.data = {
         "A pufferfish saw Doug and blew up. They're both fine. Doug is not sorry.",
         "How is there a dolphin. It's a POND. Ticket sales up 400%.",
         "Council rang and asked 'is that a whale'. I said 'define whale'."] },
-    { area: 'Kennel',
+    { area: 'Kennel', unlockText: "Kev found the old kennel behind the gift shop. It's mostly cobwebs and one very confident spider.",
       items: [['🦴','Bone'],['🐶','Puppy'],['🐕','Good Boy'],['🐩','Fancy Poodle'],['🐺','Wolf (nice)']],
       flavor: ['Good boy not included.','Chews everything. Including this card.','Confirmed good. Independently audited.','Runs a salon. Does not do walk-ins.','Howls in G major. Very nice.'],
       stages: [['🕸️','Cobwebs'],['🐶','Puppy pile'],['🐕','Good boys'],['🐩','Poodle salon'],['🐺','Wolf (nice)']],
@@ -339,7 +359,7 @@ RZ.data = {
         "Every dog here is a good boy. I checked. Twice. Thoroughly.",
         "A poodle has opened a salon. She charges $80. I'm booked in Tuesday.",
         "We have a wolf. He's lovely. He howls in harmony with the rooster."] },
-    { area: 'Cats',
+    { area: 'Cats', unlockText: "There's a big empty box out the back. Kev says it's for cats. Nobody has asked the cats.",
       items: [['🧶','Yarn'],['🐱','Kitten'],['🐈','Cat'],['🐆','Big Spotty Cat'],['🦁','Lion']],
       flavor: ['Bait.','4% kitten, 96% chaos.','Will knock this card off the table.','Just a big kitty. Stop asking.','If he fits, he sits. He fits.'],
       stages: [['📦','Empty box'],['🐱','Box claimed'],['🐈','Cat café'],['🐆','Spotty upgrade'],['🦁','King of box']],
@@ -348,7 +368,7 @@ RZ.data = {
         "Opened a cat café. The cats run it. I'm the barista. I'm not paid.",
         "One of the cats is now bigger. And spotty. Insurance has questions.",
         "A lion is sitting in the box. He fits. Science can't explain it."] },
-    { area: 'Swamp',
+    { area: 'Swamp', unlockText: "Kev found a swamp behind the shed. There was no swamp yesterday. It has one log, and the log has a caterpillar with big plans.",
       items: [['🐛','Caterpillar'],['🦋','Butterfly'],['🐸','Frog'],['🐊','Croc'],['🐉','Dragon']],
       flavor: ['Has big plans.','Plans achieved.','Sings bass in the swamp choir.','Runs a day spa. Mud only.','Paperwork pending.'],
       stages: [['🪵','A log'],['🦋','Butterfly bog'],['🐸','Frog choir'],['🐊','Croc day spa'],['🐉','Dragon (legal?)']],
@@ -363,11 +383,11 @@ RZ.data = {
      deliver (send n legendaries, optional area), fans (earn n fans this chapter). After these, endless episodes are generated forever. */
   chapters: [
     /* ===== SEASON 1 · THE BUTTERFLY EFFECT ===== */
-    { name: 'Opening Day', goal: { type: 'all', n: 2 }, title: 'Opening Day (again)', reward: { fans: 120, tape: 10 },
+    { name: 'Opening Day', goal: { type: 'all', n: 2 }, title: 'Opening Day (again)', reward: { fans: 120, tape: 10 }, unlock: 2,
       text: ["Bev's Beasts reopens. Fourteen visitors turn up, plus one goat-shaped balloon nobody brought.",
              "Side effect: everyone in town now says 'g'day' slightly too loud. Nobody can explain it."],
-      next: "Visitors are queuing! See the bubbles? Drag the animal they want up to their area." },
-    { name: 'First Customers', goal: { type: 'orders', n: 4 }, title: 'First Customers', reward: { fans: 150, tape: 15 },
+      next: "Visitors are turning up at the gate. Let's see what they want." },
+    { name: 'First Customers', goal: { type: 'orders', n: 4 }, title: 'First Customers', reward: { fans: 150, tape: 15 }, unlock: 3,
       text: ["Real visitors, with real money, asking for real animals.",
              "Side effect: Kev's car is now blue. It was never blue. Kev has the photos."],
       next: "Next up: Going Viral. Get every area to ★★★." },
@@ -502,6 +522,32 @@ RZ.data = {
       "Doug has started bringing his own crates.",
       "Doug was seen arguing with a seagull. The seagull lost.",
     ],
+  },
+
+  /* Tutorial: the first steps, shown with a pointing hand. */
+  tutorial: [
+    { title: 'Press play on 1986', text: 'Tap the Crate to drop an animal onto Nan Bev\'s 1986 tape.' },
+    { title: 'Tape is your energy', text: 'Each crate uses 1 📼 tape. It refills by itself. Tap the Crate again.' },
+    { title: 'Merge them', text: 'Two the same? Drag one egg onto the other to merge them into something new.' },
+    { title: 'Ripple!', text: 'That merge happened in 1986, and it rippled into 2026. The Coop just got better. Every new animal you make fixes something in Kev\'s sanctuary.' },
+    { title: 'Keep merging', text: 'Merge two Chicks to make a Hen. The number on each tile is its tier. Higher tiers fix more.' },
+    { title: 'Your first goal', text: 'Get the Coop and the Pond to ★★. The dots under each area are its stars. Finish the goal to finish the chapter.' },
+  ],
+
+  /* One-time tips, shown the first time each mechanic shows up. */
+  tips: {
+    requests: { title: 'Visitor requests', text: 'The bubble shows the animal visitors want. Drag it up to their area, or tap the area when the bubble glows green, for fans and tape. Animals with a ❤️ are wanted.' },
+    coins: { title: 'Visitor fans', text: 'Fixed areas earn fans from visitors over time, even while you\'re away. Tap the 🎟 badge to collect.' },
+    combo: { title: 'Combo!', text: 'Merge quickly and merges chain into a combo. The meter on the tape shows how long you have. Bigger combo, more fans.' },
+    cascade: { title: 'Cascade!', text: 'When a merge lands right next to its twin, it merges again by itself. Park twins side by side to set off chain reactions.' },
+    mystery: { title: 'Mystery crate', text: 'Merges sometimes drop a 🎁. Tap it to spin for tape, fans, a big animal or a jackpot.' },
+    golden: { title: 'Golden animal', text: 'Golden animals pay 3× fans and stay golden when you merge them. They also pay double on visitor requests.' },
+    legendary: { title: 'Legendary!', text: 'Tier 5 is the top. Tap SEND to ship it to 2026 for a big payout and 👑 renown, which makes that area earn more forever.' },
+    full: { title: 'Board full', text: 'No room on the tape. Merge something, or drag an animal you don\'t need onto the Bin.' },
+    tapeLow: { title: 'Low on tape', text: 'Tape refills by itself over time. Tap ➕ next to your tape for a quick top-up.' },
+    level: { title: 'Sanctuary level', text: 'Fans fill your sanctuary level. Every level up gives you bonus tape.' },
+    timeline: { title: 'The Butterfly Effect', text: 'Every fix in 2026 changes something else too. Tap the message bubble any time to read the whole story so far.' },
+    album: { title: 'Animal album', text: 'Every new animal you discover goes in the album 📖. There are 25 to find.' },
   },
 
   /* mystery crate outcomes, weighted */
@@ -694,21 +740,72 @@ RZ.data = {
   function intro() {
     open(`<div class="kicker">Bev's Beasts Sanctuary · 2026</div>
       <h2>Rewind Zoo</h2>
-      <div class="art">🪶 🛒 🕸️ 📦<small>● REC  JUN 14 1986</small></div>
+      <div class="art">🪶 🛒<small>● REC  JUN 14 1986</small></div>
       <p>Kev's animal sanctuary has one feather, a trolley in the pond and a review that just says "why".</p>
       <p>Then he finds Nan Bev's camcorder from 1986. Whatever happens on her tape echoes into today. Not always how you'd expect.</p>
-      <ol class="how">
-        <li>Tap Crate to drop 1986 animals onto the tape.</li>
-        <li>Drag two matching animals together to merge them. Or tap one, then the other.</li>
-        <li>Every new animal ripples into 2026 and fixes Kev's sanctuary.</li>
-        <li>2026 areas show a bubble with the animal visitors want. Drag it up for fans and tape. Tap 🎟 on an area to collect visitor fans.</li>
-        <li>Park twins side by side. When a merge lands next to its twin, it cascades.</li>
-      </ol>
-      <p class="hint">Prototype: tape refills every 6 s and ads are simulated.</p>
       <div class="row"><button class="btn go" id="go">Press REC</button></div>`, m => {
       m.querySelector('#go').onclick = () => { close(); RZ.game.introDone(); };
     });
   }
+
+  /* full reference, reachable from the story log */
+  function howto() {
+    open(`<div class="kicker">How to play</div><h2>The basics</h2>
+      <ol class="how">
+        <li>Tap Crate to drop 1986 animals onto the tape. Each crate uses 1 📼.</li>
+        <li>Drag two matching animals together to merge them, or tap one then the other.</li>
+        <li>Every new animal ripples into 2026 and fixes Kev's sanctuary. Sometimes it changes other things too.</li>
+        <li>Areas show a bubble with the animal visitors want. Drag it up for fans and tape. Tap 🎟 to collect visitor fans.</li>
+        <li>Quick merges make combos. A merge next to its twin cascades. 🎁 crates spin for prizes. Gold pays 3×.</li>
+        <li>Tier 5 animals can be sent to 2026 for 👑 renown.</li>
+      </ol>
+      <div class="row"><button class="btn go" id="x">Got it</button></div>`, m => { m.querySelector('#x').onclick = close; });
+  }
+
+  /* ---------- coach marks: a card, a highlight ring and an optional pointing hand ---------- */
+  let coachOn = false, handAnim = null, spots = [];
+  const coachEl = () => document.getElementById('coach'), handEl = () => document.getElementById('hand');
+  function coach({ title, text, targets = [], button, onButton, hand, step }) {
+    clearCoach();
+    coachOn = true;
+    const el = coachEl();
+    el.innerHTML = `<div class="ck">${step ? `<span>${step}</span>` : ''}${title}</div><p>${text}</p>${button ? `<button class="btn go" id="coachBtn">${button}</button>` : ''}`;
+    targets = targets.filter(Boolean);
+    spots = targets; targets.forEach(t => t.classList.add('spot'));
+    const r0 = targets[0] && targets[0].getBoundingClientRect();
+    const low = r0 && (r0.top + r0.height / 2) > innerHeight * 0.55;
+    el.classList.toggle('top', !!low); el.classList.toggle('bottom', !low);
+    el.hidden = false; RZ.fx.restart(el, 'in');
+    if (button) el.querySelector('#coachBtn').onclick = () => { clearCoach(); onButton && onButton(); };
+    if (hand && targets[0]) pointHand(hand, targets);
+  }
+  function pointHand(kind, targets) {
+    const h = handEl(); h.hidden = false;
+    const c = t => { const r = t.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+    const [x1, y1] = c(targets[0]);
+    h.style.left = x1 + 'px'; h.style.top = y1 + 'px';
+    if (RZ.fx.RM) return;
+    if (kind === 'drag' && targets[1]) {
+      const [x2, y2] = c(targets[1]);
+      handAnim = h.animate([
+        { transform: 'translate(-30%,0) scale(1)', opacity: 0 },
+        { transform: 'translate(-30%,0) scale(.85)', opacity: 1, offset: .15 },
+        { transform: `translate(calc(-30% + ${x2 - x1}px), ${y2 - y1}px) scale(.85)`, opacity: 1, offset: .7 },
+        { transform: `translate(calc(-30% + ${x2 - x1}px), ${y2 - y1}px) scale(1)`, opacity: 0 }],
+        { duration: 1700, iterations: Infinity, easing: 'ease-in-out' });
+    } else {
+      handAnim = h.animate([{ transform: 'translate(-30%,0) scale(1)' }, { transform: 'translate(-30%,-10px) scale(.88)' }, { transform: 'translate(-30%,0) scale(1)' }],
+        { duration: 900, iterations: Infinity, easing: 'ease-in-out' });
+    }
+  }
+  function clearCoach() {
+    coachOn = false;
+    const el = coachEl(); if (el) el.hidden = true;
+    const h = handEl(); if (h) h.hidden = true;
+    if (handAnim) { handAnim.cancel(); handAnim = null; }
+    spots.forEach(t => t.classList.remove('spot')); spots = [];
+  }
+  const coachVisible = () => coachOn;
 
   function ad(label, after) {
     let n = 3;
@@ -755,7 +852,7 @@ RZ.data = {
     RZ.sfx.fanfare(); RZ.fx.confetti(160); RZ.buzz([30, 50, 30]);
     open(`<div class="kicker">New area unlocked</div><h2>The ${c.area}</h2>
       <div class="art">${c.stages[0][0]} ${c.items.map(i => i[0]).join(' ')}<small>NEW CHAIN ON THE TAPE</small></div>
-      <p>Kev found a swamp behind the shed. It has one log. The log has a caterpillar. The caterpillar has big plans.</p>
+      <p>${c.unlockText}</p>
       <div class="row"><button class="btn go" id="go">Let's go</button></div>`, m => {
       m.querySelector('#go').onclick = () => { close(); after && after(); };
     });
@@ -781,7 +878,7 @@ RZ.data = {
       <div class="row"><button class="btn quiet" id="how">How to play</button><button class="btn go" id="x">Close</button></div>
       <div class="row"><button class="btn quiet small" id="reset">Restart game</button></div>`, m => {
       m.querySelector('#x').onclick = close;
-      m.querySelector('#how').onclick = intro;
+      m.querySelector('#how').onclick = howto;
       const r = m.querySelector('#reset'); let armed = false;
       r.onclick = () => {
         if (!armed) { armed = true; r.textContent = 'Tap again to wipe progress'; return; }
@@ -817,6 +914,7 @@ RZ.data = {
   function nextToast() {
     const o = q.shift(), el = document.getElementById('toast');
     if (!o) { busy = false; return; }
+    if (coachOn) { q.unshift(o); setTimeout(nextToast, 700); return; }   // wait for the coach card to close
     busy = true;
     el.innerHTML = `<span class="te">${o.e}</span><span class="tb"><span class="tk">New animal · ${o.n}/25</span><b>${o.name}</b><span class="tf">${o.flavor}</span></span>`;
     el.hidden = false; el.classList.remove('out'); RZ.fx.restart(el, 'in');
@@ -827,7 +925,7 @@ RZ.data = {
     }, 2300);
   }
 
-  RZ.ui = { open, close, intro, ad, outOfTape, chapter, unlock, season, log, album, toast };
+  RZ.ui = { open, close, intro, howto, ad, outOfTape, chapter, unlock, season, log, album, toast, coach, clearCoach, coachVisible, modalOpen: () => !modal().hidden };
 })();
 
 </script>
@@ -841,12 +939,13 @@ RZ.data = {
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const range = n => Array.from({ length: n }, (_, i) => i);
   const keyOf = (c, t) => c + '-' + t;
+  const TUT_END = 6;                                            // tutorial steps 0-5, then free play
+  const FEAT = { requests: 1, coins: 1, mystery: 2, golden: 4 };  // chapter index where each mechanic switches on
 
   /* ---------- state ---------- */
   function fresh() {
-    const g = Array(N).fill(null);
-    [[6,0,1],[8,0,1],[12,1,1],[17,1,1],[11,2,2],[13,3,1],[19,3,1],[16,2,1]].forEach(([i, c, t]) => g[i] = { c, t });
-    return { v: 3, season: 1, grid: g, stage: [0,0,0,0,0], areas: 4, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
+    const g = Array(N).fill(null);   // empty tape: the tutorial fills it
+    return { v: 4, season: 1, tut: 0, tips: {}, grid: g, stage: [0,0,0,0,0], areas: 2, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
       intro: false, muted: false, log: [], found: [], regenAt: Date.now(),
       req: [null,null,null,null,null], reqAt: [0,0,0,0,0], visit: [0,0,0,0,0], happy: [0,0,0,0,0], renown: [0,0,0,0,0], visitAt: Date.now(),
       seed: Math.floor(Math.random() * 1e9),
@@ -862,6 +961,12 @@ RZ.data = {
       s.v = 3;
     }
     s.season = s.season || 1;
+    if (s.tut === undefined) {   // v4 added the tutorial and one-time tips; existing players skip both
+      s.tut = s.intro ? TUT_END : 0;
+      s.tips = s.intro ? Object.fromEntries(Object.keys(D.tips).map(k => [k, 1])) : {};
+      s.v = 4;
+    }
+    s.tips = s.tips || {};
     for (const k of ['req', 'reqAt', 'visit', 'happy', 'renown']) { s[k] = s[k] || []; while (s[k].length < 5) s[k].push(k === 'req' ? null : 0); }
     s.visitAt = s.visitAt || Date.now();
     if (s.seed === undefined) s.seed = Math.floor(Math.random() * 1e9);
@@ -904,6 +1009,7 @@ RZ.data = {
   const stagesOf = c => (S.season >= 2 ? D.season2.areas[c].stages : D.chains[c].stages);
   const linesOf = c => (S.season >= 2 ? D.season2.areas[c].lines : D.chains[c].lines);
   const S2_START = D.chapters.findIndex(c => c.endsSeason === 1) + 1;
+  const feat = k => S.tut >= TUT_END && S.chapter >= FEAT[k];
   const need = l => 60 * (l - 1) * l;               // fans needed to reach level l
   function levelOf(f) { let l = 1; while (f >= need(l + 1)) l++; return l; }
   function weighted(list, w) { const tot = w.reduce((a, b) => a + b, 0); let r = Math.random() * tot, i = 0; while (r >= w[i]) { r -= w[i]; i++; } return list[i]; }
@@ -989,7 +1095,7 @@ RZ.data = {
     return { text, ...cnt(b, g.n), target: 0 };
   }
   function checkChapter() {
-    if (chapterOpen) return;
+    if (chapterOpen || S.tut < TUT_END) return;
     if (goalInfo().frac >= 0.9999) { chapterOpen = true; setTimeout(ui.chapter, fx.RM ? 200 : 1000); }
   }
   function completeChapter(mult) {
@@ -1038,11 +1144,11 @@ RZ.data = {
   }
   function renderGrid() { for (let i = 0; i < N; i++) if (!rolling.has(i)) renderCell(i); }
 
-  const unlockCh = D.chapters.findIndex(c => c.unlock !== undefined) + 2;
+  const opensLabel = i => { const k = D.chapters.findIndex(c => c.unlock === i); return k >= 0 ? `Opens Ch ${k + 2}` : 'Locked'; };
   function renderPlots(bump = -1) {
     const gi = goalInfo();
     plotsEl.innerHTML = D.chains.map((c, i) => {
-      if (i >= S.areas) return `<div class="plot locked" data-plot="${i}"><div class="pe">🔒</div><div class="pn">${c.area}</div><div class="pc">Opens Ch ${unlockCh}</div><div class="pips"><i></i><i></i><i></i><i></i></div></div>`;
+      if (i >= S.areas) return `<div class="plot locked" data-plot="${i}"><div class="pe">🔒</div><div class="pn">${c.area}</div><div class="pc">${opensLabel(i)}</div><div class="pips"><i></i><i></i><i></i><i></i></div></div>`;
       const s = S.stage[i], r = S.req[i];
       const marked = gi.target && (gi.area === undefined || gi.area === i);
       const pips = [1, 2, 3, 4].map(k => `<i class="${k <= s ? 'on' : ''}${marked && k === gi.target ? ' goal' : ''}"></i>`).join('') + (S.renown[i] ? `<em class="rn" title="Renown">👑${S.renown[i]}</em>` : '');
@@ -1060,7 +1166,7 @@ RZ.data = {
       const r = S.req[c], q = el.querySelector('.req');
       if (q) q.classList.toggle('ready', !!r && findItem(c, r.t) >= 0);
       const coin = el.querySelector('.coin'), v = Math.floor(S.visit[c]);
-      if (coin) { coin.hidden = v < D.VISIT_SHOW; coin.querySelector('b').textContent = v; }
+      if (coin) { coin.hidden = v < D.VISIT_SHOW; coin.querySelector('b').textContent = v; if (!coin.hidden) tip('coins', () => plotsEl.querySelector('.coin:not([hidden])')); }
     }
   }
 
@@ -1087,6 +1193,8 @@ RZ.data = {
     $('#goalNum').textContent = gi.num;
     $('#goalBar').style.width = Math.min(100, gi.frac * 100) + '%';
     $('#mute').textContent = S.muted ? '🔇' : '🔊';
+    $('#lvlPill').hidden = S.level < 2;
+    $('#albumBtn').hidden = S.tut < TUT_END;
   }
   function renderAll() { renderGrid(); renderPlots(); renderHUD(); }
 
@@ -1105,7 +1213,7 @@ RZ.data = {
       fx.floatText(x, y, `LEVEL ${l}!`, 'huge');
       setTimeout(() => fx.floatText(x, y + 40, '+10 📼', 'big'), 250);
       say('bev', pick(D.levelLines));
-      renderHUD();
+      renderHUD(); tip('level', () => $('#lvlPill'));
     }, 350);
   }
 
@@ -1119,6 +1227,7 @@ RZ.data = {
     if (combo > S.stats.chCombo) S.stats.chCombo = combo;
     if (combo >= 2) {
       cmEl.hidden = false; cmN.textContent = '×' + combo; fx.restart(cmEl, 'hit');
+      tip('combo', () => cmEl);
       cancelAnimationFrame(cmRaf);
       (function step() {
         const left = comboUntil - performance.now();
@@ -1136,17 +1245,21 @@ RZ.data = {
     const empties = emptyCells();
     if (!empties.length) {
       fx.restart($('#crate'), 'shake'); sfx.bad(); buzz(30);
-      say('bev', "Board's full, love! Merge something or bin it.", false); return;
+      say('bev', "Board's full, love! Merge something or bin it.", false); tip('full', () => $('#bin')); return;
     }
     const gi = goalInfo(), chains = range(S.areas);
     const w = chains.map(c => gi.area !== undefined ? (c === gi.area ? 3 : 1) : (gi.target && S.stage[c] < gi.target ? 2 : 1));
-    const c = weighted(chains, w), t = Math.random() < D.TIER2_RATE ? 2 : 1, g = Math.random() < D.GOLD_RATE;
-    const i = pick(empties);
+    const tut = S.tut < 2;   // the first two crates are always eggs, placed where the tutorial can point at them
+    const c = tut ? 0 : weighted(chains, w);
+    const t = S.tut >= TUT_END && Math.random() < D.TIER2_RATE ? 2 : 1, g = feat('golden') && Math.random() < D.GOLD_RATE;
+    const spot = S.tut === 0 ? 11 : 13, i = tut && !S.grid[spot] ? spot : pick(empties);
     S.grid[i] = g ? { c, t, g: 1 } : { c, t };
     S.tape--; if (S.tape === MAX_TAPE - 1) S.regenAt = Date.now();
     setSel(null); renderCell(i, 'spawn'); renderHUD(); sfx.spawn(); buzz(6);
-    if (g) { sfx.gold(); const [x, y] = fx.center(cellAt(i)); fx.floatText(x, y - 6, 'GOLDEN!', 'gold'); }
+    if (g) { sfx.gold(); const [x, y] = fx.center(cellAt(i)); fx.floatText(x, y - 6, 'GOLDEN!', 'gold'); tip('golden', () => cellAt(i).querySelector('.tile')); }
     discover(c, t);
+    if (tut) { S.tut++; ui.clearCoach(); save(); setTimeout(tutStep, 500); }
+    if (S.tape <= 5 && S.tape > 0) tip('tapeLow', () => $('#adBtn'));
     if (Math.random() < 0.05) say('doug', pick(D.doug));
     save();
   }
@@ -1169,7 +1282,10 @@ RZ.data = {
     const el = cellAt(b), [x, y] = fx.center(el);
     fx.burst(x, y, D.COL[A.c]);
     fx.floatText(x, y - 8, `+${gain}`);
-    if (cascade) fx.floatText(x, y - 36, 'CASCADE!', 'small');
+    if (cascade) { fx.floatText(x, y - 36, 'CASCADE!', 'small'); tip('cascade', () => cellAt(b).querySelector('.tile')); }
+    if (nt === 5) tip('legendary', () => cellAt(b).querySelector('.tile'));
+    if (S.tut === 2) { S.tut = 3; ui.clearCoach(); }
+    if (S.tut === 4 && nt >= 3) { S.tut = 5; ui.clearCoach(); setTimeout(tutStep, 1900); }
     if (gold) { S.stats.golden++; S.stats.chGolden++; fx.burst(x, y, '--gold', 14); fx.floatText(x, y + 20, 'GOLD ×3', 'gold'); sfx.gold(); }
     if (k >= 2) { const [gx, gy] = fx.center(gridEl); fx.floatText(gx, gy - 30, `COMBO ×${k}`, k >= 5 ? 'huge' : 'big'); }
     if (k >= 4) fx.shake(k >= 6);
@@ -1203,7 +1319,8 @@ RZ.data = {
       fx.floatText(px, py - 6, 'RIPPLE!', 'big');
       sfx.ripple(); buzz([10, 40, 14]);
       say('kev', linesOf(c)[ns]);
-      setTimeout(() => say('tl', sideEffect()), 2600);
+      if (S.tut === 3) setTimeout(tutStep, 700);
+      else if (S.tut >= TUT_END) setTimeout(() => { say('tl', sideEffect()); tip('timeline', () => $('#msg')); }, 2600);
       const bonus = 20 * ns; setTimeout(() => fx.floatText(px, py + 18, `+${bonus}`), 180);
       addFans(bonus); save(); checkChapter();
     });
@@ -1213,18 +1330,19 @@ RZ.data = {
     const k = keyOf(c, t); if (S.found.includes(k)) return;
     S.found.push(k);
     const [e, name] = D.chains[c].items[t - 1];
-    ui.toast({ e, name, flavor: D.chains[c].flavor[t - 1], n: S.found.length });
+    if (S.tut >= TUT_END) ui.toast({ e, name, flavor: D.chains[c].flavor[t - 1], n: S.found.length });   // no toasts over the tutorial
     addFans(25);
   }
 
   function maybeMystery(nt) {
-    if (Math.random() >= 0.04 + 0.02 * nt) return;
+    if (!feat('mystery') || Math.random() >= 0.04 + 0.02 * nt) return;
     const e = emptyCells(); if (!e.length) return;
     const j = pick(e); S.grid[j] = { m: 1 }; renderCell(j, 'spawn');
     setTimeout(() => {
       if (!S.grid[j] || !S.grid[j].m) return;
       sfx.mystery();
       const [x, y] = fx.center(cellAt(j)); fx.floatText(x, y - 10, 'MYSTERY!', 'small');
+      tip('mystery', () => cellAt(j).querySelector('.tile'));
     }, 260);
   }
 
@@ -1245,6 +1363,7 @@ RZ.data = {
   }
   function finishMystery(i, r) {
     rolling.delete(i);
+    if (r.kind === 'gold' && !feat('golden')) r = D.mystery.find(m => m.kind === 'item');
     const [x, y] = fx.center(cellAt(i));
     if (r.kind === 'tape') { S.grid[i] = null; S.tape += r.n; renderHUD(); }
     else if (r.kind === 'fans') { S.grid[i] = null; addFans(r.n); }
@@ -1252,6 +1371,7 @@ RZ.data = {
       const c = pick(range(S.areas));
       S.grid[i] = r.kind === 'gold' ? { c, t: r.t, g: 1 } : { c, t: r.t };
       discover(c, r.t); echo(c, r.t, cellAt(i));
+      if (r.kind === 'gold') tip('golden', () => cellAt(i).querySelector('.tile'));
     }
     renderCell(i, 'pop');
     fx.burst(x, y, '--sun', 14);
@@ -1360,14 +1480,52 @@ RZ.data = {
   function introDone() {
     S.intro = true; save(); sfx.unlock(); sfx.fanfare();
     say('bev', 'Is this thing on? Hello, future! Say hi, Doug.');
-    setTimeout(() => say('kev', 'See the bubbles on my areas? Visitors want those animals. Merge one up and drag it here.'), 3500);
-    checkChapter();
+    if (S.tut < TUT_END) setTimeout(tutStep, 900); else checkChapter();
+  }
+
+  /* ---------- tutorial: one mechanic at a time, with a pointing hand ---------- */
+  function tutStep() {
+    if (S.tut >= TUT_END || ui.modalOpen()) return;
+    const T = D.tutorial[S.tut], step = `${S.tut + 1}/${TUT_END}`;
+    if (S.tut <= 1) {
+      ui.coach({ ...T, step, targets: [$('#crate'), S.tut === 1 ? $('#tape').closest('.pill') : null], hand: 'tap' });
+    } else if (S.tut === 2) {
+      const eggs = range(N).filter(i => S.grid[i] && !S.grid[i].m && S.grid[i].c === 0 && S.grid[i].t === 1);
+      if (eggs.length < 2) { S.tut = eggs.length ? 1 : 0; save(); tutStep(); return; }
+      ui.coach({ ...T, step, targets: [cellAt(eggs[0]).querySelector('.tile'), cellAt(eggs[1]).querySelector('.tile')], hand: 'drag' });
+    } else if (S.tut === 3) {
+      ui.coach({ ...T, step, targets: [plotAt(0)], button: 'Nice!', onButton: () => { S.tut = 4; save(); tutStep(); } });
+    } else if (S.tut === 4) {
+      ui.coach({ ...T, step, targets: [$('#crate')] });
+    } else {
+      ui.coach({ ...T, step, targets: [$('.goal')], button: "Let's go", onButton: () => {
+        S.tut = TUT_END; save(); renderAll();
+        say('kev', "Right. Let's fix this place. Coop and Pond first.");
+        tip('album', () => $('#albumBtn')); checkChapter();
+      } });
+    }
+  }
+
+  /* ---------- one-time tips, queued so they never stack ---------- */
+  const tipQ = [];
+  function tip(id, target) {
+    if (!S || S.tut < TUT_END || S.tips[id] || tipQ.some(q => q.id === id) || !D.tips[id]) return;
+    tipQ.push({ id, target }); setTimeout(pumpTips, 400);
+  }
+  function pumpTips() {
+    if (!tipQ.length || ui.coachVisible() || ui.modalOpen() || drag || chapterOpen) return;
+    const { id, target } = tipQ.shift();
+    if (S.tips[id]) { pumpTips(); return; }
+    S.tips[id] = 1; save();
+    const t = D.tips[id], el = typeof target === 'function' ? target() : target;
+    ui.coach({ title: t.title, text: t.text, targets: [el], button: 'Got it', onButton: () => setTimeout(pumpTips, 350) });
   }
 
   function reset() {
     const muted = S.muted; setState(fresh()); S.muted = muted;
     sel = null; chapterOpen = false; combo = 0; shownFans = 0; rolling.clear();
-    markStarters(); save(); renderAll(); say('kev', "Nan's old camcorder still works. Apparently. Let's see what's on the tape.", false);
+    tipQ.length = 0; ui.clearCoach();
+    save(); renderAll(); say('kev', "Nan's old camcorder still works. Apparently. Let's see what's on the tape.", false);
     ui.intro();
   }
 
@@ -1455,10 +1613,13 @@ RZ.data = {
   function tickAreas() {
     const now = Date.now(), dt = Math.max(0, Math.min(now - S.visitAt, D.OFFLINE_CAP_S * 1000)) / 1000;
     S.visitAt = now;
+    const reqOn = feat('requests'), coinOn = feat('coins');
     for (let c = 0; c < S.areas; c++) {
-      S.visit[c] = Math.min(visitCap(c), S.visit[c] + visitRate(c) * dt);
-      if (!S.req[c] && now >= S.reqAt[c]) { newRequest(c); areaRenderDue = true; }
+      if (coinOn) S.visit[c] = Math.min(visitCap(c), S.visit[c] + visitRate(c) * dt);
+      if (reqOn && !S.req[c] && now >= S.reqAt[c]) { newRequest(c); areaRenderDue = true; }
     }
+    if (reqOn && S.req.some(Boolean)) tip('requests', () => plotsEl.querySelector('.req'));
+    pumpTips();
     if (areaRenderDue && !drag) {
       areaRenderDue = false;
       renderPlots(); renderGrid();
@@ -1479,7 +1640,7 @@ RZ.data = {
   const last = S.log[S.log.length - 1];
   if (last) say(last[0], last[1], false);
   else say('kev', "Nan's old camcorder still works. Apparently. Let's see what's on the tape.", false);
-  if (!S.intro) ui.intro(); else checkChapter();
+  if (!S.intro) ui.intro(); else if (S.tut < TUT_END) setTimeout(tutStep, 600); else checkChapter();
 })();
 
 </script>
