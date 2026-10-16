@@ -290,6 +290,19 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 @media (prefers-reduced-motion: reduce){ .dg.up{animation:none} }
 .dg b{white-space:nowrap} .dg.then b{font-size:18px}
 
+/* level-complete preview and day-end summary */
+.nextbox{background:var(--sky-2);border:2.5px dashed var(--ink);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.nextbox .nk{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.nextbox b{font-family:var(--font-display);font-weight:400;font-size:20px;line-height:1.05}
+.nextbox p{font-size:13.5px;line-height:1.4}
+.goalchip{align-self:flex-start;background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600}
+.daysum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.daysum div{background:var(--sun-soft);border:2px solid var(--ink);border-radius:12px;padding:6px 4px;display:flex;flex-direction:column}
+.daysum b{font-family:var(--font-display);font-weight:400;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
+.daysum span{font-size:11px;color:var(--ink-soft)}
+.tmr{background:var(--mint-soft);border-radius:12px;padding:8px 10px;font-size:14px}
+.tmr b{display:block;font-family:var(--font-display);font-weight:400;font-size:15px}
+
 </style>
 </head>
 <body>
@@ -399,35 +412,65 @@ RZ.data = {
         "There's a dragon. I've filed form 27B: 'large lizard, flammable'."] },
   ],
 
-  /* goal types: all (every unlocked area to n stars), area (one area to n), combo (hit xN), golden (n golden merges), orders (fill n visitor requests),
+  /* goal types: make (create item c,t), collect (collect visitor fans n times), open (open n mystery crates), all (every unlocked area to n stars), area (one area to n), combo (hit xN), golden (n golden merges), orders (fill n visitor requests),
      deliver (send n legendaries, optional area), fans (earn n fans this chapter). After these, endless episodes are generated forever. */
   chapters: [
-    /* ===== SEASON 1 · THE BUTTERFLY EFFECT ===== */
-    { name: 'Opening Day', goal: { type: 'all', n: 2 }, title: 'Opening Day (again)', reward: { fans: 120, tape: 10 }, unlock: 2,
-      text: ["Bev's Beasts reopens. Fourteen visitors turn up, plus one goat-shaped balloon nobody brought.",
-             "Side effect: everyone in town now says 'g'day' slightly too loud. Nobody can explain it."],
-      next: "Visitors are turning up at the gate. Let's see what they want." },
-    { name: 'First Customers', goal: { type: 'orders', n: 4 }, title: 'First Customers', reward: { fans: 150, tape: 15 }, unlock: 3,
-      text: ["Real visitors, with real money, asking for real animals.",
-             "Side effect: Kev's car is now blue. It was never blue. Kev has the photos."],
-      next: "Next up: Going Viral. Get every area to ★★★." },
+    /* ===== SEASON 1 · THE BUTTERFLY EFFECT =====
+       Short levels, one new thing each. teach = how the level is explained on the previous "Level complete" screen.
+       endsDay = a natural stopping point with a day summary. unlock = area that opens when the level is done. */
+    { name: 'First Merge', goal: { type: 'make', c: 0, t: 2 }, title: 'First Merge', reward: { fans: 30, tape: 5 },
+      teach: 'Tap the Crate, then drag one egg onto the other.',
+      text: ["Chicks. Real ones. In the Coop. Kev did not buy chicks."] },
+    { name: 'Hen House', goal: { type: 'make', c: 0, t: 3 }, title: 'Hen House', reward: { fans: 40, tape: 5 }, unlock: 1,
+      teach: 'Merge two Chicks into a Hen. The number on each tile is its tier. Higher tiers fix more.',
+      text: ["Free eggs for everyone. Kev has had four omelettes and regrets nothing."] },
+    { name: 'The Pond', goal: { type: 'make', c: 1, t: 2 }, title: 'The Pond', reward: { fans: 50, tape: 5 },
+      teach: 'A new area! The Pond has its own animals. Merge two Goldfish into a Fancy Fish.',
+      text: ["The trolley is out of the pond. Something with fins is in."] },
+    { name: 'Fix It Up', goal: { type: 'all', n: 2 }, title: 'Fix It Up', reward: { fans: 80, tape: 10 },
+      teach: 'Get both areas to ★★. The dots under each area are its stars.',
+      text: ["The Coop and the Pond are open for business. Sort of.",
+             "Side effect: everyone in town now says 'g'day' slightly too loud. Nobody can explain it."] },
+    { name: 'First Visitor', goal: { type: 'orders', n: 1 }, title: 'First Visitor', reward: { fans: 80, tape: 10 },
+      teach: 'Visitors now arrive with a bubble showing the animal they want. Drag that animal up to their area for fans and tape.',
+      text: ["One family, one Pufferfish, one very happy kid."] },
+    { name: 'Busy Morning', goal: { type: 'orders', n: 3 }, title: 'Busy Morning', reward: { fans: 120, tape: 15 }, endsDay: 1,
+      teach: 'Three more visitors. Animals with a ❤️ are the ones someone wants right now.',
+      text: ["The gate is busy. Kev bought a whistle. Nobody knows why.",
+             "Side effect: Kev's car is now blue. It was never blue. Kev has the photos."] },
+    { name: 'Welcome Back', goal: { type: 'collect', n: 1 }, title: 'Welcome Back', reward: { fans: 100, tape: 15 }, unlock: 2,
+      teach: 'Fixed areas earn fans from visitors over time, even while you are away. Tap the 🎟 badge on an area to collect.',
+      text: ["Visitors paid while Kev slept. He's calling it passive income."] },
+    { name: 'The Kennel', goal: { type: 'area', area: 2, n: 2 }, title: 'The Kennel', reward: { fans: 120, tape: 15 },
+      teach: 'The Kennel is open. Bones become puppies. Get the Kennel to ★★.',
+      text: ["PUPPIES. Kev is not crying. Kev is absolutely crying."] },
+    { name: 'Quick Paws', goal: { type: 'combo', n: 2 }, title: 'Quick Paws', reward: { fans: 120, tape: 15 }, unlock: 3,
+      teach: 'Merge twice in a row, fast, to make a combo. Combos pay more fans. The meter on the tape shows how long you have.',
+      text: ["Doug watched the combo. Doug approved."] },
+    { name: 'Cat Box', goal: { type: 'area', area: 3, n: 2 }, title: 'Cat Box', reward: { fans: 150, tape: 15 },
+      teach: 'There is a big empty box out the back. Get the Cats to ★★.',
+      text: ["A kitten moved into the box. The box is now priceless."] },
+    { name: 'Lucky Dip', goal: { type: 'open', n: 1 }, title: 'Lucky Dip', reward: { fans: 150, tape: 20 }, endsDay: 2,
+      teach: 'Merges can now drop a 🎁 mystery crate. Tap it to spin for a prize.',
+      text: ["Nan Bev's tape shows her hiding crates around the place in 1986. She is still hiding things."] },
     { name: 'Going Viral', goal: { type: 'all', n: 3 }, title: 'Going Viral', reward: { fans: 250, tape: 15 }, unlock: 4,
+      teach: 'Every area to ★★★. Higher tiers, bigger fixes.',
       text: ["A clip of the poodle blow-drying the dolphin hits 2 million views.",
-             "Side effect: Kev now has a moustache. Everyone insists he always did. His mum has framed it."],
-      next: "There's a SWAMP behind the shed. There was no swamp yesterday. Get the Swamp to ★★★." },
+             "Side effect: Kev now has a moustache. Everyone insists he always did. His mum has framed it."] },
     { name: 'Swamp Thing', goal: { type: 'area', area: 4, n: 3 }, title: 'Swamp Thing', reward: { fans: 300, tape: 15 },
+      teach: 'A swamp appeared behind the shed. It was not there yesterday. Get the Swamp to ★★★.',
       text: ["The frog choir drops a one-note single. It goes to number one.",
-             "Nan Bev admits she 'popped a caterpillar in the creek' in 1986. Apparently that's how swamps work now."],
-      next: "Next: Chain Reaction. Hit a ×5 combo. Park twins side by side to set off cascades." },
+             "Nan Bev admits she 'popped a caterpillar in the creek' in 1986. Apparently that's how swamps work now."] },
     { name: 'Chain Reaction', goal: { type: 'combo', n: 5 }, title: 'Chain Reaction', reward: { fans: 350, tape: 20 },
+      teach: 'Hit a ×5 combo. Tip: park twins side by side. When a merge lands next to its twin, it cascades by itself.',
       text: ["One merge set off every animal at once. The ripple renamed the town for six minutes.",
-             "Doug watched the replay eleven times. He's taking notes. On what, nobody knows."],
-      next: "Next: Gold Rush. Make 4 golden merges. Gold comes from crates and mystery boxes." },
+             "Doug watched the replay eleven times. He's taking notes. On what, nobody knows."] },
     { name: 'Gold Rush', goal: { type: 'golden', n: 4 }, title: 'Gold Rush', reward: { fans: 400, tape: 20 },
+      teach: 'Golden animals start turning up. They pay 3× and stay golden when merged. Make 4 golden merges.',
       text: ["Golden animals keep turning up. A jeweller has started following the peacock around.",
-             "Side effect: Kev's teeth are now slightly gold. The dentist says it's 'a 1986 thing'."],
-      next: "Final: make every area legendary. ★★★★" },
+             "Side effect: Kev's teeth are now slightly gold. The dentist says it's 'a 1986 thing'."] },
     { name: 'Season Finale', goal: { type: 'all', n: 4 }, title: 'Season 1 Finale', reward: { fans: 800, tape: 40 }, endsSeason: 1,
+      teach: 'The big one. Every area to ★★★★, legendary.',
       text: ["A whale, a wolf, a lion, a peacock and a dragon walk into a sanctuary. It isn't a joke. It's a 5-star review.",
              "Nan Bev finally stops recording. “See you in forty years, love.” Doug winks. Pigeons can't wink.",
              "Then the tape rewinds by itself. Too far. Kev wakes up somewhere that looks like home. It isn't."],
@@ -464,6 +507,16 @@ RZ.data = {
              "The tape keeps rolling. From here, every episode 2026 comes out a little different. Forever."],
       next: "The tape won't stop. Endless episodes start now. Every one changes 2026 a bit." },
   ],
+
+  /* Day-end screens: natural stopping points in the early game. */
+  days: {
+    1: { title: 'Opening day, done', art: '🌙 🐔 🐠',
+         text: ["The Coop and the Pond are back. Visitors came, paid and left happy. One left with a chicken. That's being looked into."],
+         tomorrow: "Visitors keep paying while you're away. Collect their fans, then the Kennel opens." },
+    2: { title: 'A proper sanctuary', art: '🌙 🐶 🐱',
+         text: ["Four areas open, combos landing, mystery crates turning up. Nan Bev would be proud. On the tape, she says she is."],
+         tomorrow: 'Going viral. Every area to ★★★, and something is waiting behind the shed.' },
+  },
 
   /* Season 2: same animals, different 2026. Each area starts as Kevin's corporate version and gets set free. */
   season2: {
@@ -558,8 +611,8 @@ RZ.data = {
     { kicker: 'The catch', title: 'The Butterfly Effect', art: '🦋 ⏳ 🐦',
       text: ["Every fix changes something else in 2026 too. Sometimes it's a new gift shop. Sometimes Kev suddenly has a moustache.",
              "And keep an eye on Doug the pigeon. He's on every tape, in every year. He hasn't aged a feather."] },
-    { kicker: 'Your first job', title: 'Fix the Coop and the Pond', art: '🪶 ➜ 🐔   🛒 ➜ 🐠',
-      text: ["Start small: two areas and a crate of 1986 animals. Each move gets shown to you the first time you need it."],
+    { kicker: 'Your first job', title: 'Fix the Coop', art: '🪶 ➜ 🐣',
+      text: ["Start small: one area, one crate of 1986 animals. The game is played in short levels, and each one shows you one new thing."],
       button: 'Press REC' },
   ],
 
@@ -569,8 +622,6 @@ RZ.data = {
     { title: 'Tape is your energy', text: 'Each crate uses 1 📼 tape. It refills by itself. Tap the Crate again.' },
     { title: 'Merge them', text: 'Two the same? Drag one egg onto the other to merge them into something new.' },
     { title: 'Ripple!', text: 'That merge happened in 1986, and it rippled into 2026. The Coop just got better. Every new animal you make fixes something in Kev\'s sanctuary.' },
-    { title: 'Keep merging', text: 'Merge two Chicks to make a Hen. The number on each tile is its tier. Higher tiers fix more.' },
-    { title: 'Your first goal', text: 'Get the Coop and the Pond to ★★. The dots under each area are its stars. Finish the goal to finish the chapter.' },
   ],
 
   /* One-time tips, shown the first time each mechanic shows up. */
@@ -584,7 +635,7 @@ RZ.data = {
     legendary: { title: 'Legendary!', text: 'Tier 5 is the top. Tap SEND to ship it to 2026 for a big payout and 👑 renown, which makes that area earn more forever.' },
     full: { title: 'Board full', text: 'No room on the tape. Merge something, or drag an animal you don\'t need onto the Bin.' },
     tapeLow: { title: 'Low on tape', text: 'Tape refills by itself over time. Tap ➕ next to your tape for a quick top-up.' },
-    level: { title: 'Sanctuary level', text: 'Fans fill your sanctuary level. Every level up gives you bonus tape.' },
+    level: { title: 'Sanctuary rank', text: 'Fans raise your sanctuary rank ⭐. Every rank up gives you bonus tape.' },
     timeline: { title: 'The Butterfly Effect', text: 'Every fix in 2026 changes something else too. Tap the message bubble any time to read the whole story so far.' },
     album: { title: 'Animal album', text: 'Every new animal you discover goes in the album 📖. There are 25 to find.' },
   },
@@ -602,8 +653,8 @@ RZ.data = {
   bev: ["Ooh, quick hands! My perm can barely keep up.", "RECORDING! Wave to the future, kids!",
         "I've balanced the camcorder on the fence post. Rain is the future's problem.",
         "Kevin, if you're watching this, eat a vegetable.", "That's a combo! I don't know what a combo is but I love it."],
-  levelLines: ["Level up! I'd do a cartwheel but my perm can't take it.", "Ooh, a level! Doug, fetch the good biscuits.",
-               "Another level, love! The camcorder is getting warm.", "Look at you go. I'm putting this on the fridge."],
+  levelLines: ["Rank up! I'd do a cartwheel but my perm can't take it.", "Ooh, a new rank! Doug, fetch the good biscuits.",
+               "Another rank, love! The camcorder is getting warm.", "Look at you go. I'm putting this on the fridge."],
   reviews: ["5 stars. Met a {a}. Would cry again.", "Brought my nan to see the {a}. She cried. 5 stars.",
             "The {a} winked at me. Unclear if that's allowed. 5 stars.", "Came for the {a}, stayed for Doug.",
             "Gift shop sold out of {a} plushies. Riot narrowly avoided.", "My kid now wants to BE a {a}. Thanks a lot. 5 stars.",
@@ -899,17 +950,42 @@ RZ.data = {
     });
   }
 
+  /* end-of-level screen: reward, a line of story, and what the next level teaches */
   function chapter() {
-    const S = RZ.S, ch = RZ.game.chapter(), f = RZ.game.fmt;
+    const S = RZ.S, ch = RZ.game.chapter(), f = RZ.game.fmt, nx = RZ.game.preview();
     const art = D.chains.slice(0, S.areas).map((c, i) => RZ.game.stagesOf(i)[S.stage[i]][0]).join(' ');
     RZ.sfx.fanfare(); RZ.buzz([20, 60, 20, 60, 40]); RZ.fx.confetti(90);
-    open(`<div class="kicker">${ch.endless ? `Episode ${ch.ep} complete · endless tape` : `${RZ.game.chapterLabel()} complete`}</div><h2>${ch.title}</h2>
+    open(`<div class="kicker">${RZ.game.chapterLabel()} complete${ch.endless ? ' · endless tape' : ''}</div><h2>${ch.title.replace(/^Ep \d+: /, '')}</h2>
       <div class="art">${art}<small>2026 · BEV'S BEASTS</small></div>
       ${ch.text.map(t => `<p>${t}</p>`).join('')}
       <div class="reward">+${f(ch.reward.fans)} 🎟 &nbsp; +${ch.reward.tape} 📼</div>
-      <div class="row"><button class="btn alt" id="dbl">Watch ad · 2× fans</button><button class="btn go" id="take">Collect</button></div>`, m => {
+      ${ch.endsSeason ? '' : `<div class="nextbox"><div class="nk">Next · ${nx.label}</div><b>${nx.title}</b>${nx.teach ? `<p>${nx.teach}</p>` : ''}<span class="goalchip">🎯 ${nx.goal}</span></div>`}
+      <div class="row">${S.chapter >= 3 ? '<button class="btn alt" id="dbl">Watch ad · 2× fans</button>' : ''}<button class="btn go" id="take">${ch.endsDay || ch.endsSeason ? 'Collect' : 'Next level ▶'}</button></div>`, m => {
       m.querySelector('#take').onclick = () => { close(); RZ.game.completeChapter(1); };
-      m.querySelector('#dbl').onclick = () => ad(`+${f(ch.reward.fans * 2)} 🎟`, () => RZ.game.completeChapter(2));
+      const dbl = m.querySelector('#dbl'); if (dbl) dbl.onclick = () => ad(`+${f(ch.reward.fans * 2)} 🎟`, () => RZ.game.completeChapter(2));
+    });
+  }
+
+  /* day end: a natural place to stop, with a summary and what's coming tomorrow */
+  function dayEnd(n, sum, after) {
+    const d = D.days[n];
+    RZ.sfx.fanfare(); RZ.fx.confetti(140); RZ.buzz([30, 60, 30]);
+    open(`<div class="kicker">Day ${n} complete</div><h2>${d.title}</h2>
+      <div class="art">${d.art}<small>TAPE PAUSED · DAY ${n}</small></div>
+      <div class="daysum"><div><b>${sum.fans}</b><span>fans today</span></div><div><b>${sum.levels}</b><span>levels done</span></div><div><b>${sum.found}/25</b><span>animals found</span></div></div>
+      ${d.text.map(t => `<p>${t}</p>`).join('')}
+      <p class="tmr"><b>Tomorrow</b>${d.tomorrow}</p>
+      <div class="row"><button class="btn quiet" id="rest">Done for today</button><button class="btn go" id="keep">Keep playing</button></div>`, m => {
+      m.querySelector('#keep').onclick = () => { close(); after && after(); };
+      m.querySelector('#rest').onclick = () => sleep(after);
+    });
+  }
+  function sleep(after) {
+    open(`<div class="kicker">See you soon</div><h2>Tape paused</h2>
+      <div class="art">⏸ 📼<small>VISITORS STILL EARNING</small></div>
+      <p>Visitors keep paying fans while you're away, up to two hours' worth. Come back to collect them and start tomorrow.</p>
+      <div class="row"><button class="btn go" id="back">Back to the tape</button></div>`, m => {
+      m.querySelector('#back').onclick = () => { close(); after && after(); };
     });
   }
 
@@ -993,7 +1069,7 @@ RZ.data = {
     }, 2300);
   }
 
-  RZ.ui = { open, close, intro, howto, ad, outOfTape, chapter, unlock, season, log, album, toast, coach, clearCoach, coachVisible, modalOpen: () => !modal().hidden };
+  RZ.ui = { open, close, intro, howto, dayEnd, sleep, ad, outOfTape, chapter, unlock, season, log, album, toast, coach, clearCoach, coachVisible, modalOpen: () => !modal().hidden };
 })();
 
 </script>
@@ -1008,17 +1084,17 @@ RZ.data = {
   const range = n => Array.from({ length: n }, (_, i) => i);
   const keyOf = (c, t) => c + '-' + t;
   const STORY_V = 1;                                           // bump to re-show the story intro to everyone once
-  const TUT_END = 6;                                            // tutorial steps 0-5, then free play
-  const FEAT = { requests: 1, coins: 1, mystery: 2, golden: 4 };  // chapter index where each mechanic switches on
+  const TUT_END = 4;                                            // tutorial steps 0-3 (inside Level 1), then levels teach the rest
+  const FEAT = { tier2: 3, requests: 4, coins: 6, mystery: 10, golden: 14 };  // level index where each mechanic switches on
 
   /* ---------- state ---------- */
   function fresh() {
     const g = Array(N).fill(null);   // empty tape: the tutorial fills it
-    return { v: 4, season: 1, tut: 0, tips: {}, grid: g, stage: [0,0,0,0,0], areas: 2, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
+    return { v: 5, season: 1, tut: 0, tips: {}, dayFans: 0, dayStartCh: 0, grid: g, stage: [0,0,0,0,0], areas: 1, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
       intro: false, muted: false, log: [], found: [], regenAt: Date.now(),
       req: [null,null,null,null,null], reqAt: [0,0,0,0,0], visit: [0,0,0,0,0], happy: [0,0,0,0,0], renown: [0,0,0,0,0], visitAt: Date.now(),
       seed: Math.floor(Math.random() * 1e9),
-      stats: { golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0 } };
+      stats: { golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0 } };
   }
   function migrate(s) {
     s.stage = s.stage || []; while (s.stage.length < 5) s.stage.push(0);
@@ -1036,12 +1112,21 @@ RZ.data = {
       s.v = 4;
     }
     s.tips = s.tips || {};
+    if (s.v === 4) {   // v5 split the early chapters into short levels: map old chapter indices onto the new list
+      const old = s.chapter;
+      if (old === 0) s.chapter = s.tut >= 6 ? 3 : (s.stage[0] >= 2 ? 2 : s.stage[0] >= 1 ? 1 : 0);
+      else if (old < 7) s.chapter = [3, 5, 11, 12, 13, 14, 15][old];
+      else s.chapter = old + 9;
+      if (s.tut >= 4) s.tut = 4;
+      s.v = 5;
+    }
+    s.dayFans = s.dayFans || 0; if (s.dayStartCh === undefined) s.dayStartCh = s.chapter;
     for (const k of ['req', 'reqAt', 'visit', 'happy', 'renown']) { s[k] = s[k] || []; while (s[k].length < 5) s[k].push(k === 'req' ? null : 0); }
     s.visitAt = s.visitAt || Date.now();
     if (s.seed === undefined) s.seed = Math.floor(Math.random() * 1e9);
     if (!Array.isArray(s.stats && s.stats.chDel)) { s.stats = s.stats || {}; s.stats.chDel = [0,0,0,0,0]; }
     s.found = s.found || []; s.log = s.log || [];
-    s.stats = Object.assign({ golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0 }, s.stats || {});
+    s.stats = Object.assign({ golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0 }, s.stats || {});
     s.level = s.level || 1; s.regenAt = s.regenAt || Date.now();
     s.grid = s.grid.map(v => (v && typeof v === 'object') ? v : null);
     return s;
@@ -1139,6 +1224,9 @@ RZ.data = {
   }
   function goalText(g) {
     const stars = n => '★'.repeat(n);
+    if (g.type === 'make') return `Make a ${D.chains[g.c].items[g.t - 1][1]}`;
+    if (g.type === 'collect') return g.n > 1 ? `Collect visitor fans ${g.n} times` : 'Collect visitor fans';
+    if (g.type === 'open') return g.n > 1 ? `Open ${g.n} mystery crates` : 'Open a mystery crate';
     if (g.type === 'all') return `Every area to ${stars(g.n)}`;
     if (g.type === 'area') return `${D.chains[g.area].area} to ${stars(g.n)}`;
     if (g.type === 'combo') return `Hit a ×${g.n} combo`;
@@ -1156,12 +1244,20 @@ RZ.data = {
         frac: st.reduce((a, s) => a + Math.min(s, g.n), 0) / (S.areas * g.n), target: g.n };
     }
     if (g.type === 'area') return { text, ...cnt(S.stage[g.area], g.n), target: g.n, area: g.area };
+    if (g.type === 'make') { const ok = S.stage[g.c] >= g.t - 1; return { text, num: ok ? 'done' : 'not yet', frac: ok ? 1 : 0, target: g.t - 1, area: g.c }; }
+    if (g.type === 'collect') return { text, ...cnt(S.stats.chCollect, g.n), target: 0 };
+    if (g.type === 'open') return { text, ...cnt(S.stats.chOpened, g.n), target: 0 };
     if (g.type === 'combo') return { text, num: `best ×${S.stats.chCombo}`, frac: Math.min(S.stats.chCombo, g.n) / g.n, target: 0 };
     if (g.type === 'orders') return { text, ...cnt(S.stats.chOrders, g.n), target: 0 };
     if (g.type === 'golden') return { text, ...cnt(S.stats.chGolden, g.n), target: 0 };
     if (g.type === 'fans') return { text, num: `${fmt(Math.min(S.stats.chFans, g.n))}/${fmt(g.n)}`, frac: Math.min(S.stats.chFans, g.n) / g.n, target: 0 };
     const b = g.area !== undefined ? S.stats.chDel[g.area] : S.stats.chDelivered;
     return { text, ...cnt(b, g.n), target: 0 };
+  }
+  function levelLabel(i) { return i < HAND ? `Level ${i + 1}` : `Episode ${i - HAND + 1}`; }
+  function preview(i) {   // what the next level is, for the end-of-level screen
+    const ch = i < HAND ? D.chapters[i] : genEpisode(i - HAND);
+    return { label: levelLabel(i), title: ch.endless ? ch.title.replace(/^Ep \d+: /, '') : ch.title, goal: goalText(ch.goal), teach: ch.teach || '' };
   }
   function checkChapter() {
     if (chapterOpen || S.tut < TUT_END) return;
@@ -1172,8 +1268,9 @@ RZ.data = {
     S.tape += ch.reward.tape;
     addFans(ch.reward.fans * mult);
     S.chapter++; chapterOpen = false;
-    Object.assign(S.stats, { chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0 });
-    const next = ch.endless || S.chapter >= HAND && !ch.next ? `Episode ${S.chapter - HAND + 1}: ${goalText(chapter().goal)}.` : ch.next;
+    Object.assign(S.stats, { chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0 });
+    const nx = preview(S.chapter);
+    const next = ch.next || `${nx.label}: ${nx.title}. ${nx.goal}.`;
     renderAll(); sfx.ripple();
     const [x, y] = fx.center($('#fans')); fx.floatText(x, y + 26, `+${fmt(ch.reward.fans * mult)}`, 'big');
     save();
@@ -1183,12 +1280,19 @@ RZ.data = {
       setTimeout(() => ui.season(() => { say('kev', next); save(); checkChapter(); }), 450);
       return;
     }
+    const go = () => { say('kev', next); save(); checkChapter(); };
+    const day = () => {
+      if (!ch.endsDay) { go(); return; }
+      const sum = { fans: fmt(S.dayFans), found: S.found.length, levels: S.chapter - S.dayStartCh };
+      S.dayFans = 0; S.dayStartCh = S.chapter; save();
+      setTimeout(() => ui.dayEnd(ch.endsDay, sum, go), 450);
+    };
     if (ch.unlock !== undefined) {
-      S.areas = Math.max(S.areas, ch.unlock + 1); newRequest(ch.unlock); S.visitAt = Date.now(); renderPlots(ch.unlock); save();
-      setTimeout(() => ui.unlock(ch.unlock, () => { say('kev', next); save(); checkChapter(); }), 450);
+      S.areas = Math.max(S.areas, ch.unlock + 1); if (feat('requests')) newRequest(ch.unlock); S.visitAt = Date.now(); renderPlots(ch.unlock); save();
+      setTimeout(() => ui.unlock(ch.unlock, day), 450);
       return;
     }
-    say('kev', next); save(); checkChapter();
+    day();
   }
 
   /* ---------- render ---------- */
@@ -1213,7 +1317,7 @@ RZ.data = {
   }
   function renderGrid() { for (let i = 0; i < N; i++) if (!rolling.has(i)) renderCell(i); }
 
-  const opensLabel = i => { const k = D.chapters.findIndex(c => c.unlock === i); return k >= 0 ? `Opens Ch ${k + 2}` : 'Locked'; };
+  const opensLabel = i => { const k = D.chapters.findIndex(c => c.unlock === i); return k >= 0 ? `Opens Lv ${k + 2}` : 'Locked'; };
   function renderPlots(bump = -1) {
     const gi = goalInfo();
     plotsEl.innerHTML = D.chains.map((c, i) => {
@@ -1254,11 +1358,11 @@ RZ.data = {
     tweenFans();
     $('#tape').textContent = S.tape;
     const l = S.level, lo = need(l), hi = need(l + 1);
-    $('#lvl').textContent = 'Lv ' + l;
+    $('#lvl').textContent = '⭐ ' + l;
     $('#lvlBar').style.width = Math.min(100, (S.fans - lo) / (hi - lo) * 100) + '%';
     $('#albumN').textContent = S.found.length;
     const gi = goalInfo();
-    $('#goalText').textContent = (S.chapter < S2_START ? `S1 Ch ${S.chapter + 1} · ` : S.chapter < HAND ? `S2 Ch ${S.chapter - S2_START + 1} · ` : `Ep ${S.chapter - HAND + 1} · `) + gi.text;
+    $('#goalText').textContent = (S.chapter < HAND ? `Level ${S.chapter + 1} · ` : `Ep ${S.chapter - HAND + 1} · `) + gi.text;
     $('#goalNum').textContent = gi.num;
     $('#goalBar').style.width = Math.min(100, gi.frac * 100) + '%';
     $('#mute').textContent = S.muted ? '🔇' : '🔊';
@@ -1269,7 +1373,7 @@ RZ.data = {
 
   /* ---------- economy ---------- */
   function addFans(n) {
-    S.fans += n; S.stats.chFans += n;
+    S.fans += n; S.stats.chFans += n; S.dayFans = (S.dayFans || 0) + n;
     const l = levelOf(S.fans);
     if (l > S.level) { S.level = l; levelUp(l); }
     renderHUD();
@@ -1279,7 +1383,7 @@ RZ.data = {
     setTimeout(() => {
       fx.confetti(); fx.shake(true); sfx.level(); buzz([20, 40, 20, 40, 60]);
       const x = innerWidth / 2, y = innerHeight * 0.4;
-      fx.floatText(x, y, `LEVEL ${l}!`, 'huge');
+      fx.floatText(x, y, `RANK ${l}!`, 'huge');
       setTimeout(() => fx.floatText(x, y + 40, '+10 📼', 'big'), 250);
       say('bev', pick(D.levelLines));
       renderHUD(); tip('level', () => $('#lvlPill'));
@@ -1317,10 +1421,12 @@ RZ.data = {
       say('bev', "Board's full, love! Merge something or bin it.", false); tip('full', () => $('#bin')); return;
     }
     const gi = goalInfo(), chains = range(S.areas);
-    const w = chains.map(c => gi.area !== undefined ? (c === gi.area ? 3 : 1) : (gi.target && S.stage[c] < gi.target ? 2 : 1));
+    const focus = chapter().goal.type === 'make' ? 6 : 3;
+    const w = chains.map(c => gi.area !== undefined ? (c === gi.area ? focus : 1) : (gi.target && S.stage[c] < gi.target ? 2 : 1));
     const tut = S.tut < 2;   // the first two crates are always eggs, placed where the tutorial can point at them
     const c = tut ? 0 : weighted(chains, w);
-    const t = S.tut >= TUT_END && Math.random() < D.TIER2_RATE ? 2 : 1, g = feat('golden') && Math.random() < D.GOLD_RATE;
+    const goldRate = chapter().goal.type === 'golden' ? 0.15 : D.GOLD_RATE;   // a golden level makes gold easier to find
+    const t = feat('tier2') && Math.random() < D.TIER2_RATE ? 2 : 1, g = feat('golden') && Math.random() < goldRate;
     const spot = S.tut === 0 ? 11 : 13, i = tut && !S.grid[spot] ? spot : pick(empties);
     S.grid[i] = g ? { c, t, g: 1 } : { c, t };
     S.tape--; if (S.tape === MAX_TAPE - 1) S.regenAt = Date.now();
@@ -1354,7 +1460,6 @@ RZ.data = {
     if (cascade) { fx.floatText(x, y - 36, 'CASCADE!', 'small'); tip('cascade', () => cellAt(b).querySelector('.tile')); }
     if (nt === 5) tip('legendary', () => cellAt(b).querySelector('.tile'));
     if (S.tut === 2) { S.tut = 3; ui.clearCoach(); }
-    if (S.tut === 4 && nt >= 3) { S.tut = 5; ui.clearCoach(); setTimeout(tutStep, 1900); }
     if (gold) { S.stats.golden++; S.stats.chGolden++; fx.burst(x, y, '--gold', 14); fx.floatText(x, y + 20, 'GOLD ×3', 'gold'); sfx.gold(); }
     if (k >= 2) { const [gx, gy] = fx.center(gridEl); fx.floatText(gx, gy - 30, `COMBO ×${k}`, k >= 5 ? 'huge' : 'big'); }
     if (k >= 4) fx.shake(k >= 6);
@@ -1389,7 +1494,7 @@ RZ.data = {
       sfx.ripple(); buzz([10, 40, 14]);
       say('kev', linesOf(c)[ns]);
       if (S.tut === 3) setTimeout(tutStep, 700);
-      else if (S.tut >= TUT_END) setTimeout(() => { say('tl', sideEffect()); tip('timeline', () => $('#msg')); }, 2600);
+      else if (S.tut >= TUT_END && S.chapter >= 3) setTimeout(() => { say('tl', sideEffect()); tip('timeline', () => $('#msg')); }, 2600);   // side effects start once the basics are in
       const bonus = 20 * ns; setTimeout(() => fx.floatText(px, py + 18, `+${bonus}`), 180);
       addFans(bonus); save(); checkChapter();
     });
@@ -1404,7 +1509,8 @@ RZ.data = {
   }
 
   function maybeMystery(nt) {
-    if (!feat('mystery') || Math.random() >= 0.04 + 0.02 * nt) return;
+    const sure = chapter().goal.type === 'open' && !S.grid.some(v => v && v.m);
+    if (!feat('mystery') || (!sure && Math.random() >= 0.04 + 0.02 * nt)) return;
     const e = emptyCells(); if (!e.length) return;
     const j = pick(e); S.grid[j] = { m: 1 }; renderCell(j, 'spawn');
     setTimeout(() => {
@@ -1433,6 +1539,7 @@ RZ.data = {
   function finishMystery(i, r) {
     rolling.delete(i);
     if (r.kind === 'gold' && !feat('golden')) r = D.mystery.find(m => m.kind === 'item');
+    S.stats.chOpened++;
     const [x, y] = fx.center(cellAt(i));
     if (r.kind === 'tape') { S.grid[i] = null; S.tape += r.n; renderHUD(); }
     else if (r.kind === 'fans') { S.grid[i] = null; addFans(r.n); }
@@ -1516,7 +1623,7 @@ RZ.data = {
   }
   function collect(c) {
     const v = Math.floor(S.visit[c]); if (v < D.VISIT_SHOW) return false;
-    S.visit[c] -= v;
+    S.visit[c] -= v; S.stats.chCollect++;
     const el = plotAt(c), from = fx.center(el.querySelector('.coin') || el);
     refreshPlots(); fx.burst(from[0], from[1], '--sun', 12); sfx.coin(); buzz(8);
     for (let k = 0; k < 3; k++) setTimeout(() => fx.fly(from, $('#fans'), '--sun', () => {
@@ -1562,23 +1669,20 @@ RZ.data = {
       const eggs = range(N).filter(i => S.grid[i] && !S.grid[i].m && S.grid[i].c === 0 && S.grid[i].t === 1);
       if (eggs.length < 2) { S.tut = eggs.length ? 1 : 0; save(); tutStep(); return; }
       ui.coach({ ...T, step, targets: [cellAt(eggs[0]).querySelector('.tile'), cellAt(eggs[1]).querySelector('.tile')], hand: 'drag' });
-    } else if (S.tut === 3) {
-      ui.coach({ ...T, step, targets: [plotAt(0)], button: 'Nice!', onButton: () => { S.tut = 4; save(); tutStep(); } });
-    } else if (S.tut === 4) {
-      ui.coach({ ...T, step, targets: [$('#crate')] });
     } else {
-      ui.coach({ ...T, step, targets: [$('.goal')], button: "Let's go", onButton: () => {
+      ui.coach({ ...T, step, targets: [plotAt(0)], button: 'Nice!', onButton: () => {
         S.tut = TUT_END; save(); renderAll();
-        say('kev', "Right. Let's fix this place. Coop and Pond first.");
-        tip('album', () => $('#albumBtn')); checkChapter();
+        tip('album', () => $('#albumBtn')); checkChapter();   // Level 1 is done: the level screen explains what's next
       } });
     }
   }
 
   /* ---------- one-time tips, queued so they never stack ---------- */
   const tipQ = [];
+  const TIP_MIN = { combo: 8, cascade: 13, timeline: 3 };   // level index before which these tips stay quiet
   function tip(id, target) {
     if (!S || S.tut < TUT_END || S.tips[id] || tipQ.some(q => q.id === id) || !D.tips[id]) return;
+    if (S.chapter < (TIP_MIN[id] || 0)) return;   // save it for the level that teaches it
     tipQ.push({ id, target }); setTimeout(pumpTips, 400);
   }
   function pumpTips() {
@@ -1700,7 +1804,7 @@ RZ.data = {
   /* ---------- boot ---------- */
   function markStarters() { S.grid.forEach(v => { if (v && !v.m) { const k = keyOf(v.c, v.t); if (!S.found.includes(k)) S.found.push(k); } }); }
 
-  RZ.game = { resume: () => { if (S.tut < TUT_END) setTimeout(tutStep, 400); else checkChapter(); }, completeChapter, adForTape, introDone, reset, goalInfo, chapter, fmt, checkChapter, stagesOf, chapterLabel: () => S.chapter < S2_START ? `Season 1 · Chapter ${S.chapter + 1}` : `Season 2 · Chapter ${S.chapter - S2_START + 1}` };
+  RZ.game = { resume: () => { if (S.tut < TUT_END) setTimeout(tutStep, 400); else checkChapter(); }, completeChapter, adForTape, introDone, reset, goalInfo, chapter, fmt, checkChapter, stagesOf, chapterLabel: () => levelLabel(S.chapter), preview: () => preview(S.chapter + 1) };
 
   gridEl.innerHTML = range(N).map(i => `<div class="cell" data-cell="${i}"></div>`).join('');
   markStarters();
