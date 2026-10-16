@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rewind Zoo</title>
-<meta name="description" content="Rewind Zoo: an animal merge game across two timelines. Merge on a 1986 camcorder tape and every new animal ripples forward to fix a 2026 sanctuary. Two seasons, then endless episodes.">
+<meta name="description" content="Rewind Zoo: an animal merge game. Merge animals on a 1986 camcorder tape to fix a run-down 2026 sanctuary, and win visitors back from the glossy mega-zoo next door.">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#A6E4FF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -250,7 +250,7 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 
 .coin .e{font-size:9px}
 .pips .rn{font-style:normal;font-size:9px;font-weight:700;line-height:8px;margin-left:2px;white-space:nowrap}
-.av.tl{background:var(--aqua);font-family:var(--emoji);font-size:14px}
+.av.rival{background:var(--tang)}
 
 /* coach marks: tutorial and one-time tips */
 .coach{position:fixed;z-index:58;left:50%;transform:translateX(-50%);width:min(380px,calc(100% - 32px));background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
@@ -412,7 +412,7 @@ RZ.data = {
         "There's a dragon. I've filed form 27B: 'large lizard, flammable'."] },
   ],
 
-  /* goal types: make (create item c,t), collect (collect visitor fans n times), open (open n mystery crates), all (every unlocked area to n stars), area (one area to n), combo (hit xN), golden (n golden merges), orders (fill n visitor requests),
+  /* goal types: rival (beat a rival's n fans this level), make (create item c,t), collect (collect visitor fans n times), open (open n mystery crates), all (every unlocked area to n stars), area (one area to n), combo (hit xN), golden (n golden merges), orders (fill n visitor requests),
      deliver (send n legendaries, optional area), fans (earn n fans this chapter). After these, endless episodes are generated forever. */
   chapters: [
     /* ===== SEASON 1 · THE BUTTERFLY EFFECT =====
@@ -430,14 +430,14 @@ RZ.data = {
     { name: 'Fix It Up', goal: { type: 'all', n: 2 }, title: 'Fix It Up', reward: { fans: 80, tape: 10 },
       teach: 'Get both areas to ★★. The dots under each area are its stars.',
       text: ["The Coop and the Pond are open for business. Sort of.",
-             "Side effect: everyone in town now says 'g'day' slightly too loud. Nobody can explain it."] },
+             "Over the fence, a shiny sign goes up: MEGAFAUNA. COMING SOON."] },
     { name: 'First Visitor', goal: { type: 'orders', n: 1 }, title: 'First Visitor', reward: { fans: 80, tape: 10 },
       teach: 'Visitors now arrive with a bubble showing the animal they want. Drag that animal up to their area for fans and tape.',
       text: ["One family, one Pufferfish, one very happy kid."] },
     { name: 'Busy Morning', goal: { type: 'orders', n: 3 }, title: 'Busy Morning', reward: { fans: 120, tape: 15 }, endsDay: 1,
       teach: 'Three more visitors. Animals with a ❤️ are the ones someone wants right now.',
       text: ["The gate is busy. Kev bought a whistle. Nobody knows why.",
-             "Side effect: Kev's car is now blue. It was never blue. Kev has the photos."] },
+             "A man in a very white suit is watching from next door. That's Rex Glossop, boss of MegaFauna. He waved. It felt like a threat."] },
     { name: 'Welcome Back', goal: { type: 'collect', n: 1 }, title: 'Welcome Back', reward: { fans: 100, tape: 15 }, unlock: 2,
       teach: 'Fixed areas earn fans from visitors over time, even while you are away. Tap the 🎟 badge on an area to collect.',
       text: ["Visitors paid while Kev slept. He's calling it passive income."] },
@@ -446,66 +446,61 @@ RZ.data = {
       text: ["PUPPIES. Kev is not crying. Kev is absolutely crying."] },
     { name: 'Quick Paws', goal: { type: 'combo', n: 2 }, title: 'Quick Paws', reward: { fans: 120, tape: 15 }, unlock: 3,
       teach: 'Merge twice in a row, fast, to make a combo. Combos pay more fans. The meter on the tape shows how long you have.',
-      text: ["Doug watched the combo. Doug approved."] },
+      text: ["Doug watched the combo. Doug approved.",
+             "MegaFauna's monorail opened today. It goes in a circle. Visitors walked back over to see the puppies."] },
     { name: 'Cat Box', goal: { type: 'area', area: 3, n: 2 }, title: 'Cat Box', reward: { fans: 150, tape: 15 },
       teach: 'There is a big empty box out the back. Get the Cats to ★★.',
       text: ["A kitten moved into the box. The box is now priceless."] },
     { name: 'Lucky Dip', goal: { type: 'open', n: 1 }, title: 'Lucky Dip', reward: { fans: 150, tape: 20 }, endsDay: 2,
       teach: 'Merges can now drop a 🎁 mystery crate. Tap it to spin for a prize.',
-      text: ["Nan Bev's tape shows her hiding crates around the place in 1986. She is still hiding things."] },
-    { name: 'Going Viral', goal: { type: 'all', n: 3 }, title: 'Going Viral', reward: { fans: 250, tape: 15 }, unlock: 4,
-      teach: 'Every area to ★★★. Higher tiers, bigger fixes.',
-      text: ["A clip of the poodle blow-drying the dolphin hits 2 million views.",
-             "Side effect: Kev now has a moustache. Everyone insists he always did. His mum has framed it."] },
+      text: ["Nan Bev's tape shows her hiding crates around the place in 1986. She is still hiding things.",
+             "Rex sent a letter: 'Sell by Friday.' Kev used it to line the cat box."] },
+    { name: 'Showdown!', goal: { type: 'rival', n: 500, rival: 'MegaFauna' }, title: 'Showdown: Opening Week', reward: { fans: 250, tape: 20 }, unlock: 4,
+      teach: 'Showdown! MegaFauna is chasing the same visitors. Earn more fans than their score before they do. Every merge, request and 🎟 counts.',
+      text: ["You out-scored MegaFauna in their own opening week. Rex has gone a funny colour.",
+             "Behind the shed, a swamp has appeared. Nobody's sure how. Nan Bev looks suspicious on the tape."] },
     { name: 'Swamp Thing', goal: { type: 'area', area: 4, n: 3 }, title: 'Swamp Thing', reward: { fans: 300, tape: 15 },
-      teach: 'A swamp appeared behind the shed. It was not there yesterday. Get the Swamp to ★★★.',
+      teach: 'The Swamp is open. Caterpillars become something much bigger. Get the Swamp to ★★★.',
       text: ["The frog choir drops a one-note single. It goes to number one.",
-             "Nan Bev admits she 'popped a caterpillar in the creek' in 1986. Apparently that's how swamps work now."] },
+             "Rex tried to buy the swamp. The frogs said no. One note, very firmly."] },
     { name: 'Chain Reaction', goal: { type: 'combo', n: 5 }, title: 'Chain Reaction', reward: { fans: 350, tape: 20 },
       teach: 'Hit a ×5 combo. Tip: park twins side by side. When a merge lands next to its twin, it cascades by itself.',
-      text: ["One merge set off every animal at once. The ripple renamed the town for six minutes.",
-             "Doug watched the replay eleven times. He's taking notes. On what, nobody knows."] },
+      text: ["One merge set off every animal at once. MegaFauna's laser show looked very small after that.",
+             "Doug watched the replay eleven times."] },
     { name: 'Gold Rush', goal: { type: 'golden', n: 4 }, title: 'Gold Rush', reward: { fans: 400, tape: 20 },
       teach: 'Golden animals start turning up. They pay 3× and stay golden when merged. Make 4 golden merges.',
       text: ["Golden animals keep turning up. A jeweller has started following the peacock around.",
-             "Side effect: Kev's teeth are now slightly gold. The dentist says it's 'a 1986 thing'."] },
-    { name: 'Season Finale', goal: { type: 'all', n: 4 }, title: 'Season 1 Finale', reward: { fans: 800, tape: 40 }, endsSeason: 1,
+             "Rex spray-painted a goat gold. It was not the same."] },
+    { name: 'Full House', goal: { type: 'all', n: 4 }, title: 'Full House', reward: { fans: 800, tape: 40 },
       teach: 'The big one. Every area to ★★★★, legendary.',
-      text: ["A whale, a wolf, a lion, a peacock and a dragon walk into a sanctuary. It isn't a joke. It's a 5-star review.",
-             "Nan Bev finally stops recording. “See you in forty years, love.” Doug winks. Pigeons can't wink.",
-             "Then the tape rewinds by itself. Too far. Kev wakes up somewhere that looks like home. It isn't."],
-      next: "Where am I? Why does everything have a logo? Get every area back to ★★." },
+      text: ["A whale, a wolf, a lion, a peacock and a dragon. Bev's Beasts is the best sanctuary in the state.",
+             "Rex Glossop is not happy. He has hired a marching band. This isn't over."],
+      next: "Rex is fighting back. He's poaching visitors with free balloons. Win them back." },
 
-    /* ===== SEASON 2 · WRONG KEV ===== */
-    { name: 'Wrong Kev', goal: { type: 'all', n: 2 }, title: 'Wrong Kev', reward: { fans: 900, tape: 30 },
-      text: ["In this 2026, Bev's Beasts is Bev's Beasts World™, a theme park run by Kevin. CEO. Kev's other self. He wears a headset to breakfast.",
-             "The animals are back where they belong. Kevin calls this 'a disruption event'."],
-      next: "Kevin is trying to buy the visitors back. Fill 6 requests before he does." },
-    { name: 'Hostile Takeover', goal: { type: 'orders', n: 6 }, title: 'Hostile Takeover', reward: { fans: 1000, tape: 30 },
-      text: ["The visitors chose real animals over Kevin's animatronic koala. The koala has filed for unemployment.",
-             "Side effect: every corporate slogan in town now ends with 'and also a pufferfish'."],
-      next: "The animals have unionised. Back them up: every area to ★★★." },
-    { name: 'Strike!', goal: { type: 'all', n: 3 }, title: 'Strike!', reward: { fans: 1100, tape: 30 },
-      text: ["The cats run HR now. Kevin has had three performance reviews this week. He failed all of them.",
-             "Doug was spotted wearing a tiny lanyard that says 'CONSULTANT'."],
-      next: "Legends draw crowds. Send 3 legendaries to 2026." },
-    { name: 'Legend Has It', goal: { type: 'deliver', n: 3 }, title: 'Legend Has It', reward: { fans: 1200, tape: 35 },
-      text: ["Three legendaries arrive through the VCR. Kevin's board of directors resigns on the spot.",
-             "Side effect: the park map now has a section labelled 'here be Doug'."],
-      next: "Kevin's last asset is gold. Make 5 golden merges and corner the market." },
-    { name: 'Gold Standard', goal: { type: 'golden', n: 5 }, title: 'Gold Standard', reward: { fans: 1300, tape: 35 },
-      text: ["The golden peacock is now worth more than the park. Kevin tries to put it on a mug. The peacock declines.",
-             "Nan Bev's 1986 tape shows her winking at the camera. She knows. She always knew."],
-      next: "One more push. Hit a ×6 combo to break Kevin's spreadsheet." },
-    { name: 'Combo Breaker', goal: { type: 'combo', n: 6 }, title: 'Combo Breaker', reward: { fans: 1400, tape: 40 },
-      text: ["The ripple from that combo hits so hard Kevin's spreadsheet becomes a drawing of a horse.",
-             "Kevin admits, quietly, that he misses the trolley in the pond."],
-      next: "Final: every area legendary ★★★★. Two Kevs. One timeline." },
-    { name: 'The Merger', goal: { type: 'all', n: 4 }, title: 'Season 2 Finale: The Merger', reward: { fans: 2500, tape: 60 }, endsSeason: 2,
-      text: ["Every area is legendary. The two timelines line up. Kev and Kevin meet in the car park and, it's a merge game, they merge.",
-             "The new Kev has the moustache, the headset and none of the spreadsheets. Visitors say he's 'a tier 5 Kev'.",
-             "The tape keeps rolling. From here, every episode 2026 comes out a little different. Forever."],
-      next: "The tape won't stop. Endless episodes start now. Every one changes 2026 a bit." },
+    /* ===== ACT 2 · REX STRIKES BACK ===== */
+    { name: 'Poached!', goal: { type: 'orders', n: 6 }, title: 'Poached!', reward: { fans: 900, tape: 30 },
+      teach: 'Rex is giving out free balloons and poaching your visitors. Fill 6 requests to win them back.',
+      text: ["Six happy families walked back through the gate. They kept the balloons."] },
+    { name: 'Long Weekend', goal: { type: 'rival', n: 1200, rival: 'MegaFauna' }, title: 'Showdown: Long Weekend', reward: { fans: 1000, tape: 30 },
+      teach: 'Another showdown. MegaFauna has a marching band now. Beat their score.',
+      text: ["The marching band played to an empty car park. Everyone was at the Kennel."] },
+    { name: 'Legend Has It', goal: { type: 'deliver', n: 2 }, title: 'Legend Has It', reward: { fans: 1100, tape: 35 }, endsDay: 3,
+      teach: 'Legends pull crowds. Make a tier 5 and tap SEND to ship it to 2026. Send 2.',
+      text: ["A news crew came to film Rex's monorail and filmed the whale instead."] },
+    { name: 'Gold Standard', goal: { type: 'golden', n: 5 }, title: 'Gold Standard', reward: { fans: 1200, tape: 35 },
+      teach: 'Make 5 golden merges. Gold beats spray paint every time.',
+      text: ["Rex's gold goat has retired. The golden peacock sent flowers."] },
+    { name: 'PR Stunt', goal: { type: 'combo', n: 6 }, title: 'PR Stunt', reward: { fans: 1300, tape: 40 },
+      teach: 'Rex booked a celebrity. You have combos. Hit a ×6.',
+      text: ["Your combo went viral. The celebrity left MegaFauna to come and see the puffers."] },
+    { name: 'Crowd Favourite', goal: { type: 'deliver', n: 3 }, title: 'Crowd Favourite', reward: { fans: 1400, tape: 40 },
+      teach: 'Every legendary gives its area 👑 renown, so it earns visitor fans faster, forever. Send 3.',
+      text: ["Bev's Beasts is the most-visited sanctuary in the state. MegaFauna is the most-visited car park."] },
+    { name: 'The Buyout', goal: { type: 'rival', n: 3000, rival: 'MegaFauna' }, title: 'Showdown: The Buyout', reward: { fans: 2500, tape: 60 }, endsDay: 4,
+      teach: "Final showdown. Rex has bet his whole zoo on this weekend. Beat MegaFauna's 3,000 fans.",
+      text: ["MegaFauna's board fires Rex on the spot. He applies for a job at Bev's Beasts.",
+             "Kev hires him to clean the pond. He's surprisingly good at it."],
+      next: "The tape keeps rolling and new rivals keep moving in. Endless showdowns start now." },
   ],
 
   /* Day-end screens: natural stopping points in the early game. */
@@ -515,102 +510,55 @@ RZ.data = {
          tomorrow: "Visitors keep paying while you're away. Collect their fans, then the Kennel opens." },
     2: { title: 'A proper sanctuary', art: '🌙 🐶 🐱',
          text: ["Four areas open, combos landing, mystery crates turning up. Nan Bev would be proud. On the tape, she says she is."],
-         tomorrow: 'Going viral. Every area to ★★★, and something is waiting behind the shed.' },
+         tomorrow: 'Your first showdown. MegaFauna wants your visitors. Out-score them.' },
+    3: { title: 'Legends in town', art: '🌙 🐳 🦁',
+         text: ["Two legendaries and a full car park. Rex has started wearing sunglasses indoors."],
+         tomorrow: 'Gold, combos and a celebrity. Rex is running out of tricks.' },
+    4: { title: 'Rival defeated. For now.', art: '🌙 🏆 🧹',
+         text: ["Rex Glossop is cleaning the pond. MegaFauna is up for sale. Nan Bev, on the tape, is doing a little dance."],
+         tomorrow: 'A new rival zoo moves in every episode from here. Beat them all.' },
   },
 
-  /* Season 2: same animals, different 2026. Each area starts as Kevin's corporate version and gets set free. */
-  season2: {
-    title: 'Season 2: Wrong Kev',
-    text: ["The tape rewound too far. This is a 2026 where Kev became Kevin, a CEO who turned Bev's Beasts into a theme park.",
-           "Every area is back to square one, corporate edition. Same animals on the 1986 tape. Every merge ripples into this timeline now."],
-    areas: [
-      { stages: [['🏭', 'Egg-Co plant'], ['🐣', 'Chicks unionise'], ['🐔', 'Free range'], ['🐓', 'Rooster strike'], ['🦚', 'Peacock CEO']],
-        lines: [null, "The Egg-Co plant has chicks in it. Real ones. Kevin is furious. I love them.",
-          "The hens walked out of the factory. Kevin calls it 'free range'. It is.",
-          "The rooster now crows at Kevin's 5am board meetings. Specifically at Kevin.",
-          "The peacock has been appointed CEO. His first act was to cancel Mondays."] },
-      { stages: [['🎢', 'Splash ride'], ['🐠', 'Fish freed'], ['🐡', 'Puffer protest'], ['🐬', 'Dolphins quit'], ['🐳', 'Whale buys park']],
-        lines: [null, "Real fish in the splash ride. Kevin's 'Aqua Thrill Zone' is just a pond again.",
-          "The pufferfish are protesting the gift shop. They inflate at anyone holding a mug.",
-          "The dolphins quit showbiz and opened a swim school. Waitlist is three years.",
-          "A whale has bought the park. In cash. Kevin doesn't know where the whale got cash."] },
-      { stages: [['🤖', 'Robo-dog store'], ['🐶', 'Real puppies'], ['🐕', 'Good boy uprising'], ['🐩', 'Salon co-op'], ['🐺', 'Wolf security']],
-        lines: [null, "Kevin's Robo-Dog store is full of real puppies. The robots have been adopted by the puppies.",
-          "The good boys have formed a union. Their demands: walks, and that's it.",
-          "The poodle salon is now a co-op. Kevin's haircut was voted on. He lost.",
-          "A wolf now runs security. Shoplifting is down 100%. So is Kevin's confidence."] },
-      { stages: [['📺', 'Cat ad screens'], ['🐱', 'Kitten coup'], ['🐈', 'Cats run HR'], ['🐆', 'Spotty board'], ['🦁', 'Lion chairman']],
-        lines: [null, "A kitten sat on Kevin's keyboard and deleted every ad. Hero.",
-          "The cats run HR now. Mandatory nap policy approved unanimously.",
-          "The board is now entirely spotty cats. Meetings are short. Very short.",
-          "The lion is chairman. He fits in the chairman's box. Science still can't explain it."] },
-      { stages: [['🚧', 'Swamp car park'], ['🦋', 'Butterflies back'], ['🐸', 'Frog jingle'], ['🐊', 'Croc lawyers'], ['🐉', 'Dragon IPO']],
-        lines: [null, "Butterflies broke through the car park. Kevin's parking app now just shows butterflies.",
-          "The frogs re-recorded Kevin's jingle with one note. Sales tripled.",
-          "The crocs became lawyers. Kevin is being sued by a croc. The croc is winning.",
-          "The dragon floated on the stock exchange. Literally. It's hovering over the building."] },
-    ],
-  },
-
-  /* Endless episodes: generated after the hand-written chapters, forever.
-     {animal} {Animal} {area} {n} are filled in per episode. Add lines freely. */
+  /* Endless episodes: after Act 2, a new rival zoo every episode, forever.
+     {rival} {animal} {animals} {Animal} {area} {n} are filled in per episode. Add lines freely. */
   endless: {
-    titles: ['The Moustache Incident', 'Pond Politics', 'Night of the Puffers', "Doug's Day Off", 'Gift Shop Wars',
-      'The Great Egg Recount', 'Kev vs the Council', 'Feathergate', 'Swamp Election', 'Rewind, Rewind',
-      'The Long Weekend', 'Influencer Season', 'Paradox Picnic', 'Wrong Kev', 'The Lost Weekend Tape',
-      'School Excursion', 'Health Inspector', 'Heatwave', 'The Sequel Nobody Asked For', 'Opening Day (Again, Again)'],
+    rivals: ['ZooCorp', 'Safari Express', 'Critter Planet', 'Wild World Inc', 'The Beastly Brothers', 'Fur Real Park',
+      'Petropolis', 'Paws Palace', 'MegaFauna 2', 'Feathers & Co', 'Robo-Zoo 3000', 'Lord Fluffington\'s Menagerie'],
     scenes: [
-      "Something rippled. Kev now has a moustache, and the {area} visitors insist he always did.",
-      "In this version of 2026 the council is run by a {animal}. Approval ratings have never been higher.",
-      "The {area} gift shop now only sells {animal} hats. They sold out in nine minutes.",
-      "Kev woke up fluent in {animal}. It's mostly complaints about the weather.",
-      "Weather report: 30% chance of {animals}, clearing by lunch.",
-      "Front page of the local paper: '{Animal} Elected Mayor (Again)'.",
-      "Every clock in town now runs eleven minutes slow. Experts blame the {animal}.",
-      "Kev's mum now remembers him as 'the one with the {animal}'.",
-      "A school excursion arrived. 40 kids, 1 {animal}, 0 intact plush toys.",
-      "Nan Bev's tape shows her teaching a {animal} to moonwalk. Nobody knows when she found the time.",
-      "A {animal} statue appeared in the town square overnight. The plaque just says 'you know what you did'.",
-      "The {area} now has its own podcast. Episode 1: 'Why we don't talk about the trolley'.",
-      "Kev's phone autocorrects every word to '{animal}'. He's leaning into it.",
-      "The Wi-Fi password is now {animal}{n}. Nobody changed it.",
-      "A film crew wants a documentary about the {area}. The {animal} has demanded top billing.",
-      "The {area} queue is so long it has its own food truck. The food truck has its own queue.",
-      "A ripple turned the car park into a second {area}. Parking is now a lot more interesting.",
-      "Kev tried to explain time travel to the health inspector. She left with a {animal} and no notes.",
-      "Someone started a rumour the {animal} can predict the footy. It went 9 from 9.",
-      "The {area} was voted 'Best Place to Feel Something' by a magazine that doesn't exist yet.",
-      "A {animal} now runs the morning tour. It is better at it than Kev. Everyone has noticed.",
-      "Kev's reflection is a few seconds behind him now. It waves at the {animal}.",
-      "Tourists keep asking for the 'famous {animal}'. There are now four famous {animals}. Nobody can tell them apart.",
-      "The {area} has started a union. Their first demand is more {animals}.",
+      "{rival} opened next door with a gift shop the size of an airport. It sells one thing: {animal} keyrings.",
+      "{rival} is handing out free balloons. Visitors keep floating over to the {area} anyway.",
+      "{rival} tried to hire one of our {animals}. The {animal} said no.",
+      "{rival} installed a laser show. A {animal} in the {area} stole the show by sneezing.",
+      "Visitors keep asking {rival} why they don't have a {animal}. They don't have an answer.",
+      "{rival}'s boss was seen peering over the fence with binoculars. Doug stared back. The boss left.",
+      "{rival} has a monorail. Ours has a {animal}. Ticket sales say we win.",
+      "{rival} bought a billboard that says 'better than Bev's'. Someone drew a {animal} on it. Kev denies everything.",
+      "{rival} put their staff in {animal} costumes. Real {animals} are not impressed.",
+      "A school excursion went to {rival} by mistake. They walked over to the {area} at lunch and never left.",
+      "{rival} announced a 'Mega {Animal} Experience'. It is a cardboard cutout.",
+      "{rival} sent Kev a fruit basket. It ticks. It's a clock. Probably.",
+      "Influencers keep trying {rival}'s selfie wall. Then they come here for a selfie with a {animal}.",
+      "{rival} cut their ticket prices in half. The {area} queue got longer anyway.",
     ],
-    doug: [
-      "Doug was spotted in the background of a 1946 newspaper photo. Same Doug.",
-      "Doug's leg band reads 'PROPERTY OF 2086'.",
-      "Kev found a second camcorder. Tiny pigeon footprints all over it.",
-      "Doug left a note on the VCR: 'not yet'. Pigeons can't write.",
-      "Every tape ends with three seconds of Doug staring into the lens.",
-      "Doug has been on every tape since 1886. He hasn't aged a feather.",
-      "Doug has started bringing his own crates.",
-      "Doug was seen arguing with a seagull. The seagull lost.",
-    ],
+    taunts: ["You call that a sanctuary? We have a monorail.", "Our gift shop has its own postcode.",
+      "Cute pond. Ours has a wave machine.", "Enjoy your visitors while you've got them.",
+      "We've got 40 flavours of slushie. How many have you got?", "I've seen bigger zoos in a snow globe."],
   },
 
   /* Opening story, shown as swipe-through cards before the tutorial. diagram: true draws the 1986 → 2026 explainer. */
   intro: [
     { kicker: "2026 · Bev's Beasts Sanctuary", title: 'Meet Kev', art: '🧑 🪶 🛒',
       text: ["Kev runs his Nan's old animal sanctuary. It has one sad feather, a shopping trolley in the pond and an online review that just says “why”.",
-             "The bank wants it shut by the end of the season."] },
+             "And next door, something big has just been built."] },
     { kicker: '1986 · The tape', title: "Nan Bev's camcorder", art: '📼 👵 🐦',
       text: ["Clearing out the shed, Kev finds Nan Bev's old camcorder. The tape inside is from 1986, the summer she opened Bev's Beasts.",
              "Kev presses play, and something strange happens. Whatever happens on the tape changes today."] },
     { kicker: 'How it works', title: 'Merge in 1986. Fix 2026.', diagram: true,
       text: ["The bottom of the screen is Nan Bev's tape. Drag two matching animals together there to merge them into a better one.",
              "Every new animal ripples forward in time and fixes part of Kev's sanctuary at the top."] },
-    { kicker: 'The catch', title: 'The Butterfly Effect', art: '🦋 ⏳ 🐦',
-      text: ["Every fix changes something else in 2026 too. Sometimes it's a new gift shop. Sometimes Kev suddenly has a moustache.",
-             "And keep an eye on Doug the pigeon. He's on every tape, in every year. He hasn't aged a feather."] },
+    { kicker: 'Next door', title: 'Meet the neighbours', art: '🏢 🎢 🎈',
+      text: ["Next door, MegaFauna has opened a glossy mega-zoo with a monorail and a gift shop the size of an airport.",
+             "Its boss, Rex Glossop, wants Kev's land. Every visitor you win is one he doesn't get."] },
     { kicker: 'Your first job', title: 'Fix the Coop', art: '🪶 ➜ 🐣',
       text: ["Start small: one area, one crate of 1986 animals. The game is played in short levels, and each one shows you one new thing."],
       button: 'Press REC' },
@@ -636,7 +584,6 @@ RZ.data = {
     full: { title: 'Board full', text: 'No room on the tape. Merge something, or drag an animal you don\'t need onto the Bin.' },
     tapeLow: { title: 'Low on tape', text: 'Tape refills by itself over time. Tap ➕ next to your tape for a quick top-up.' },
     level: { title: 'Sanctuary rank', text: 'Fans raise your sanctuary rank ⭐. Every rank up gives you bonus tape.' },
-    timeline: { title: 'The Butterfly Effect', text: 'Every fix in 2026 changes something else too. Tap the message bubble any time to read the whole story so far.' },
     album: { title: 'Animal album', text: 'Every new animal you discover goes in the album 📖. There are 25 to find.' },
   },
 
@@ -660,7 +607,7 @@ RZ.data = {
             "Gift shop sold out of {a} plushies. Riot narrowly avoided.", "My kid now wants to BE a {a}. Thanks a lot. 5 stars.",
             "Took 400 photos of the {a}. Deleted none.", "The {a} was everything the brochure promised. There was no brochure."],
   doug: ["coo.", "coo. (he has seen everything)", "*stares directly into the camcorder*", "coo coo. (ominous)"],
-  who: { kev: ['K', 'Kev · 2026'], bev: ['B', 'Nan Bev · 1986'], doug: ['D', 'Doug · both years, somehow'], fan: ['★', 'Visitor · 2026'], tl: ['⏳', 'Timeline · side effect'] },
+  who: { kev: ['K', 'Kev · 2026'], bev: ['B', 'Nan Bev · 1986'], doug: ['D', 'Doug · both years, somehow'], fan: ['★', 'Visitor · 2026'], rival: ['R', 'Rival · next door'] },
 };
 
 </script>
@@ -1000,17 +947,6 @@ RZ.data = {
     });
   }
 
-  function season(after) {
-    const s2 = D.season2;
-    RZ.sfx.jackpot(); RZ.fx.confetti(180); RZ.buzz([30, 60, 30, 60, 30]);
-    open(`<div class="kicker">New season</div><h2>${s2.title}</h2>
-      <div class="art">${s2.areas.map(a => a.stages[0][0]).join(' ')}<small>2026 · BEV'S BEASTS WORLD™</small></div>
-      ${s2.text.map(t => `<p>${t}</p>`).join('')}
-      <div class="row"><button class="btn go" id="go">Fix this timeline</button></div>`, m => {
-      m.querySelector('#go').onclick = () => { close(); after && after(); };
-    });
-  }
-
   function log() {
     const S = RZ.S, W = D.who;
     const items = S.log.slice().reverse()
@@ -1069,7 +1005,7 @@ RZ.data = {
     }, 2300);
   }
 
-  RZ.ui = { open, close, intro, howto, dayEnd, sleep, ad, outOfTape, chapter, unlock, season, log, album, toast, coach, clearCoach, coachVisible, modalOpen: () => !modal().hidden };
+  RZ.ui = { open, close, intro, howto, dayEnd, sleep, ad, outOfTape, chapter, unlock, log, album, toast, coach, clearCoach, coachVisible, modalOpen: () => !modal().hidden };
 })();
 
 </script>
@@ -1083,14 +1019,14 @@ RZ.data = {
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const range = n => Array.from({ length: n }, (_, i) => i);
   const keyOf = (c, t) => c + '-' + t;
-  const STORY_V = 1;                                           // bump to re-show the story intro to everyone once
+  const STORY_V = 2;                                           // bump to re-show the story intro to everyone once
   const TUT_END = 4;                                            // tutorial steps 0-3 (inside Level 1), then levels teach the rest
   const FEAT = { tier2: 3, requests: 4, coins: 6, mystery: 10, golden: 14 };  // level index where each mechanic switches on
 
   /* ---------- state ---------- */
   function fresh() {
     const g = Array(N).fill(null);   // empty tape: the tutorial fills it
-    return { v: 5, season: 1, tut: 0, tips: {}, dayFans: 0, dayStartCh: 0, grid: g, stage: [0,0,0,0,0], areas: 1, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
+    return { v: 6, season: 1, tut: 0, tips: {}, dayFans: 0, dayStartCh: 0, grid: g, stage: [0,0,0,0,0], areas: 1, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
       intro: false, muted: false, log: [], found: [], regenAt: Date.now(),
       req: [null,null,null,null,null], reqAt: [0,0,0,0,0], visit: [0,0,0,0,0], happy: [0,0,0,0,0], renown: [0,0,0,0,0], visitAt: Date.now(),
       seed: Math.floor(Math.random() * 1e9),
@@ -1112,13 +1048,14 @@ RZ.data = {
       s.v = 4;
     }
     s.tips = s.tips || {};
+    if (s.v === 5) { s.season = 1; s.v = 6; }   // v6: Rival Zoo story, no timeline reset; same level indices
     if (s.v === 4) {   // v5 split the early chapters into short levels: map old chapter indices onto the new list
       const old = s.chapter;
       if (old === 0) s.chapter = s.tut >= 6 ? 3 : (s.stage[0] >= 2 ? 2 : s.stage[0] >= 1 ? 1 : 0);
       else if (old < 7) s.chapter = [3, 5, 11, 12, 13, 14, 15][old];
       else s.chapter = old + 9;
       if (s.tut >= 4) s.tut = 4;
-      s.v = 5;
+      s.v = 6; s.season = 1;
     }
     s.dayFans = s.dayFans || 0; if (s.dayStartCh === undefined) s.dayStartCh = s.chapter;
     for (const k of ['req', 'reqAt', 'visit', 'happy', 'renown']) { s[k] = s[k] || []; while (s[k].length < 5) s[k].push(k === 'req' ? null : 0); }
@@ -1160,9 +1097,8 @@ RZ.data = {
     let a = seed >>> 0;
     return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
   }
-  const stagesOf = c => (S.season >= 2 ? D.season2.areas[c].stages : D.chains[c].stages);
-  const linesOf = c => (S.season >= 2 ? D.season2.areas[c].lines : D.chains[c].lines);
-  const S2_START = D.chapters.findIndex(c => c.endsSeason === 1) + 1;
+  const stagesOf = c => D.chains[c].stages;
+  const linesOf = c => D.chains[c].lines;
   const feat = k => S.tut >= TUT_END && S.chapter >= FEAT[k];
   const need = l => 60 * (l - 1) * l;               // fans needed to reach level l
   function levelOf(f) { let l = 1; while (f >= need(l + 1)) l++; return l; }
@@ -1178,7 +1114,7 @@ RZ.data = {
 
   /* ---------- goals ---------- */
   const HAND = D.chapters.length;
-  const ENDLESS = ['orders', 'combo', 'golden', 'deliver', 'fans', 'deliverArea'];
+  const ENDLESS = ['orders', 'combo', 'golden', 'deliver', 'rival', 'deliverArea'];
   const ROMAN = ['', '', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
   const epCache = new Map();
   const typeFor = n => ENDLESS[Math.floor(rng(S.seed * 31 + n * 7919)() * ENDLESS.length)];
@@ -1188,40 +1124,35 @@ RZ.data = {
     const R = rng(S.seed * 131 + n * 104729), E = D.endless;
     let type = typeFor(n);
     if (n > 0 && type === typeFor(n - 1)) type = ENDLESS[(ENDLESS.indexOf(type) + 1) % ENDLESS.length];
-    if (n === 0) type = 'orders';   // ease into the endless tape with something familiar
+    if (n === 0) type = 'rival';   // every new rival opens with a showdown
     let goal;
     if (type === 'orders') goal = { type, n: Math.min(20, 4 + Math.floor(n / 2)) };
     else if (type === 'combo') goal = { type, n: Math.min(10, 5 + Math.floor(n / 4)) };
     else if (type === 'golden') goal = { type, n: Math.min(15, 3 + Math.floor(n / 2)) };
     else if (type === 'deliver') goal = { type, n: Math.min(10, 1 + Math.floor(n / 3)) };
     else if (type === 'deliverArea') goal = { type: 'deliver', n: Math.min(6, 1 + Math.floor(n / 5)), area: Math.floor(R() * S.areas) };
-    else goal = { type: 'fans', n: 800 + 300 * n };
+    let rival = E.rivals[n % E.rivals.length];
+    const lap = Math.floor(n / E.rivals.length) + 1;
+    if (lap > 1) rival += ' ' + (ROMAN[lap] || lap);
+    if (type === 'rival') goal = { type: 'rival', n: 3000 + 400 * n, rival };
     const animal = () => { const c = Math.floor(R() * S.areas), t = 1 + Math.floor(R() * 5); return D.chains[c].items[t - 1][1].replace(/\s*\(.*\)/, '').toLowerCase(); };
     const plural = a => /(fish|sheep)$/.test(a) ? a : /wolf$/.test(a) ? a.slice(0, -1) + 'ves' : /[^aeiou]y$/.test(a) ? a.slice(0, -1) + 'ies' : a + 's';
     const fill = str => {   // one animal and one area per line, so the joke stays consistent
       const a = animal(), ar = D.chains[Math.floor(R() * S.areas)].area;
-      return str.replace(/\{animals\}/g, plural(a)).replace(/\{Animal\}/g, a[0].toUpperCase() + a.slice(1))
+      return str.replace(/\{rival\}/g, rival).replace(/\{animals\}/g, plural(a)).replace(/\{Animal\}/g, a[0].toUpperCase() + a.slice(1))
         .replace(/\{animal\}/g, a).replace(/\{area\}/g, ar).replace(/\{n\}/g, String(n + 1));
     };
     const picks = [];
     while (picks.length < 2) { const i = Math.floor(R() * E.scenes.length); if (!picks.includes(i)) picks.push(i); }
     const text = picks.map(i => fill(E.scenes[i]));
-    if (n % 3 === 2) { const k = Math.floor(n / 3); text.push((k >= E.doug.length ? 'Again: ' : '') + E.doug[k % E.doug.length]); }
-    const lap = Math.floor(n / E.titles.length) + 1;
-    const title = E.titles[n % E.titles.length] + (lap > 1 ? ' ' + (ROMAN[lap] || 'Part ' + lap) : '');
-    const ep = { endless: true, ep: n + 1, name: `Episode ${n + 1}`, title: `Ep ${n + 1}: ${title}`, goal, text,
+    const title = `vs ${rival}`;
+    const ep = { endless: true, ep: n + 1, rival, name: `Episode ${n + 1}`, title: `Ep ${n + 1}: ${title}`, goal, text,
+      teach: type === 'rival' ? `${rival} has moved in next door. Showdown: beat their score.` : `${rival} is still next door. Keep the visitors coming.`,
       reward: { fans: 300 + 120 * n, tape: Math.min(60, 20 + 2 * n) } };
     epCache.set(key, ep);
     return ep;
   }
   const chapter = () => S.chapter < HAND ? D.chapters[S.chapter] : genEpisode(S.chapter - HAND);
-  function sideEffect() {   // Butterfly Effect: every ripple changes something else in 2026
-    const R = Math.random, E = D.endless.scenes;
-    const c = Math.floor(R() * S.areas), a = D.chains[c].items[Math.floor(R() * 5)][1].replace(/\s*\(.*\)/, '').toLowerCase();
-    const pl = /(fish|sheep)$/.test(a) ? a : /wolf$/.test(a) ? a.slice(0, -1) + 'ves' : /[^aeiou]y$/.test(a) ? a.slice(0, -1) + 'ies' : a + 's';
-    return E[Math.floor(R() * E.length)].replace(/\{animals\}/g, pl).replace(/\{Animal\}/g, a[0].toUpperCase() + a.slice(1))
-      .replace(/\{animal\}/g, a).replace(/\{area\}/g, D.chains[Math.floor(R() * S.areas)].area).replace(/\{n\}/g, String(1 + Math.floor(R() * 99)));
-  }
   function goalText(g) {
     const stars = n => '★'.repeat(n);
     if (g.type === 'make') return `Make a ${D.chains[g.c].items[g.t - 1][1]}`;
@@ -1233,6 +1164,7 @@ RZ.data = {
     if (g.type === 'orders') return `Fill ${g.n} visitor requests`;
     if (g.type === 'golden') return `Make ${g.n} golden merges`;
     if (g.type === 'fans') return `Earn ${fmt(g.n)} fans`;
+    if (g.type === 'rival') return `Beat ${g.rival}: ${fmt(g.n)} fans`;
     if (g.area !== undefined) return `Send ${g.n} ${D.chains[g.area].area} legendar${g.n > 1 ? 'ies' : 'y'}`;
     return `Send ${g.n} legendar${g.n > 1 ? 'ies' : 'y'} to 2026`;
   }
@@ -1250,7 +1182,7 @@ RZ.data = {
     if (g.type === 'combo') return { text, num: `best ×${S.stats.chCombo}`, frac: Math.min(S.stats.chCombo, g.n) / g.n, target: 0 };
     if (g.type === 'orders') return { text, ...cnt(S.stats.chOrders, g.n), target: 0 };
     if (g.type === 'golden') return { text, ...cnt(S.stats.chGolden, g.n), target: 0 };
-    if (g.type === 'fans') return { text, num: `${fmt(Math.min(S.stats.chFans, g.n))}/${fmt(g.n)}`, frac: Math.min(S.stats.chFans, g.n) / g.n, target: 0 };
+    if (g.type === 'fans' || g.type === 'rival') return { text, num: `${fmt(Math.min(S.stats.chFans, g.n))}/${fmt(g.n)}`, frac: Math.min(S.stats.chFans, g.n) / g.n, target: 0 };
     const b = g.area !== undefined ? S.stats.chDel[g.area] : S.stats.chDelivered;
     return { text, ...cnt(b, g.n), target: 0 };
   }
@@ -1274,13 +1206,11 @@ RZ.data = {
     renderAll(); sfx.ripple();
     const [x, y] = fx.center($('#fans')); fx.floatText(x, y + 26, `+${fmt(ch.reward.fans * mult)}`, 'big');
     save();
-    if (ch.endsSeason === 1) {
-      S.season = 2; S.stage = [0,0,0,0,0]; S.req = [null,null,null,null,null]; S.reqAt = [0,0,0,0,0];
-      S.areas = Math.max(S.areas, 5); save(); renderAll();
-      setTimeout(() => ui.season(() => { say('kev', next); save(); checkChapter(); }), 450);
-      return;
-    }
-    const go = () => { say('kev', next); save(); checkChapter(); };
+    const go = () => {
+      say('kev', next); save(); checkChapter();
+      const g = chapter().goal;   // the rival gets a word in at the start of every showdown
+      if (g.type === 'rival') setTimeout(() => say('rival', `${g.rival}: "${pick(D.endless.taunts)}"`), 2600);
+    };
     const day = () => {
       if (!ch.endsDay) { go(); return; }
       const sum = { fans: fmt(S.dayFans), found: S.found.length, levels: S.chapter - S.dayStartCh };
@@ -1494,7 +1424,6 @@ RZ.data = {
       sfx.ripple(); buzz([10, 40, 14]);
       say('kev', linesOf(c)[ns]);
       if (S.tut === 3) setTimeout(tutStep, 700);
-      else if (S.tut >= TUT_END && S.chapter >= 3) setTimeout(() => { say('tl', sideEffect()); tip('timeline', () => $('#msg')); }, 2600);   // side effects start once the basics are in
       const bonus = 20 * ns; setTimeout(() => fx.floatText(px, py + 18, `+${bonus}`), 180);
       addFans(bonus); save(); checkChapter();
     });
@@ -1679,7 +1608,7 @@ RZ.data = {
 
   /* ---------- one-time tips, queued so they never stack ---------- */
   const tipQ = [];
-  const TIP_MIN = { combo: 8, cascade: 13, timeline: 3 };   // level index before which these tips stay quiet
+  const TIP_MIN = { combo: 8, cascade: 13 };   // level index before which these tips stay quiet
   function tip(id, target) {
     if (!S || S.tut < TUT_END || S.tips[id] || tipQ.some(q => q.id === id) || !D.tips[id]) return;
     if (S.chapter < (TIP_MIN[id] || 0)) return;   // save it for the level that teaches it
