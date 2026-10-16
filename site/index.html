@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Games & Projects</title>
-<meta name="description" content="A repository of games and projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard. Jaryd's Last Day: a last-day-at-the-office decision game of graceful exits, petty acts, and workplace crimes. CafePass: a subscription coffee membership platform. Shaman Starman: star chart readings and guidance from Travis. Trolley: a price terminal for the weekly shop.">
+<meta name="description" content="A repository of games and projects. Cubicle: a stimulant-management sim wrapped in a corporate wellness dashboard. Jaryd's Last Day: a last-day-at-the-office decision game of graceful exits, petty acts, and workplace crimes. Rewind Zoo: an animal merge game across two timelines, where merges on a 1986 tape fix a 2026 sanctuary. CafePass: a subscription coffee membership platform. Shaman Starman: star chart readings and guidance from Travis. Trolley: a price terminal for the weekly shop.">
 <style>
   /* ============ SHELL — the neutral container ============ */
   * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -365,6 +365,53 @@
   .starman .sm-cta .meta { display: block; font-weight: 400; letter-spacing: 0.08em; text-transform: none; color: rgba(10,9,24,0.7); margin-top: 2px; font-size: 10px; }
   .starman a:focus-visible { outline: 2px solid var(--sm-aurum); outline-offset: 2px; }
 
+  /* ============ REWIND ZOO PANEL — bright cartoon sky + 1986 camcorder tape, lifted from the game ============ */
+  .rewind {
+    --rz-sky: #A6E4FF; --rz-sky-2: #C6EFFF; --rz-ink: #27174B; --rz-ink-soft: #5A4A7E; --rz-paper: #FFFAF0;
+    --rz-sun: #FFD447; --rz-sun-soft: #FFEDA3; --rz-aqua: #7DD5FF; --rz-aqua-soft: #C8EDFF; --rz-pink: #FF7AB0;
+    --rz-mint: #4FE0AE; --rz-mint-soft: #BDF5DF; --rz-sad: #E6E1EE; --rz-film: #33204D; --rz-film-2: #47306A;
+    --rz-vhs: #FFF2CF; --rz-rec: #FF4D5E; --rz-gold: #FFC21A;
+    --rz-round: ui-rounded, "Arial Rounded MT Bold", "SF Pro Rounded", system-ui, sans-serif;
+    --rz-emoji: "Apple Color Emoji", "Segoe UI Emoji", "Noto Color Emoji", sans-serif;
+    background-color: var(--rz-sky);
+    background-image: radial-gradient(var(--rz-sky-2) 2px, transparent 2.5px);
+    background-size: 20px 20px;
+    border: 3px solid var(--rz-ink); border-radius: 18px; box-shadow: 0 5px 0 var(--rz-ink);
+    padding: 22px 12px 12px; display: flex; flex-direction: column; gap: 10px;
+    font-family: var(--rz-round); color: var(--rz-ink);
+  }
+  .rewind .rz-now { position: relative; background: var(--rz-paper); border: 3px solid var(--rz-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--rz-ink); padding: 16px 8px 8px; }
+  .rewind .rz-tag { position: absolute; top: -13px; left: 12px; background: var(--rz-ink); color: var(--rz-paper); font-weight: 700; font-size: 12px; line-height: 1; padding: 4px 10px 5px; border-radius: 999px; }
+  .rewind .rz-plots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
+  .rewind .rz-plot { position: relative; background: var(--rz-sad); border: 2.5px solid var(--rz-ink); border-radius: 12px; padding: 5px 2px 6px; text-align: center; display: flex; flex-direction: column; align-items: center; gap: 1px; min-width: 0; }
+  .rewind .rz-plot.c0 { background: var(--rz-sun-soft); } .rewind .rz-plot.c1 { background: var(--rz-aqua-soft); } .rewind .rz-plot.c3 { background: var(--rz-mint-soft); }
+  .rewind .rz-plot b { font-family: var(--rz-emoji); font-size: 26px; line-height: 1.15; font-weight: 400; }
+  .rewind .rz-plot.sad b { filter: grayscale(1); opacity: .6; }
+  .rewind .rz-plot span { font-weight: 700; font-size: 13px; line-height: 1; }
+  .rewind .rz-plot small { font-size: 10px; line-height: 1.15; color: var(--rz-ink-soft); }
+  .rewind .rz-req { position: absolute; top: -10px; right: -3px; width: 24px; height: 24px; border-radius: 50%; background: var(--rz-mint); border: 2px solid var(--rz-ink); box-shadow: 0 2px 0 var(--rz-ink); display: grid; place-items: center; font-family: var(--rz-emoji); font-size: 12px; }
+  .rewind .rz-coin { position: absolute; top: -10px; left: -3px; background: var(--rz-sun); border: 2px solid var(--rz-ink); border-radius: 999px; padding: 0 5px; font-size: 10px; font-weight: 700; line-height: 16px; box-shadow: 0 2px 0 var(--rz-ink); white-space: nowrap; }
+  .rewind .rz-tape { background: var(--rz-film); border: 3px solid var(--rz-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--rz-ink); padding: 8px; background-image: repeating-linear-gradient(to bottom, rgba(255,255,255,.045) 0 1px, transparent 1px 3px); }
+  .rewind .rz-vhs { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 13px; letter-spacing: .06em; color: var(--rz-vhs); text-shadow: 1px 0 rgba(255,70,120,.75), -1px 0 rgba(70,200,255,.75); margin-bottom: 8px; }
+  .rewind .rz-vhs i { font-style: normal; color: var(--rz-rec); }
+  .rewind .rz-combo { color: var(--rz-sun); font-weight: 700; font-size: 15px; }
+  .rewind .rz-tiles { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 5px; }
+  .rewind .rz-tiles span { position: relative; aspect-ratio: 1; border: 2.5px solid var(--rz-ink); border-radius: 10px; box-shadow: 0 3px 0 var(--rz-ink); display: grid; place-items: center; font-family: var(--rz-emoji); font-size: clamp(16px, 5vw, 24px); line-height: 1; }
+  .rewind .rz-tiles .c0 { background: var(--rz-sun); } .rewind .rz-tiles .c1 { background: var(--rz-aqua); } .rewind .rz-tiles .c2 { background: var(--rz-pink); } .rewind .rz-tiles .c3 { background: var(--rz-mint); }
+  .rewind .rz-tiles .gold { background: linear-gradient(135deg, #FFF1A8, var(--rz-gold) 45%, #E89B00); box-shadow: 0 3px 0 var(--rz-ink), 0 0 10px var(--rz-gold); }
+  .rewind .rz-tiles .mys { background: repeating-linear-gradient(45deg, var(--rz-pink) 0 6px, var(--rz-sun) 6px 12px); }
+  .rewind .rz-chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .rewind .rz-chip { background: var(--rz-paper); border: 2px solid var(--rz-ink); border-radius: 999px; padding: 2px 10px; font-size: 11.5px; font-weight: 700; box-shadow: 0 2px 0 var(--rz-ink); }
+  .rewind .rz-cta {
+    display: block; text-align: center; text-decoration: none; color: var(--rz-ink);
+    background: var(--rz-sun); border: 3px solid var(--rz-ink); border-radius: 16px; box-shadow: 0 5px 0 var(--rz-ink);
+    font-size: 19px; font-weight: 800; padding: 10px 12px; transition: transform .08s, box-shadow .08s;
+  }
+  .rewind .rz-cta:hover { background: #FFE070; }
+  .rewind .rz-cta:active { transform: translateY(4px); box-shadow: 0 1px 0 var(--rz-ink); }
+  .rewind .rz-cta .meta { display: block; font-size: 11px; font-weight: 600; color: var(--rz-ink-soft); margin-top: 1px; }
+  .rewind a:focus-visible { outline: 3px solid var(--rz-pink); outline-offset: 3px; }
+
   /* ============ TROLLEY PANEL — acid terminal palette, lifted from the app ============ */
   .trolley {
     --tr-bg: #0d0f0c; --tr-panel: #141810; --tr-panel-2: #1a1f14;
@@ -438,7 +485,7 @@
     <h1 class="site-title">Staldex</h1>
     <p class="site-intro">Small software with a point of view. Some useful, some playable, all properly built.</p>
     <nav class="site-index" aria-label="Page sections">
-      <a href="#games">2 games</a>
+      <a href="#games">3 games</a>
       <a href="#projects">3 projects</a>
     </nav>
   </header>
@@ -557,6 +604,37 @@
           <a class="ob-cta" href="./jaryds-last-day.html">🪪 Play Jaryd's Last Day<span class="meta">free · runs in this browser</span></a>
 
         </div>
+      </div>
+    </div>
+  </details>
+
+  <!-- ============ REWIND ZOO ============ -->
+  <details class="project" id="rewind-zoo">
+    <summary class="row">
+      <span class="row-name">Rewind Zoo</span>
+      <span class="row-meta">Game · browser <span class="chev">＋</span></span>
+    </summary>
+    <p class="row-line">An animal merge game across two timelines. Merge animals on Nan Bev's 1986 camcorder tape and every new one ripples forward to fix Kev's run-down 2026 sanctuary.</p>
+
+    <div class="panel">
+      <div class="rewind">
+        <div class="rz-now" aria-hidden="true">
+          <span class="rz-tag">2026 · Now</span>
+          <div class="rz-plots">
+            <div class="rz-plot c0"><span class="rz-req">🐔</span><b>🐓</b><span>Coop</span><small>5am alarm</small></div>
+            <div class="rz-plot c1"><span class="rz-coin">🎟 48</span><b>🐬</b><span>Pond</span><small>Dolphin show</small></div>
+            <div class="rz-plot sad"><b>🕸️</b><span>Kennel</span><small>Cobwebs</small></div>
+            <div class="rz-plot c3"><b>🐈</b><span>Cats</span><small>Cat café</small></div>
+          </div>
+        </div>
+        <div class="rz-tape" aria-hidden="true">
+          <div class="rz-vhs"><span><i>●</i> REC</span><span class="rz-combo">COMBO ×3</span><span>JUN 14 1986</span></div>
+          <div class="rz-tiles"><span class="c0">🥚</span><span class="c0">🥚</span><span class="c1">🐠</span><span class="c2 gold">🐶</span><span class="c3">🧶</span><span class="c1">🐡</span><span class="mys">🎁</span></div>
+        </div>
+        <div class="rz-chips" aria-hidden="true">
+          <span class="rz-chip">7 chapters</span><span class="rz-chip">25 animals</span><span class="rz-chip">Cascades</span><span class="rz-chip">Mystery crates</span>
+        </div>
+        <a class="rz-cta" href="./rewind-zoo.html">📼 Play Rewind Zoo<span class="meta">free · runs in this browser</span></a>
       </div>
     </div>
   </details>
