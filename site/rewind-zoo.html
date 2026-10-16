@@ -791,12 +791,18 @@ RZ.data = {
         ${pg.diagram ? diagram : `<div class="art">${pg.art}${i === 0 ? '<small>● REC  JUN 14 1986</small>' : ''}</div>`}
         ${pg.text.map(t => `<p>${t}</p>`).join('')}
         <div class="dots" aria-label="Page ${i + 1} of ${pages.length}">${pages.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
-        <div class="row">${last ? '' : `<button class="btn quiet" id="skip">${replay ? 'Close' : 'Skip'}</button>`}
-          <button class="btn go" id="next">${last ? (replay ? 'Close' : (pg.button || 'Start')) : 'Next'}</button></div>`, m => {
+        <div class="row">${last ? '' : `<button class="btn quiet" id="skip">${replay === true ? 'Close' : 'Skip'}</button>`}
+          <button class="btn go" id="next">${last ? (replay === true ? 'Close' : replay === 'returning' ? 'Continue my game' : (pg.button || 'Start')) : 'Next'}</button></div>
+        ${last && replay === 'returning' ? '<div class="row"><button class="btn quiet small" id="fresh">Start a new game instead</button></div>' : ''}`, m => {
         const card = m.querySelector('.card');
-        const done = () => { close(); if (!replay) RZ.game.introDone(); };
+        const done = () => { close(); if (!replay) RZ.game.introDone(); else if (replay === 'returning') RZ.game.resume(); };
+        const fr = m.querySelector('#fresh');
+        if (fr) { let armed = false; fr.onclick = () => {
+          if (!armed) { armed = true; fr.textContent = 'Tap again: this wipes your progress'; return; }
+          close(); RZ.game.reset(true);
+        }; }
         m.querySelector('#next').onclick = () => { if (last) done(); else { i++; render(); } };
-        const sk = m.querySelector('#skip'); if (sk) sk.onclick = replay ? close : done;
+        const sk = m.querySelector('#skip'); if (sk) sk.onclick = replay === true ? close : done;
         card.addEventListener('pointerdown', e => { x0 = e.clientX; });
         card.addEventListener('pointerup', e => {   // swipe between pages
           if (x0 === null) return; const dx = e.clientX - x0; x0 = null;
@@ -1001,6 +1007,7 @@ RZ.data = {
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const range = n => Array.from({ length: n }, (_, i) => i);
   const keyOf = (c, t) => c + '-' + t;
+  const STORY_V = 1;                                           // bump to re-show the story intro to everyone once
   const TUT_END = 6;                                            // tutorial steps 0-5, then free play
   const FEAT = { requests: 1, coins: 1, mystery: 2, golden: 4 };  // chapter index where each mechanic switches on
 
@@ -1540,7 +1547,7 @@ RZ.data = {
   }
 
   function introDone() {
-    S.intro = true; save(); sfx.unlock(); sfx.fanfare();
+    S.intro = true; S.storyV = STORY_V; save(); sfx.unlock(); sfx.fanfare();
     say('bev', 'Is this thing on? Hello, future! Say hi, Doug.');
     if (S.tut < TUT_END) setTimeout(tutStep, 900); else checkChapter();
   }
@@ -1583,12 +1590,12 @@ RZ.data = {
     ui.coach({ title: t.title, text: t.text, targets: [el], button: 'Got it', onButton: () => setTimeout(pumpTips, 350) });
   }
 
-  function reset() {
+  function reset(skipIntro) {
     const muted = S.muted; setState(fresh()); S.muted = muted;
     sel = null; chapterOpen = false; combo = 0; shownFans = 0; rolling.clear();
     tipQ.length = 0; ui.clearCoach();
     save(); renderAll(); say('kev', "Nan's old camcorder still works. Apparently. Let's see what's on the tape.", false);
-    ui.intro();
+    if (skipIntro) introDone(); else ui.intro();
   }
 
   /* ---------- input ---------- */
@@ -1693,7 +1700,7 @@ RZ.data = {
   /* ---------- boot ---------- */
   function markStarters() { S.grid.forEach(v => { if (v && !v.m) { const k = keyOf(v.c, v.t); if (!S.found.includes(k)) S.found.push(k); } }); }
 
-  RZ.game = { completeChapter, adForTape, introDone, reset, goalInfo, chapter, fmt, checkChapter, stagesOf, chapterLabel: () => S.chapter < S2_START ? `Season 1 · Chapter ${S.chapter + 1}` : `Season 2 · Chapter ${S.chapter - S2_START + 1}` };
+  RZ.game = { resume: () => { if (S.tut < TUT_END) setTimeout(tutStep, 400); else checkChapter(); }, completeChapter, adForTape, introDone, reset, goalInfo, chapter, fmt, checkChapter, stagesOf, chapterLabel: () => S.chapter < S2_START ? `Season 1 · Chapter ${S.chapter + 1}` : `Season 2 · Chapter ${S.chapter - S2_START + 1}` };
 
   gridEl.innerHTML = range(N).map(i => `<div class="cell" data-cell="${i}"></div>`).join('');
   markStarters();
@@ -1702,7 +1709,9 @@ RZ.data = {
   const last = S.log[S.log.length - 1];
   if (last) say(last[0], last[1], false);
   else say('kev', "Nan's old camcorder still works. Apparently. Let's see what's on the tape.", false);
-  if (!S.intro) ui.intro(); else if (S.tut < TUT_END) setTimeout(tutStep, 600); else checkChapter();
+  if (!S.intro) ui.intro();
+  else if ((S.storyV || 0) < STORY_V) { S.storyV = STORY_V; save(); ui.intro('returning'); }   // returning players see the new story once
+  else if (S.tut < TUT_END) setTimeout(tutStep, 600); else checkChapter();
 })();
 
 </script>
