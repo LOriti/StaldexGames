@@ -375,7 +375,7 @@ RZ.data = {
   COMBO_MS: 2200,        // window to chain merges into a combo
   GOLD_RATE: 0.04,       // chance a crate spawn is golden
   TIER2_RATE: 0.2,       // chance a crate spawn is tier 2
-  SAVE_KEY: 'rewindzoo.v1',
+  SAVE_KEY: 'rewindzoo.v2',   // v2 = the rival zoo rebuild: everyone starts fresh (old 'rewindzoo.v1' saves are ignored)
   REQ_DELAY: 8000,       // gap before an area posts its next visitor request
   VISIT_SHOW: 5,         // fans an area must bank before the collect badge appears
   OFFLINE_CAP_S: 7200,   // visitor fans keep banking for up to 2 h while away
@@ -1115,6 +1115,7 @@ RZ.data = {
     return s;
   }
   function load() {
+    try { localStorage.removeItem('rewindzoo.v1'); } catch (e) {}   // camcorder-era save: the rebuild starts everyone from scratch
     try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && Array.isArray(s.grid) && s.grid.length === N) return migrate(s); } catch (e) {}
     return null;
   }
