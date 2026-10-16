@@ -1,0 +1,16 @@
+# Cloudflare Pages redirects: short and mistyped paths to the real pages.
+# Format: source destination status
+
+# Rewind Zoo
+/rewindzoo      /rewind-zoo  301
+/rewind_zoo     /rewind-zoo  301
+/rewind         /rewind-zoo  301
+/zoo            /rewind-zoo  301
+/rz             /rewind-zoo  301
+/RewindZoo      /rewind-zoo  301
+/Rewind-Zoo     /rewind-zoo  301
+/Rewindzoo      /rewind-zoo  301
+/REWINDZOO      /rewind-zoo  301
+/REWIND-ZOO     /rewind-zoo  301
+/Rewind         /rewind-zoo  301
+/Zoo            /rewind-zoo  301
