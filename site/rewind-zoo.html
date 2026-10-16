@@ -4,14 +4,14 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Rewind Zoo</title>
-<meta name="description" content="Rewind Zoo: an animal merge game. Merge animals on a 1986 camcorder tape to fix a run-down 2026 sanctuary, and win visitors back from the glossy mega-zoo next door.">
+<meta name="description" content="Rewind Zoo: an animal merge game. Merge animals to fix up a tiny, run-down zoo and win the crowd from the glossy mega-zoo next door.">
 <meta name="claude:viewport-fit-sides" content="cover">
 <meta name="theme-color" content="#A6E4FF">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Lilita+One&family=VT323&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Lilita+One&display=swap">
 <style>
-/* Rewind Zoo — one phone-width column: HUD, 2026 sanctuary strip, story bubble, 1986 camcorder merge board, thumb controls.
+/* Rewind Zoo — one phone-width column: HUD, the zoo strip with the Fence (crowd bar), story bubble, back-paddock merge board, thumb controls.
    Single bright cartoon look by design (no dark theme). */
 :root{
   --sky:#A6E4FF; --sky-2:#C6EFFF;
@@ -20,16 +20,14 @@
   --pink:#FF7AB0; --pink-soft:#FFCBE0;
   --mint:#4FE0AE; --mint-soft:#BDF5DF;
   --lime:#B9E94C; --lime-soft:#E2F7B5;
-  --tang:#FF9A3D;
+  --tang:#FF9A3D; --tang-soft:#FFD6AE;
   --gold:#FFC21A; --gold-hi:#FFF1A8; --gold-lo:#E89B00;
   --ink:#27174B; --ink-soft:#5A4A7E;
   --paper:#FFFAF0; --sad:#E6E1EE;
-  --film:#33204D; --film-2:#47306A;
-  --vhs:#FFF2CF; --vhs-r:rgba(255,70,120,.75); --vhs-b:rgba(70,200,255,.75); --rec:#FF4D5E;
+  --field:#3E9A6A; --field-2:#56B381; --grass-soft:#CDEFC0;
   --scrim:rgba(39,23,75,.62);
   --font-display:'Lilita One','Arial Rounded MT Bold',system-ui,sans-serif;
   --font-body:'Fredoka',ui-rounded,system-ui,-apple-system,sans-serif;
-  --font-vhs:'VT323',ui-monospace,Menlo,monospace;
   --emoji:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;
   color-scheme:light;
   padding-top:env(safe-area-inset-top,0px);
@@ -49,7 +47,7 @@ body{
   padding-block:8px 10px;
   -webkit-tap-highlight-color:transparent;
 }
-/* one-screen app: fixed rows top and bottom, the 1986 board takes whatever height is left */
+/* one-screen app: fixed rows top and bottom, the paddock board takes whatever height is left */
 .app{max-width:440px;height:100%;min-height:500px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
 .app>*{flex:none}
 .app.shake{animation:shake .35s}
@@ -79,6 +77,8 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 /* panels */
 .panel{border:3px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink)}
 .now{background:var(--paper);padding:19px 8px 8px;margin-top:9px;position:relative}
+.now.cheer{animation:cheer .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes cheer{40%{transform:scale(1.025)}}
 .tag{position:absolute;top:-14px;left:12px;background:var(--ink);color:var(--paper);font-family:var(--font-display);font-size:12.5px;line-height:1;padding:4px 10px 5px;border-radius:999px;letter-spacing:.03em}
 .plots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
 .plot{position:relative;cursor:pointer;background:var(--sad);border:2.5px solid var(--ink);border-radius:12px;padding:4px 2px 5px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;transition:background .3s}
@@ -125,23 +125,32 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .who{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);display:flex;justify-content:space-between;gap:6px}
 .mt{font-size:14.5px;line-height:1.3}
 
-/* 1986 board */
-.then{background:var(--film);padding:8px;position:relative;overflow:hidden;flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+/* the Fence: share of the crowd on the footpath, yours (left) vs the rival's (right) */
+.fence{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:7px;margin-top:9px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.fence .fl,.fence .fr{display:flex;align-items:center;gap:3px;white-space:nowrap}
+.fence .fl b{color:var(--ink)} .fence .fr b{color:var(--ink-soft)}
+.fence .e{font-size:15px;line-height:1}
+.fbar{position:relative;height:12px;border:2px solid var(--ink);border-radius:99px;background:var(--tang-soft)}
+.fbar i{display:block;height:100%;background:var(--mint);border-radius:99px;transition:width .6s cubic-bezier(.3,1.3,.5,1)}
+.fbar em{position:absolute;bottom:3px;margin-left:-3px;font-style:normal;font-family:var(--emoji);font-size:13px;line-height:1;pointer-events:none}
+.walker{position:absolute;top:50%;transform:translate(-50%,-58%);font-size:16px;line-height:1;transition:left .6s cubic-bezier(.3,1.3,.5,1);pointer-events:none}
+.walker.hop{animation:hop .4s}
+@keyframes hop{50%{transform:translate(-50%,-100%)}}
+.fence.show .fbar{animation:alarm 1.4s ease-in-out infinite}
+@keyframes alarm{50%{box-shadow:0 0 0 3px var(--tang)}}
+
+/* back paddock (merge board) */
+.then{background:var(--field);padding:14px 8px 8px;margin-top:9px;position:relative;flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.then::before{content:"";position:absolute;inset:0;border-radius:17px;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 22px,transparent 22px 44px)}
+.then .tag{z-index:3}
 .gridwrap{position:relative;z-index:1;flex:1 1 auto;min-height:0;container-type:size;display:flex;align-items:center;justify-content:center}
-.then::before{content:"";position:absolute;inset:0;pointer-events:none;background:radial-gradient(ellipse at center,transparent 55%,rgba(255,140,60,.18) 100%)}
-.then::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:2;background:repeating-linear-gradient(to bottom,rgba(255,255,255,.045) 0 1px,transparent 1px 3px)}
-.then.glitch{animation:glitch .42s steps(5)}
-@keyframes glitch{20%{transform:translate(-4px,1px);filter:hue-rotate(50deg) saturate(1.7)}40%{transform:translate(4px,-1px);filter:hue-rotate(-40deg)}60%{transform:translate(-2px,0);filter:contrast(1.4)}80%{transform:translate(1px,1px)}100%{transform:none;filter:none}}
-.vhs{position:relative;z-index:1;flex:none;display:flex;justify-content:space-between;align-items:center;gap:8px;font-family:var(--font-vhs);font-size:18px;line-height:1;color:var(--vhs);letter-spacing:.03em;text-shadow:1.5px 0 var(--vhs-r),-1.5px 0 var(--vhs-b);margin-bottom:6px;font-variant-numeric:tabular-nums;min-height:20px;white-space:nowrap}
-.rec i{font-style:normal;color:var(--rec);animation:blink 1s steps(2) infinite}
-@keyframes blink{50%{opacity:0}}
-.cm{display:flex;align-items:center;gap:5px;font-size:21px;color:var(--sun)}
+.cm{position:absolute;top:-14px;right:12px;z-index:3;display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--sun);font-family:var(--font-display);font-size:15px;line-height:1;padding:4px 10px 5px;border-radius:999px}
 .cm.hit{animation:cmHit .35s cubic-bezier(.2,1.8,.4,1)}
-@keyframes cmHit{from{transform:scale(1.6)}}
-.cm span{display:block;width:40px;height:7px;border:1.5px solid var(--vhs);border-radius:4px;overflow:hidden}
+@keyframes cmHit{from{transform:scale(1.5)}}
+.cm span{display:block;width:40px;height:7px;border:1.5px solid var(--paper);border-radius:4px;overflow:hidden}
 .cm span b{display:block;height:100%;background:var(--sun)}
 .grid{position:relative;width:min(100cqw,100cqh);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:min(6px,1.4cqmin);touch-action:none;user-select:none;-webkit-user-select:none}
-.cell{aspect-ratio:1;border-radius:13px;background:var(--film-2);box-shadow:inset 0 2px 0 rgba(0,0,0,.28);position:relative}
+.cell{aspect-ratio:1;border-radius:13px;background:var(--field-2);box-shadow:inset 0 2px 0 rgba(0,0,0,.2);position:relative}
 .cell.over{box-shadow:inset 0 0 0 3px var(--sun)}
 .tile{position:absolute;inset:3px;border-radius:12px;border:2.5px solid var(--ink);display:grid;place-items:center;font-family:var(--emoji);font-size:clamp(16px,9cqmin,34px);line-height:1;box-shadow:0 3px 0 var(--ink);cursor:grab;transition:transform .12s,opacity .12s}
 .tile .face{display:block}
@@ -153,6 +162,9 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .tile.mys{background:repeating-linear-gradient(45deg,var(--pink) 0 8px,var(--sun) 8px 16px);animation:wiggle 1.6s ease-in-out infinite}
 .tile.mys .face{filter:drop-shadow(0 2px 0 var(--ink))}
 .tile.rolling{animation:none;transform:scale(1.08)}
+.tile.bal{background:repeating-linear-gradient(-45deg,var(--paper) 0 7px,var(--tang-soft) 7px 14px);border-style:dashed;box-shadow:0 3px 0 rgba(39,23,75,.35);cursor:not-allowed}
+.tile.bal .face{animation:floaty 2.2s ease-in-out infinite}
+@keyframes floaty{50%{transform:translateY(-4px) rotate(4deg)}}
 @keyframes wiggle{0%,80%,100%{transform:none}85%{transform:rotate(-8deg)}90%{transform:rotate(8deg)}95%{transform:rotate(-4deg)}}
 .tile .tier{position:absolute;right:-6px;bottom:-6px;width:19px;height:19px;border-radius:50%;background:var(--ink);color:var(--paper);font-family:var(--font-display);font-weight:400;font-size:11px;display:grid;place-items:center;border:2px solid var(--paper);z-index:1}
 .tile.sel{transform:translateY(-4px) scale(1.05);box-shadow:0 0 0 3px var(--sun),0 6px 0 var(--ink)}
@@ -216,8 +228,8 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .kicker{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
 .card h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:32px;line-height:1;text-wrap:balance}
 .card p{margin:0;line-height:1.45}
-.art{font-family:var(--emoji);font-size:34px;text-align:center;letter-spacing:4px;background:var(--film);border:2.5px solid var(--ink);border-radius:16px;padding:12px 8px 8px;line-height:1.2}
-.art small{display:block;font-family:var(--font-vhs);font-size:18px;letter-spacing:.05em;color:var(--vhs);text-shadow:1.5px 0 var(--vhs-r),-1.5px 0 var(--vhs-b);margin-top:6px}
+.art{font-family:var(--emoji);font-size:34px;text-align:center;letter-spacing:4px;background:linear-gradient(var(--sky-2) 0 64%,var(--grass-soft) 64%);border:2.5px solid var(--ink);border-radius:16px;padding:12px 8px 8px;line-height:1.2}
+.art small{display:block;font-family:var(--font-display);font-size:13px;letter-spacing:.08em;color:var(--ink);margin-top:6px}
 .how{margin:0;padding:0;list-style:none;display:grid;gap:8px;counter-reset:s}
 .how li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.35;counter-increment:s}
 .how li::before{content:counter(s);flex:none;width:22px;height:22px;border-radius:50%;background:var(--sun);border:2px solid var(--ink);font-family:var(--font-display);font-size:13px;display:grid;place-items:center}
@@ -227,7 +239,7 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .btn.go{background:var(--mint)} .btn.alt{background:var(--sun)} .btn.quiet{background:var(--paper)}
 .btn:disabled{opacity:.5;cursor:default}
 .reward{font-family:var(--font-display);font-size:22px;text-align:center}
-.adbox{background:var(--film);color:var(--vhs);font-family:var(--font-vhs);font-size:26px;text-align:center;padding:34px 10px;border-radius:16px;border:2.5px solid var(--ink);line-height:1.1}
+.adbox{background:var(--ink);color:var(--paper);font-family:var(--font-display);font-size:24px;text-align:center;padding:34px 10px;border-radius:16px;border:2.5px solid var(--ink);line-height:1.1}
 .adbox .e{display:block;font-size:46px;margin-bottom:6px}
 .log{margin:0;padding:0;list-style:none;display:grid;gap:8px;max-height:48vh;overflow-y:auto}
 .log li{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.35}
@@ -237,20 +249,20 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .arow{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center}
 .an{font-family:var(--font-display);font-size:14px}
 .acells{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
-.acell{aspect-ratio:1;border-radius:10px;border:2px solid var(--ink);background:var(--film-2);color:var(--vhs);font-family:var(--font-display);font-size:16px;display:grid;place-items:center;padding:0;cursor:default}
+.acell{aspect-ratio:1;border-radius:10px;border:2px solid var(--ink);background:var(--sad);color:var(--ink-soft);font-family:var(--font-display);font-size:16px;display:grid;place-items:center;padding:0;cursor:default}
 .acell.f{font-family:var(--emoji);font-size:22px;cursor:pointer;box-shadow:0 2px 0 var(--ink)}
 .acell.f.c0{background:var(--sun)} .acell.f.c1{background:var(--aqua)} .acell.f.c2{background:var(--pink)} .acell.f.c3{background:var(--mint)} .acell.f.c4{background:var(--lime)}
 .aflav{font-size:14px;min-height:2.9em;background:var(--sad);border-radius:12px;padding:8px 10px}
 .aflav b{font-family:var(--font-display);font-weight:400;margin-right:6px}
 
 @media (prefers-reduced-motion: reduce){
-  .tile.t5,.tile.mys,.tile.gold::before,.rec i,.req.ready,.req.poke,.coin,.plot.nope{animation:none}
-  .then.glitch,.plot.bump,.tile.pop,.tile.spawn,.tile.settle,.msg.new,.card,.toast.in,.toast.out,.cm.hit,.app.shake,.app.quake{animation:none}
+  .tile.t5,.tile.mys,.tile.gold::before,.tile.bal .face,.req.ready,.req.poke,.coin,.plot.nope,.walker.hop,.fence.show .fbar{animation:none}
+  .now.cheer,.plot.bump,.tile.pop,.tile.spawn,.tile.settle,.msg.new,.card,.toast.in,.toast.out,.cm.hit,.app.shake,.app.quake{animation:none}
 }
 
 .coin .e{font-size:9px}
 .pips .rn{font-style:normal;font-size:9px;font-weight:700;line-height:8px;margin-left:2px;white-space:nowrap}
-.av.rival{background:var(--tang)}
+.av.rival,.av.rex{background:var(--tang)}
 
 /* coach marks: tutorial and one-time tips */
 .coach{position:fixed;z-index:58;left:50%;transform:translateX(-50%);width:min(380px,calc(100% - 32px));background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
@@ -275,12 +287,14 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .dots i{width:8px;height:8px;border-radius:50%;border:2px solid var(--ink);background:transparent}
 .dots i.on{background:var(--ink);width:20px;border-radius:99px}
 .diag{display:flex;flex-direction:column;gap:4px;align-items:stretch}
-.dg.now,.dg.then{border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center}
+.dg.now,.dg.pad{border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center}
 .dg.now{background:var(--sun-soft)}
-.dg.then{background:var(--film);color:var(--vhs)}
+.dg.pad{background:var(--field);color:var(--paper)}
+.dg.fen{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center;font-size:12px;font-weight:700}
+.dgbar{height:12px;border:2px solid var(--ink);border-radius:99px;background:var(--tang-soft);overflow:hidden}
+.dgbar i{display:block;width:68%;height:100%;background:var(--mint)}
 .dg b{font-family:var(--font-display);font-weight:400;font-size:16px;line-height:1}
 .dg span{font-size:12px;opacity:.8;grid-row:2}
-.dg.then b{font-family:var(--font-vhs);font-size:20px;letter-spacing:.04em}
 .dgp{grid-column:2;grid-row:1/3;display:flex;align-items:center;gap:5px;font-family:var(--emoji);font-size:24px}
 .dgp em{font-style:normal;font-family:var(--font-display);font-size:16px}
 .dgp i.t{font-style:normal;background:var(--sun);border:2px solid var(--ink);border-radius:9px;width:34px;height:34px;display:grid;place-items:center;font-size:20px}
@@ -288,7 +302,7 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 .dg.up{align-self:center;font-family:var(--font-display);font-size:14px;color:var(--pink);animation:upbob 1s ease-in-out infinite}
 @keyframes upbob{50%{transform:translateY(-4px)}}
 @media (prefers-reduced-motion: reduce){ .dg.up{animation:none} }
-.dg b{white-space:nowrap} .dg.then b{font-size:18px}
+.dg b{white-space:nowrap}
 
 /* level-complete preview and day-end summary */
 .nextbox{background:var(--sky-2);border:2.5px dashed var(--ink);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
@@ -308,16 +322,21 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 <body>
 <div class="app" id="app">
   <div class="hud">
-    <div class="pill lvl" id="lvlPill" title="Sanctuary level" hidden><b id="lvl">Lv 1</b><span class="lbar"><i id="lvlBar"></i></span></div>
+    <div class="pill lvl" id="lvlPill" title="Zoo rank" hidden><b id="lvl">Lv 1</b><span class="lbar"><i id="lvlBar"></i></span></div>
     <span class="pill" title="Fans"><span class="e">🎟</span><span id="fans">0</span></span>
-    <span class="pill tape" title="Tape (energy)"><span class="e">📼</span><span id="tape">40</span><button class="plus" id="adBtn" aria-label="Watch an ad for more tape">+</button></span>
+    <span class="pill tape" title="Feed (energy)"><span class="e">🥕</span><span id="tape">40</span><button class="plus" id="adBtn" aria-label="Watch an ad for more feed">+</button></span>
     <button class="chip" id="albumBtn" aria-label="Open animal album"><span class="e">📖</span><span id="albumN">0</span></button>
     <button class="round" id="mute" aria-label="Toggle sound">🔊</button>
   </div>
 
-  <section class="panel now" aria-label="2026 sanctuary">
-    <span class="tag">2026 · Now</span>
+  <section class="panel now" aria-label="Your zoo">
+    <span class="tag">Bev's Beasts</span>
     <div class="plots" id="plots"></div>
+    <div class="fence" id="fence" hidden>
+      <span class="fl"><span class="e">🏡</span><b id="crowdMe">50%</b></span>
+      <div class="fbar" aria-hidden="true"><i id="crowdBar"></i><em id="crowdMark" hidden>🚩</em><span class="walker e" id="walker">🚶</span></div>
+      <span class="fr"><b id="crowdThem">50%</b><span class="e">🏢</span></span>
+    </div>
     <div class="goal"><span id="goalText">Goal</span><span class="gr" id="goalNum"></span><div class="bar"><i id="goalBar"></i></div></div>
   </section>
 
@@ -326,18 +345,15 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
     <span class="mt"><b id="msgWho">Kev:</b> <span id="msgText"></span></span>
   </button>
 
-  <section class="panel then" id="then" aria-label="1986 tape">
-    <div class="vhs">
-      <span class="rec"><i>●</i> REC</span>
-      <span class="cm" id="cm" hidden><strong id="cmN">×2</strong><span><b id="cmBar"></b></span></span>
-      <span id="stamp">JUN 14 1986 4:12:00 PM</span>
-    </div>
+  <section class="panel then" id="then" aria-label="Back paddock">
+    <span class="tag pad">Back paddock</span>
+    <span class="cm" id="cm" hidden><strong id="cmN">×2</strong><span><b id="cmBar"></b></span></span>
     <div class="gridwrap"><div class="grid" id="grid"></div></div>
   </section>
 
   <div class="controls">
     <button class="btn bin" id="bin" aria-label="Bin selected animal"><span class="e">🗑</span>Bin</button>
-    <button class="btn crate" id="crate"><span class="e">📦</span>Crate<small>1 📼</small></button>
+    <button class="btn crate" id="crate"><span class="e">📦</span>Crate<small>1 🥕</small></button>
   </div>
 </div>
 
@@ -348,13 +364,14 @@ button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
 <div class="modal" id="modal" hidden></div>
 
 <script>
-/* Rewind Zoo — game content. Edit this file to tune numbers, add chapters or rewrite jokes. */
+/* Rewind Zoo — game content. Edit this file to tune numbers, add levels or rewrite jokes.
+   Story: Kev runs his Nan's tiny sanctuary. MegaFauna, a glossy mega-zoo, opens next door. Win the crowd. */
 window.RZ = window.RZ || {};
 
 RZ.data = {
   N: 25,                 // board cells (5 x 5)
-  MAX_TAPE: 40,          // energy cap
-  REGEN_MS: 6000,        // energy refill per point (prototype speed; live game ~2-3 min)
+  MAX_TAPE: 40,          // feed (energy) cap. Internally still called "tape".
+  REGEN_MS: 6000,        // feed refill per point (prototype speed; live game ~2-3 min)
   COMBO_MS: 2200,        // window to chain merges into a combo
   GOLD_RATE: 0.04,       // chance a crate spawn is golden
   TIER2_RATE: 0.2,       // chance a crate spawn is tier 2
@@ -364,24 +381,33 @@ RZ.data = {
   OFFLINE_CAP_S: 7200,   // visitor fans keep banking for up to 2 h while away
   COL: ['--sun', '--aqua', '--pink', '--mint', '--lime'],
 
+  /* The Fence: Kev's share of the crowd on the footpath (0-100%).
+     Pushes are added on each action; Rex pulls it back toward `base` over time. */
+  CROWD: {
+    base: 50, pull: 0.004,          // normal levels: Rex holds half the street and drifts it back there slowly
+    showBase: 25, drop: 22,          // showdowns: his stunt drags the crowd down and his pull aims lower
+    merge: 1.2, request: 5, reqTier: 2, legend: 15, collect: 2, pop: 3, discover: 2,
+  },
+  BALLOONS_MAX: 6,
+
   chains: [
-    { area: 'Coop', unlockText: "The Coop is where it all started.",
+    { area: 'Coop', unlockText: "The Coop is where it all started. Nan Bev's first hen lived here. She was called Margaret and she ran the place.",
       items: [['🥚','Suspicious Egg'],['🐣','Chick'],['🐔','Hen'],['🐓','Rooster'],['🦚','Peacock (somehow)']],
       flavor: ['Ticks occasionally. Nan says that is normal.','Has one setting: chirp.','Lays eggs, takes names.','Alarm clock with no snooze button.','Nobody knows how. He will not explain.'],
       stages: [['🪶','One sad feather'],['🐣','Chick squad'],['🐔','Free eggs'],['🐓','5am alarm'],['🦚','Peacock runway']],
       lines: [null,
-        "There are chicks in the coop. I did NOT buy chicks. Who's filming?",
+        "There are chicks in the Coop. Actual chicks. Nan Bev is pretending she isn't crying.",
         "Free eggs! I've had an omelette every meal. Send help. Or toast.",
-        "A rooster now wakes me at 5am. Thanks, I hate it.",
-        "There is a PEACOCK. He has 40k followers. He won't follow me back."] },
+        "A rooster now wakes me at 5am. He also wakes Rex. Worth it.",
+        "There is a PEACOCK. He has 40k followers. MegaFauna has 12."] },
     { area: 'Pond', unlockText: "The Pond has a shopping trolley in it. That's the whole pond.",
       items: [['🐟','Goldfish'],['🐠','Fancy Fish'],['🐡','Pufferfish'],['🐬','Dolphin'],['🐳','Whale']],
       flavor: ['Three-second memory. Thinks you are new every time.','Wears stripes to every occasion.','Inflates when emotionally overwhelmed. Relatable.','Smarter than Kev. Kev agrees.','Technically a pond resident.'],
       stages: [['🛒','Trolley pond'],['🐠','Actual fish'],['🐡','Puffer drama'],['🐬','Dolphin show'],['🐳','Whale (?)']],
       lines: [null,
-        "The trolley in the pond is gone and there are fish. The trolley was load-bearing.",
-        "A pufferfish saw Doug and blew up. They're both fine. Doug is not sorry.",
-        "How is there a dolphin. It's a POND. Ticket sales up 400%.",
+        "The trolley is out of the pond and there are fish. The trolley was load-bearing.",
+        "A pufferfish saw Rex's suit and blew up. Same, mate.",
+        "How is there a dolphin. It's a POND. Rex's wave pool is empty.",
         "Council rang and asked 'is that a whale'. I said 'define whale'."] },
     { area: 'Kennel', unlockText: "Kev found the old kennel behind the gift shop. It's mostly cobwebs and one very confident spider.",
       items: [['🦴','Bone'],['🐶','Puppy'],['🐕','Good Boy'],['🐩','Fancy Poodle'],['🐺','Wolf (nice)']],
@@ -390,8 +416,8 @@ RZ.data = {
       lines: [null,
         "PUPPIES. I'm not crying, you're crying.",
         "Every dog here is a good boy. I checked. Twice. Thoroughly.",
-        "A poodle has opened a salon. She charges $80. I'm booked in Tuesday.",
-        "We have a wolf. He's lovely. He howls in harmony with the rooster."] },
+        "A poodle has opened a salon. Rex booked in under a fake name.",
+        "We have a wolf. He's lovely. He howls whenever the monorail goes past."] },
     { area: 'Cats', unlockText: "There's a big empty box out the back. Kev says it's for cats. Nobody has asked the cats.",
       items: [['🧶','Yarn'],['🐱','Kitten'],['🐈','Cat'],['🐆','Big Spotty Cat'],['🦁','Lion']],
       flavor: ['Bait.','4% kitten, 96% chaos.','Will knock this card off the table.','Just a big kitty. Stop asking.','If he fits, he sits. He fits.'],
@@ -400,65 +426,76 @@ RZ.data = {
         "A kitten moved into the empty box. Box value: priceless.",
         "Opened a cat café. The cats run it. I'm the barista. I'm not paid.",
         "One of the cats is now bigger. And spotty. Insurance has questions.",
-        "A lion is sitting in the box. He fits. Science can't explain it."] },
-    { area: 'Swamp', unlockText: "Kev found a swamp behind the shed. There was no swamp yesterday. It has one log, and the log has a caterpillar with big plans.",
+        "A lion is sitting in the box. He fits. Rex's lion is a statue."] },
+    { area: 'Swamp', unlockText: "There's a swamp behind the shed. Rex says it's on his side of the fence. The surveyor says it isn't. The frogs say nothing, loudly.",
       items: [['🐛','Caterpillar'],['🦋','Butterfly'],['🐸','Frog'],['🐊','Croc'],['🐉','Dragon']],
       flavor: ['Has big plans.','Plans achieved.','Sings bass in the swamp choir.','Runs a day spa. Mud only.','Paperwork pending.'],
       stages: [['🪵','A log'],['🦋','Butterfly bog'],['🐸','Frog choir'],['🐊','Croc day spa'],['🐉','Dragon (legal?)']],
       lines: [null,
         "The swamp has butterflies now. It's a meadow with commitment issues.",
         "The frogs formed a choir. They know one note. It's a great note.",
-        "A croc opened a mud spa. Five stars. Everyone came back. Mostly.",
+        "A croc opened a mud spa. Rex's spa has cucumbers. Ours has a croc.",
         "There's a dragon. I've filed form 27B: 'large lizard, flammable'."] },
   ],
 
-  /* goal types: rival (beat a rival's n fans this level), make (create item c,t), collect (collect visitor fans n times), open (open n mystery crates), all (every unlocked area to n stars), area (one area to n), combo (hit xN), golden (n golden merges), orders (fill n visitor requests),
-     deliver (send n legendaries, optional area), fans (earn n fans this chapter). After these, endless episodes are generated forever. */
+  /* goal types: make (create item c,t), all (every unlocked area to n stars), area (one area to n), orders (fill n visitor requests),
+     crowd (get the Fence to n%), collect (collect visitor fans n times), combo (hit xN), open (open n mystery crates),
+     rival (showdown: pull the Fence to n% against a stunt; pull = how hard the rival pulls back), golden (n golden merges),
+     pop (pop n balloons), deliver (make n star attractions, optional area). After these, endless episodes are generated forever.
+     teach = how the level is explained on the previous "Level complete" screen. endsDay = a natural stopping point.
+     unlock = area that opens when the level is done. */
   chapters: [
-    /* ===== SEASON 1 · THE BUTTERFLY EFFECT =====
-       Short levels, one new thing each. teach = how the level is explained on the previous "Level complete" screen.
-       endsDay = a natural stopping point with a day summary. unlock = area that opens when the level is done. */
+    /* ===== DAY 1 · OPENING DAY ===== */
     { name: 'First Merge', goal: { type: 'make', c: 0, t: 2 }, title: 'First Merge', reward: { fans: 30, tape: 5 },
       teach: 'Tap the Crate, then drag one egg onto the other.',
-      text: ["Chicks. Real ones. In the Coop. Kev did not buy chicks."] },
+      text: ["Chicks. Real ones. In the Coop. Kev did a little dance. Nan Bev saw it and will never let it go."] },
     { name: 'Hen House', goal: { type: 'make', c: 0, t: 3 }, title: 'Hen House', reward: { fans: 40, tape: 5 }, unlock: 1,
-      teach: 'Merge two Chicks into a Hen. The number on each tile is its tier. Higher tiers fix more.',
-      text: ["Free eggs for everyone. Kev has had four omelettes and regrets nothing."] },
+      teach: 'Merge two Chicks into a Hen. The number on each tile is its tier. Higher tiers make the zoo better.',
+      text: ["Free eggs for everyone. Kev has had four omelettes and regrets nothing.",
+             "Over the fence, a crane is lifting something enormous."] },
     { name: 'The Pond', goal: { type: 'make', c: 1, t: 2 }, title: 'The Pond', reward: { fans: 50, tape: 5 },
       teach: 'A new area! The Pond has its own animals. Merge two Goldfish into a Fancy Fish.',
       text: ["The trolley is out of the pond. Something with fins is in."] },
     { name: 'Fix It Up', goal: { type: 'all', n: 2 }, title: 'Fix It Up', reward: { fans: 80, tape: 10 },
       teach: 'Get both areas to ★★. The dots under each area are its stars.',
       text: ["The Coop and the Pond are open for business. Sort of.",
-             "Over the fence, a shiny sign goes up: MEGAFAUNA. COMING SOON."] },
+             "Over the fence, a shiny sign goes up: MEGAFAUNA. OPENING TOMORROW."] },
     { name: 'First Visitor', goal: { type: 'orders', n: 1 }, title: 'First Visitor', reward: { fans: 80, tape: 10 },
-      teach: 'Visitors now arrive with a bubble showing the animal they want. Drag that animal up to their area for fans and tape.',
+      teach: 'Visitors now arrive with a bubble showing the animal they want. Drag that animal up to their area for fans and feed.',
       text: ["One family, one Pufferfish, one very happy kid."] },
     { name: 'Busy Morning', goal: { type: 'orders', n: 3 }, title: 'Busy Morning', reward: { fans: 120, tape: 15 }, endsDay: 1,
       teach: 'Three more visitors. Animals with a ❤️ are the ones someone wants right now.',
       text: ["The gate is busy. Kev bought a whistle. Nobody knows why.",
              "A man in a very white suit is watching from next door. That's Rex Glossop, boss of MegaFauna. He waved. It felt like a threat."] },
+
+    /* ===== DAY 2 · NEXT DOOR OPENS ===== */
+    { name: 'Next Door Opens', goal: { type: 'crowd', n: 60 }, title: 'Next Door Opens', reward: { fans: 120, tape: 15 },
+      teach: "MegaFauna is open. The crowd on the footpath now splits between the two gates: that's the Fence bar up top. Every merge pulls people your way. Get it to 60%.",
+      text: ["Six out of ten people on the footpath turned left, into Bev's Beasts. Rex's monorail went round empty.",
+             "Rex came over with a cheque. 'Name your price.' Kev named a pufferfish. Rex didn't get it."] },
     { name: 'Welcome Back', goal: { type: 'collect', n: 1 }, title: 'Welcome Back', reward: { fans: 100, tape: 15 }, unlock: 2,
-      teach: 'Fixed areas earn fans from visitors over time, even while you are away. Tap the 🎟 badge on an area to collect.',
+      teach: 'Fixed areas earn fans from visitors over time, even while you are away. The bigger your share of the crowd, the faster. Tap the 🎟 badge on an area to collect.',
       text: ["Visitors paid while Kev slept. He's calling it passive income."] },
     { name: 'The Kennel', goal: { type: 'area', area: 2, n: 2 }, title: 'The Kennel', reward: { fans: 120, tape: 15 },
       teach: 'The Kennel is open. Bones become puppies. Get the Kennel to ★★.',
       text: ["PUPPIES. Kev is not crying. Kev is absolutely crying."] },
     { name: 'Quick Paws', goal: { type: 'combo', n: 2 }, title: 'Quick Paws', reward: { fans: 120, tape: 15 }, unlock: 3,
-      teach: 'Merge twice in a row, fast, to make a combo. Combos pay more fans. The meter on the tape shows how long you have.',
+      teach: 'Merge twice in a row, fast, to make a combo. Combos pay more fans and pull a bigger crowd. The meter on the paddock shows how long you have.',
       text: ["Doug watched the combo. Doug approved.",
-             "MegaFauna's monorail opened today. It goes in a circle. Visitors walked back over to see the puppies."] },
+             "MegaFauna's monorail goes in a circle. Half the riders got off at the puppies."] },
     { name: 'Cat Box', goal: { type: 'area', area: 3, n: 2 }, title: 'Cat Box', reward: { fans: 150, tape: 15 },
       teach: 'There is a big empty box out the back. Get the Cats to ★★.',
       text: ["A kitten moved into the box. The box is now priceless."] },
     { name: 'Lucky Dip', goal: { type: 'open', n: 1 }, title: 'Lucky Dip', reward: { fans: 150, tape: 20 }, endsDay: 2,
       teach: 'Merges can now drop a 🎁 mystery crate. Tap it to spin for a prize.',
-      text: ["Nan Bev's tape shows her hiding crates around the place in 1986. She is still hiding things.",
+      text: ["Nan Bev has been hiding crates around the place for forty years. She says they're 'for emergencies'.",
              "Rex sent a letter: 'Sell by Friday.' Kev used it to line the cat box."] },
-    { name: 'Showdown!', goal: { type: 'rival', n: 500, rival: 'MegaFauna' }, title: 'Showdown: Opening Week', reward: { fans: 250, tape: 20 }, unlock: 4,
-      teach: 'Showdown! MegaFauna is chasing the same visitors. Earn more fans than their score before they do. Every merge, request and 🎟 counts.',
-      text: ["You out-scored MegaFauna in their own opening week. Rex has gone a funny colour.",
-             "Behind the shed, a swamp has appeared. Nobody's sure how. Nan Bev looks suspicious on the tape."] },
+
+    /* ===== DAY 3 · FIRST SHOWDOWN ===== */
+    { name: 'Showdown!', goal: { type: 'rival', n: 75, rival: 'MegaFauna', pull: 0.004, stunt: 'free monorail rides' }, title: 'Showdown: Opening Week', reward: { fans: 250, tape: 20 }, unlock: 4,
+      teach: "Showdown! Rex is giving away free monorail rides and the crowd has gone next door. Win it back: pull the Fence to 75%. Rex pulls harder in a showdown, so keep merging.",
+      text: ["The crowd came back for the puffers and stayed for the puppies. Rex has gone a funny colour.",
+             "One of Rex's animals didn't go back. It jumped the fence and moved in with Kev."] },
     { name: 'Swamp Thing', goal: { type: 'area', area: 4, n: 3 }, title: 'Swamp Thing', reward: { fans: 300, tape: 15 },
       teach: 'The Swamp is open. Caterpillars become something much bigger. Get the Swamp to ★★★.',
       text: ["The frog choir drops a one-note single. It goes to number one.",
@@ -473,49 +510,50 @@ RZ.data = {
              "Rex spray-painted a goat gold. It was not the same."] },
     { name: 'Full House', goal: { type: 'all', n: 4 }, title: 'Full House', reward: { fans: 800, tape: 40 },
       teach: 'The big one. Every area to ★★★★, legendary.',
-      text: ["A whale, a wolf, a lion, a peacock and a dragon. Bev's Beasts is the best sanctuary in the state.",
-             "Rex Glossop is not happy. He has hired a marching band. This isn't over."],
-      next: "Rex is fighting back. He's poaching visitors with free balloons. Win them back." },
+      text: ["A whale, a wolf, a lion, a peacock and a dragon. Bev's Beasts is the best little zoo in the state.",
+             "Rex Glossop is not happy. He has bought a lot of balloons. This isn't over."],
+      next: "Rex is fighting back. He's floating balloons over your paddock." },
 
     /* ===== ACT 2 · REX STRIKES BACK ===== */
-    { name: 'Poached!', goal: { type: 'orders', n: 6 }, title: 'Poached!', reward: { fans: 900, tape: 30 },
-      teach: 'Rex is giving out free balloons and poaching your visitors. Fill 6 requests to win them back.',
-      text: ["Six happy families walked back through the gate. They kept the balloons."] },
-    { name: 'Long Weekend', goal: { type: 'rival', n: 1200, rival: 'MegaFauna' }, title: 'Showdown: Long Weekend', reward: { fans: 1000, tape: 30 },
-      teach: 'Another showdown. MegaFauna has a marching band now. Beat their score.',
-      text: ["The marching band played to an empty car park. Everyone was at the Kennel."] },
+    { name: 'Balloon Day', goal: { type: 'pop', n: 6 }, title: 'Balloon Day', reward: { fans: 900, tape: 30 },
+      teach: "Rex has floated MegaFauna balloons over your paddock. They block a square and can't be moved. Merge right next to one to pop it. Pop 6.",
+      text: ["Six balloons, six pops, one very startled pigeon. Doug is fine. Doug is furious."] },
+    { name: 'Long Weekend', goal: { type: 'rival', n: 85, rival: 'MegaFauna', pull: 0.005, stunt: 'a marching band' }, title: 'Showdown: Long Weekend', reward: { fans: 1000, tape: 30 },
+      teach: 'Showdown! Rex hired a marching band and the crowd followed it next door. Pull the Fence to 85%.',
+      text: ["The marching band played to an empty car park. Everyone was at the Kennel.",
+             "The tuba player jumped the fence. So did another of Rex's animals."] },
     { name: 'Legend Has It', goal: { type: 'deliver', n: 2 }, title: 'Legend Has It', reward: { fans: 1100, tape: 35 }, endsDay: 3,
-      teach: 'Legends pull crowds. Make a tier 5 and tap SEND to ship it to 2026. Send 2.',
+      teach: 'Legends pull crowds. Merge up to a tier 5 and tap STAR to make it a star attraction. Do it twice.',
       text: ["A news crew came to film Rex's monorail and filmed the whale instead."] },
     { name: 'Gold Standard', goal: { type: 'golden', n: 5 }, title: 'Gold Standard', reward: { fans: 1200, tape: 35 },
-      teach: 'Make 5 golden merges. Gold beats spray paint every time.',
+      teach: 'Rex launched Golden Ticket Weekend. Show him real gold: make 5 golden merges.',
       text: ["Rex's gold goat has retired. The golden peacock sent flowers."] },
     { name: 'PR Stunt', goal: { type: 'combo', n: 6 }, title: 'PR Stunt', reward: { fans: 1300, tape: 40 },
-      teach: 'Rex booked a celebrity. You have combos. Hit a ×6.',
-      text: ["Your combo went viral. The celebrity left MegaFauna to come and see the puffers."] },
+      teach: 'Rex booked a celebrity penguin. You have combos. Hit a ×6.',
+      text: ["Your combo went viral. The penguin left MegaFauna to come and see the puffers."] },
     { name: 'Crowd Favourite', goal: { type: 'deliver', n: 3 }, title: 'Crowd Favourite', reward: { fans: 1400, tape: 40 },
-      teach: 'Every legendary gives its area 👑 renown, so it earns visitor fans faster, forever. Send 3.',
-      text: ["Bev's Beasts is the most-visited sanctuary in the state. MegaFauna is the most-visited car park."] },
-    { name: 'The Buyout', goal: { type: 'rival', n: 3000, rival: 'MegaFauna' }, title: 'Showdown: The Buyout', reward: { fans: 2500, tape: 60 }, endsDay: 4,
-      teach: "Final showdown. Rex has bet his whole zoo on this weekend. Beat MegaFauna's 3,000 fans.",
-      text: ["MegaFauna's board fires Rex on the spot. He applies for a job at Bev's Beasts.",
-             "Kev hires him to clean the pond. He's surprisingly good at it."],
-      next: "The tape keeps rolling and new rivals keep moving in. Endless showdowns start now." },
+      teach: 'Every star attraction gives its area 👑 renown, so it earns visitor fans faster, forever. Make 3 more.',
+      text: ["Bev's Beasts is the most-visited zoo in the state. MegaFauna is the most-visited car park."] },
+    { name: 'The Buyout', goal: { type: 'rival', n: 95, rival: 'MegaFauna', pull: 0.006, stunt: 'free everything' }, title: 'Showdown: The Buyout', reward: { fans: 2500, tape: 60 }, endsDay: 4,
+      teach: "Final showdown. Rex has bet his whole zoo on this weekend and is giving away free everything. Pull the Fence to 95%.",
+      text: ["MegaFauna's prize llama jumped the fence and moved into the Kennel. Rex's board fired him on the spot.",
+             "Rex applied for a job at Bev's Beasts. Kev hired him to clean the pond. He's surprisingly good at it."],
+      next: "Someone's already bought MegaFauna. A new rival moves in every episode from here." },
   ],
 
   /* Day-end screens: natural stopping points in the early game. */
   days: {
     1: { title: 'Opening day, done', art: '🌙 🐔 🐠',
          text: ["The Coop and the Pond are back. Visitors came, paid and left happy. One left with a chicken. That's being looked into."],
-         tomorrow: "Visitors keep paying while you're away. Collect their fans, then the Kennel opens." },
-    2: { title: 'A proper sanctuary', art: '🌙 🐶 🐱',
-         text: ["Four areas open, combos landing, mystery crates turning up. Nan Bev would be proud. On the tape, she says she is."],
-         tomorrow: 'Your first showdown. MegaFauna wants your visitors. Out-score them.' },
+         tomorrow: 'MegaFauna opens next door. The fight for the crowd starts.' },
+    2: { title: 'A proper zoo', art: '🌙 🐶 🐱',
+         text: ["Four areas open, combos landing, mystery crates turning up. Nan Bev says Margaret the hen would be proud."],
+         tomorrow: 'Your first showdown. Rex has a stunt planned. Win the crowd back.' },
     3: { title: 'Legends in town', art: '🌙 🐳 🦁',
-         text: ["Two legendaries and a full car park. Rex has started wearing sunglasses indoors."],
+         text: ["Two star attractions and a full car park. Rex has started wearing sunglasses indoors."],
          tomorrow: 'Gold, combos and a celebrity. Rex is running out of tricks.' },
     4: { title: 'Rival defeated. For now.', art: '🌙 🏆 🧹',
-         text: ["Rex Glossop is cleaning the pond. MegaFauna is up for sale. Nan Bev, on the tape, is doing a little dance."],
+         text: ["Rex Glossop is cleaning the pond. MegaFauna is under new management. Nan Bev did a little dance on the deck."],
          tomorrow: 'A new rival zoo moves in every episode from here. Beat them all.' },
   },
 
@@ -524,6 +562,8 @@ RZ.data = {
   endless: {
     rivals: ['ZooCorp', 'Safari Express', 'Critter Planet', 'Wild World Inc', 'The Beastly Brothers', 'Fur Real Park',
       'Petropolis', 'Paws Palace', 'MegaFauna 2', 'Feathers & Co', 'Robo-Zoo 3000', 'Lord Fluffington\'s Menagerie'],
+    stunts: ['free monorail rides', 'a laser show', 'half-price tickets', 'a celebrity goat', 'a wave pool', 'free slushies',
+      'a fireworks night', 'a petting zoo of robots', 'a giant inflatable gorilla', 'free face painting'],
     scenes: [
       "{rival} opened next door with a gift shop the size of an airport. It sells one thing: {animal} keyrings.",
       "{rival} is handing out free balloons. Visitors keep floating over to the {area} anyway.",
@@ -540,74 +580,71 @@ RZ.data = {
       "Influencers keep trying {rival}'s selfie wall. Then they come here for a selfie with a {animal}.",
       "{rival} cut their ticket prices in half. The {area} queue got longer anyway.",
     ],
-    taunts: ["You call that a sanctuary? We have a monorail.", "Our gift shop has its own postcode.",
+    taunts: ["You call that a zoo? We have a monorail.", "Our gift shop has its own postcode.",
       "Cute pond. Ours has a wave machine.", "Enjoy your visitors while you've got them.",
       "We've got 40 flavours of slushie. How many have you got?", "I've seen bigger zoos in a snow globe."],
   },
 
-  /* Opening story, shown as swipe-through cards before the tutorial. diagram: true draws the 1986 → 2026 explainer. */
+  /* Opening story: three swipe-through cards before the tutorial. diagram: true draws the paddock → zoo → crowd explainer. */
   intro: [
-    { kicker: "2026 · Bev's Beasts Sanctuary", title: 'Meet Kev', art: '🧑 🪶 🛒',
-      text: ["Kev runs his Nan's old animal sanctuary. It has one sad feather, a shopping trolley in the pond and an online review that just says “why”.",
-             "And next door, something big has just been built."] },
-    { kicker: '1986 · The tape', title: "Nan Bev's camcorder", art: '📼 👵 🐦',
-      text: ["Clearing out the shed, Kev finds Nan Bev's old camcorder. The tape inside is from 1986, the summer she opened Bev's Beasts.",
-             "Kev presses play, and something strange happens. Whatever happens on the tape changes today."] },
-    { kicker: 'How it works', title: 'Merge in 1986. Fix 2026.', diagram: true,
-      text: ["The bottom of the screen is Nan Bev's tape. Drag two matching animals together there to merge them into a better one.",
-             "Every new animal ripples forward in time and fixes part of Kev's sanctuary at the top."] },
-    { kicker: 'Next door', title: 'Meet the neighbours', art: '🏢 🎢 🎈',
-      text: ["Next door, MegaFauna has opened a glossy mega-zoo with a monorail and a gift shop the size of an airport.",
-             "Its boss, Rex Glossop, wants Kev's land. Every visitor you win is one he doesn't get."] },
-    { kicker: 'Your first job', title: 'Fix the Coop', art: '🪶 ➜ 🐣',
-      text: ["Start small: one area, one crate of 1986 animals. The game is played in short levels, and each one shows you one new thing."],
-      button: 'Press REC' },
+    { kicker: "Bev's Beasts · a very small zoo", title: 'Meet Kev', art: '🧑 🪶 🛒',
+      text: ["Kev has taken over his Nan's old animal sanctuary. It has one sad feather, a shopping trolley in the pond and an online review that just says “why”."] },
+    { kicker: 'Next door', title: 'Meet Rex', art: '🏢 🎢 🕴️',
+      text: ["Next door, MegaFauna opens tomorrow: a glossy mega-zoo with a monorail and a gift shop the size of an airport.",
+             "Its boss, Rex Glossop, wants Kev's land. “Sell by the end of summer, mate.” Kev isn't selling."] },
+    { kicker: 'How to win', title: 'Win the crowd', diagram: true,
+      text: ["Merge animals in the paddock at the bottom. Every new one moves into your zoo at the top.",
+             "A better zoo pulls the crowd through your gate instead of Rex's."],
+      button: 'Open the gate' },
   ],
 
   /* Tutorial: the first steps, shown with a pointing hand. */
   tutorial: [
-    { title: 'Press play on 1986', text: 'Tap the Crate to drop an animal onto Nan Bev\'s 1986 tape.' },
-    { title: 'Tape is your energy', text: 'Each crate uses 1 📼 tape. It refills by itself. Tap the Crate again.' },
+    { title: 'Open a crate', text: 'Tap the Crate to bring an animal into the back paddock.' },
+    { title: 'Feed is your energy', text: 'Each crate costs 1 🥕 feed. It refills by itself. Tap the Crate again.' },
     { title: 'Merge them', text: 'Two the same? Drag one egg onto the other to merge them into something new.' },
-    { title: 'Ripple!', text: 'That merge happened in 1986, and it rippled into 2026. The Coop just got better. Every new animal you make fixes something in Kev\'s sanctuary.' },
+    { title: 'Moved in!', text: "Every new animal you make moves into Kev's zoo up top and fixes it up. Better zoo, bigger crowd." },
   ],
 
   /* One-time tips, shown the first time each mechanic shows up. */
   tips: {
-    requests: { title: 'Visitor requests', text: 'The bubble shows the animal visitors want. Drag it up to their area, or tap the area when the bubble glows green, for fans and tape. Animals with a ❤️ are wanted.' },
+    fence: { title: 'The Fence', text: 'This bar is the crowd on the footpath: yours on the left, Rex\'s on the right. Merges, visitor requests and star attractions pull people your way. Rex slowly pulls them back. More crowd means more visitor fans.' },
+    requests: { title: 'Visitor requests', text: 'The bubble shows the animal visitors want. Drag it up to their area, or tap the area when the bubble glows green, for fans and feed. Animals with a ❤️ are wanted.' },
     coins: { title: 'Visitor fans', text: 'Fixed areas earn fans from visitors over time, even while you\'re away. Tap the 🎟 badge to collect.' },
-    combo: { title: 'Combo!', text: 'Merge quickly and merges chain into a combo. The meter on the tape shows how long you have. Bigger combo, more fans.' },
+    combo: { title: 'Combo!', text: 'Merge quickly and merges chain into a combo. The meter on the paddock shows how long you have. Bigger combo, more fans.' },
     cascade: { title: 'Cascade!', text: 'When a merge lands right next to its twin, it merges again by itself. Park twins side by side to set off chain reactions.' },
-    mystery: { title: 'Mystery crate', text: 'Merges sometimes drop a 🎁. Tap it to spin for tape, fans, a big animal or a jackpot.' },
+    mystery: { title: 'Mystery crate', text: 'Merges sometimes drop a 🎁. Tap it to spin for feed, fans, a big animal or a jackpot.' },
     golden: { title: 'Golden animal', text: 'Golden animals pay 3× fans and stay golden when you merge them. They also pay double on visitor requests.' },
-    legendary: { title: 'Legendary!', text: 'Tier 5 is the top. Tap SEND to ship it to 2026 for a big payout and 👑 renown, which makes that area earn more forever.' },
-    full: { title: 'Board full', text: 'No room on the tape. Merge something, or drag an animal you don\'t need onto the Bin.' },
-    tapeLow: { title: 'Low on tape', text: 'Tape refills by itself over time. Tap ➕ next to your tape for a quick top-up.' },
-    level: { title: 'Sanctuary rank', text: 'Fans raise your sanctuary rank ⭐. Every rank up gives you bonus tape.' },
+    legendary: { title: 'Legendary!', text: 'Tier 5 is the top. Tap STAR to make it a star attraction: a big payout, a big crowd and 👑 renown, which makes that area earn more forever.' },
+    balloon: { title: 'Rex\'s balloons', text: 'Balloons block a square and can\'t be moved or binned. Merge two animals right next to one to pop it.' },
+    full: { title: 'Paddock full', text: 'No room in the paddock. Merge something, or drag an animal you don\'t need onto the Bin.' },
+    tapeLow: { title: 'Low on feed', text: 'Feed refills by itself over time. Tap ➕ next to your feed for a quick top-up.' },
+    level: { title: 'Zoo rank', text: 'Fans raise your zoo rank ⭐. Every rank up gives you bonus feed.' },
     album: { title: 'Animal album', text: 'Every new animal you discover goes in the album 📖. There are 25 to find.' },
   },
 
   /* mystery crate outcomes, weighted */
   mystery: [
-    { w: 30, kind: 'tape',    n: 10,  label: '+10 📼' },
+    { w: 30, kind: 'tape',    n: 10,  label: '+10 🥕' },
     { w: 28, kind: 'fans',    n: 100, label: '+100 🎟' },
     { w: 22, kind: 'item',    t: 3,   label: 'Tier 3!' },
     { w: 14, kind: 'gold',    t: 2,   label: 'GOLDEN!' },
     { w: 6,  kind: 'jackpot', t: 4,   label: 'JACKPOT!' },
   ],
-  slotFaces: ['📼','🎟','⭐','✨','💎','🥚','🐟','🦴','🧶','🐛'],
+  slotFaces: ['🥕','🎟','⭐','✨','💎','🥚','🐟','🦴','🧶','🐛'],
 
-  bev: ["Ooh, quick hands! My perm can barely keep up.", "RECORDING! Wave to the future, kids!",
-        "I've balanced the camcorder on the fence post. Rain is the future's problem.",
-        "Kevin, if you're watching this, eat a vegetable.", "That's a combo! I don't know what a combo is but I love it."],
-  levelLines: ["Rank up! I'd do a cartwheel but my perm can't take it.", "Ooh, a new rank! Doug, fetch the good biscuits.",
-               "Another rank, love! The camcorder is getting warm.", "Look at you go. I'm putting this on the fridge."],
+  bev: ["Ooh, quick hands! My perm can barely keep up.", "That's it, Kevin! Rex is watching through his binoculars again.",
+        "I've seen faster, but not since the eighties.", "Kevin, eat a vegetable between merges.", "That's a combo! I don't know what a combo is but I love it."],
+  levelLines: ["Rank up! I'd do a cartwheel but my hip can't take it.", "Ooh, a new rank! Doug, fetch the good biscuits.",
+               "Another rank, love! Rex just closed his blinds.", "Look at you go. I'm putting this on the fridge."],
   reviews: ["5 stars. Met a {a}. Would cry again.", "Brought my nan to see the {a}. She cried. 5 stars.",
             "The {a} winked at me. Unclear if that's allowed. 5 stars.", "Came for the {a}, stayed for Doug.",
             "Gift shop sold out of {a} plushies. Riot narrowly avoided.", "My kid now wants to BE a {a}. Thanks a lot. 5 stars.",
-            "Took 400 photos of the {a}. Deleted none.", "The {a} was everything the brochure promised. There was no brochure."],
-  doug: ["coo.", "coo. (he has seen everything)", "*stares directly into the camcorder*", "coo coo. (ominous)"],
-  who: { kev: ['K', 'Kev · 2026'], bev: ['B', 'Nan Bev · 1986'], doug: ['D', 'Doug · both years, somehow'], fan: ['★', 'Visitor · 2026'], rival: ['R', 'Rival · next door'] },
+            "Took 400 photos of the {a}. Deleted none.", "Went next door first. Big mistake. The {a} here is everything. 5 stars."],
+  doug: ["coo.", "coo. (he has seen everything)", "*stares at Rex over the fence*", "coo coo. (ominous)"],
+  defect: ["One of {rival}'s {animals} just jumped the fence. It's golden. It lives here now.",
+           "A golden {animal} hopped the fence from {rival}. It brought its own food bowl."],
+  who: { kev: ['K', 'Kev · zookeeper'], bev: ['B', 'Nan Bev · retired, supervising'], doug: ['D', 'Doug · resident pigeon'], fan: ['★', 'Visitor'], rival: ['R', 'Rival · next door'], rex: ['R', 'Rex · MegaFauna'] },
 };
 
 </script>
@@ -656,6 +693,8 @@ RZ.data = {
     coin() { tone(note(28), 0.06, 'square', 0.05); tone(note(35), 0.12, 'square', 0.05, 0.06); },
     order() { arp([0, 7, 12, 16, 19, 24], 14, 0.055, 'triangle', 0.09, 0.22); tone(note(26), 0.3, 'sine', 0.06, 0.32); },
     bad() { tone(note(-5), 0.16, 'sawtooth', 0.05); },
+    pop() { tone(note(26), 0.05, 'square', 0.08); tone(note(33), 0.09, 'triangle', 0.08, 0.03); },
+    stunt() { arp([12, 8, 5, 0], 7, 0.08, 'sawtooth', 0.045, 0.18); },
     bin() { tone(note(2), 0.08, 'sine', 0.08); tone(note(-3), 0.1, 'sine', 0.07, 0.06); },
   };
   RZ.buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
@@ -663,7 +702,7 @@ RZ.data = {
 
 </script>
 <script>
-/* Rewind Zoo — visual juice: floating text, bursts, ripple sparks, glitch, shake, confetti. */
+/* Rewind Zoo — visual juice: floating text, bursts, flying sparks, cheer, shake, confetti. */
 (function () {
   const RZ = window.RZ;
   const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -722,7 +761,7 @@ RZ.data = {
   }
 
   function restart(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
-  function glitch() { if (!RM) restart(document.getElementById('then'), 'glitch'); }
+  function cheer() { if (!RM) restart(document.querySelector('.now'), 'cheer'); }
   function shake(big) { if (!RM) restart(document.getElementById('app'), big ? 'quake' : 'shake'); }
 
   function confetti(n = 140) {
@@ -755,7 +794,7 @@ RZ.data = {
     })(t0);
   }
 
-  RZ.fx = { RM, center, floatText, burst, fly, glitch, shake, confetti, restart };
+  RZ.fx = { RM, center, floatText, burst, fly, cheer, shake, confetti, restart };
 })();
 
 </script>
@@ -778,15 +817,17 @@ RZ.data = {
   function intro(replay) {
     const pages = D.intro;
     let i = 0, x0 = null;
-    const diagram = `<div class="diag" aria-label="Merge animals on the 1986 tape at the bottom; the ripple fixes the 2026 sanctuary at the top">
-        <div class="dg now"><b>2026 · Now</b><span>Kev's sanctuary</span><div class="dgp"><i>🪶</i><em>➜</em><i>🐣</i></div></div>
-        <div class="dg up">ripple ⬆</div>
-        <div class="dg then"><b>1986 · Then</b><span>Nan Bev's tape</span><div class="dgp"><i class="t">🥚</i><em>+</em><i class="t">🥚</i><em>=</em><i class="t">🐣</i></div></div>
+    const diagram = `<div class="diag" aria-label="Merge animals in the paddock at the bottom; they move into the zoo at the top and pull the crowd your way">
+        <div class="dg fen"><span class="dgl">🏡 Bev's</span><span class="dgbar"><i></i></span><span class="dgr">MegaFauna 🏢</span></div>
+        <div class="dg up">crowd ⬆</div>
+        <div class="dg now"><b>Your zoo</b><span>Up top</span><div class="dgp"><i>🪶</i><em>➜</em><i>🐣</i></div></div>
+        <div class="dg up">moves in ⬆</div>
+        <div class="dg pad"><b>Back paddock</b><span>Merge here</span><div class="dgp"><i class="t">🥚</i><em>+</em><i class="t">🥚</i><em>=</em><i class="t">🐣</i></div></div>
       </div>`;
     const render = () => {
       const pg = pages[i], last = i === pages.length - 1;
       open(`<div class="kicker">${pg.kicker}</div><h2>${pg.title}</h2>
-        ${pg.diagram ? diagram : `<div class="art">${pg.art}${i === 0 ? '<small>● REC  JUN 14 1986</small>' : ''}</div>`}
+        ${pg.diagram ? diagram : `<div class="art">${pg.art}${i === 0 ? "<small>BEV'S BEASTS · EST. 1986</small>" : i === 1 ? '<small>MEGAFAUNA · OPENING TOMORROW</small>' : ''}</div>`}
         ${pg.text.map(t => `<p>${t}</p>`).join('')}
         <div class="dots" aria-label="Page ${i + 1} of ${pages.length}">${pages.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
         <div class="row">${last ? '' : `<button class="btn quiet" id="skip">${replay === true ? 'Close' : 'Skip'}</button>`}
@@ -816,12 +857,13 @@ RZ.data = {
   function howto() {
     open(`<div class="kicker">How to play</div><h2>The basics</h2>
       <ol class="how">
-        <li>Tap Crate to drop 1986 animals onto the tape. Each crate uses 1 📼.</li>
+        <li>Tap Crate to bring an animal into the paddock. Each crate costs 1 🥕 feed.</li>
         <li>Drag two matching animals together to merge them, or tap one then the other.</li>
-        <li>Every new animal ripples into 2026 and fixes Kev's sanctuary. Sometimes it changes other things too.</li>
-        <li>Areas show a bubble with the animal visitors want. Drag it up for fans and tape. Tap 🎟 to collect visitor fans.</li>
-        <li>Quick merges make combos. A merge next to its twin cascades. 🎁 crates spin for prizes. Gold pays 3×.</li>
-        <li>Tier 5 animals can be sent to 2026 for 👑 renown.</li>
+        <li>Every new animal moves into Kev's zoo up top and fixes it up.</li>
+        <li>The Fence bar is the crowd: yours on the left, the rival's on the right. Every merge, request and star attraction pulls people your way. Win showdowns by pulling it past the 🚩.</li>
+        <li>Areas show a bubble with the animal visitors want. Drag it up for fans and feed. Tap 🎟 to collect visitor fans.</li>
+        <li>Quick merges make combos. A merge next to its twin cascades, and pops any 🎈 balloon beside it. 🎁 crates spin for prizes. Gold pays 3×.</li>
+        <li>Tap STAR on a tier 5 animal to make it a star attraction for 👑 renown.</li>
       </ol>
       <div class="row"><button class="btn go" id="x">Got it</button></div>`, m => { m.querySelector('#x').onclick = close; });
   }
@@ -889,9 +931,9 @@ RZ.data = {
   }
 
   function outOfTape() {
-    open(`<div class="kicker">Out of tape</div><h2>Nan Bev taped over it</h2>
-      <p>She used the last tape filming Doug for forty minutes. Wait for a refill (+1 every 6 s here) or watch an ad.</p>
-      <div class="row"><button class="btn alt" id="ad">Watch ad · +20 📼</button><button class="btn quiet" id="wait">Wait</button></div>`, m => {
+    open(`<div class="kicker">Out of feed</div><h2>The feed bin's empty</h2>
+      <p>The animals ate the lot and Doug ate the receipt. Wait for a refill (+1 every 6 s here) or watch an ad.</p>
+      <div class="row"><button class="btn alt" id="ad">Watch ad · +20 🥕</button><button class="btn quiet" id="wait">Wait</button></div>`, m => {
       m.querySelector('#ad').onclick = RZ.game.adForTape;
       m.querySelector('#wait').onclick = close;
     });
@@ -902,10 +944,10 @@ RZ.data = {
     const S = RZ.S, ch = RZ.game.chapter(), f = RZ.game.fmt, nx = RZ.game.preview();
     const art = D.chains.slice(0, S.areas).map((c, i) => RZ.game.stagesOf(i)[S.stage[i]][0]).join(' ');
     RZ.sfx.fanfare(); RZ.buzz([20, 60, 20, 60, 40]); RZ.fx.confetti(90);
-    open(`<div class="kicker">${RZ.game.chapterLabel()} complete${ch.endless ? ' · endless tape' : ''}</div><h2>${ch.title.replace(/^Ep \d+: /, '')}</h2>
-      <div class="art">${art}<small>2026 · BEV'S BEASTS</small></div>
+    open(`<div class="kicker">${RZ.game.chapterLabel()} complete${ch.endless ? ' · endless' : ''}</div><h2>${ch.title.replace(/^Ep \d+: /, '')}</h2>
+      <div class="art">${art}<small>BEV'S BEASTS</small></div>
       ${ch.text.map(t => `<p>${t}</p>`).join('')}
-      <div class="reward">+${f(ch.reward.fans)} 🎟 &nbsp; +${ch.reward.tape} 📼</div>
+      <div class="reward">+${f(ch.reward.fans)} 🎟 &nbsp; +${ch.reward.tape} 🥕</div>
       ${ch.endsSeason ? '' : `<div class="nextbox"><div class="nk">Next · ${nx.label}</div><b>${nx.title}</b>${nx.teach ? `<p>${nx.teach}</p>` : ''}<span class="goalchip">🎯 ${nx.goal}</span></div>`}
       <div class="row">${S.chapter >= 3 ? '<button class="btn alt" id="dbl">Watch ad · 2× fans</button>' : ''}<button class="btn go" id="take">${ch.endsDay || ch.endsSeason ? 'Collect' : 'Next level ▶'}</button></div>`, m => {
       m.querySelector('#take').onclick = () => { close(); RZ.game.completeChapter(1); };
@@ -918,7 +960,7 @@ RZ.data = {
     const d = D.days[n];
     RZ.sfx.fanfare(); RZ.fx.confetti(140); RZ.buzz([30, 60, 30]);
     open(`<div class="kicker">Day ${n} complete</div><h2>${d.title}</h2>
-      <div class="art">${d.art}<small>TAPE PAUSED · DAY ${n}</small></div>
+      <div class="art">${d.art}<small>GATES SHUT · DAY ${n}</small></div>
       <div class="daysum"><div><b>${sum.fans}</b><span>fans today</span></div><div><b>${sum.levels}</b><span>levels done</span></div><div><b>${sum.found}/25</b><span>animals found</span></div></div>
       ${d.text.map(t => `<p>${t}</p>`).join('')}
       <p class="tmr"><b>Tomorrow</b>${d.tomorrow}</p>
@@ -928,10 +970,10 @@ RZ.data = {
     });
   }
   function sleep(after) {
-    open(`<div class="kicker">See you soon</div><h2>Tape paused</h2>
-      <div class="art">⏸ 📼<small>VISITORS STILL EARNING</small></div>
+    open(`<div class="kicker">See you soon</div><h2>Gates shut</h2>
+      <div class="art">🌙 🔒<small>VISITORS STILL EARNING</small></div>
       <p>Visitors keep paying fans while you're away, up to two hours' worth. Come back to collect them and start tomorrow.</p>
-      <div class="row"><button class="btn go" id="back">Back to the tape</button></div>`, m => {
+      <div class="row"><button class="btn go" id="back">Back to the zoo</button></div>`, m => {
       m.querySelector('#back').onclick = () => { close(); after && after(); };
     });
   }
@@ -940,7 +982,7 @@ RZ.data = {
     const c = D.chains[area];
     RZ.sfx.fanfare(); RZ.fx.confetti(160); RZ.buzz([30, 50, 30]);
     open(`<div class="kicker">New area unlocked</div><h2>The ${c.area}</h2>
-      <div class="art">${c.stages[0][0]} ${c.items.map(i => i[0]).join(' ')}<small>NEW CHAIN ON THE TAPE</small></div>
+      <div class="art">${c.stages[0][0]} ${c.items.map(i => i[0]).join(' ')}<small>NEW ANIMALS IN THE PADDOCK</small></div>
       <p>${c.unlockText}</p>
       <div class="row"><button class="btn go" id="go">Let's go</button></div>`, m => {
       m.querySelector('#go').onclick = () => { close(); after && after(); };
@@ -951,8 +993,8 @@ RZ.data = {
     const S = RZ.S, W = D.who;
     const items = S.log.slice().reverse()
       .map(([w, t]) => `<li><span class="av ${w}">${W[w][0]}</span><span><b>${W[w][1]}</b>${t}</span></li>`).join('')
-      || '<li>Nothing on the tape yet.</li>';
-    open(`<div class="kicker">Story so far</div><h2>The tape</h2><ul class="log">${items}</ul>
+      || '<li>Nothing in the diary yet.</li>';
+    open(`<div class="kicker">Story so far</div><h2>The zoo diary</h2><ul class="log">${items}</ul>
       <div class="row"><button class="btn quiet" id="story">Story intro</button><button class="btn quiet" id="how">How to play</button></div>
       <div class="row"><button class="btn go" id="x">Close</button></div>
       <div class="row"><button class="btn quiet small" id="reset">Restart game</button></div>`, m => {
@@ -976,7 +1018,7 @@ RZ.data = {
       }).join('');
       return `<div class="arow"><span class="an">${ch.area}</span><div class="acells">${cells}</div></div>`;
     }).join('');
-    open(`<div class="kicker">Album · ${S.found.length}/25 found</div><h2>Who's on tape</h2>
+    open(`<div class="kicker">Album · ${S.found.length}/25 found</div><h2>Who lives here</h2>
       <div class="album">${rows}</div>
       <p class="aflav" id="aflav">Tap an animal to read its file.</p>
       <div class="row"><button class="btn go" id="x">Close</button></div>`, m => {
@@ -1019,18 +1061,18 @@ RZ.data = {
   const pick = a => a[Math.floor(Math.random() * a.length)];
   const range = n => Array.from({ length: n }, (_, i) => i);
   const keyOf = (c, t) => c + '-' + t;
-  const STORY_V = 2;                                           // bump to re-show the story intro to everyone once
+  const STORY_V = 3;                                           // bump to re-show the story intro to everyone once
   const TUT_END = 4;                                            // tutorial steps 0-3 (inside Level 1), then levels teach the rest
-  const FEAT = { tier2: 3, requests: 4, coins: 6, mystery: 10, golden: 14 };  // level index where each mechanic switches on
+  const FEAT = { tier2: 3, requests: 4, fence: 6, coins: 7, mystery: 11, golden: 15 };  // level index where each mechanic switches on
 
   /* ---------- state ---------- */
   function fresh() {
-    const g = Array(N).fill(null);   // empty tape: the tutorial fills it
-    return { v: 6, season: 1, tut: 0, tips: {}, dayFans: 0, dayStartCh: 0, grid: g, stage: [0,0,0,0,0], areas: 1, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
+    const g = Array(N).fill(null);   // empty paddock: the tutorial fills it
+    return { v: 7, season: 1, tut: 0, crowd: D.CROWD.base, stuntFor: -1, tips: {}, dayFans: 0, dayStartCh: 0, grid: g, stage: [0,0,0,0,0], areas: 1, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
       intro: false, muted: false, log: [], found: [], regenAt: Date.now(),
       req: [null,null,null,null,null], reqAt: [0,0,0,0,0], visit: [0,0,0,0,0], happy: [0,0,0,0,0], renown: [0,0,0,0,0], visitAt: Date.now(),
       seed: Math.floor(Math.random() * 1e9),
-      stats: { golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0 } };
+      stats: { golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0, chPopped: 0 } };
   }
   function migrate(s) {
     s.stage = s.stage || []; while (s.stage.length < 5) s.stage.push(0);
@@ -1057,15 +1099,19 @@ RZ.data = {
       if (s.tut >= 4) s.tut = 4;
       s.v = 6; s.season = 1;
     }
+    if (s.v === 6) { if (s.chapter >= 6) s.chapter++; s.v = 7; }   // v7 inserted "Next Door Opens" (the Fence) at index 6
+    if (typeof s.crowd !== 'number') s.crowd = D.CROWD.base;
+    if (s.stuntFor === undefined) s.stuntFor = -1;
     s.dayFans = s.dayFans || 0; if (s.dayStartCh === undefined) s.dayStartCh = s.chapter;
     for (const k of ['req', 'reqAt', 'visit', 'happy', 'renown']) { s[k] = s[k] || []; while (s[k].length < 5) s[k].push(k === 'req' ? null : 0); }
     s.visitAt = s.visitAt || Date.now();
     if (s.seed === undefined) s.seed = Math.floor(Math.random() * 1e9);
     if (!Array.isArray(s.stats && s.stats.chDel)) { s.stats = s.stats || {}; s.stats.chDel = [0,0,0,0,0]; }
     s.found = s.found || []; s.log = s.log || [];
-    s.stats = Object.assign({ golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0 }, s.stats || {});
+    s.stats = Object.assign({ golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0, chPopped: 0 }, s.stats || {});
     s.level = s.level || 1; s.regenAt = s.regenAt || Date.now();
     s.grid = s.grid.map(v => (v && typeof v === 'object') ? v : null);
+    s.grid = s.grid.map(v => v && v.b ? { b: 1 } : v);
     return s;
   }
   function load() {
@@ -1085,7 +1131,9 @@ RZ.data = {
   const cellAt = i => gridEl.querySelector(`[data-cell="${i}"]`);
   const plotAt = c => plotsEl.querySelector(`[data-plot="${c}"]`);
   const emptyCells = () => range(N).filter(i => !S.grid[i]);
-  const canMerge = (A, B) => A && B && !A.m && !B.m && A.c === B.c && A.t === B.t && A.t < 5;
+  const canMerge = (A, B) => A && B && !A.m && !B.m && !A.b && !B.b && A.c === B.c && A.t === B.t && A.t < 5;
+  const balloons = () => S.grid.filter(v => v && v.b).length;
+  const C = D.CROWD;
   function fmt(n) {
     n = Math.round(n);
     if (n < 10000) return n.toLocaleString();
@@ -1114,7 +1162,7 @@ RZ.data = {
 
   /* ---------- goals ---------- */
   const HAND = D.chapters.length;
-  const ENDLESS = ['orders', 'combo', 'golden', 'deliver', 'rival', 'deliverArea'];
+  const ENDLESS = ['orders', 'combo', 'golden', 'deliver', 'rival', 'deliverArea', 'pop'];
   const ROMAN = ['', '', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
   const epCache = new Map();
   const typeFor = n => ENDLESS[Math.floor(rng(S.seed * 31 + n * 7919)() * ENDLESS.length)];
@@ -1131,10 +1179,12 @@ RZ.data = {
     else if (type === 'golden') goal = { type, n: Math.min(15, 3 + Math.floor(n / 2)) };
     else if (type === 'deliver') goal = { type, n: Math.min(10, 1 + Math.floor(n / 3)) };
     else if (type === 'deliverArea') goal = { type: 'deliver', n: Math.min(6, 1 + Math.floor(n / 5)), area: Math.floor(R() * S.areas) };
+    else if (type === 'pop') goal = { type, n: Math.min(12, 4 + Math.floor(n / 3)) };
     let rival = E.rivals[n % E.rivals.length];
     const lap = Math.floor(n / E.rivals.length) + 1;
     if (lap > 1) rival += ' ' + (ROMAN[lap] || lap);
-    if (type === 'rival') goal = { type: 'rival', n: 3000 + 400 * n, rival };
+    const stunt = E.stunts[Math.floor(R() * E.stunts.length)];
+    if (type === 'rival') goal = { type: 'rival', n: Math.min(95, 80 + n), rival, pull: Math.min(0.009, 0.005 + 0.0002 * n), stunt };
     const animal = () => { const c = Math.floor(R() * S.areas), t = 1 + Math.floor(R() * 5); return D.chains[c].items[t - 1][1].replace(/\s*\(.*\)/, '').toLowerCase(); };
     const plural = a => /(fish|sheep)$/.test(a) ? a : /wolf$/.test(a) ? a.slice(0, -1) + 'ves' : /[^aeiou]y$/.test(a) ? a.slice(0, -1) + 'ies' : a + 's';
     const fill = str => {   // one animal and one area per line, so the joke stays consistent
@@ -1147,7 +1197,8 @@ RZ.data = {
     const text = picks.map(i => fill(E.scenes[i]));
     const title = `vs ${rival}`;
     const ep = { endless: true, ep: n + 1, rival, name: `Episode ${n + 1}`, title: `Ep ${n + 1}: ${title}`, goal, text,
-      teach: type === 'rival' ? `${rival} has moved in next door. Showdown: beat their score.` : `${rival} is still next door. Keep the visitors coming.`,
+      teach: type === 'rival' ? `${rival} has moved in next door with ${stunt}. Showdown: pull the Fence to ${goal.n}%.`
+        : type === 'pop' ? `${rival} floated balloons over your paddock. Merge next to them to pop them.` : `${rival} is still next door. Keep the visitors coming.`,
       reward: { fans: 300 + 120 * n, tape: Math.min(60, 20 + 2 * n) } };
     epCache.set(key, ep);
     return ep;
@@ -1164,9 +1215,11 @@ RZ.data = {
     if (g.type === 'orders') return `Fill ${g.n} visitor requests`;
     if (g.type === 'golden') return `Make ${g.n} golden merges`;
     if (g.type === 'fans') return `Earn ${fmt(g.n)} fans`;
-    if (g.type === 'rival') return `Beat ${g.rival}: ${fmt(g.n)} fans`;
-    if (g.area !== undefined) return `Send ${g.n} ${D.chains[g.area].area} legendar${g.n > 1 ? 'ies' : 'y'}`;
-    return `Send ${g.n} legendar${g.n > 1 ? 'ies' : 'y'} to 2026`;
+    if (g.type === 'rival') return `Beat ${g.rival}: crowd to ${g.n}%`;
+    if (g.type === 'crowd') return `Win ${g.n}% of the crowd`;
+    if (g.type === 'pop') return `Pop ${g.n} balloon${g.n > 1 ? 's' : ''}`;
+    if (g.area !== undefined) return `Make ${g.n} ${D.chains[g.area].area} star attraction${g.n > 1 ? 's' : ''}`;
+    return `Make ${g.n} star attraction${g.n > 1 ? 's' : ''}`;
   }
   function goalInfo() {
     const ch = chapter(), g = ch.goal, text = goalText(g), cnt = (b, n) => ({ num: `${Math.min(b, n)}/${n}`, frac: Math.min(b, n) / n });
@@ -1182,7 +1235,9 @@ RZ.data = {
     if (g.type === 'combo') return { text, num: `best ×${S.stats.chCombo}`, frac: Math.min(S.stats.chCombo, g.n) / g.n, target: 0 };
     if (g.type === 'orders') return { text, ...cnt(S.stats.chOrders, g.n), target: 0 };
     if (g.type === 'golden') return { text, ...cnt(S.stats.chGolden, g.n), target: 0 };
-    if (g.type === 'fans' || g.type === 'rival') return { text, num: `${fmt(Math.min(S.stats.chFans, g.n))}/${fmt(g.n)}`, frac: Math.min(S.stats.chFans, g.n) / g.n, target: 0 };
+    if (g.type === 'rival' || g.type === 'crowd') { const c = Math.floor(S.crowd); return { text, num: `${c}%/${g.n}%`, frac: c >= g.n ? 1 : Math.min(0.999, c / g.n), target: 0 }; }
+    if (g.type === 'pop') return { text, ...cnt(S.stats.chPopped, g.n), target: 0 };
+    if (g.type === 'fans') return { text, num: `${fmt(Math.min(S.stats.chFans, g.n))}/${fmt(g.n)}`, frac: Math.min(S.stats.chFans, g.n) / g.n, target: 0 };
     const b = g.area !== undefined ? S.stats.chDel[g.area] : S.stats.chDelivered;
     return { text, ...cnt(b, g.n), target: 0 };
   }
@@ -1193,6 +1248,7 @@ RZ.data = {
   }
   function checkChapter() {
     if (chapterOpen || S.tut < TUT_END) return;
+    if (S.stuntFor !== S.chapter && !ui.modalOpen()) startLevel();
     if (goalInfo().frac >= 0.9999) { chapterOpen = true; setTimeout(ui.chapter, fx.RM ? 200 : 1000); }
   }
   function completeChapter(mult) {
@@ -1200,16 +1256,15 @@ RZ.data = {
     S.tape += ch.reward.tape;
     addFans(ch.reward.fans * mult);
     S.chapter++; chapterOpen = false;
-    Object.assign(S.stats, { chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0 });
+    Object.assign(S.stats, { chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0, chPopped: 0 });
     const nx = preview(S.chapter);
     const next = ch.next || `${nx.label}: ${nx.title}. ${nx.goal}.`;
     renderAll(); sfx.ripple();
     const [x, y] = fx.center($('#fans')); fx.floatText(x, y + 26, `+${fmt(ch.reward.fans * mult)}`, 'big');
     save();
     const go = () => {
+      if (ch.goal.type === 'rival') defector(ch.goal.rival);   // win a showdown: one of their animals jumps the fence
       say('kev', next); save(); checkChapter();
-      const g = chapter().goal;   // the rival gets a word in at the start of every showdown
-      if (g.type === 'rival') setTimeout(() => say('rival', `${g.rival}: "${pick(D.endless.taunts)}"`), 2600);
     };
     const day = () => {
       if (!ch.endsDay) { go(); return; }
@@ -1225,14 +1280,89 @@ RZ.data = {
     day();
   }
 
+  /* ---------- level start: the rival makes a move ---------- */
+  function startLevel() {
+    S.stuntFor = S.chapter; save();
+    const g = chapter().goal, rex = g.rival === 'MegaFauna', who = rex ? 'rex' : 'rival';
+    if (g.type === 'crowd') {
+      S.crowd = Math.min(S.crowd, 40); renderHUD();
+      setTimeout(() => say('rex', '"MegaFauna is OPEN! Monorail! Gift shop! Come on over, folks!"'), 1800);
+    } else if (g.type === 'rival' && feat('fence')) {
+      S.crowd = Math.max(8, Math.min(S.crowd, C.base) - C.drop); renderHUD();
+      setTimeout(() => {
+        const [x, y] = fx.center($('#fence')); fx.floatText(x, y, 'SHOWDOWN!', 'huge'); fx.shake(); sfx.stunt(); buzz([30, 40, 30]);
+        say(who, `${rex ? '' : g.rival + ': '}"Today only: ${g.stunt}! ${pick(D.endless.taunts)}"`);
+      }, 1800);
+    } else if (g.type === 'pop') {
+      setTimeout(() => {
+        dropBalloons(Math.min(D.BALLOONS_MAX, g.n));
+        say(who === 'rex' || S.chapter < HAND ? 'rex' : 'rival', S.chapter < HAND ? '"Balloons for everyone! Especially your paddock!"' : `${chapter().rival}: "Free balloons! Mind your paddock."`);
+      }, 900);
+    }
+  }
+  function dropBalloons(k) {
+    const e = emptyCells(), n = Math.min(k, D.BALLOONS_MAX - balloons(), Math.max(0, e.length - 4));
+    for (let m = 0; m < n; m++) {
+      const free = emptyCells(), i = pick(free);
+      S.grid[i] = { b: 1 }; renderCell(i, 'spawn');
+      setTimeout(() => tip('balloon', () => { const c = cellAt(i); return c && c.querySelector('.tile'); }), 500);
+    }
+    if (n) { sfx.stunt(); save(); }
+  }
+  function popAround(b) {
+    const nb = [b - 5, b + 5]; if (b % 5) nb.push(b - 1); if (b % 5 < 4) nb.push(b + 1);
+    for (const n of nb) {
+      if (n < 0 || n >= N || !S.grid[n] || !S.grid[n].b) continue;
+      S.grid[n] = null; renderCell(n);
+      const [x, y] = fx.center(cellAt(n));
+      fx.burst(x, y, '--tang', 14); fx.floatText(x, y - 6, 'POP!', 'big'); sfx.pop(); buzz(15);
+      S.stats.chPopped++; addFans(10); pushCrowd(C.pop);
+    }
+  }
+  function defector(rival) {
+    const e = emptyCells(); if (!e.length) { addFans(200); return; }
+    const j = pick(e), c = pick(range(S.areas)), name = D.chains[c].items[2][1].toLowerCase();
+    S.grid[j] = { c, t: 3, g: 1 }; renderCell(j, 'spawn'); discover(c, 3);
+    setTimeout(() => {
+      const [x, y] = fx.center(cellAt(j)); fx.floatText(x, y - 8, 'DEFECTOR!', 'gold'); fx.burst(x, y, '--gold', 16); sfx.gold();
+      say('kev', pick(D.defect).replace(/\{rival\}/g, rival).replace(/\{animals\}/g, name + 's').replace(/\{animal\}/g, name));
+    }, 2400);
+    save();
+  }
+
+  /* ---------- the Fence: share of the crowd on the footpath ---------- */
+  function pushCrowd(n) {
+    if (!feat('fence') || n <= 0) return;
+    S.crowd = Math.min(100, S.crowd + n); renderFence(true);
+    if (n >= 4) { const el = $('#crowdMe'); if (el) { const [x, y] = fx.center(el); fx.floatText(x + 16, y - 4, `+${Math.round(n)}% crowd`, 'small'); } }
+  }
+  const crowdMult = () => feat('fence') ? S.crowd / 50 : 1;
+  function renderFence(bump) {
+    const el = $('#fence'), on = feat('fence');
+    el.hidden = !on; if (!on) return;
+    const c = Math.max(0, Math.min(100, S.crowd)), g = chapter().goal;
+    $('#crowdBar').style.width = c + '%';
+    $('#walker').style.left = c + '%';
+    $('#crowdMe').textContent = Math.round(c) + '%';
+    $('#crowdThem').textContent = (100 - Math.round(c)) + '%';
+    const rival = g.rival || (S.chapter < HAND ? 'MegaFauna' : chapter().rival);
+    el.title = `Crowd: Bev's Beasts ${Math.round(c)}% · ${rival} ${100 - Math.round(c)}%`;
+    const mk = $('#crowdMark'), target = (g.type === 'rival' || g.type === 'crowd') ? g.n : 0;
+    mk.hidden = !target; if (target) mk.style.left = target + '%';
+    el.classList.toggle('show', g.type === 'rival');
+    if (bump) fx.restart($('#walker'), 'hop');
+    tip('fence', () => $('#fence'));
+  }
+
   /* ---------- render ---------- */
   function tileHTML(it, i, anim) {
     if (!it) return '';
     const extra = (sel === i ? ' sel' : '') + (anim ? ' ' + anim : '');
     if (it.m) return `<div class="tile mys${extra}" aria-label="Mystery crate"><span class="face">🎁</span><em class="send">OPEN</em></div>`;
+    if (it.b) return `<div class="tile bal${anim ? ' ' + anim : ''}" aria-label="Rex's balloon"><span class="face">🎈</span></div>`;
     const [e, name] = D.chains[it.c].items[it.t - 1];
     const wanted = it.c < S.areas && S.req[it.c] && S.req[it.c].t === it.t;
-    return `<div class="tile c${it.c} t${it.t}${it.g ? ' gold' : ''}${extra}" aria-label="${it.g ? 'Golden ' : ''}${name}, tier ${it.t}${wanted ? ', wanted in 2026' : ''}"><span class="face">${e}</span><b class="tier">${it.t}</b>${it.t === 5 ? '<em class="send">SEND</em>' : ''}${wanted ? '<i class="want">❤️</i>' : ''}</div>`;
+    return `<div class="tile c${it.c} t${it.t}${it.g ? ' gold' : ''}${extra}" aria-label="${it.g ? 'Golden ' : ''}${name}, tier ${it.t}${wanted ? ', wanted by visitors' : ''}"><span class="face">${e}</span><b class="tier">${it.t}</b>${it.t === 5 ? '<em class="send">STAR</em>' : ''}${wanted ? '<i class="want">❤️</i>' : ''}</div>`;
   }
   let refreshQueued = false;
   function renderCell(i, anim) {
@@ -1242,7 +1372,7 @@ RZ.data = {
   function poke(q) { if (!q) return; fx.restart(q, 'poke'); q.addEventListener('animationend', () => q.classList.remove('poke'), { once: true }); }
   function findItem(c, t) {
     let best = -1;
-    for (let i = 0; i < N; i++) { const v = S.grid[i]; if (v && !v.m && v.c === c && v.t === t && !rolling.has(i)) { if (!v.g) return i; if (best < 0) best = i; } }
+    for (let i = 0; i < N; i++) { const v = S.grid[i]; if (v && !v.m && !v.b && v.c === c && v.t === t && !rolling.has(i)) { if (!v.g) return i; if (best < 0) best = i; } }
     return best;
   }
   function renderGrid() { for (let i = 0; i < N; i++) if (!rolling.has(i)) renderCell(i); }
@@ -1298,6 +1428,7 @@ RZ.data = {
     $('#mute').textContent = S.muted ? '🔇' : '🔊';
     $('#lvlPill').hidden = S.level < 2;
     $('#albumBtn').hidden = S.tut < TUT_END;
+    renderFence();
   }
   function renderAll() { renderGrid(); renderPlots(); renderHUD(); }
 
@@ -1314,7 +1445,7 @@ RZ.data = {
       fx.confetti(); fx.shake(true); sfx.level(); buzz([20, 40, 20, 40, 60]);
       const x = innerWidth / 2, y = innerHeight * 0.4;
       fx.floatText(x, y, `RANK ${l}!`, 'huge');
-      setTimeout(() => fx.floatText(x, y + 40, '+10 📼', 'big'), 250);
+      setTimeout(() => fx.floatText(x, y + 40, '+10 🥕', 'big'), 250);
       say('bev', pick(D.levelLines));
       renderHUD(); tip('level', () => $('#lvlPill'));
     }, 350);
@@ -1348,7 +1479,7 @@ RZ.data = {
     const empties = emptyCells();
     if (!empties.length) {
       fx.restart($('#crate'), 'shake'); sfx.bad(); buzz(30);
-      say('bev', "Board's full, love! Merge something or bin it.", false); tip('full', () => $('#bin')); return;
+      say('bev', "Paddock's full, love! Merge something or bin it.", false); tip('full', () => $('#bin')); return;
     }
     const gi = goalInfo(), chains = range(S.areas);
     const focus = chapter().goal.type === 'make' ? 6 : 3;
@@ -1363,6 +1494,8 @@ RZ.data = {
     setSel(null); renderCell(i, 'spawn'); renderHUD(); sfx.spawn(); buzz(6);
     if (g) { sfx.gold(); const [x, y] = fx.center(cellAt(i)); fx.floatText(x, y - 6, 'GOLDEN!', 'gold'); tip('golden', () => cellAt(i).querySelector('.tile')); }
     discover(c, t);
+    const pg = chapter().goal;   // pop levels: Rex keeps the balloons coming until there are enough to finish
+    if (pg.type === 'pop' && balloons() < pg.n - S.stats.chPopped && Math.random() < 0.35) setTimeout(() => dropBalloons(1), 350);
     if (tut) { S.tut++; ui.clearCoach(); save(); setTimeout(tutStep, 500); }
     if (S.tape <= 5 && S.tape > 0) tip('tapeLow', () => $('#adBtn'));
     if (Math.random() < 0.05) say('doug', pick(D.doug));
@@ -1372,6 +1505,7 @@ RZ.data = {
   function act(a, b) {
     if (a === b || rolling.has(a) || rolling.has(b)) return;
     const A = S.grid[a], B = S.grid[b]; if (!A) return;
+    if (A.b || (B && B.b)) { renderCell(a); balloonHint(); return; }
     if (canMerge(A, B)) { merge(a, b); return; }
     S.grid[a] = B || null; S.grid[b] = A;
     renderCell(a); renderCell(b, 'settle'); save();
@@ -1397,6 +1531,8 @@ RZ.data = {
     if (cascade) sfx.cascade(k); else sfx.merge(nt, k);
     buzz(cascade ? [8, 20, 8] : 12);
     addFans(gain);
+    pushCrowd(C.merge * nt * (1 + 0.25 * (k - 1)) * (gold ? 2 : 1));
+    popAround(b);
     discover(A.c, nt);
     echo(A.c, nt, el);
     maybeMystery(nt);
@@ -1406,7 +1542,7 @@ RZ.data = {
 
   function cascadeFrom(b) {
     const it = S.grid[b];
-    if (!it || it.m || it.t >= 5 || rolling.has(b)) return;
+    if (!it || it.m || it.b || it.t >= 5 || rolling.has(b)) return;
     const nb = [b - 5, b + 5]; if (b % 5) nb.push(b - 1); if (b % 5 < 4) nb.push(b + 1);
     for (const n of nb) {
       if (n < 0 || n >= N || rolling.has(n) || (drag && drag.i === n)) continue;
@@ -1418,9 +1554,9 @@ RZ.data = {
     const ns = t - 1; if (ns <= S.stage[c]) return;
     S.stage[c] = ns; save();
     fx.fly(fromEl, plotAt(c), D.COL[c], () => {
-      renderPlots(c); fx.glitch();
+      renderPlots(c); fx.cheer();
       const [px, py] = fx.center(plotAt(c));
-      fx.floatText(px, py - 6, 'RIPPLE!', 'big');
+      fx.floatText(px, py - 6, 'MOVED IN!', 'big');
       sfx.ripple(); buzz([10, 40, 14]);
       say('kev', linesOf(c)[ns]);
       if (S.tut === 3) setTimeout(tutStep, 700);
@@ -1434,7 +1570,7 @@ RZ.data = {
     S.found.push(k);
     const [e, name] = D.chains[c].items[t - 1];
     if (S.tut >= TUT_END) ui.toast({ e, name, flavor: D.chains[c].flavor[t - 1], n: S.found.length });   // no toasts over the tutorial
-    addFans(25);
+    addFans(25); pushCrowd(C.discover);
   }
 
   function maybeMystery(nt) {
@@ -1487,8 +1623,10 @@ RZ.data = {
     buzz([10, 30, 10]); save(); checkChapter();
   }
 
+  function balloonHint() { sfx.bad(); say('kev', "That's one of Rex's balloons. Merge two animals right next to it to pop it.", false); }
   function discard(i) {
     if (!S.grid[i] || rolling.has(i)) return;
+    if (S.grid[i].b) { balloonHint(); return; }
     const [x, y] = fx.center(cellAt(i)); S.grid[i] = null; if (sel === i) sel = null;
     renderCell(i); fx.floatText(x, y, 'poof', 'small'); sfx.bin(); save();
   }
@@ -1500,31 +1638,31 @@ RZ.data = {
     S.stats.delivered++; S.stats.chDelivered++; S.stats.chDel[it.c]++;
     const rn = ++S.renown[it.c], pay = (150 + 50 * (rn - 1)) * (it.g ? 3 : 1);
     renderCell(i); fx.burst(from[0], from[1], D.COL[it.c], 14);
-    fx.floatText(from[0], from[1], 'SENT TO 2026!', 'big');
+    fx.floatText(from[0], from[1], 'STAR ATTRACTION!', 'big');
     save();
     fx.fly(from, plotAt(it.c), D.COL[it.c], () => {
-      renderPlots(it.c); fx.glitch(); sfx.ripple(); buzz([10, 40, 14]);
+      renderPlots(it.c); fx.cheer(); sfx.ripple(); buzz([10, 40, 14]); pushCrowd(C.legend);
       const [px, py] = fx.center(plotAt(it.c)); fx.floatText(px, py, `+${fmt(pay)}`, 'big');
       setTimeout(() => fx.floatText(px, py + 22, `👑 ${rn}`, 'small'), 220);
-      say('kev', `A legendary ${it.g ? 'golden ' : ''}${name} just came out of the VCR. It's still warm. ${D.chains[it.c].area} renown ${rn}.`);
+      say('kev', `A legendary ${it.g ? 'golden ' : ''}${name} is the new star of the ${D.chains[it.c].area}. The queue goes round the block. Renown ${rn}.`);
       addFans(pay); save(); checkChapter();
     });
   }
 
-  /* ---------- 2026 areas: visitor requests and visitor fans ---------- */
+  /* ---------- zoo areas: visitor requests and visitor fans ---------- */
   function newRequest(c) {
     const s = S.stage[c], lo = Math.max(2, s), hi = Math.min(5, s + 2);
     S.req[c] = { t: lo + Math.floor(Math.random() * (hi - lo + 1)) };
     S.reqAt[c] = 0;
   }
-  const visitRate = c => S.stage[c] ? S.stage[c] * 0.1 + S.happy[c] * 0.04 + S.renown[c] * 0.05 : 0;     // fans per second
+  const visitRate = c => (S.stage[c] ? S.stage[c] * 0.1 + S.happy[c] * 0.04 + S.renown[c] * 0.05 : 0) * crowdMult();     // fans per second; a bigger crowd pays more
   const visitCap = c => 40 + S.stage[c] * 40 + S.happy[c] * 10 + S.renown[c] * 20;
 
   function fulfill(i, c) {
     const it = S.grid[i], r = S.req[c];
-    if (!it || it.m || !r || c >= S.areas || it.c !== c || it.t !== r.t || rolling.has(i)) return false;
+    if (!it || it.m || it.b || !r || c >= S.areas || it.c !== c || it.t !== r.t || rolling.has(i)) return false;
     const from = fx.center(cellAt(i)), name = D.chains[c].items[it.t - 1][1];
-    const mult = it.g ? 2 : 1, fans = 15 * r.t * r.t * mult, tape = r.t;
+    const mult = (it.g ? 2 : 1) * (feat('fence') ? 0.5 + S.crowd / 100 : 1), fans = Math.round(15 * r.t * r.t * mult), tape = r.t;
     S.grid[i] = null; if (sel === i) sel = null;
     S.req[c] = null; S.reqAt[c] = Date.now() + D.REQ_DELAY;
     S.happy[c] = Math.min(10, S.happy[c] + 1);
@@ -1535,9 +1673,9 @@ RZ.data = {
       renderPlots(c);
       const [px, py] = fx.center(plotAt(c));
       fx.floatText(px, py - 10, 'THANKS!', 'big'); fx.burst(px, py, '--sun', 14);
-      setTimeout(() => fx.floatText(px, py + 14, `+${fans} 🎟 +${tape} 📼`, 'small'), 200);
+      setTimeout(() => fx.floatText(px, py + 14, `+${fans} 🎟 +${tape} 🥕`, 'small'), 200);
       sfx.order(); buzz([10, 30, 10]);
-      S.tape += tape; addFans(fans);
+      S.tape += tape; addFans(fans); pushCrowd(C.request + C.reqTier * r.t);
       say('fan', pick(D.reviews).replace('{a}', (it.g ? 'golden ' : '') + name));
       save(); checkChapter();
     });
@@ -1552,7 +1690,7 @@ RZ.data = {
   }
   function collect(c) {
     const v = Math.floor(S.visit[c]); if (v < D.VISIT_SHOW) return false;
-    S.visit[c] -= v; S.stats.chCollect++;
+    S.visit[c] -= v; S.stats.chCollect++; pushCrowd(C.collect);
     const el = plotAt(c), from = fx.center(el.querySelector('.coin') || el);
     refreshPlots(); fx.burst(from[0], from[1], '--sun', 12); sfx.coin(); buzz(8);
     for (let k = 0; k < 3; k++) setTimeout(() => fx.fly(from, $('#fans'), '--sun', () => {
@@ -1576,15 +1714,15 @@ RZ.data = {
   }
 
   function adForTape() {
-    ui.ad('+20 📼', () => {
+    ui.ad('+20 🥕', () => {
       S.tape += 20; renderHUD(); sfx.ripple();
-      const [x, y] = fx.center($('#tape')); fx.floatText(x, y + 24, '+20 📼', 'big'); save();
+      const [x, y] = fx.center($('#tape')); fx.floatText(x, y + 24, '+20 🥕', 'big'); save();
     });
   }
 
   function introDone() {
     S.intro = true; S.storyV = STORY_V; save(); sfx.unlock(); sfx.fanfare();
-    say('bev', 'Is this thing on? Hello, future! Say hi, Doug.');
+    say('bev', 'Go on, Kevin. Show that Rex what a real zoo looks like.');
     if (S.tut < TUT_END) setTimeout(tutStep, 900); else checkChapter();
   }
 
@@ -1626,8 +1764,8 @@ RZ.data = {
   function reset(skipIntro) {
     const muted = S.muted; setState(fresh()); S.muted = muted;
     sel = null; chapterOpen = false; combo = 0; shownFans = 0; rolling.clear();
-    tipQ.length = 0; ui.clearCoach();
-    save(); renderAll(); say('kev', "Nan's old camcorder still works. Apparently. Let's see what's on the tape.", false);
+    tipQ.length = 0; ui.clearCoach(); epCache.clear();
+    save(); renderAll(); say('kev', "Day one at Bev's Beasts. One feather, one trolley, big plans.", false);
     if (skipIntro) introDone(); else ui.intro();
   }
 
@@ -1641,6 +1779,7 @@ RZ.data = {
     if (sel === null) {
       if (!it) return;
       if (it.m) { openMystery(i); return; }
+      if (it.b) { balloonHint(); tip('balloon', () => cellAt(i).querySelector('.tile')); return; }
       if (it.t === 5) { deliver(i); return; }
       setSel(i); sfx.select(); return;
     }
@@ -1658,7 +1797,7 @@ RZ.data = {
   window.addEventListener('pointermove', e => {
     if (!drag) return;
     if (!drag.moved) {
-      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8 || !S.grid[drag.i] || rolling.has(drag.i)) return;
+      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8 || !S.grid[drag.i] || S.grid[drag.i].b || rolling.has(drag.i)) return;
       drag.moved = true; setSel(null);
       const src = cellAt(drag.i).querySelector('.tile');
       const r = src.getBoundingClientRect(), g = src.cloneNode(true);
@@ -1701,12 +1840,7 @@ RZ.data = {
   $('#albumBtn').onclick = ui.album;
 
   /* ---------- clocks ---------- */
-  const MON = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-  let vt = new Date(1986, 5, 14, 16, 12, 0).getTime();
   function tick() {
-    const d = new Date(vt), h = d.getHours(), p = n => String(n).padStart(2, '0');
-    $('#stamp').textContent = `${MON[d.getMonth()]} ${p(d.getDate())} 1986 ${h % 12 || 12}:${p(d.getMinutes())}:${p(d.getSeconds())}${h < 12 ? 'AM' : 'PM'}`;
-    vt += 1000;
     if (S.tape < MAX_TAPE) { if (Date.now() - S.regenAt >= REGEN_MS) { S.tape++; S.regenAt = Date.now(); $('#tape').textContent = S.tape; save(); } }
     else S.regenAt = Date.now();
     tickAreas();
@@ -1716,6 +1850,11 @@ RZ.data = {
     const now = Date.now(), dt = Math.max(0, Math.min(now - S.visitAt, D.OFFLINE_CAP_S * 1000)) / 1000;
     S.visitAt = now;
     const reqOn = feat('requests'), coinOn = feat('coins');
+    if (feat('fence')) {   // Rex pulls the crowd back toward his share; in a showdown he pulls harder and aims lower
+      const g = chapter().goal, sh = g.type === 'rival', B = sh ? C.showBase : C.base, k = sh ? g.pull : C.pull;
+      S.crowd = S.crowd > B ? B + (S.crowd - B) * Math.exp(-k * dt) : B - (B - S.crowd) * Math.exp(-0.02 * dt);
+      renderFence();
+    }
     for (let c = 0; c < S.areas; c++) {
       if (coinOn) S.visit[c] = Math.min(visitCap(c), S.visit[c] + visitRate(c) * dt);
       if (reqOn && !S.req[c] && now >= S.reqAt[c]) { newRequest(c); areaRenderDue = true; }
@@ -1731,9 +1870,9 @@ RZ.data = {
   }
 
   /* ---------- boot ---------- */
-  function markStarters() { S.grid.forEach(v => { if (v && !v.m) { const k = keyOf(v.c, v.t); if (!S.found.includes(k)) S.found.push(k); } }); }
+  function markStarters() { S.grid.forEach(v => { if (v && !v.m && !v.b) { const k = keyOf(v.c, v.t); if (!S.found.includes(k)) S.found.push(k); } }); }
 
-  RZ.game = { resume: () => { if (S.tut < TUT_END) setTimeout(tutStep, 400); else checkChapter(); }, completeChapter, adForTape, introDone, reset, goalInfo, chapter, fmt, checkChapter, stagesOf, chapterLabel: () => levelLabel(S.chapter), preview: () => preview(S.chapter + 1) };
+  RZ.game = { resume: () => { if (S.tut < TUT_END) setTimeout(tutStep, 400); else checkChapter(); }, completeChapter, adForTape, introDone, reset, goalInfo, chapter, fmt, checkChapter, stagesOf, chapterLabel: () => levelLabel(S.chapter), preview: () => preview(S.chapter + 1), crowd: () => S.crowd };
 
   gridEl.innerHTML = range(N).map(i => `<div class="cell" data-cell="${i}"></div>`).join('');
   markStarters();
@@ -1741,7 +1880,7 @@ RZ.data = {
   renderAll(); tick(); setInterval(tick, 1000);
   const last = S.log[S.log.length - 1];
   if (last) say(last[0], last[1], false);
-  else say('kev', "Nan's old camcorder still works. Apparently. Let's see what's on the tape.", false);
+  else say('kev', "Day one at Bev's Beasts. One feather, one trolley, big plans.", false);
   if (!S.intro) ui.intro();
   else if ((S.storyV || 0) < STORY_V) { S.storyV = STORY_V; save(); ui.intro('returning'); }   // returning players see the new story once
   else if (S.tut < TUT_END) setTimeout(tutStep, 600); else checkChapter();

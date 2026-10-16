@@ -36,10 +36,11 @@ Current panels:
   `#b3372c` "FINAL DAY" stamp on the scene card, tier chips. Arial for everything, by
   design — the document nobody chose a font for. Copy uses the suite's HR-software voice.
 - **Rewind Zoo** (`.rewind`): bright cartoon skin lifted from the game — sky `#A6E4FF` with
-  a dot grid, thick ink `#27174B` outlines with hard drop shadows, paper `#FFFAF0` "2026 · Now"
-  card holding area plots (request bubble, visitor-fan coin), and the 1986 camcorder tape in film
-  purple `#33204D` with VHS chroma text, REC dot and chain-coloured tiles (sun, aqua, pink, mint,
-  gold, striped mystery crate). Rounded system fonts stand in for Lilita One and Fredoka (no
+  a dot grid, thick ink `#27174B` outlines with hard drop shadows, paper `#FFFAF0` "Bev's Beasts"
+  card holding area plots (request bubble, visitor-fan coin) and the crowd Fence (mint yours vs
+  tangerine rival, walker and 🚩 target), then the back paddock in field green `#3E9A6A` with mowed
+  stripes, a combo pill and chain-coloured tiles (sun, aqua, pink, mint, gold, striped mystery
+  crate, dashed balloon). Rounded system fonts stand in for Lilita One and Fredoka (no
   external fonts in the shell). Sun-yellow chunky CTA through to `rewind-zoo.html`.
 - **CafePass** (`.cafepass`): warm coffee palette lifted from the product — cream sheet
   `#F4EFE6`, dark ink `#1A1410` header with gold `#C9A876` accents, Georgia serif for
