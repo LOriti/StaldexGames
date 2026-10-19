@@ -21,6 +21,6 @@ keep_vars = true
 # Zero Trust → Settings → Custom pages shows the team domain, e.g. "leon.cloudflareaccess.com".
 ACCESS_TEAM_DOMAIN = "tiptoe.cloudflareaccess.com"
 # Zero Trust → Access → Applications → Brain → Overview → "Application Audience (AUD) Tag".
-ACCESS_AUD = "REPLACE_ME"
+ACCESS_AUD = "ee3847ab4308a4ea70a55aa2ceb5a736208aff96758134f560cef82c0711ae58"
 BRAIN_REPO = "LOriti/brain"
 BRAIN_REF = "main"
