@@ -16,7 +16,7 @@
 // the meantime is refused (409) rather than overwritten.
 //
 // Routed at staldex.com/api/brain/* (see wrangler.toml). Endpoints:
-//   GET  /api/brain/tree             → { repo, ref, commit, viewer, files: [{ path, sha, size }] }
+//   GET  /api/brain/tree[?fresh=1]   → { repo, ref, commit, viewer, files: [{ path, sha, size }] }
 //   GET  /api/brain/file?path=<path> → { path, sha, text }
 //   POST /api/brain/done   { project, id }   → { path, sha, commit }
 //   POST /api/brain/inbox  { project, text } → { path, sha, commit }
@@ -86,10 +86,10 @@ function repoPath(env) {
   return (env.BRAIN_REPO || 'LOriti/brain').split('/').map(encodeURIComponent).join('/');
 }
 
-async function loadTree(env, now) {
+async function loadTree(env, now, fresh = false) {
   const ref = env.BRAIN_REF || 'main';
   const key = `${env.BRAIN_REPO}@${ref}`;
-  if (treeCache && treeCache.key === key && now - treeCache.at < TREE_TTL_MS) return treeCache.value;
+  if (!fresh && treeCache && treeCache.key === key && now - treeCache.at < TREE_TTL_MS) return treeCache.value;
 
   const repo = repoPath(env);
   const commit = await (await github(env, `/repos/${repo}/commits/${encodeURIComponent(ref)}`)).json();
@@ -227,7 +227,7 @@ async function write(request, url, env) {
 async function route(url, env, viewer) {
   const now = Date.now();
   if (url.pathname === '/api/brain/tree') {
-    const tree = await loadTree(env, now);
+    const tree = await loadTree(env, now, url.searchParams.get('fresh') === '1');
     return json({ ...tree, viewer: viewer.email || null });
   }
 
