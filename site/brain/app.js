@@ -117,7 +117,7 @@ function renderNav() {
         const status = state.statuses.get(slug);
         const dot = `<span class="status-dot" data-status="${escapeHtml(status || '')}"${status ? ` title="${escapeHtml(status)}"` : ''}></span>`;
         const active = files.includes(state.current) ? ' active' : '';
-        return `<li class="project${active}"><span class="project-name">${dot}<span class="slug">${escapeHtml(slug)}</span>` +
+        return `<li class="project${active}"><span class="project-name">${dot}<span class="slug" title="${escapeHtml(slug)}">${escapeHtml(slug)}</span>` +
           `${status ? `<span class="visually-hidden">, ${escapeHtml(status)}</span>` : ''}</span>` +
           `<span class="project-files">${files.map((p) => link(p, escapeHtml(p.split('/').slice(2).join('/').replace(/\.md$/i, '')))).join('')}</span></li>`;
       }).join('');
