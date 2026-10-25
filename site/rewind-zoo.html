@@ -1,0 +1,1892 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Rewind Zoo</title>
+<meta name="description" content="Rewind Zoo: an animal merge game. Merge animals to fix up a tiny, run-down zoo and win the crowd from the glossy mega-zoo next door.">
+<meta name="claude:viewport-fit-sides" content="cover">
+<meta name="theme-color" content="#A6E4FF">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Lilita+One&display=swap">
+<style>
+/* Rewind Zoo — one phone-width column: HUD, the zoo strip with the Fence (crowd bar), story bubble, back-paddock merge board, thumb controls.
+   Single bright cartoon look by design (no dark theme). */
+:root{
+  --sky:#A6E4FF; --sky-2:#C6EFFF;
+  --sun:#FFD447; --sun-soft:#FFEDA3;
+  --aqua:#7DD5FF; --aqua-soft:#C8EDFF;
+  --pink:#FF7AB0; --pink-soft:#FFCBE0;
+  --mint:#4FE0AE; --mint-soft:#BDF5DF;
+  --lime:#B9E94C; --lime-soft:#E2F7B5;
+  --tang:#FF9A3D; --tang-soft:#FFD6AE;
+  --gold:#FFC21A; --gold-hi:#FFF1A8; --gold-lo:#E89B00;
+  --ink:#27174B; --ink-soft:#5A4A7E;
+  --paper:#FFFAF0; --sad:#E6E1EE;
+  --field:#3E9A6A; --field-2:#56B381; --grass-soft:#CDEFC0;
+  --scrim:rgba(39,23,75,.62);
+  --font-display:'Lilita One','Arial Rounded MT Bold',system-ui,sans-serif;
+  --font-body:'Fredoka',ui-rounded,system-ui,-apple-system,sans-serif;
+  --emoji:'Apple Color Emoji','Segoe UI Emoji','Noto Color Emoji',sans-serif;
+  color-scheme:light;
+  padding-top:env(safe-area-inset-top,0px);
+  padding-bottom:env(safe-area-inset-bottom,0px);
+  background:var(--sky);
+}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{height:100%;overscroll-behavior:none}
+body{
+  margin:0; color:var(--ink); font-family:var(--font-body); font-size:15px;
+  background-color:var(--sky);
+  background-image:radial-gradient(var(--sky-2) 2.2px,transparent 2.7px);
+  background-size:22px 22px;
+  padding-left:max(16px,env(safe-area-inset-left,0px));
+  padding-right:max(16px,env(safe-area-inset-right,0px));
+  padding-block:8px 10px;
+  -webkit-tap-highlight-color:transparent;
+}
+/* one-screen app: fixed rows top and bottom, the paddock board takes whatever height is left */
+.app{max-width:440px;height:100%;min-height:500px;margin:0 auto;display:flex;flex-direction:column;gap:8px}
+.app>*{flex:none}
+.app.shake{animation:shake .35s}
+.app.quake{animation:quake .5s}
+@keyframes shake{25%{transform:translate(-4px,2px)}50%{transform:translate(4px,-2px)}75%{transform:translate(-2px,1px)}}
+@keyframes quake{15%{transform:translate(-8px,3px) rotate(-.6deg)}30%{transform:translate(8px,-3px) rotate(.6deg)}45%{transform:translate(-6px,2px)}60%{transform:translate(5px,-2px)}80%{transform:translate(-2px,1px)}}
+.e{font-family:var(--emoji)}
+button:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+
+/* header + HUD */
+.top{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.logo{margin:0;font-family:var(--font-display);font-weight:400;font-size:26px;line-height:1;display:flex;align-items:center;gap:4px;white-space:nowrap}
+.logo span{background:var(--pink);color:var(--paper);border:2.5px solid var(--ink);border-radius:9px;padding:1px 6px 2px;transform:rotate(-4deg);display:inline-block;box-shadow:0 2px 0 var(--ink)}
+.topbtns{display:flex;gap:6px;align-items:center}
+.chip{display:inline-flex;align-items:center;gap:5px;font:inherit;font-weight:600;font-size:14px;color:var(--ink);background:var(--paper);border:2.5px solid var(--ink);border-radius:999px;padding:3px 10px;box-shadow:0 2px 0 var(--ink);cursor:pointer;font-variant-numeric:tabular-nums}
+.round{width:30px;height:30px;flex:none;border-radius:50%;border:2.5px solid var(--ink);background:var(--paper);box-shadow:0 2px 0 var(--ink);cursor:pointer;font-family:var(--emoji);font-size:15px;padding:0;display:grid;place-items:center}
+.hud{display:flex;gap:5px;align-items:center}
+.hud .chip{padding:3px 7px;flex:none;height:32px;font-size:13.5px}
+.pill{display:flex;align-items:center;justify-content:center;gap:5px;background:var(--paper);border:2.5px solid var(--ink);border-radius:999px;padding:3px 7px;font-weight:600;font-size:13.5px;font-variant-numeric:tabular-nums;box-shadow:0 2px 0 var(--ink);white-space:nowrap;min-width:0;flex:none;height:32px}
+.pill.lvl{flex:1 1 auto;min-width:64px;justify-content:flex-start;padding-left:9px}
+.pill.tape{padding-right:3px}
+.lvl b{font-family:var(--font-display);font-weight:400;font-size:15px}
+.lbar{flex:1;height:9px;border:2px solid var(--ink);border-radius:99px;background:var(--sad);overflow:hidden;min-width:16px}
+.lbar i{display:block;height:100%;background:var(--mint);transition:width .5s cubic-bezier(.3,1.4,.5,1)}
+.plus{font:inherit;font-family:var(--font-display);font-size:15px;line-height:1;width:24px;height:24px;border-radius:50%;border:2px solid var(--ink);background:var(--mint);color:var(--ink);cursor:pointer;padding:0;display:grid;place-items:center;flex:none}
+
+/* panels */
+.panel{border:3px solid var(--ink);border-radius:20px;box-shadow:0 5px 0 var(--ink)}
+.now{background:var(--paper);padding:19px 8px 8px;margin-top:9px;position:relative}
+.now.cheer{animation:cheer .5s cubic-bezier(.3,1.6,.5,1)}
+@keyframes cheer{40%{transform:scale(1.025)}}
+.tag{position:absolute;top:-14px;left:12px;background:var(--ink);color:var(--paper);font-family:var(--font-display);font-size:12.5px;line-height:1;padding:4px 10px 5px;border-radius:999px;letter-spacing:.03em}
+.plots{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.plot{position:relative;cursor:pointer;background:var(--sad);border:2.5px solid var(--ink);border-radius:12px;padding:4px 2px 5px;text-align:center;display:flex;flex-direction:column;align-items:center;gap:1px;min-width:0;transition:background .3s}
+.plot:focus-visible{outline:3px solid var(--pink);outline-offset:2px}
+.plot.over{box-shadow:0 0 0 3px var(--sun),0 0 14px var(--sun);transform:scale(1.05)}
+.plot.nope{animation:nope .4s}
+.req{position:absolute;top:-10px;right:-3px;z-index:2;width:23px;height:23px;border-radius:50%;background:var(--paper);border:2px solid var(--ink);box-shadow:0 2px 0 var(--ink);display:grid;place-items:center;font-family:var(--emoji);font-size:12px;line-height:1}
+.req.ready{background:var(--mint);animation:ready 1s ease-in-out infinite}
+.req.poke{animation:poke .5s cubic-bezier(.2,1.8,.4,1)}
+@keyframes ready{50%{transform:scale(1.2)}}
+@keyframes poke{0%{transform:scale(.3)}100%{transform:none}}
+.coin{position:absolute;top:-10px;left:-3px;z-index:2;display:flex;align-items:center;gap:2px;background:var(--sun);border:2px solid var(--ink);border-radius:999px;padding:0 4px;font-size:10px;font-weight:700;line-height:16px;white-space:nowrap;box-shadow:0 2px 0 var(--ink);font-variant-numeric:tabular-nums;animation:bob 1.2s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}
+.plot .pe{font-family:var(--emoji);font-size:24px;line-height:1.15}
+.plot[data-s="0"] .pe,.plot.locked .pe{filter:grayscale(1);opacity:.6}
+.plot .pn{font-family:var(--font-display);font-size:12px;line-height:1}
+.plot .pc{font-size:9px;line-height:1.12;color:var(--ink-soft);min-height:2.25em;display:flex;align-items:center;justify-content:center;padding:0 1px}
+.plot.locked{border-style:dashed;background:transparent}
+.plot.lit.c0{background:var(--sun-soft)} .plot.lit.c1{background:var(--aqua-soft)}
+.plot.lit.c2{background:var(--pink-soft)} .plot.lit.c3{background:var(--mint-soft)} .plot.lit.c4{background:var(--lime-soft)}
+.plot.max{box-shadow:0 0 0 3px var(--sun),0 0 16px var(--sun)}
+.plot.bump{animation:bump .65s cubic-bezier(.3,1.6,.5,1)}
+@keyframes bump{0%{transform:scale(1)}30%{transform:scale(1.22) rotate(-5deg)}60%{transform:scale(.94) rotate(2deg)}100%{transform:none}}
+.pips{display:flex;gap:3px;margin-top:2px}
+.pips i{width:7px;height:7px;border-radius:50%;border:1.5px solid var(--ink)}
+.pips i.on{background:var(--ink)}
+.pips i.goal{box-shadow:0 0 0 2px var(--pink)}
+.goal{margin-top:8px;display:grid;grid-template-columns:minmax(0,1fr) auto;gap:4px 10px;align-items:center;font-size:12px;font-weight:500;line-height:1.2}
+.goal #goalText{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.goal .gr{font-variant-numeric:tabular-nums;color:var(--ink-soft)}
+.bar{grid-column:1/-1;height:8px;border:2px solid var(--ink);border-radius:99px;background:var(--paper);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--pink);transition:width .5s cubic-bezier(.3,1.4,.5,1)}
+
+/* story bubble */
+.msg{display:flex;gap:8px;align-items:center;background:var(--paper);border:2.5px solid var(--ink);border-radius:14px;padding:5px 9px;box-shadow:0 3px 0 var(--ink);cursor:pointer;height:50px;text-align:left;width:100%;font:inherit;color:inherit;overflow:hidden}
+.msg .av{width:28px;height:28px;font-size:14px}
+.msg .mt{font-size:13px;line-height:1.25;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.msg .mt b{font-weight:600;color:var(--ink-soft)}
+.msg.new{animation:msgIn .45s cubic-bezier(.2,1.6,.4,1)}
+@keyframes msgIn{from{transform:translateY(8px) scale(.96);opacity:.3}}
+.av{flex:none;width:32px;height:32px;border-radius:50%;border:2.5px solid var(--ink);display:grid;place-items:center;font-family:var(--font-display);font-size:16px}
+.av.kev{background:var(--mint)} .av.bev{background:var(--pink)} .av.doug{background:var(--sad)} .av.fan{background:var(--sun)}
+.mb{min-width:0;flex:1;display:flex;flex-direction:column;gap:1px}
+.who{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft);display:flex;justify-content:space-between;gap:6px}
+.mt{font-size:14.5px;line-height:1.3}
+
+/* the Fence: share of the crowd on the footpath, yours (left) vs the rival's (right) */
+.fence{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:center;gap:7px;margin-top:9px;font-size:12px;font-weight:700;font-variant-numeric:tabular-nums}
+.fence .fl,.fence .fr{display:flex;align-items:center;gap:3px;white-space:nowrap}
+.fence .fl b{color:var(--ink)} .fence .fr b{color:var(--ink-soft)}
+.fence .e{font-size:15px;line-height:1}
+.fbar{position:relative;height:12px;border:2px solid var(--ink);border-radius:99px;background:var(--tang-soft)}
+.fbar i{display:block;height:100%;background:var(--mint);border-radius:99px;transition:width .6s cubic-bezier(.3,1.3,.5,1)}
+.fbar em{position:absolute;bottom:3px;margin-left:-3px;font-style:normal;font-family:var(--emoji);font-size:13px;line-height:1;pointer-events:none}
+.walker{position:absolute;top:50%;transform:translate(-50%,-58%);font-size:16px;line-height:1;transition:left .6s cubic-bezier(.3,1.3,.5,1);pointer-events:none}
+.walker.hop{animation:hop .4s}
+@keyframes hop{50%{transform:translate(-50%,-100%)}}
+.fence.show .fbar{animation:alarm 1.4s ease-in-out infinite}
+@keyframes alarm{50%{box-shadow:0 0 0 3px var(--tang)}}
+
+/* back paddock (merge board) */
+.then{background:var(--field);padding:14px 8px 8px;margin-top:9px;position:relative;flex:1 1 auto;min-height:0;display:flex;flex-direction:column}
+.then::before{content:"";position:absolute;inset:0;border-radius:17px;pointer-events:none;background:repeating-linear-gradient(90deg,rgba(255,255,255,.07) 0 22px,transparent 22px 44px)}
+.then .tag{z-index:3}
+.gridwrap{position:relative;z-index:1;flex:1 1 auto;min-height:0;container-type:size;display:flex;align-items:center;justify-content:center}
+.cm{position:absolute;top:-14px;right:12px;z-index:3;display:flex;align-items:center;gap:6px;background:var(--ink);color:var(--sun);font-family:var(--font-display);font-size:15px;line-height:1;padding:4px 10px 5px;border-radius:999px}
+.cm.hit{animation:cmHit .35s cubic-bezier(.2,1.8,.4,1)}
+@keyframes cmHit{from{transform:scale(1.5)}}
+.cm span{display:block;width:40px;height:7px;border:1.5px solid var(--paper);border-radius:4px;overflow:hidden}
+.cm span b{display:block;height:100%;background:var(--sun)}
+.grid{position:relative;width:min(100cqw,100cqh);display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:min(6px,1.4cqmin);touch-action:none;user-select:none;-webkit-user-select:none}
+.cell{aspect-ratio:1;border-radius:13px;background:var(--field-2);box-shadow:inset 0 2px 0 rgba(0,0,0,.2);position:relative}
+.cell.over{box-shadow:inset 0 0 0 3px var(--sun)}
+.tile{position:absolute;inset:3px;border-radius:12px;border:2.5px solid var(--ink);display:grid;place-items:center;font-family:var(--emoji);font-size:clamp(16px,9cqmin,34px);line-height:1;box-shadow:0 3px 0 var(--ink);cursor:grab;transition:transform .12s,opacity .12s}
+.tile .face{display:block}
+.tile.c0{background:var(--sun)} .tile.c1{background:var(--aqua)} .tile.c2{background:var(--pink)} .tile.c3{background:var(--mint)} .tile.c4{background:var(--lime)}
+.tile.gold{background:linear-gradient(135deg,var(--gold-hi) 0%,var(--gold) 45%,var(--gold-lo) 100%);overflow:visible;box-shadow:0 3px 0 var(--ink),0 0 14px 2px var(--gold)}
+.tile.gold .tier{background:var(--gold);color:var(--ink);border-color:var(--ink)}
+.tile.gold::before{content:"";position:absolute;inset:0;border-radius:9px;background:linear-gradient(110deg,transparent 30%,rgba(255,255,255,.8) 50%,transparent 70%);background-size:250% 100%;animation:shine 1.8s linear infinite;pointer-events:none}
+@keyframes shine{from{background-position:150% 0}to{background-position:-100% 0}}
+.tile.mys{background:repeating-linear-gradient(45deg,var(--pink) 0 8px,var(--sun) 8px 16px);animation:wiggle 1.6s ease-in-out infinite}
+.tile.mys .face{filter:drop-shadow(0 2px 0 var(--ink))}
+.tile.rolling{animation:none;transform:scale(1.08)}
+.tile.bal{background:repeating-linear-gradient(-45deg,var(--paper) 0 7px,var(--tang-soft) 7px 14px);border-style:dashed;box-shadow:0 3px 0 rgba(39,23,75,.35);cursor:not-allowed}
+.tile.bal .face{animation:floaty 2.2s ease-in-out infinite}
+@keyframes floaty{50%{transform:translateY(-4px) rotate(4deg)}}
+@keyframes wiggle{0%,80%,100%{transform:none}85%{transform:rotate(-8deg)}90%{transform:rotate(8deg)}95%{transform:rotate(-4deg)}}
+.tile .tier{position:absolute;right:-6px;bottom:-6px;width:19px;height:19px;border-radius:50%;background:var(--ink);color:var(--paper);font-family:var(--font-display);font-weight:400;font-size:11px;display:grid;place-items:center;border:2px solid var(--paper);z-index:1}
+.tile.sel{transform:translateY(-4px) scale(1.05);box-shadow:0 0 0 3px var(--sun),0 6px 0 var(--ink)}
+.tile.dim{opacity:.25}
+.tile.t5{animation:legend 1.4s linear infinite}
+@keyframes legend{0%,100%{box-shadow:0 3px 0 var(--ink),0 0 0 3px var(--sun)}33%{box-shadow:0 3px 0 var(--ink),0 0 0 3px var(--pink)}66%{box-shadow:0 3px 0 var(--ink),0 0 0 3px var(--mint)}}
+.tile .send{position:absolute;top:-9px;left:50%;transform:translateX(-50%);background:var(--pink);color:var(--paper);font-family:var(--font-display);font-style:normal;font-size:10px;padding:1px 6px;border-radius:999px;border:2px solid var(--ink);letter-spacing:.05em;white-space:nowrap;z-index:1}
+.tile.mys .send{background:var(--ink)}
+.tile .want{position:absolute;left:-6px;top:-6px;z-index:1;width:19px;height:19px;border-radius:50%;background:var(--mint);border:2px solid var(--ink);display:grid;place-items:center;font-style:normal;font-family:var(--emoji);font-size:9px;line-height:1}
+.tile.pop{animation:pop .45s cubic-bezier(.2,1.9,.4,1)}
+@keyframes pop{0%{transform:scale(.3) rotate(-12deg)}100%{transform:none}}
+.tile.spawn{animation:drop .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes drop{0%{transform:translateY(-34px) scale(.4);opacity:0}}
+.tile.settle{animation:settle .25s ease-out}
+@keyframes settle{0%{transform:scale(1.1)}100%{transform:none}}
+.tile.ghost{position:fixed;inset:auto;z-index:50;pointer-events:none;transform:scale(1.15) rotate(-5deg);box-shadow:0 10px 0 var(--ink);transition:none;animation:none}
+
+/* controls */
+.controls{display:grid;grid-template-columns:70px 1fr;gap:10px;padding-bottom:4px}
+.btn{font:inherit;color:var(--ink);border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);cursor:pointer;transition:transform .08s,box-shadow .08s}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 var(--ink)}
+.crate{background:var(--sun);font-family:var(--font-display);font-size:23px;padding:8px 12px;display:flex;align-items:center;justify-content:center;gap:10px}
+.crate .e{font-size:26px}
+.crate small{font-family:var(--font-body);font-size:13px;font-weight:600;background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:2px 8px}
+.crate.shake{animation:nope .4s}
+@keyframes nope{20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.bin{background:var(--pink);font-family:var(--font-display);font-size:14px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;padding:6px}
+.bin .e{font-size:22px}
+.bin.over{background:var(--tang);transform:scale(1.06)}
+.hint{margin:0;font-size:12px;text-align:center;color:var(--ink-soft);text-wrap:balance}
+
+/* discovery toast */
+.toast{position:fixed;z-index:55;left:50%;top:calc(10px + env(safe-area-inset-top,0px));width:min(360px,calc(100% - 32px));transform:translateX(-50%);display:flex;gap:10px;align-items:center;background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);padding:9px 12px;pointer-events:none}
+.toast.in{animation:toastIn .45s cubic-bezier(.2,1.6,.4,1)}
+.toast.out{animation:toastOut .28s ease-in forwards}
+@keyframes toastIn{from{transform:translate(-50%,-120%)}}
+@keyframes toastOut{to{transform:translate(-50%,-140%);opacity:0}}
+.te{font-family:var(--emoji);font-size:38px;line-height:1;flex:none;background:var(--sun);border:2.5px solid var(--ink);border-radius:14px;width:54px;height:54px;display:grid;place-items:center}
+.tb{display:flex;flex-direction:column;gap:1px;min-width:0}
+.tk{font-size:10.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--pink)}
+.tb b{font-family:var(--font-display);font-weight:400;font-size:19px;line-height:1.05}
+.tf{font-size:12.5px;line-height:1.3;color:var(--ink-soft)}
+
+/* fx layer */
+#fx{position:fixed;inset:0;pointer-events:none;z-index:40;overflow:hidden}
+.confetti{position:fixed;inset:0;width:100%;height:100%;pointer-events:none;z-index:45}
+.float{position:absolute;font-family:var(--font-display);font-size:21px;color:var(--paper);white-space:nowrap;
+  text-shadow:2px 0 var(--ink),-2px 0 var(--ink),0 2px var(--ink),0 -2px var(--ink),2px 2px var(--ink),-2px -2px var(--ink),2px -2px var(--ink),-2px 2px var(--ink),0 4px var(--ink)}
+.float.small{font-size:16px;color:var(--mint)}
+.float.big{font-size:34px;color:var(--sun)}
+.float.gold{font-size:28px;color:var(--gold)}
+.float.huge{font-size:46px;color:var(--pink)}
+.spark{position:absolute;width:20px;height:20px;margin:-10px 0 0 -10px;border-radius:50%;border:2.5px solid var(--ink)}
+.dot{position:absolute;width:10px;height:10px;margin:-5px 0 0 -5px;border-radius:50%;border:1.5px solid var(--ink)}
+
+/* modals */
+.modal{position:fixed;inset:0;z-index:60;background:var(--scrim);display:grid;place-items:center;overflow-y:auto;
+  padding:calc(20px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(20px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px))}
+.card{background:var(--paper);border:3px solid var(--ink);border-radius:22px;box-shadow:0 6px 0 var(--ink);max-width:380px;width:100%;padding:20px;display:flex;flex-direction:column;gap:12px;animation:cardIn .42s cubic-bezier(.2,1.5,.4,1)}
+@keyframes cardIn{from{transform:translateY(24px) scale(.9);opacity:0}}
+.kicker{font-size:11.5px;font-weight:600;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.card h2{margin:0;font-family:var(--font-display);font-weight:400;font-size:32px;line-height:1;text-wrap:balance}
+.card p{margin:0;line-height:1.45}
+.art{font-family:var(--emoji);font-size:34px;text-align:center;letter-spacing:4px;background:linear-gradient(var(--sky-2) 0 64%,var(--grass-soft) 64%);border:2.5px solid var(--ink);border-radius:16px;padding:12px 8px 8px;line-height:1.2}
+.art small{display:block;font-family:var(--font-display);font-size:13px;letter-spacing:.08em;color:var(--ink);margin-top:6px}
+.how{margin:0;padding:0;list-style:none;display:grid;gap:8px;counter-reset:s}
+.how li{display:flex;gap:10px;align-items:flex-start;font-size:14px;line-height:1.35;counter-increment:s}
+.how li::before{content:counter(s);flex:none;width:22px;height:22px;border-radius:50%;background:var(--sun);border:2px solid var(--ink);font-family:var(--font-display);font-size:13px;display:grid;place-items:center}
+.row{display:flex;gap:10px;flex-wrap:wrap}
+.row .btn{flex:1 1 140px;font-family:var(--font-display);font-size:19px;padding:11px 14px}
+.row .btn.small{font-size:15px;padding:8px 12px}
+.btn.go{background:var(--mint)} .btn.alt{background:var(--sun)} .btn.quiet{background:var(--paper)}
+.btn:disabled{opacity:.5;cursor:default}
+.reward{font-family:var(--font-display);font-size:22px;text-align:center}
+.adbox{background:var(--ink);color:var(--paper);font-family:var(--font-display);font-size:24px;text-align:center;padding:34px 10px;border-radius:16px;border:2.5px solid var(--ink);line-height:1.1}
+.adbox .e{display:block;font-size:46px;margin-bottom:6px}
+.log{margin:0;padding:0;list-style:none;display:grid;gap:8px;max-height:48vh;overflow-y:auto}
+.log li{display:flex;gap:8px;align-items:flex-start;font-size:14px;line-height:1.35}
+.log .av{width:26px;height:26px;font-size:13px}
+.log b{display:block;font-size:10.5px;text-transform:uppercase;letter-spacing:.08em;color:var(--ink-soft)}
+.album{display:grid;gap:8px}
+.arow{display:grid;grid-template-columns:56px 1fr;gap:8px;align-items:center}
+.an{font-family:var(--font-display);font-size:14px}
+.acells{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:5px}
+.acell{aspect-ratio:1;border-radius:10px;border:2px solid var(--ink);background:var(--sad);color:var(--ink-soft);font-family:var(--font-display);font-size:16px;display:grid;place-items:center;padding:0;cursor:default}
+.acell.f{font-family:var(--emoji);font-size:22px;cursor:pointer;box-shadow:0 2px 0 var(--ink)}
+.acell.f.c0{background:var(--sun)} .acell.f.c1{background:var(--aqua)} .acell.f.c2{background:var(--pink)} .acell.f.c3{background:var(--mint)} .acell.f.c4{background:var(--lime)}
+.aflav{font-size:14px;min-height:2.9em;background:var(--sad);border-radius:12px;padding:8px 10px}
+.aflav b{font-family:var(--font-display);font-weight:400;margin-right:6px}
+
+@media (prefers-reduced-motion: reduce){
+  .tile.t5,.tile.mys,.tile.gold::before,.tile.bal .face,.req.ready,.req.poke,.coin,.plot.nope,.walker.hop,.fence.show .fbar{animation:none}
+  .now.cheer,.plot.bump,.tile.pop,.tile.spawn,.tile.settle,.msg.new,.card,.toast.in,.toast.out,.cm.hit,.app.shake,.app.quake{animation:none}
+}
+
+.coin .e{font-size:9px}
+.pips .rn{font-style:normal;font-size:9px;font-weight:700;line-height:8px;margin-left:2px;white-space:nowrap}
+.av.rival,.av.rex{background:var(--tang)}
+
+/* coach marks: tutorial and one-time tips */
+.coach{position:fixed;z-index:58;left:50%;transform:translateX(-50%);width:min(380px,calc(100% - 32px));background:var(--paper);border:3px solid var(--ink);border-radius:18px;box-shadow:0 5px 0 var(--ink);padding:12px 14px;display:flex;flex-direction:column;gap:6px}
+.coach.top{top:calc(52px + env(safe-area-inset-top,0px))}
+.coach.bottom{bottom:calc(84px + env(safe-area-inset-bottom,0px))}
+.coach.in{animation:coachIn .4s cubic-bezier(.2,1.6,.4,1)}
+@keyframes coachIn{from{transform:translate(-50%,14px) scale(.94);opacity:0}}
+.coach .ck{display:flex;align-items:center;gap:8px;font-family:var(--font-display);font-size:19px;line-height:1.1}
+.coach .ck span{font-family:var(--font-body);font-size:11px;font-weight:700;background:var(--sun);border:2px solid var(--ink);border-radius:999px;padding:1px 7px;letter-spacing:.04em}
+.coach p{margin:0;font-size:14px;line-height:1.4}
+.coach .btn{align-self:flex-end;font-family:var(--font-display);font-size:16px;padding:6px 16px;border-radius:14px;box-shadow:0 3px 0 var(--ink)}
+.spot{z-index:3;animation:spot 1.2s ease-in-out infinite}
+.goal.spot,.pill.spot{position:relative}
+@keyframes spot{0%,100%{box-shadow:0 0 0 3px var(--pink),0 0 0 7px rgba(255,122,176,.35)}50%{box-shadow:0 0 0 4px var(--pink),0 0 0 14px rgba(255,122,176,0)}}
+.btn.spot{animation:spotBtn 1.2s ease-in-out infinite}
+@keyframes spotBtn{0%,100%{box-shadow:0 5px 0 var(--ink),0 0 0 3px var(--pink)}50%{box-shadow:0 5px 0 var(--ink),0 0 0 10px rgba(255,122,176,.2)}}
+.hand{position:fixed;z-index:59;pointer-events:none;font-family:var(--emoji);font-size:38px;line-height:1;margin-top:6px;filter:drop-shadow(0 3px 0 var(--ink));transform:translate(-30%,0)}
+@media (prefers-reduced-motion: reduce){ .spot,.btn.spot,.coach.in{animation:none} .spot{box-shadow:0 0 0 3px var(--pink)} }
+
+/* intro pages */
+.dots{display:flex;justify-content:center;gap:6px}
+.dots i{width:8px;height:8px;border-radius:50%;border:2px solid var(--ink);background:transparent}
+.dots i.on{background:var(--ink);width:20px;border-radius:99px}
+.diag{display:flex;flex-direction:column;gap:4px;align-items:stretch}
+.dg.now,.dg.pad{border:2.5px solid var(--ink);border-radius:14px;padding:8px 10px;display:grid;grid-template-columns:1fr auto;grid-template-rows:auto auto;column-gap:10px;align-items:center}
+.dg.now{background:var(--sun-soft)}
+.dg.pad{background:var(--field);color:var(--paper)}
+.dg.fen{display:grid;grid-template-columns:auto 1fr auto;gap:6px;align-items:center;font-size:12px;font-weight:700}
+.dgbar{height:12px;border:2px solid var(--ink);border-radius:99px;background:var(--tang-soft);overflow:hidden}
+.dgbar i{display:block;width:68%;height:100%;background:var(--mint)}
+.dg b{font-family:var(--font-display);font-weight:400;font-size:16px;line-height:1}
+.dg span{font-size:12px;opacity:.8;grid-row:2}
+.dgp{grid-column:2;grid-row:1/3;display:flex;align-items:center;gap:5px;font-family:var(--emoji);font-size:24px}
+.dgp em{font-style:normal;font-family:var(--font-display);font-size:16px}
+.dgp i.t{font-style:normal;background:var(--sun);border:2px solid var(--ink);border-radius:9px;width:34px;height:34px;display:grid;place-items:center;font-size:20px}
+.dgp i{font-style:normal}
+.dg.up{align-self:center;font-family:var(--font-display);font-size:14px;color:var(--pink);animation:upbob 1s ease-in-out infinite}
+@keyframes upbob{50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion: reduce){ .dg.up{animation:none} }
+.dg b{white-space:nowrap}
+
+/* level-complete preview and day-end summary */
+.nextbox{background:var(--sky-2);border:2.5px dashed var(--ink);border-radius:14px;padding:10px 12px;display:flex;flex-direction:column;gap:4px}
+.nextbox .nk{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.1em;color:var(--ink-soft)}
+.nextbox b{font-family:var(--font-display);font-weight:400;font-size:20px;line-height:1.05}
+.nextbox p{font-size:13.5px;line-height:1.4}
+.goalchip{align-self:flex-start;background:var(--paper);border:2px solid var(--ink);border-radius:999px;padding:2px 10px;font-size:12.5px;font-weight:600}
+.daysum{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;text-align:center}
+.daysum div{background:var(--sun-soft);border:2px solid var(--ink);border-radius:12px;padding:6px 4px;display:flex;flex-direction:column}
+.daysum b{font-family:var(--font-display);font-weight:400;font-size:22px;line-height:1.1;font-variant-numeric:tabular-nums}
+.daysum span{font-size:11px;color:var(--ink-soft)}
+.tmr{background:var(--mint-soft);border-radius:12px;padding:8px 10px;font-size:14px}
+.tmr b{display:block;font-family:var(--font-display);font-weight:400;font-size:15px}
+
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <div class="hud">
+    <div class="pill lvl" id="lvlPill" title="Zoo rank" hidden><b id="lvl">Lv 1</b><span class="lbar"><i id="lvlBar"></i></span></div>
+    <span class="pill" title="Fans"><span class="e">🎟</span><span id="fans">0</span></span>
+    <span class="pill tape" title="Feed (energy)"><span class="e">🥕</span><span id="tape">40</span><button class="plus" id="adBtn" aria-label="Watch an ad for more feed">+</button></span>
+    <button class="chip" id="albumBtn" aria-label="Open animal album"><span class="e">📖</span><span id="albumN">0</span></button>
+    <button class="round" id="mute" aria-label="Toggle sound">🔊</button>
+  </div>
+
+  <section class="panel now" aria-label="Your zoo">
+    <span class="tag">Bev's Beasts</span>
+    <div class="plots" id="plots"></div>
+    <div class="fence" id="fence" hidden>
+      <span class="fl"><span class="e">🏡</span><b id="crowdMe">50%</b></span>
+      <div class="fbar" aria-hidden="true"><i id="crowdBar"></i><em id="crowdMark" hidden>🚩</em><span class="walker e" id="walker">🚶</span></div>
+      <span class="fr"><b id="crowdThem">50%</b><span class="e">🏢</span></span>
+    </div>
+    <div class="goal"><span id="goalText">Goal</span><span class="gr" id="goalNum"></span><div class="bar"><i id="goalBar"></i></div></div>
+  </section>
+
+  <button class="msg" id="msg" aria-label="Open story log">
+    <span class="av kev" id="msgAv">K</span>
+    <span class="mt"><b id="msgWho">Kev:</b> <span id="msgText"></span></span>
+  </button>
+
+  <section class="panel then" id="then" aria-label="Back paddock">
+    <span class="tag pad">Back paddock</span>
+    <span class="cm" id="cm" hidden><strong id="cmN">×2</strong><span><b id="cmBar"></b></span></span>
+    <div class="gridwrap"><div class="grid" id="grid"></div></div>
+  </section>
+
+  <div class="controls">
+    <button class="btn bin" id="bin" aria-label="Bin selected animal"><span class="e">🗑</span>Bin</button>
+    <button class="btn crate" id="crate"><span class="e">📦</span>Crate<small>1 🥕</small></button>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+<div class="coach" id="coach" role="status" aria-live="polite" hidden></div>
+<div class="hand" id="hand" aria-hidden="true" hidden>👆</div>
+<div id="fx"></div>
+<div class="modal" id="modal" hidden></div>
+
+<script>
+/* Rewind Zoo — game content. Edit this file to tune numbers, add levels or rewrite jokes.
+   Story: Kev runs his Nan's tiny sanctuary. MegaFauna, a glossy mega-zoo, opens next door. Win the crowd. */
+window.RZ = window.RZ || {};
+
+RZ.data = {
+  N: 25,                 // board cells (5 x 5)
+  MAX_TAPE: 40,          // feed (energy) cap. Internally still called "tape".
+  REGEN_MS: 6000,        // feed refill per point (prototype speed; live game ~2-3 min)
+  COMBO_MS: 2200,        // window to chain merges into a combo
+  GOLD_RATE: 0.04,       // chance a crate spawn is golden
+  TIER2_RATE: 0.2,       // chance a crate spawn is tier 2
+  SAVE_KEY: 'rewindzoo.v2',   // v2 = the rival zoo rebuild: everyone starts fresh (old 'rewindzoo.v1' saves are ignored)
+  REQ_DELAY: 8000,       // gap before an area posts its next visitor request
+  VISIT_SHOW: 5,         // fans an area must bank before the collect badge appears
+  OFFLINE_CAP_S: 7200,   // visitor fans keep banking for up to 2 h while away
+  COL: ['--sun', '--aqua', '--pink', '--mint', '--lime'],
+
+  /* The Fence: Kev's share of the crowd on the footpath (0-100%).
+     Pushes are added on each action; Rex pulls it back toward `base` over time. */
+  CROWD: {
+    base: 50, pull: 0.004,          // normal levels: Rex holds half the street and drifts it back there slowly
+    showBase: 25, drop: 22,          // showdowns: his stunt drags the crowd down and his pull aims lower
+    merge: 1.2, request: 5, reqTier: 2, legend: 15, collect: 2, pop: 3, discover: 2,
+  },
+  BALLOONS_MAX: 6,
+
+  chains: [
+    { area: 'Coop', unlockText: "The Coop is where it all started. Nan Bev's first hen lived here. She was called Margaret and she ran the place.",
+      items: [['🥚','Suspicious Egg'],['🐣','Chick'],['🐔','Hen'],['🐓','Rooster'],['🦚','Peacock (somehow)']],
+      flavor: ['Ticks occasionally. Nan says that is normal.','Has one setting: chirp.','Lays eggs, takes names.','Alarm clock with no snooze button.','Nobody knows how. He will not explain.'],
+      stages: [['🪶','One sad feather'],['🐣','Chick squad'],['🐔','Free eggs'],['🐓','5am alarm'],['🦚','Peacock runway']],
+      lines: [null,
+        "There are chicks in the Coop. Actual chicks. Nan Bev is pretending she isn't crying.",
+        "Free eggs! I've had an omelette every meal. Send help. Or toast.",
+        "A rooster now wakes me at 5am. He also wakes Rex. Worth it.",
+        "There is a PEACOCK. He has 40k followers. MegaFauna has 12."] },
+    { area: 'Pond', unlockText: "The Pond has a shopping trolley in it. That's the whole pond.",
+      items: [['🐟','Goldfish'],['🐠','Fancy Fish'],['🐡','Pufferfish'],['🐬','Dolphin'],['🐳','Whale']],
+      flavor: ['Three-second memory. Thinks you are new every time.','Wears stripes to every occasion.','Inflates when emotionally overwhelmed. Relatable.','Smarter than Kev. Kev agrees.','Technically a pond resident.'],
+      stages: [['🛒','Trolley pond'],['🐠','Actual fish'],['🐡','Puffer drama'],['🐬','Dolphin show'],['🐳','Whale (?)']],
+      lines: [null,
+        "The trolley is out of the pond and there are fish. The trolley was load-bearing.",
+        "A pufferfish saw Rex's suit and blew up. Same, mate.",
+        "How is there a dolphin. It's a POND. Rex's wave pool is empty.",
+        "Council rang and asked 'is that a whale'. I said 'define whale'."] },
+    { area: 'Kennel', unlockText: "Kev found the old kennel behind the gift shop. It's mostly cobwebs and one very confident spider.",
+      items: [['🦴','Bone'],['🐶','Puppy'],['🐕','Good Boy'],['🐩','Fancy Poodle'],['🐺','Wolf (nice)']],
+      flavor: ['Good boy not included.','Chews everything. Including this card.','Confirmed good. Independently audited.','Runs a salon. Does not do walk-ins.','Howls in G major. Very nice.'],
+      stages: [['🕸️','Cobwebs'],['🐶','Puppy pile'],['🐕','Good boys'],['🐩','Poodle salon'],['🐺','Wolf (nice)']],
+      lines: [null,
+        "PUPPIES. I'm not crying, you're crying.",
+        "Every dog here is a good boy. I checked. Twice. Thoroughly.",
+        "A poodle has opened a salon. Rex booked in under a fake name.",
+        "We have a wolf. He's lovely. He howls whenever the monorail goes past."] },
+    { area: 'Cats', unlockText: "There's a big empty box out the back. Kev says it's for cats. Nobody has asked the cats.",
+      items: [['🧶','Yarn'],['🐱','Kitten'],['🐈','Cat'],['🐆','Big Spotty Cat'],['🦁','Lion']],
+      flavor: ['Bait.','4% kitten, 96% chaos.','Will knock this card off the table.','Just a big kitty. Stop asking.','If he fits, he sits. He fits.'],
+      stages: [['📦','Empty box'],['🐱','Box claimed'],['🐈','Cat café'],['🐆','Spotty upgrade'],['🦁','King of box']],
+      lines: [null,
+        "A kitten moved into the empty box. Box value: priceless.",
+        "Opened a cat café. The cats run it. I'm the barista. I'm not paid.",
+        "One of the cats is now bigger. And spotty. Insurance has questions.",
+        "A lion is sitting in the box. He fits. Rex's lion is a statue."] },
+    { area: 'Swamp', unlockText: "There's a swamp behind the shed. Rex says it's on his side of the fence. The surveyor says it isn't. The frogs say nothing, loudly.",
+      items: [['🐛','Caterpillar'],['🦋','Butterfly'],['🐸','Frog'],['🐊','Croc'],['🐉','Dragon']],
+      flavor: ['Has big plans.','Plans achieved.','Sings bass in the swamp choir.','Runs a day spa. Mud only.','Paperwork pending.'],
+      stages: [['🪵','A log'],['🦋','Butterfly bog'],['🐸','Frog choir'],['🐊','Croc day spa'],['🐉','Dragon (legal?)']],
+      lines: [null,
+        "The swamp has butterflies now. It's a meadow with commitment issues.",
+        "The frogs formed a choir. They know one note. It's a great note.",
+        "A croc opened a mud spa. Rex's spa has cucumbers. Ours has a croc.",
+        "There's a dragon. I've filed form 27B: 'large lizard, flammable'."] },
+  ],
+
+  /* goal types: make (create item c,t), all (every unlocked area to n stars), area (one area to n), orders (fill n visitor requests),
+     crowd (get the Fence to n%), collect (collect visitor fans n times), combo (hit xN), open (open n mystery crates),
+     rival (showdown: pull the Fence to n% against a stunt; pull = how hard the rival pulls back), golden (n golden merges),
+     pop (pop n balloons), deliver (make n star attractions, optional area). After these, endless episodes are generated forever.
+     teach = how the level is explained on the previous "Level complete" screen. endsDay = a natural stopping point.
+     unlock = area that opens when the level is done. */
+  chapters: [
+    /* ===== DAY 1 · OPENING DAY ===== */
+    { name: 'First Merge', goal: { type: 'make', c: 0, t: 2 }, title: 'First Merge', reward: { fans: 30, tape: 5 },
+      teach: 'Tap the Crate, then drag one egg onto the other.',
+      text: ["Chicks. Real ones. In the Coop. Kev did a little dance. Nan Bev saw it and will never let it go."] },
+    { name: 'Hen House', goal: { type: 'make', c: 0, t: 3 }, title: 'Hen House', reward: { fans: 40, tape: 5 }, unlock: 1,
+      teach: 'Merge two Chicks into a Hen. The number on each tile is its tier. Higher tiers make the zoo better.',
+      text: ["Free eggs for everyone. Kev has had four omelettes and regrets nothing.",
+             "Over the fence, a crane is lifting something enormous."] },
+    { name: 'The Pond', goal: { type: 'make', c: 1, t: 2 }, title: 'The Pond', reward: { fans: 50, tape: 5 },
+      teach: 'A new area! The Pond has its own animals. Merge two Goldfish into a Fancy Fish.',
+      text: ["The trolley is out of the pond. Something with fins is in."] },
+    { name: 'Fix It Up', goal: { type: 'all', n: 2 }, title: 'Fix It Up', reward: { fans: 80, tape: 10 },
+      teach: 'Get both areas to ★★. The dots under each area are its stars.',
+      text: ["The Coop and the Pond are open for business. Sort of.",
+             "Over the fence, a shiny sign goes up: MEGAFAUNA. OPENING TOMORROW."] },
+    { name: 'First Visitor', goal: { type: 'orders', n: 1 }, title: 'First Visitor', reward: { fans: 80, tape: 10 },
+      teach: 'Visitors now arrive with a bubble showing the animal they want. Drag that animal up to their area for fans and feed.',
+      text: ["One family, one Pufferfish, one very happy kid."] },
+    { name: 'Busy Morning', goal: { type: 'orders', n: 3 }, title: 'Busy Morning', reward: { fans: 120, tape: 15 }, endsDay: 1,
+      teach: 'Three more visitors. Animals with a ❤️ are the ones someone wants right now.',
+      text: ["The gate is busy. Kev bought a whistle. Nobody knows why.",
+             "A man in a very white suit is watching from next door. That's Rex Glossop, boss of MegaFauna. He waved. It felt like a threat."] },
+
+    /* ===== DAY 2 · NEXT DOOR OPENS ===== */
+    { name: 'Next Door Opens', goal: { type: 'crowd', n: 60 }, title: 'Next Door Opens', reward: { fans: 120, tape: 15 },
+      teach: "MegaFauna is open. The crowd on the footpath now splits between the two gates: that's the Fence bar up top. Every merge pulls people your way. Get it to 60%.",
+      text: ["Six out of ten people on the footpath turned left, into Bev's Beasts. Rex's monorail went round empty.",
+             "Rex came over with a cheque. 'Name your price.' Kev named a pufferfish. Rex didn't get it."] },
+    { name: 'Welcome Back', goal: { type: 'collect', n: 1 }, title: 'Welcome Back', reward: { fans: 100, tape: 15 }, unlock: 2,
+      teach: 'Fixed areas earn fans from visitors over time, even while you are away. The bigger your share of the crowd, the faster. Tap the 🎟 badge on an area to collect.',
+      text: ["Visitors paid while Kev slept. He's calling it passive income."] },
+    { name: 'The Kennel', goal: { type: 'area', area: 2, n: 2 }, title: 'The Kennel', reward: { fans: 120, tape: 15 },
+      teach: 'The Kennel is open. Bones become puppies. Get the Kennel to ★★.',
+      text: ["PUPPIES. Kev is not crying. Kev is absolutely crying."] },
+    { name: 'Quick Paws', goal: { type: 'combo', n: 2 }, title: 'Quick Paws', reward: { fans: 120, tape: 15 }, unlock: 3,
+      teach: 'Merge twice in a row, fast, to make a combo. Combos pay more fans and pull a bigger crowd. The meter on the paddock shows how long you have.',
+      text: ["Doug watched the combo. Doug approved.",
+             "MegaFauna's monorail goes in a circle. Half the riders got off at the puppies."] },
+    { name: 'Cat Box', goal: { type: 'area', area: 3, n: 2 }, title: 'Cat Box', reward: { fans: 150, tape: 15 },
+      teach: 'There is a big empty box out the back. Get the Cats to ★★.',
+      text: ["A kitten moved into the box. The box is now priceless."] },
+    { name: 'Lucky Dip', goal: { type: 'open', n: 1 }, title: 'Lucky Dip', reward: { fans: 150, tape: 20 }, endsDay: 2,
+      teach: 'Merges can now drop a 🎁 mystery crate. Tap it to spin for a prize.',
+      text: ["Nan Bev has been hiding crates around the place for forty years. She says they're 'for emergencies'.",
+             "Rex sent a letter: 'Sell by Friday.' Kev used it to line the cat box."] },
+
+    /* ===== DAY 3 · FIRST SHOWDOWN ===== */
+    { name: 'Showdown!', goal: { type: 'rival', n: 75, rival: 'MegaFauna', pull: 0.004, stunt: 'free monorail rides' }, title: 'Showdown: Opening Week', reward: { fans: 250, tape: 20 }, unlock: 4,
+      teach: "Showdown! Rex is giving away free monorail rides and the crowd has gone next door. Win it back: pull the Fence to 75%. Rex pulls harder in a showdown, so keep merging.",
+      text: ["The crowd came back for the puffers and stayed for the puppies. Rex has gone a funny colour.",
+             "One of Rex's animals didn't go back. It jumped the fence and moved in with Kev."] },
+    { name: 'Swamp Thing', goal: { type: 'area', area: 4, n: 3 }, title: 'Swamp Thing', reward: { fans: 300, tape: 15 },
+      teach: 'The Swamp is open. Caterpillars become something much bigger. Get the Swamp to ★★★.',
+      text: ["The frog choir drops a one-note single. It goes to number one.",
+             "Rex tried to buy the swamp. The frogs said no. One note, very firmly."] },
+    { name: 'Chain Reaction', goal: { type: 'combo', n: 5 }, title: 'Chain Reaction', reward: { fans: 350, tape: 20 },
+      teach: 'Hit a ×5 combo. Tip: park twins side by side. When a merge lands next to its twin, it cascades by itself.',
+      text: ["One merge set off every animal at once. MegaFauna's laser show looked very small after that.",
+             "Doug watched the replay eleven times."] },
+    { name: 'Gold Rush', goal: { type: 'golden', n: 4 }, title: 'Gold Rush', reward: { fans: 400, tape: 20 },
+      teach: 'Golden animals start turning up. They pay 3× and stay golden when merged. Make 4 golden merges.',
+      text: ["Golden animals keep turning up. A jeweller has started following the peacock around.",
+             "Rex spray-painted a goat gold. It was not the same."] },
+    { name: 'Full House', goal: { type: 'all', n: 4 }, title: 'Full House', reward: { fans: 800, tape: 40 },
+      teach: 'The big one. Every area to ★★★★, legendary.',
+      text: ["A whale, a wolf, a lion, a peacock and a dragon. Bev's Beasts is the best little zoo in the state.",
+             "Rex Glossop is not happy. He has bought a lot of balloons. This isn't over."],
+      next: "Rex is fighting back. He's floating balloons over your paddock." },
+
+    /* ===== ACT 2 · REX STRIKES BACK ===== */
+    { name: 'Balloon Day', goal: { type: 'pop', n: 6 }, title: 'Balloon Day', reward: { fans: 900, tape: 30 },
+      teach: "Rex has floated MegaFauna balloons over your paddock. They block a square and can't be moved. Merge right next to one to pop it. Pop 6.",
+      text: ["Six balloons, six pops, one very startled pigeon. Doug is fine. Doug is furious."] },
+    { name: 'Long Weekend', goal: { type: 'rival', n: 85, rival: 'MegaFauna', pull: 0.005, stunt: 'a marching band' }, title: 'Showdown: Long Weekend', reward: { fans: 1000, tape: 30 },
+      teach: 'Showdown! Rex hired a marching band and the crowd followed it next door. Pull the Fence to 85%.',
+      text: ["The marching band played to an empty car park. Everyone was at the Kennel.",
+             "The tuba player jumped the fence. So did another of Rex's animals."] },
+    { name: 'Legend Has It', goal: { type: 'deliver', n: 2 }, title: 'Legend Has It', reward: { fans: 1100, tape: 35 }, endsDay: 3,
+      teach: 'Legends pull crowds. Merge up to a tier 5 and tap STAR to make it a star attraction. Do it twice.',
+      text: ["A news crew came to film Rex's monorail and filmed the whale instead."] },
+    { name: 'Gold Standard', goal: { type: 'golden', n: 5 }, title: 'Gold Standard', reward: { fans: 1200, tape: 35 },
+      teach: 'Rex launched Golden Ticket Weekend. Show him real gold: make 5 golden merges.',
+      text: ["Rex's gold goat has retired. The golden peacock sent flowers."] },
+    { name: 'PR Stunt', goal: { type: 'combo', n: 6 }, title: 'PR Stunt', reward: { fans: 1300, tape: 40 },
+      teach: 'Rex booked a celebrity penguin. You have combos. Hit a ×6.',
+      text: ["Your combo went viral. The penguin left MegaFauna to come and see the puffers."] },
+    { name: 'Crowd Favourite', goal: { type: 'deliver', n: 3 }, title: 'Crowd Favourite', reward: { fans: 1400, tape: 40 },
+      teach: 'Every star attraction gives its area 👑 renown, so it earns visitor fans faster, forever. Make 3 more.',
+      text: ["Bev's Beasts is the most-visited zoo in the state. MegaFauna is the most-visited car park."] },
+    { name: 'The Buyout', goal: { type: 'rival', n: 95, rival: 'MegaFauna', pull: 0.006, stunt: 'free everything' }, title: 'Showdown: The Buyout', reward: { fans: 2500, tape: 60 }, endsDay: 4,
+      teach: "Final showdown. Rex has bet his whole zoo on this weekend and is giving away free everything. Pull the Fence to 95%.",
+      text: ["MegaFauna's prize llama jumped the fence and moved into the Kennel. Rex's board fired him on the spot.",
+             "Rex applied for a job at Bev's Beasts. Kev hired him to clean the pond. He's surprisingly good at it."],
+      next: "Someone's already bought MegaFauna. A new rival moves in every episode from here." },
+  ],
+
+  /* Day-end screens: natural stopping points in the early game. */
+  days: {
+    1: { title: 'Opening day, done', art: '🌙 🐔 🐠',
+         text: ["The Coop and the Pond are back. Visitors came, paid and left happy. One left with a chicken. That's being looked into."],
+         tomorrow: 'MegaFauna opens next door. The fight for the crowd starts.' },
+    2: { title: 'A proper zoo', art: '🌙 🐶 🐱',
+         text: ["Four areas open, combos landing, mystery crates turning up. Nan Bev says Margaret the hen would be proud."],
+         tomorrow: 'Your first showdown. Rex has a stunt planned. Win the crowd back.' },
+    3: { title: 'Legends in town', art: '🌙 🐳 🦁',
+         text: ["Two star attractions and a full car park. Rex has started wearing sunglasses indoors."],
+         tomorrow: 'Gold, combos and a celebrity. Rex is running out of tricks.' },
+    4: { title: 'Rival defeated. For now.', art: '🌙 🏆 🧹',
+         text: ["Rex Glossop is cleaning the pond. MegaFauna is under new management. Nan Bev did a little dance on the deck."],
+         tomorrow: 'A new rival zoo moves in every episode from here. Beat them all.' },
+  },
+
+  /* Endless episodes: after Act 2, a new rival zoo every episode, forever.
+     {rival} {animal} {animals} {Animal} {area} {n} are filled in per episode. Add lines freely. */
+  endless: {
+    rivals: ['ZooCorp', 'Safari Express', 'Critter Planet', 'Wild World Inc', 'The Beastly Brothers', 'Fur Real Park',
+      'Petropolis', 'Paws Palace', 'MegaFauna 2', 'Feathers & Co', 'Robo-Zoo 3000', 'Lord Fluffington\'s Menagerie'],
+    stunts: ['free monorail rides', 'a laser show', 'half-price tickets', 'a celebrity goat', 'a wave pool', 'free slushies',
+      'a fireworks night', 'a petting zoo of robots', 'a giant inflatable gorilla', 'free face painting'],
+    scenes: [
+      "{rival} opened next door with a gift shop the size of an airport. It sells one thing: {animal} keyrings.",
+      "{rival} is handing out free balloons. Visitors keep floating over to the {area} anyway.",
+      "{rival} tried to hire one of our {animals}. The {animal} said no.",
+      "{rival} installed a laser show. A {animal} in the {area} stole the show by sneezing.",
+      "Visitors keep asking {rival} why they don't have a {animal}. They don't have an answer.",
+      "{rival}'s boss was seen peering over the fence with binoculars. Doug stared back. The boss left.",
+      "{rival} has a monorail. Ours has a {animal}. Ticket sales say we win.",
+      "{rival} bought a billboard that says 'better than Bev's'. Someone drew a {animal} on it. Kev denies everything.",
+      "{rival} put their staff in {animal} costumes. Real {animals} are not impressed.",
+      "A school excursion went to {rival} by mistake. They walked over to the {area} at lunch and never left.",
+      "{rival} announced a 'Mega {Animal} Experience'. It is a cardboard cutout.",
+      "{rival} sent Kev a fruit basket. It ticks. It's a clock. Probably.",
+      "Influencers keep trying {rival}'s selfie wall. Then they come here for a selfie with a {animal}.",
+      "{rival} cut their ticket prices in half. The {area} queue got longer anyway.",
+    ],
+    taunts: ["You call that a zoo? We have a monorail.", "Our gift shop has its own postcode.",
+      "Cute pond. Ours has a wave machine.", "Enjoy your visitors while you've got them.",
+      "We've got 40 flavours of slushie. How many have you got?", "I've seen bigger zoos in a snow globe."],
+  },
+
+  /* Opening story: three swipe-through cards before the tutorial. diagram: true draws the paddock → zoo → crowd explainer. */
+  intro: [
+    { kicker: "Bev's Beasts · a very small zoo", title: 'Meet Kev', art: '🧑 🪶 🛒',
+      text: ["Kev has taken over his Nan's old animal sanctuary. It has one sad feather, a shopping trolley in the pond and an online review that just says “why”."] },
+    { kicker: 'Next door', title: 'Meet Rex', art: '🏢 🎢 🕴️',
+      text: ["Next door, MegaFauna opens tomorrow: a glossy mega-zoo with a monorail and a gift shop the size of an airport.",
+             "Its boss, Rex Glossop, wants Kev's land. “Sell by the end of summer, mate.” Kev isn't selling."] },
+    { kicker: 'How to win', title: 'Win the crowd', diagram: true,
+      text: ["Merge animals in the paddock at the bottom. Every new one moves into your zoo at the top.",
+             "A better zoo pulls the crowd through your gate instead of Rex's."],
+      button: 'Open the gate' },
+  ],
+
+  /* Tutorial: the first steps, shown with a pointing hand. */
+  tutorial: [
+    { title: 'Open a crate', text: 'Tap the Crate to bring an animal into the back paddock.' },
+    { title: 'Feed is your energy', text: 'Each crate costs 1 🥕 feed. It refills by itself. Tap the Crate again.' },
+    { title: 'Merge them', text: 'Two the same? Drag one egg onto the other to merge them into something new.' },
+    { title: 'Moved in!', text: "Every new animal you make moves into Kev's zoo up top and fixes it up. Better zoo, bigger crowd." },
+  ],
+
+  /* One-time tips, shown the first time each mechanic shows up. */
+  tips: {
+    fence: { title: 'The Fence', text: 'This bar is the crowd on the footpath: yours on the left, Rex\'s on the right. Merges, visitor requests and star attractions pull people your way. Rex slowly pulls them back. More crowd means more visitor fans.' },
+    requests: { title: 'Visitor requests', text: 'The bubble shows the animal visitors want. Drag it up to their area, or tap the area when the bubble glows green, for fans and feed. Animals with a ❤️ are wanted.' },
+    coins: { title: 'Visitor fans', text: 'Fixed areas earn fans from visitors over time, even while you\'re away. Tap the 🎟 badge to collect.' },
+    combo: { title: 'Combo!', text: 'Merge quickly and merges chain into a combo. The meter on the paddock shows how long you have. Bigger combo, more fans.' },
+    cascade: { title: 'Cascade!', text: 'When a merge lands right next to its twin, it merges again by itself. Park twins side by side to set off chain reactions.' },
+    mystery: { title: 'Mystery crate', text: 'Merges sometimes drop a 🎁. Tap it to spin for feed, fans, a big animal or a jackpot.' },
+    golden: { title: 'Golden animal', text: 'Golden animals pay 3× fans and stay golden when you merge them. They also pay double on visitor requests.' },
+    legendary: { title: 'Legendary!', text: 'Tier 5 is the top. Tap STAR to make it a star attraction: a big payout, a big crowd and 👑 renown, which makes that area earn more forever.' },
+    balloon: { title: 'Rex\'s balloons', text: 'Balloons block a square and can\'t be moved or binned. Merge two animals right next to one to pop it.' },
+    full: { title: 'Paddock full', text: 'No room in the paddock. Merge something, or drag an animal you don\'t need onto the Bin.' },
+    tapeLow: { title: 'Low on feed', text: 'Feed refills by itself over time. Tap ➕ next to your feed for a quick top-up.' },
+    level: { title: 'Zoo rank', text: 'Fans raise your zoo rank ⭐. Every rank up gives you bonus feed.' },
+    album: { title: 'Animal album', text: 'Every new animal you discover goes in the album 📖. There are 25 to find.' },
+  },
+
+  /* mystery crate outcomes, weighted */
+  mystery: [
+    { w: 30, kind: 'tape',    n: 10,  label: '+10 🥕' },
+    { w: 28, kind: 'fans',    n: 100, label: '+100 🎟' },
+    { w: 22, kind: 'item',    t: 3,   label: 'Tier 3!' },
+    { w: 14, kind: 'gold',    t: 2,   label: 'GOLDEN!' },
+    { w: 6,  kind: 'jackpot', t: 4,   label: 'JACKPOT!' },
+  ],
+  slotFaces: ['🥕','🎟','⭐','✨','💎','🥚','🐟','🦴','🧶','🐛'],
+
+  bev: ["Ooh, quick hands! My perm can barely keep up.", "That's it, Kevin! Rex is watching through his binoculars again.",
+        "I've seen faster, but not since the eighties.", "Kevin, eat a vegetable between merges.", "That's a combo! I don't know what a combo is but I love it."],
+  levelLines: ["Rank up! I'd do a cartwheel but my hip can't take it.", "Ooh, a new rank! Doug, fetch the good biscuits.",
+               "Another rank, love! Rex just closed his blinds.", "Look at you go. I'm putting this on the fridge."],
+  reviews: ["5 stars. Met a {a}. Would cry again.", "Brought my nan to see the {a}. She cried. 5 stars.",
+            "The {a} winked at me. Unclear if that's allowed. 5 stars.", "Came for the {a}, stayed for Doug.",
+            "Gift shop sold out of {a} plushies. Riot narrowly avoided.", "My kid now wants to BE a {a}. Thanks a lot. 5 stars.",
+            "Took 400 photos of the {a}. Deleted none.", "Went next door first. Big mistake. The {a} here is everything. 5 stars."],
+  doug: ["coo.", "coo. (he has seen everything)", "*stares at Rex over the fence*", "coo coo. (ominous)"],
+  defect: ["One of {rival}'s {animals} just jumped the fence. It's golden. It lives here now.",
+           "A golden {animal} hopped the fence from {rival}. It brought its own food bowl."],
+  who: { kev: ['K', 'Kev · zookeeper'], bev: ['B', 'Nan Bev · retired, supervising'], doug: ['D', 'Doug · resident pigeon'], fan: ['★', 'Visitor'], rival: ['R', 'Rival · next door'], rex: ['R', 'Rex · MegaFauna'] },
+};
+
+</script>
+<script>
+/* Rewind Zoo — synthesized sound effects (no audio files). Starts after first tap. */
+(function () {
+  const RZ = window.RZ;
+  let ac = null;
+
+  function ctx() {
+    if (RZ.S && RZ.S.muted) return null;
+    try {
+      ac = ac || new (window.AudioContext || window.webkitAudioContext)();
+      if (ac.state === 'suspended') ac.resume();
+      return ac;
+    } catch (e) { return null; }
+  }
+  const note = n => 261.63 * Math.pow(2, n / 12);
+
+  function tone(f, d = 0.12, type = 'triangle', v = 0.12, delay = 0) {
+    const a = ctx(); if (!a) return;
+    const t = a.currentTime + delay;
+    const o = a.createOscillator(), g = a.createGain();
+    o.type = type; o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.0001, t);
+    g.gain.exponentialRampToValueAtTime(v, t + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+    o.connect(g).connect(a.destination); o.start(t); o.stop(t + d + 0.03);
+  }
+  const arp = (ns, base, step, type, v, d) => ns.forEach((n, i) => tone(note(base + n), d, type, v, i * step));
+
+  RZ.sfx = {
+    unlock() { ctx(); },
+    select() { tone(note(9), 0.05, 'sine', 0.05); },
+    spawn() { tone(note(0), 0.07, 'sine', 0.09); tone(note(7), 0.08, 'sine', 0.07, 0.05); },
+    merge(t, c) { const b = 12 + t * 2 + Math.min(c - 1, 10) * 2; tone(note(b), 0.12, 'triangle', 0.14); tone(note(b + 7), 0.16, 'triangle', 0.1, 0.06); },
+    cascade(c) { const b = 19 + Math.min(c, 10) * 2; tone(note(b), 0.1, 'square', 0.06); tone(note(b + 12), 0.14, 'triangle', 0.08, 0.05); },
+    ripple() { arp([0, 4, 7, 12, 16], 12, 0.065, 'square', 0.045, 0.2); },
+    gold() { arp([0, 7, 12, 19, 24], 24, 0.04, 'sine', 0.07, 0.25); },
+    mystery() { arp([0, 5, 9], 17, 0.06, 'triangle', 0.08, 0.14); },
+    tick(i) { tone(note(12 + (i % 5) * 2), 0.04, 'square', 0.04); },
+    discover() { arp([0, 4, 7, 11, 14], 19, 0.06, 'triangle', 0.08, 0.2); },
+    fanfare() { arp([0, 4, 7, 12, 7, 12, 16, 19], 12, 0.09, 'square', 0.05, 0.22); },
+    level() { arp([0, 4, 7, 12, 16, 19, 24], 12, 0.07, 'square', 0.055, 0.25); tone(note(36), 0.6, 'sine', 0.06, 0.5); },
+    jackpot() { arp([0, 4, 7, 12, 4, 7, 12, 16, 7, 12, 16, 19, 24], 12, 0.05, 'square', 0.05, 0.18); },
+    coin() { tone(note(28), 0.06, 'square', 0.05); tone(note(35), 0.12, 'square', 0.05, 0.06); },
+    order() { arp([0, 7, 12, 16, 19, 24], 14, 0.055, 'triangle', 0.09, 0.22); tone(note(26), 0.3, 'sine', 0.06, 0.32); },
+    bad() { tone(note(-5), 0.16, 'sawtooth', 0.05); },
+    pop() { tone(note(26), 0.05, 'square', 0.08); tone(note(33), 0.09, 'triangle', 0.08, 0.03); },
+    stunt() { arp([12, 8, 5, 0], 7, 0.08, 'sawtooth', 0.045, 0.18); },
+    bin() { tone(note(2), 0.08, 'sine', 0.08); tone(note(-3), 0.1, 'sine', 0.07, 0.06); },
+  };
+  RZ.buzz = p => { try { navigator.vibrate && navigator.vibrate(p); } catch (e) {} };
+})();
+
+</script>
+<script>
+/* Rewind Zoo — visual juice: floating text, bursts, flying sparks, cheer, shake, confetti. */
+(function () {
+  const RZ = window.RZ;
+  const RM = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const layer = () => document.getElementById('fx');
+
+  function center(el) {
+    if (Array.isArray(el)) return el;
+    const r = el.getBoundingClientRect();
+    return [r.left + r.width / 2, r.top + r.height / 2];
+  }
+
+  function floatText(x, y, text, cls = '') {
+    const s = document.createElement('div');
+    s.className = 'float ' + cls; s.textContent = text;
+    s.style.left = x + 'px'; s.style.top = y + 'px';
+    layer().append(s);
+    const a = s.animate([
+      { transform: 'translate(-50%,-50%) scale(.5)', opacity: 0 },
+      { transform: 'translate(-50%,-90%) scale(1.15)', opacity: 1, offset: 0.22 },
+      { transform: 'translate(-50%,-230%) scale(1)', opacity: 0 }],
+      { duration: RM ? 700 : 1150, easing: 'ease-out' });
+    a.onfinish = () => s.remove();
+  }
+
+  function burst(x, y, colVar, count = 10) {
+    if (RM) return;
+    for (let i = 0; i < count; i++) {
+      const d = document.createElement('div');
+      d.className = 'dot'; d.style.left = x + 'px'; d.style.top = y + 'px';
+      d.style.background = `var(${i % 3 === 0 ? '--paper' : colVar})`;
+      layer().append(d);
+      const ang = Math.PI * 2 * i / count + Math.random() * 0.4, r = 32 + Math.random() * 30;
+      const a = d.animate([
+        { transform: 'translate(0,0) scale(1)', opacity: 1 },
+        { transform: `translate(${Math.cos(ang) * r}px,${Math.sin(ang) * r}px) scale(.3)`, opacity: 0 }],
+        { duration: 520, easing: 'cubic-bezier(.2,.8,.3,1)' });
+      a.onfinish = () => d.remove();
+    }
+  }
+
+  function fly(from, toEl, colVar, done) {
+    const [x1, y1] = center(from), [x2, y2] = center(toEl);
+    if (RM) { done(); return; }
+    const s = document.createElement('div');
+    s.className = 'spark';
+    s.style.left = x1 + 'px'; s.style.top = y1 + 'px';
+    s.style.background = `var(${colVar})`; s.style.boxShadow = `0 0 16px var(${colVar})`;
+    layer().append(s);
+    const dx = x2 - x1, dy = y2 - y1, bend = (x1 < x2 ? -1 : 1) * 70;
+    const a = s.animate([
+      { transform: 'translate(0,0) scale(.5)' },
+      { transform: `translate(${dx / 2 + bend}px,${dy / 2}px) scale(1.5)`, offset: 0.5 },
+      { transform: `translate(${dx}px,${dy}px) scale(.8)` }],
+      { duration: 620, easing: 'ease-in-out' });
+    a.onfinish = () => { s.remove(); done(); };
+  }
+
+  function restart(el, cls) { el.classList.remove(cls); void el.offsetWidth; el.classList.add(cls); }
+  function cheer() { if (!RM) restart(document.querySelector('.now'), 'cheer'); }
+  function shake(big) { if (!RM) restart(document.getElementById('app'), big ? 'quake' : 'shake'); }
+
+  function confetti(n = 140) {
+    if (RM) return;
+    const cv = document.createElement('canvas');
+    const dpr = Math.min(2, window.devicePixelRatio || 1), W = innerWidth, H = innerHeight;
+    cv.width = W * dpr; cv.height = H * dpr; cv.className = 'confetti';
+    document.body.append(cv);
+    const g = cv.getContext('2d'); g.scale(dpr, dpr);
+    const cs = getComputedStyle(document.documentElement);
+    const cols = ['--sun', '--pink', '--mint', '--aqua', '--lime', '--tang'].map(v => cs.getPropertyValue(v).trim());
+    const ink = cs.getPropertyValue('--ink').trim();
+    const P = [];
+    for (let i = 0; i < n; i++) P.push({
+      x: W / 2 + (Math.random() - 0.5) * W * 0.4, y: H * 0.38,
+      vx: (Math.random() - 0.5) * 15, vy: -Math.random() * 15 - 5,
+      r: Math.random() * 6.28, vr: (Math.random() - 0.5) * 0.4,
+      w: 6 + Math.random() * 6, h: 8 + Math.random() * 9, c: cols[i % cols.length] });
+    const t0 = performance.now();
+    (function step(t) {
+      g.clearRect(0, 0, W, H);
+      for (const p of P) {
+        p.vy += 0.42; p.vx *= 0.99; p.x += p.vx; p.y += p.vy; p.r += p.vr;
+        g.save(); g.translate(p.x, p.y); g.rotate(p.r);
+        g.fillStyle = p.c; g.strokeStyle = ink; g.lineWidth = 1.5;
+        g.fillRect(-p.w / 2, -p.h / 2, p.w, p.h); g.strokeRect(-p.w / 2, -p.h / 2, p.w, p.h);
+        g.restore();
+      }
+      if (t - t0 < 2400) requestAnimationFrame(step); else cv.remove();
+    })(t0);
+  }
+
+  RZ.fx = { RM, center, floatText, burst, fly, cheer, shake, confetti, restart };
+})();
+
+</script>
+<script>
+/* Rewind Zoo — modals, discovery toasts, album, story log. */
+(function () {
+  const RZ = window.RZ, D = RZ.data;
+  const modal = () => document.getElementById('modal');
+
+  function open(html, mount) {
+    const m = modal();
+    m.innerHTML = `<div class="card" role="dialog" aria-modal="true">${html}</div>`;
+    m.hidden = false;
+    if (mount) mount(m);
+    const b = m.querySelector('.btn.go'); if (b) b.focus({ preventScroll: true });
+  }
+  function close() { const m = modal(); m.hidden = true; m.innerHTML = ''; }
+
+  /* opening story: swipe-through cards. replay = true when opened again from the story log */
+  function intro(replay) {
+    const pages = D.intro;
+    let i = 0, x0 = null;
+    const diagram = `<div class="diag" aria-label="Merge animals in the paddock at the bottom; they move into the zoo at the top and pull the crowd your way">
+        <div class="dg fen"><span class="dgl">🏡 Bev's</span><span class="dgbar"><i></i></span><span class="dgr">MegaFauna 🏢</span></div>
+        <div class="dg up">crowd ⬆</div>
+        <div class="dg now"><b>Your zoo</b><span>Up top</span><div class="dgp"><i>🪶</i><em>➜</em><i>🐣</i></div></div>
+        <div class="dg up">moves in ⬆</div>
+        <div class="dg pad"><b>Back paddock</b><span>Merge here</span><div class="dgp"><i class="t">🥚</i><em>+</em><i class="t">🥚</i><em>=</em><i class="t">🐣</i></div></div>
+      </div>`;
+    const render = () => {
+      const pg = pages[i], last = i === pages.length - 1;
+      open(`<div class="kicker">${pg.kicker}</div><h2>${pg.title}</h2>
+        ${pg.diagram ? diagram : `<div class="art">${pg.art}${i === 0 ? "<small>BEV'S BEASTS · EST. 1986</small>" : i === 1 ? '<small>MEGAFAUNA · OPENING TOMORROW</small>' : ''}</div>`}
+        ${pg.text.map(t => `<p>${t}</p>`).join('')}
+        <div class="dots" aria-label="Page ${i + 1} of ${pages.length}">${pages.map((_, k) => `<i class="${k === i ? 'on' : ''}"></i>`).join('')}</div>
+        <div class="row">${last ? '' : `<button class="btn quiet" id="skip">${replay === true ? 'Close' : 'Skip'}</button>`}
+          <button class="btn go" id="next">${last ? (replay === true ? 'Close' : replay === 'returning' ? 'Continue my game' : (pg.button || 'Start')) : 'Next'}</button></div>
+        ${last && replay === 'returning' ? '<div class="row"><button class="btn quiet small" id="fresh">Start a new game instead</button></div>' : ''}`, m => {
+        const card = m.querySelector('.card');
+        const done = () => { close(); if (!replay) RZ.game.introDone(); else if (replay === 'returning') RZ.game.resume(); };
+        const fr = m.querySelector('#fresh');
+        if (fr) { let armed = false; fr.onclick = () => {
+          if (!armed) { armed = true; fr.textContent = 'Tap again: this wipes your progress'; return; }
+          close(); RZ.game.reset(true);
+        }; }
+        m.querySelector('#next').onclick = () => { if (last) done(); else { i++; render(); } };
+        const sk = m.querySelector('#skip'); if (sk) sk.onclick = replay === true ? close : done;
+        card.addEventListener('pointerdown', e => { x0 = e.clientX; });
+        card.addEventListener('pointerup', e => {   // swipe between pages
+          if (x0 === null) return; const dx = e.clientX - x0; x0 = null;
+          if (dx < -50 && i < pages.length - 1) { i++; render(); } else if (dx > 50 && i > 0) { i--; render(); }
+        });
+      });
+      RZ.sfx.select();
+    };
+    render();
+  }
+
+  /* full reference, reachable from the story log */
+  function howto() {
+    open(`<div class="kicker">How to play</div><h2>The basics</h2>
+      <ol class="how">
+        <li>Tap Crate to bring an animal into the paddock. Each crate costs 1 🥕 feed.</li>
+        <li>Drag two matching animals together to merge them, or tap one then the other.</li>
+        <li>Every new animal moves into Kev's zoo up top and fixes it up.</li>
+        <li>The Fence bar is the crowd: yours on the left, the rival's on the right. Every merge, request and star attraction pulls people your way. Win showdowns by pulling it past the 🚩.</li>
+        <li>Areas show a bubble with the animal visitors want. Drag it up for fans and feed. Tap 🎟 to collect visitor fans.</li>
+        <li>Quick merges make combos. A merge next to its twin cascades, and pops any 🎈 balloon beside it. 🎁 crates spin for prizes. Gold pays 3×.</li>
+        <li>Tap STAR on a tier 5 animal to make it a star attraction for 👑 renown.</li>
+      </ol>
+      <div class="row"><button class="btn go" id="x">Got it</button></div>`, m => { m.querySelector('#x').onclick = close; });
+  }
+
+  /* ---------- coach marks: a card, a highlight ring and an optional pointing hand ---------- */
+  let coachOn = false, handAnim = null, spots = [];
+  const coachEl = () => document.getElementById('coach'), handEl = () => document.getElementById('hand');
+  function coach({ title, text, targets = [], button, onButton, hand, step }) {
+    clearCoach();
+    coachOn = true;
+    const el = coachEl();
+    el.innerHTML = `<div class="ck">${step ? `<span>${step}</span>` : ''}${title}</div><p>${text}</p>${button ? `<button class="btn go" id="coachBtn">${button}</button>` : ''}`;
+    targets = targets.filter(Boolean);
+    spots = targets; targets.forEach(t => t.classList.add('spot'));
+    const r0 = targets[0] && targets[0].getBoundingClientRect();
+    const low = r0 && (r0.top + r0.height / 2) > innerHeight * 0.55;
+    el.classList.toggle('top', !!low); el.classList.toggle('bottom', !low);
+    el.hidden = false; RZ.fx.restart(el, 'in');
+    if (button) el.querySelector('#coachBtn').onclick = () => { clearCoach(); onButton && onButton(); };
+    if (hand && targets[0]) pointHand(hand, targets);
+  }
+  function pointHand(kind, targets) {
+    const h = handEl(); h.hidden = false;
+    const c = t => { const r = t.getBoundingClientRect(); return [r.left + r.width / 2, r.top + r.height / 2]; };
+    const [x1, y1] = c(targets[0]);
+    h.style.left = x1 + 'px'; h.style.top = y1 + 'px';
+    if (RZ.fx.RM) return;
+    if (kind === 'drag' && targets[1]) {
+      const [x2, y2] = c(targets[1]);
+      handAnim = h.animate([
+        { transform: 'translate(-30%,0) scale(1)', opacity: 0 },
+        { transform: 'translate(-30%,0) scale(.85)', opacity: 1, offset: .15 },
+        { transform: `translate(calc(-30% + ${x2 - x1}px), ${y2 - y1}px) scale(.85)`, opacity: 1, offset: .7 },
+        { transform: `translate(calc(-30% + ${x2 - x1}px), ${y2 - y1}px) scale(1)`, opacity: 0 }],
+        { duration: 1700, iterations: Infinity, easing: 'ease-in-out' });
+    } else {
+      handAnim = h.animate([{ transform: 'translate(-30%,0) scale(1)' }, { transform: 'translate(-30%,-10px) scale(.88)' }, { transform: 'translate(-30%,0) scale(1)' }],
+        { duration: 900, iterations: Infinity, easing: 'ease-in-out' });
+    }
+  }
+  function clearCoach() {
+    coachOn = false;
+    const el = coachEl(); if (el) el.hidden = true;
+    const h = handEl(); if (h) h.hidden = true;
+    if (handAnim) { handAnim.cancel(); handAnim = null; }
+    spots.forEach(t => t.classList.remove('spot')); spots = [];
+  }
+  const coachVisible = () => coachOn;
+
+  function ad(label, after) {
+    let n = 3;
+    open(`<div class="kicker">Ad break · simulated</div>
+      <div class="adbox"><span class="e">📺</span>Rewarded ad plays here<br><span id="adN">${n}</span></div>
+      <p class="hint">In the real build this is a 15–30 s rewarded video.</p>
+      <div class="row"><button class="btn go" id="claim" disabled>Claim in ${n}</button></div>`, m => {
+      const btn = m.querySelector('#claim');
+      const iv = setInterval(() => {
+        n--; const c = m.querySelector('#adN'); if (!c) { clearInterval(iv); return; }
+        c.textContent = n > 0 ? n : '✓';
+        if (n > 0) btn.textContent = `Claim in ${n}`;
+        else { clearInterval(iv); btn.disabled = false; btn.textContent = `Claim ${label}`; btn.focus(); }
+      }, 1000);
+      btn.onclick = () => { close(); after(); };
+    });
+  }
+
+  function outOfTape() {
+    open(`<div class="kicker">Out of feed</div><h2>The feed bin's empty</h2>
+      <p>The animals ate the lot and Doug ate the receipt. Wait for a refill (+1 every 6 s here) or watch an ad.</p>
+      <div class="row"><button class="btn alt" id="ad">Watch ad · +20 🥕</button><button class="btn quiet" id="wait">Wait</button></div>`, m => {
+      m.querySelector('#ad').onclick = RZ.game.adForTape;
+      m.querySelector('#wait').onclick = close;
+    });
+  }
+
+  /* end-of-level screen: reward, a line of story, and what the next level teaches */
+  function chapter() {
+    const S = RZ.S, ch = RZ.game.chapter(), f = RZ.game.fmt, nx = RZ.game.preview();
+    const art = D.chains.slice(0, S.areas).map((c, i) => RZ.game.stagesOf(i)[S.stage[i]][0]).join(' ');
+    RZ.sfx.fanfare(); RZ.buzz([20, 60, 20, 60, 40]); RZ.fx.confetti(90);
+    open(`<div class="kicker">${RZ.game.chapterLabel()} complete${ch.endless ? ' · endless' : ''}</div><h2>${ch.title.replace(/^Ep \d+: /, '')}</h2>
+      <div class="art">${art}<small>BEV'S BEASTS</small></div>
+      ${ch.text.map(t => `<p>${t}</p>`).join('')}
+      <div class="reward">+${f(ch.reward.fans)} 🎟 &nbsp; +${ch.reward.tape} 🥕</div>
+      ${ch.endsSeason ? '' : `<div class="nextbox"><div class="nk">Next · ${nx.label}</div><b>${nx.title}</b>${nx.teach ? `<p>${nx.teach}</p>` : ''}<span class="goalchip">🎯 ${nx.goal}</span></div>`}
+      <div class="row">${S.chapter >= 3 ? '<button class="btn alt" id="dbl">Watch ad · 2× fans</button>' : ''}<button class="btn go" id="take">${ch.endsDay || ch.endsSeason ? 'Collect' : 'Next level ▶'}</button></div>`, m => {
+      m.querySelector('#take').onclick = () => { close(); RZ.game.completeChapter(1); };
+      const dbl = m.querySelector('#dbl'); if (dbl) dbl.onclick = () => ad(`+${f(ch.reward.fans * 2)} 🎟`, () => RZ.game.completeChapter(2));
+    });
+  }
+
+  /* day end: a natural place to stop, with a summary and what's coming tomorrow */
+  function dayEnd(n, sum, after) {
+    const d = D.days[n];
+    RZ.sfx.fanfare(); RZ.fx.confetti(140); RZ.buzz([30, 60, 30]);
+    open(`<div class="kicker">Day ${n} complete</div><h2>${d.title}</h2>
+      <div class="art">${d.art}<small>GATES SHUT · DAY ${n}</small></div>
+      <div class="daysum"><div><b>${sum.fans}</b><span>fans today</span></div><div><b>${sum.levels}</b><span>levels done</span></div><div><b>${sum.found}/25</b><span>animals found</span></div></div>
+      ${d.text.map(t => `<p>${t}</p>`).join('')}
+      <p class="tmr"><b>Tomorrow</b>${d.tomorrow}</p>
+      <div class="row"><button class="btn quiet" id="rest">Done for today</button><button class="btn go" id="keep">Keep playing</button></div>`, m => {
+      m.querySelector('#keep').onclick = () => { close(); after && after(); };
+      m.querySelector('#rest').onclick = () => sleep(after);
+    });
+  }
+  function sleep(after) {
+    open(`<div class="kicker">See you soon</div><h2>Gates shut</h2>
+      <div class="art">🌙 🔒<small>VISITORS STILL EARNING</small></div>
+      <p>Visitors keep paying fans while you're away, up to two hours' worth. Come back to collect them and start tomorrow.</p>
+      <div class="row"><button class="btn go" id="back">Back to the zoo</button></div>`, m => {
+      m.querySelector('#back').onclick = () => { close(); after && after(); };
+    });
+  }
+
+  function unlock(area, after) {
+    const c = D.chains[area];
+    RZ.sfx.fanfare(); RZ.fx.confetti(160); RZ.buzz([30, 50, 30]);
+    open(`<div class="kicker">New area unlocked</div><h2>The ${c.area}</h2>
+      <div class="art">${c.stages[0][0]} ${c.items.map(i => i[0]).join(' ')}<small>NEW ANIMALS IN THE PADDOCK</small></div>
+      <p>${c.unlockText}</p>
+      <div class="row"><button class="btn go" id="go">Let's go</button></div>`, m => {
+      m.querySelector('#go').onclick = () => { close(); after && after(); };
+    });
+  }
+
+  function log() {
+    const S = RZ.S, W = D.who;
+    const items = S.log.slice().reverse()
+      .map(([w, t]) => `<li><span class="av ${w}">${W[w][0]}</span><span><b>${W[w][1]}</b>${t}</span></li>`).join('')
+      || '<li>Nothing in the diary yet.</li>';
+    open(`<div class="kicker">Story so far</div><h2>The zoo diary</h2><ul class="log">${items}</ul>
+      <div class="row"><button class="btn quiet" id="story">Story intro</button><button class="btn quiet" id="how">How to play</button></div>
+      <div class="row"><button class="btn go" id="x">Close</button></div>
+      <div class="row"><button class="btn quiet small" id="reset">Restart game</button></div>`, m => {
+      m.querySelector('#x').onclick = close;
+      m.querySelector('#how').onclick = howto;
+      m.querySelector('#story').onclick = () => intro(true);
+      const r = m.querySelector('#reset'); let armed = false;
+      r.onclick = () => {
+        if (!armed) { armed = true; r.textContent = 'Tap again to wipe progress'; return; }
+        close(); RZ.game.reset();
+      };
+    });
+  }
+
+  function album() {
+    const S = RZ.S;
+    const rows = D.chains.map((ch, c) => {
+      const cells = ch.items.map((it, t) => {
+        const f = S.found.includes(c + '-' + (t + 1));
+        return `<button class="acell c${c}${f ? ' f' : ''}" data-c="${c}" data-t="${t}" ${f ? '' : 'disabled'} aria-label="${f ? it[1] : 'Not found yet'}">${f ? it[0] : '?'}</button>`;
+      }).join('');
+      return `<div class="arow"><span class="an">${ch.area}</span><div class="acells">${cells}</div></div>`;
+    }).join('');
+    open(`<div class="kicker">Album · ${S.found.length}/25 found</div><h2>Who lives here</h2>
+      <div class="album">${rows}</div>
+      <p class="aflav" id="aflav">Tap an animal to read its file.</p>
+      <div class="row"><button class="btn go" id="x">Close</button></div>`, m => {
+      m.querySelector('#x').onclick = close;
+      m.querySelectorAll('.acell.f').forEach(b => b.onclick = () => {
+        const c = +b.dataset.c, t = +b.dataset.t;
+        m.querySelector('#aflav').innerHTML = `<b>${D.chains[c].items[t][1]}</b>${D.chains[c].flavor[t]}`;
+      });
+    });
+  }
+
+  /* discovery toasts, queued so they never overlap */
+  const q = []; let busy = false;
+  function toast(o) { q.push(o); if (!busy) nextToast(); }
+  function nextToast() {
+    const o = q.shift(), el = document.getElementById('toast');
+    if (!o) { busy = false; return; }
+    if (coachOn) { q.unshift(o); setTimeout(nextToast, 700); return; }   // wait for the coach card to close
+    busy = true;
+    el.innerHTML = `<span class="te">${o.e}</span><span class="tb"><span class="tk">New animal · ${o.n}/25</span><b>${o.name}</b><span class="tf">${o.flavor}</span></span>`;
+    el.hidden = false; el.classList.remove('out'); RZ.fx.restart(el, 'in');
+    RZ.sfx.discover();
+    setTimeout(() => {
+      el.classList.remove('in'); el.classList.add('out');
+      setTimeout(() => { el.hidden = true; el.classList.remove('out'); nextToast(); }, 280);
+    }, 2300);
+  }
+
+  RZ.ui = { open, close, intro, howto, dayEnd, sleep, ad, outOfTape, chapter, unlock, log, album, toast, coach, clearCoach, coachVisible, modalOpen: () => !modal().hidden };
+})();
+
+</script>
+<script>
+/* Rewind Zoo — state, rules, rendering, input and boot. */
+(function () {
+  const RZ = window.RZ, D = RZ.data, fx = RZ.fx, sfx = RZ.sfx, ui = RZ.ui, buzz = RZ.buzz;
+  const { N, MAX_TAPE, REGEN_MS, COMBO_MS, SAVE_KEY } = D;
+  const $ = s => document.querySelector(s);
+  const gridEl = $('#grid'), plotsEl = $('#plots');
+  const pick = a => a[Math.floor(Math.random() * a.length)];
+  const range = n => Array.from({ length: n }, (_, i) => i);
+  const keyOf = (c, t) => c + '-' + t;
+  const STORY_V = 3;                                           // bump to re-show the story intro to everyone once
+  const TUT_END = 4;                                            // tutorial steps 0-3 (inside Level 1), then levels teach the rest
+  const FEAT = { tier2: 3, requests: 4, fence: 6, coins: 7, mystery: 11, golden: 15 };  // level index where each mechanic switches on
+
+  /* ---------- state ---------- */
+  function fresh() {
+    const g = Array(N).fill(null);   // empty paddock: the tutorial fills it
+    return { v: 7, season: 1, tut: 0, crowd: D.CROWD.base, stuntFor: -1, tips: {}, dayFans: 0, dayStartCh: 0, grid: g, stage: [0,0,0,0,0], areas: 1, fans: 0, level: 1, tape: MAX_TAPE, chapter: 0,
+      intro: false, muted: false, log: [], found: [], regenAt: Date.now(),
+      req: [null,null,null,null,null], reqAt: [0,0,0,0,0], visit: [0,0,0,0,0], happy: [0,0,0,0,0], renown: [0,0,0,0,0], visitAt: Date.now(),
+      seed: Math.floor(Math.random() * 1e9),
+      stats: { golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0, chPopped: 0 } };
+  }
+  function migrate(s) {
+    s.stage = s.stage || []; while (s.stage.length < 5) s.stage.push(0);
+    s.areas = s.areas || (s.chapter >= 2 ? 5 : 4);
+    if (!s.v) { if (s.chapter >= 1) s.chapter++; s.v = 2; }   // v2 inserted the First Customers chapter
+    if (s.v === 2) {   // v3 added Season 2 after the Season 1 finale (index 7)
+      s.season = s.chapter >= 7 ? 2 : 1;
+      if (s.chapter >= 7) { s.chapter = 7; s.stage = [0,0,0,0,0]; s.req = [null,null,null,null,null]; s.reqAt = [0,0,0,0,0]; }
+      s.v = 3;
+    }
+    s.season = s.season || 1;
+    if (s.tut === undefined) {   // v4 added the tutorial and one-time tips; existing players skip both
+      s.tut = s.intro ? TUT_END : 0;
+      s.tips = s.intro ? Object.fromEntries(Object.keys(D.tips).map(k => [k, 1])) : {};
+      s.v = 4;
+    }
+    s.tips = s.tips || {};
+    if (s.v === 5) { s.season = 1; s.v = 6; }   // v6: Rival Zoo story, no timeline reset; same level indices
+    if (s.v === 4) {   // v5 split the early chapters into short levels: map old chapter indices onto the new list
+      const old = s.chapter;
+      if (old === 0) s.chapter = s.tut >= 6 ? 3 : (s.stage[0] >= 2 ? 2 : s.stage[0] >= 1 ? 1 : 0);
+      else if (old < 7) s.chapter = [3, 5, 11, 12, 13, 14, 15][old];
+      else s.chapter = old + 9;
+      if (s.tut >= 4) s.tut = 4;
+      s.v = 6; s.season = 1;
+    }
+    if (s.v === 6) { if (s.chapter >= 6) s.chapter++; s.v = 7; }   // v7 inserted "Next Door Opens" (the Fence) at index 6
+    if (typeof s.crowd !== 'number') s.crowd = D.CROWD.base;
+    if (s.stuntFor === undefined) s.stuntFor = -1;
+    s.dayFans = s.dayFans || 0; if (s.dayStartCh === undefined) s.dayStartCh = s.chapter;
+    for (const k of ['req', 'reqAt', 'visit', 'happy', 'renown']) { s[k] = s[k] || []; while (s[k].length < 5) s[k].push(k === 'req' ? null : 0); }
+    s.visitAt = s.visitAt || Date.now();
+    if (s.seed === undefined) s.seed = Math.floor(Math.random() * 1e9);
+    if (!Array.isArray(s.stats && s.stats.chDel)) { s.stats = s.stats || {}; s.stats.chDel = [0,0,0,0,0]; }
+    s.found = s.found || []; s.log = s.log || [];
+    s.stats = Object.assign({ golden: 0, maxCombo: 0, delivered: 0, orders: 0, chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0, chPopped: 0 }, s.stats || {});
+    s.level = s.level || 1; s.regenAt = s.regenAt || Date.now();
+    s.grid = s.grid.map(v => (v && typeof v === 'object') ? v : null);
+    s.grid = s.grid.map(v => v && v.b ? { b: 1 } : v);
+    return s;
+  }
+  function load() {
+    try { localStorage.removeItem('rewindzoo.v1'); } catch (e) {}   // camcorder-era save: the rebuild starts everyone from scratch
+    try { const s = JSON.parse(localStorage.getItem(SAVE_KEY)); if (s && Array.isArray(s.grid) && s.grid.length === N) return migrate(s); } catch (e) {}
+    return null;
+  }
+  function save() { try { localStorage.setItem(SAVE_KEY, JSON.stringify(S)); } catch (e) {} }
+
+  let S;
+  function setState(s) { S = s; RZ.S = s; }
+  setState(load() || fresh());
+
+  let sel = null, combo = 0, comboUntil = 0, chapterOpen = false, drag = null;
+  const rolling = new Set();
+
+  /* ---------- helpers ---------- */
+  const cellAt = i => gridEl.querySelector(`[data-cell="${i}"]`);
+  const plotAt = c => plotsEl.querySelector(`[data-plot="${c}"]`);
+  const emptyCells = () => range(N).filter(i => !S.grid[i]);
+  const canMerge = (A, B) => A && B && !A.m && !B.m && !A.b && !B.b && A.c === B.c && A.t === B.t && A.t < 5;
+  const balloons = () => S.grid.filter(v => v && v.b).length;
+  const C = D.CROWD;
+  function fmt(n) {
+    n = Math.round(n);
+    if (n < 10000) return n.toLocaleString();
+    const u = [[1e12, 'T'], [1e9, 'B'], [1e6, 'M'], [1e3, 'k']].find(([v]) => n >= v);
+    const x = n / u[0];
+    return (x >= 100 ? Math.round(x) : x.toFixed(1)) + u[1];
+  }
+  function rng(seed) {   // mulberry32: same seed, same sequence, so an episode is stable across reloads
+    let a = seed >>> 0;
+    return () => { a = (a + 0x6D2B79F5) | 0; let t = Math.imul(a ^ (a >>> 15), 1 | a); t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t; return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+  }
+  const stagesOf = c => D.chains[c].stages;
+  const linesOf = c => D.chains[c].lines;
+  const feat = k => S.tut >= TUT_END && S.chapter >= FEAT[k];
+  const need = l => 60 * (l - 1) * l;               // fans needed to reach level l
+  function levelOf(f) { let l = 1; while (f >= need(l + 1)) l++; return l; }
+  function weighted(list, w) { const tot = w.reduce((a, b) => a + b, 0); let r = Math.random() * tot, i = 0; while (r >= w[i]) { r -= w[i]; i++; } return list[i]; }
+
+  function say(who, text, log = true) {
+    const m = $('#msg'), [a, label] = D.who[who], av = $('#msgAv');
+    av.textContent = a; av.className = 'av ' + who;
+    $('#msgWho').textContent = label.split(' · ')[0] + ':'; $('#msgText').textContent = text;
+    fx.restart(m, 'new');
+    if (log) { S.log.push([who, text]); if (S.log.length > 80) S.log.shift(); }
+  }
+
+  /* ---------- goals ---------- */
+  const HAND = D.chapters.length;
+  const ENDLESS = ['orders', 'combo', 'golden', 'deliver', 'rival', 'deliverArea', 'pop'];
+  const ROMAN = ['', '', 'II', 'III', 'IV', 'V', 'VI', 'VII', 'VIII', 'IX', 'X'];
+  const epCache = new Map();
+  const typeFor = n => ENDLESS[Math.floor(rng(S.seed * 31 + n * 7919)() * ENDLESS.length)];
+  function genEpisode(n) {
+    const key = S.seed + ':' + n + ':' + S.areas;
+    if (epCache.has(key)) return epCache.get(key);
+    const R = rng(S.seed * 131 + n * 104729), E = D.endless;
+    let type = typeFor(n);
+    if (n > 0 && type === typeFor(n - 1)) type = ENDLESS[(ENDLESS.indexOf(type) + 1) % ENDLESS.length];
+    if (n === 0) type = 'rival';   // every new rival opens with a showdown
+    let goal;
+    if (type === 'orders') goal = { type, n: Math.min(20, 4 + Math.floor(n / 2)) };
+    else if (type === 'combo') goal = { type, n: Math.min(10, 5 + Math.floor(n / 4)) };
+    else if (type === 'golden') goal = { type, n: Math.min(15, 3 + Math.floor(n / 2)) };
+    else if (type === 'deliver') goal = { type, n: Math.min(10, 1 + Math.floor(n / 3)) };
+    else if (type === 'deliverArea') goal = { type: 'deliver', n: Math.min(6, 1 + Math.floor(n / 5)), area: Math.floor(R() * S.areas) };
+    else if (type === 'pop') goal = { type, n: Math.min(12, 4 + Math.floor(n / 3)) };
+    let rival = E.rivals[n % E.rivals.length];
+    const lap = Math.floor(n / E.rivals.length) + 1;
+    if (lap > 1) rival += ' ' + (ROMAN[lap] || lap);
+    const stunt = E.stunts[Math.floor(R() * E.stunts.length)];
+    if (type === 'rival') goal = { type: 'rival', n: Math.min(95, 80 + n), rival, pull: Math.min(0.009, 0.005 + 0.0002 * n), stunt };
+    const animal = () => { const c = Math.floor(R() * S.areas), t = 1 + Math.floor(R() * 5); return D.chains[c].items[t - 1][1].replace(/\s*\(.*\)/, '').toLowerCase(); };
+    const plural = a => /(fish|sheep)$/.test(a) ? a : /wolf$/.test(a) ? a.slice(0, -1) + 'ves' : /[^aeiou]y$/.test(a) ? a.slice(0, -1) + 'ies' : a + 's';
+    const fill = str => {   // one animal and one area per line, so the joke stays consistent
+      const a = animal(), ar = D.chains[Math.floor(R() * S.areas)].area;
+      return str.replace(/\{rival\}/g, rival).replace(/\{animals\}/g, plural(a)).replace(/\{Animal\}/g, a[0].toUpperCase() + a.slice(1))
+        .replace(/\{animal\}/g, a).replace(/\{area\}/g, ar).replace(/\{n\}/g, String(n + 1));
+    };
+    const picks = [];
+    while (picks.length < 2) { const i = Math.floor(R() * E.scenes.length); if (!picks.includes(i)) picks.push(i); }
+    const text = picks.map(i => fill(E.scenes[i]));
+    const title = `vs ${rival}`;
+    const ep = { endless: true, ep: n + 1, rival, name: `Episode ${n + 1}`, title: `Ep ${n + 1}: ${title}`, goal, text,
+      teach: type === 'rival' ? `${rival} has moved in next door with ${stunt}. Showdown: pull the Fence to ${goal.n}%.`
+        : type === 'pop' ? `${rival} floated balloons over your paddock. Merge next to them to pop them.` : `${rival} is still next door. Keep the visitors coming.`,
+      reward: { fans: 300 + 120 * n, tape: Math.min(60, 20 + 2 * n) } };
+    epCache.set(key, ep);
+    return ep;
+  }
+  const chapter = () => S.chapter < HAND ? D.chapters[S.chapter] : genEpisode(S.chapter - HAND);
+  function goalText(g) {
+    const stars = n => '★'.repeat(n);
+    if (g.type === 'make') return `Make a ${D.chains[g.c].items[g.t - 1][1]}`;
+    if (g.type === 'collect') return g.n > 1 ? `Collect visitor fans ${g.n} times` : 'Collect visitor fans';
+    if (g.type === 'open') return g.n > 1 ? `Open ${g.n} mystery crates` : 'Open a mystery crate';
+    if (g.type === 'all') return `Every area to ${stars(g.n)}`;
+    if (g.type === 'area') return `${D.chains[g.area].area} to ${stars(g.n)}`;
+    if (g.type === 'combo') return `Hit a ×${g.n} combo`;
+    if (g.type === 'orders') return `Fill ${g.n} visitor requests`;
+    if (g.type === 'golden') return `Make ${g.n} golden merges`;
+    if (g.type === 'fans') return `Earn ${fmt(g.n)} fans`;
+    if (g.type === 'rival') return `Beat ${g.rival}: crowd to ${g.n}%`;
+    if (g.type === 'crowd') return `Win ${g.n}% of the crowd`;
+    if (g.type === 'pop') return `Pop ${g.n} balloon${g.n > 1 ? 's' : ''}`;
+    if (g.area !== undefined) return `Make ${g.n} ${D.chains[g.area].area} star attraction${g.n > 1 ? 's' : ''}`;
+    return `Make ${g.n} star attraction${g.n > 1 ? 's' : ''}`;
+  }
+  function goalInfo() {
+    const ch = chapter(), g = ch.goal, text = goalText(g), cnt = (b, n) => ({ num: `${Math.min(b, n)}/${n}`, frac: Math.min(b, n) / n });
+    if (g.type === 'all') {
+      const st = S.stage.slice(0, S.areas);
+      return { text, num: `${st.filter(s => s >= g.n).length}/${S.areas} areas`,
+        frac: st.reduce((a, s) => a + Math.min(s, g.n), 0) / (S.areas * g.n), target: g.n };
+    }
+    if (g.type === 'area') return { text, ...cnt(S.stage[g.area], g.n), target: g.n, area: g.area };
+    if (g.type === 'make') { const ok = S.stage[g.c] >= g.t - 1; return { text, num: ok ? 'done' : 'not yet', frac: ok ? 1 : 0, target: g.t - 1, area: g.c }; }
+    if (g.type === 'collect') return { text, ...cnt(S.stats.chCollect, g.n), target: 0 };
+    if (g.type === 'open') return { text, ...cnt(S.stats.chOpened, g.n), target: 0 };
+    if (g.type === 'combo') return { text, num: `best ×${S.stats.chCombo}`, frac: Math.min(S.stats.chCombo, g.n) / g.n, target: 0 };
+    if (g.type === 'orders') return { text, ...cnt(S.stats.chOrders, g.n), target: 0 };
+    if (g.type === 'golden') return { text, ...cnt(S.stats.chGolden, g.n), target: 0 };
+    if (g.type === 'rival' || g.type === 'crowd') { const c = Math.floor(S.crowd); return { text, num: `${c}%/${g.n}%`, frac: c >= g.n ? 1 : Math.min(0.999, c / g.n), target: 0 }; }
+    if (g.type === 'pop') return { text, ...cnt(S.stats.chPopped, g.n), target: 0 };
+    if (g.type === 'fans') return { text, num: `${fmt(Math.min(S.stats.chFans, g.n))}/${fmt(g.n)}`, frac: Math.min(S.stats.chFans, g.n) / g.n, target: 0 };
+    const b = g.area !== undefined ? S.stats.chDel[g.area] : S.stats.chDelivered;
+    return { text, ...cnt(b, g.n), target: 0 };
+  }
+  function levelLabel(i) { return i < HAND ? `Level ${i + 1}` : `Episode ${i - HAND + 1}`; }
+  function preview(i) {   // what the next level is, for the end-of-level screen
+    const ch = i < HAND ? D.chapters[i] : genEpisode(i - HAND);
+    return { label: levelLabel(i), title: ch.endless ? ch.title.replace(/^Ep \d+: /, '') : ch.title, goal: goalText(ch.goal), teach: ch.teach || '' };
+  }
+  function checkChapter() {
+    if (chapterOpen || S.tut < TUT_END) return;
+    if (S.stuntFor !== S.chapter && !ui.modalOpen()) startLevel();
+    if (goalInfo().frac >= 0.9999) { chapterOpen = true; setTimeout(ui.chapter, fx.RM ? 200 : 1000); }
+  }
+  function completeChapter(mult) {
+    const ch = chapter();
+    S.tape += ch.reward.tape;
+    addFans(ch.reward.fans * mult);
+    S.chapter++; chapterOpen = false;
+    Object.assign(S.stats, { chCombo: 0, chGolden: 0, chOrders: 0, chDelivered: 0, chDel: [0,0,0,0,0], chFans: 0, chCollect: 0, chOpened: 0, chPopped: 0 });
+    const nx = preview(S.chapter);
+    const next = ch.next || `${nx.label}: ${nx.title}. ${nx.goal}.`;
+    renderAll(); sfx.ripple();
+    const [x, y] = fx.center($('#fans')); fx.floatText(x, y + 26, `+${fmt(ch.reward.fans * mult)}`, 'big');
+    save();
+    const go = () => {
+      if (ch.goal.type === 'rival') defector(ch.goal.rival);   // win a showdown: one of their animals jumps the fence
+      say('kev', next); save(); checkChapter();
+    };
+    const day = () => {
+      if (!ch.endsDay) { go(); return; }
+      const sum = { fans: fmt(S.dayFans), found: S.found.length, levels: S.chapter - S.dayStartCh };
+      S.dayFans = 0; S.dayStartCh = S.chapter; save();
+      setTimeout(() => ui.dayEnd(ch.endsDay, sum, go), 450);
+    };
+    if (ch.unlock !== undefined) {
+      S.areas = Math.max(S.areas, ch.unlock + 1); if (feat('requests')) newRequest(ch.unlock); S.visitAt = Date.now(); renderPlots(ch.unlock); save();
+      setTimeout(() => ui.unlock(ch.unlock, day), 450);
+      return;
+    }
+    day();
+  }
+
+  /* ---------- level start: the rival makes a move ---------- */
+  function startLevel() {
+    S.stuntFor = S.chapter; save();
+    const g = chapter().goal, rex = g.rival === 'MegaFauna', who = rex ? 'rex' : 'rival';
+    if (g.type === 'crowd') {
+      S.crowd = Math.min(S.crowd, 40); renderHUD();
+      setTimeout(() => say('rex', '"MegaFauna is OPEN! Monorail! Gift shop! Come on over, folks!"'), 1800);
+    } else if (g.type === 'rival' && feat('fence')) {
+      S.crowd = Math.max(8, Math.min(S.crowd, C.base) - C.drop); renderHUD();
+      setTimeout(() => {
+        const [x, y] = fx.center($('#fence')); fx.floatText(x, y, 'SHOWDOWN!', 'huge'); fx.shake(); sfx.stunt(); buzz([30, 40, 30]);
+        say(who, `${rex ? '' : g.rival + ': '}"Today only: ${g.stunt}! ${pick(D.endless.taunts)}"`);
+      }, 1800);
+    } else if (g.type === 'pop') {
+      setTimeout(() => {
+        dropBalloons(Math.min(D.BALLOONS_MAX, g.n));
+        say(who === 'rex' || S.chapter < HAND ? 'rex' : 'rival', S.chapter < HAND ? '"Balloons for everyone! Especially your paddock!"' : `${chapter().rival}: "Free balloons! Mind your paddock."`);
+      }, 900);
+    }
+  }
+  function dropBalloons(k) {
+    const e = emptyCells(), n = Math.min(k, D.BALLOONS_MAX - balloons(), Math.max(0, e.length - 4));
+    for (let m = 0; m < n; m++) {
+      const free = emptyCells(), i = pick(free);
+      S.grid[i] = { b: 1 }; renderCell(i, 'spawn');
+      setTimeout(() => tip('balloon', () => { const c = cellAt(i); return c && c.querySelector('.tile'); }), 500);
+    }
+    if (n) { sfx.stunt(); save(); }
+  }
+  function popAround(b) {
+    const nb = [b - 5, b + 5]; if (b % 5) nb.push(b - 1); if (b % 5 < 4) nb.push(b + 1);
+    for (const n of nb) {
+      if (n < 0 || n >= N || !S.grid[n] || !S.grid[n].b) continue;
+      S.grid[n] = null; renderCell(n);
+      const [x, y] = fx.center(cellAt(n));
+      fx.burst(x, y, '--tang', 14); fx.floatText(x, y - 6, 'POP!', 'big'); sfx.pop(); buzz(15);
+      S.stats.chPopped++; addFans(10); pushCrowd(C.pop);
+    }
+  }
+  function defector(rival) {
+    const e = emptyCells(); if (!e.length) { addFans(200); return; }
+    const j = pick(e), c = pick(range(S.areas)), name = D.chains[c].items[2][1].toLowerCase();
+    S.grid[j] = { c, t: 3, g: 1 }; renderCell(j, 'spawn'); discover(c, 3);
+    setTimeout(() => {
+      const [x, y] = fx.center(cellAt(j)); fx.floatText(x, y - 8, 'DEFECTOR!', 'gold'); fx.burst(x, y, '--gold', 16); sfx.gold();
+      say('kev', pick(D.defect).replace(/\{rival\}/g, rival).replace(/\{animals\}/g, name + 's').replace(/\{animal\}/g, name));
+    }, 2400);
+    save();
+  }
+
+  /* ---------- the Fence: share of the crowd on the footpath ---------- */
+  function pushCrowd(n) {
+    if (!feat('fence') || n <= 0) return;
+    S.crowd = Math.min(100, S.crowd + n); renderFence(true);
+    if (n >= 4) { const el = $('#crowdMe'); if (el) { const [x, y] = fx.center(el); fx.floatText(x + 16, y - 4, `+${Math.round(n)}% crowd`, 'small'); } }
+  }
+  const crowdMult = () => feat('fence') ? S.crowd / 50 : 1;
+  function renderFence(bump) {
+    const el = $('#fence'), on = feat('fence');
+    el.hidden = !on; if (!on) return;
+    const c = Math.max(0, Math.min(100, S.crowd)), g = chapter().goal;
+    $('#crowdBar').style.width = c + '%';
+    $('#walker').style.left = c + '%';
+    $('#crowdMe').textContent = Math.round(c) + '%';
+    $('#crowdThem').textContent = (100 - Math.round(c)) + '%';
+    const rival = g.rival || (S.chapter < HAND ? 'MegaFauna' : chapter().rival);
+    el.title = `Crowd: Bev's Beasts ${Math.round(c)}% · ${rival} ${100 - Math.round(c)}%`;
+    const mk = $('#crowdMark'), target = (g.type === 'rival' || g.type === 'crowd') ? g.n : 0;
+    mk.hidden = !target; if (target) mk.style.left = target + '%';
+    el.classList.toggle('show', g.type === 'rival');
+    if (bump) fx.restart($('#walker'), 'hop');
+    tip('fence', () => $('#fence'));
+  }
+
+  /* ---------- render ---------- */
+  function tileHTML(it, i, anim) {
+    if (!it) return '';
+    const extra = (sel === i ? ' sel' : '') + (anim ? ' ' + anim : '');
+    if (it.m) return `<div class="tile mys${extra}" aria-label="Mystery crate"><span class="face">🎁</span><em class="send">OPEN</em></div>`;
+    if (it.b) return `<div class="tile bal${anim ? ' ' + anim : ''}" aria-label="Rex's balloon"><span class="face">🎈</span></div>`;
+    const [e, name] = D.chains[it.c].items[it.t - 1];
+    const wanted = it.c < S.areas && S.req[it.c] && S.req[it.c].t === it.t;
+    return `<div class="tile c${it.c} t${it.t}${it.g ? ' gold' : ''}${extra}" aria-label="${it.g ? 'Golden ' : ''}${name}, tier ${it.t}${wanted ? ', wanted by visitors' : ''}"><span class="face">${e}</span><b class="tier">${it.t}</b>${it.t === 5 ? '<em class="send">STAR</em>' : ''}${wanted ? '<i class="want">❤️</i>' : ''}</div>`;
+  }
+  let refreshQueued = false;
+  function renderCell(i, anim) {
+    cellAt(i).innerHTML = tileHTML(S.grid[i], i, anim);
+    if (!refreshQueued) { refreshQueued = true; requestAnimationFrame(() => { refreshQueued = false; refreshPlots(); }); }
+  }
+  function poke(q) { if (!q) return; fx.restart(q, 'poke'); q.addEventListener('animationend', () => q.classList.remove('poke'), { once: true }); }
+  function findItem(c, t) {
+    let best = -1;
+    for (let i = 0; i < N; i++) { const v = S.grid[i]; if (v && !v.m && !v.b && v.c === c && v.t === t && !rolling.has(i)) { if (!v.g) return i; if (best < 0) best = i; } }
+    return best;
+  }
+  function renderGrid() { for (let i = 0; i < N; i++) if (!rolling.has(i)) renderCell(i); }
+
+  const opensLabel = i => { const k = D.chapters.findIndex(c => c.unlock === i); return k >= 0 ? `Opens Lv ${k + 2}` : 'Locked'; };
+  function renderPlots(bump = -1) {
+    const gi = goalInfo();
+    plotsEl.innerHTML = D.chains.map((c, i) => {
+      if (i >= S.areas) return `<div class="plot locked" data-plot="${i}"><div class="pe">🔒</div><div class="pn">${c.area}</div><div class="pc">${opensLabel(i)}</div><div class="pips"><i></i><i></i><i></i><i></i></div></div>`;
+      const s = S.stage[i], r = S.req[i];
+      const marked = gi.target && (gi.area === undefined || gi.area === i);
+      const pips = [1, 2, 3, 4].map(k => `<i class="${k <= s ? 'on' : ''}${marked && k === gi.target ? ' goal' : ''}"></i>`).join('') + (S.renown[i] ? `<em class="rn" title="Renown">👑${S.renown[i]}</em>` : '');
+      const bubble = r ? `<span class="req" title="Wants a ${c.items[r.t - 1][1]}">${c.items[r.t - 1][0]}</span>` : '';
+      return `<div class="plot c${i}${s > 0 ? ' lit' : ''}${s === 4 ? ' max' : ''}${bump === i ? ' bump' : ''}" data-plot="${i}" data-s="${s}" role="button" tabindex="0" aria-label="${c.area}">
+        ${bubble}<div class="pe">${stagesOf(i)[s][0]}</div><div class="pn">${c.area}</div><div class="pc">${stagesOf(i)[s][1]}</div><div class="pips">${pips}</div>
+        <span class="coin" hidden><span class="e">🎟</span><b>0</b></span></div>`;
+    }).join('');
+    refreshPlots();
+  }
+  /* light update: request "ready" glow and banked visitor fans, without rebuilding the cards */
+  function refreshPlots() {
+    for (let c = 0; c < S.areas; c++) {
+      const el = plotAt(c); if (!el) continue;
+      const r = S.req[c], q = el.querySelector('.req');
+      if (q) q.classList.toggle('ready', !!r && findItem(c, r.t) >= 0);
+      const coin = el.querySelector('.coin'), v = Math.floor(S.visit[c]);
+      if (coin) { coin.hidden = v < D.VISIT_SHOW; coin.querySelector('b').textContent = v; if (!coin.hidden) tip('coins', () => plotsEl.querySelector('.coin:not([hidden])')); }
+    }
+  }
+
+  let shownFans = S.fans, fansRaf = 0;
+  function tweenFans() {
+    cancelAnimationFrame(fansRaf);
+    const el = $('#fans'), from = shownFans, to = S.fans, t0 = performance.now(), d = fx.RM ? 0 : 550;
+    (function step(t) {
+      const k = d ? Math.min(1, (t - t0) / d) : 1;
+      shownFans = Math.round(from + (to - from) * (1 - Math.pow(1 - k, 3)));
+      el.textContent = fmt(shownFans);
+      if (k < 1) fansRaf = requestAnimationFrame(step);
+    })(t0);
+  }
+  function renderHUD() {
+    tweenFans();
+    $('#tape').textContent = S.tape;
+    const l = S.level, lo = need(l), hi = need(l + 1);
+    $('#lvl').textContent = '⭐ ' + l;
+    $('#lvlBar').style.width = Math.min(100, (S.fans - lo) / (hi - lo) * 100) + '%';
+    $('#albumN').textContent = S.found.length;
+    const gi = goalInfo();
+    $('#goalText').textContent = (S.chapter < HAND ? `Level ${S.chapter + 1} · ` : `Ep ${S.chapter - HAND + 1} · `) + gi.text;
+    $('#goalNum').textContent = gi.num;
+    $('#goalBar').style.width = Math.min(100, gi.frac * 100) + '%';
+    $('#mute').textContent = S.muted ? '🔇' : '🔊';
+    $('#lvlPill').hidden = S.level < 2;
+    $('#albumBtn').hidden = S.tut < TUT_END;
+    renderFence();
+  }
+  function renderAll() { renderGrid(); renderPlots(); renderHUD(); }
+
+  /* ---------- economy ---------- */
+  function addFans(n) {
+    S.fans += n; S.stats.chFans += n; S.dayFans = (S.dayFans || 0) + n;
+    const l = levelOf(S.fans);
+    if (l > S.level) { S.level = l; levelUp(l); }
+    renderHUD();
+  }
+  function levelUp(l) {
+    S.tape += 10;
+    setTimeout(() => {
+      fx.confetti(); fx.shake(true); sfx.level(); buzz([20, 40, 20, 40, 60]);
+      const x = innerWidth / 2, y = innerHeight * 0.4;
+      fx.floatText(x, y, `RANK ${l}!`, 'huge');
+      setTimeout(() => fx.floatText(x, y + 40, '+10 🥕', 'big'), 250);
+      say('bev', pick(D.levelLines));
+      renderHUD(); tip('level', () => $('#lvlPill'));
+    }, 350);
+  }
+
+  /* ---------- combo meter ---------- */
+  const cmEl = $('#cm'), cmN = $('#cmN'), cmBar = $('#cmBar'); let cmRaf = 0;
+  function bumpCombo() {
+    const now = performance.now();
+    combo = now < comboUntil ? combo + 1 : 1;
+    comboUntil = now + COMBO_MS;
+    if (combo > S.stats.maxCombo) S.stats.maxCombo = combo;
+    if (combo > S.stats.chCombo) S.stats.chCombo = combo;
+    if (combo >= 2) {
+      cmEl.hidden = false; cmN.textContent = '×' + combo; fx.restart(cmEl, 'hit');
+      tip('combo', () => cmEl);
+      cancelAnimationFrame(cmRaf);
+      (function step() {
+        const left = comboUntil - performance.now();
+        if (left <= 0) { cmEl.hidden = true; return; }
+        cmBar.style.width = (left / COMBO_MS * 100) + '%';
+        cmRaf = requestAnimationFrame(step);
+      })();
+    }
+    return combo;
+  }
+
+  /* ---------- actions ---------- */
+  function spawn() {
+    if (S.tape < 1) { sfx.bad(); ui.outOfTape(); return; }
+    const empties = emptyCells();
+    if (!empties.length) {
+      fx.restart($('#crate'), 'shake'); sfx.bad(); buzz(30);
+      say('bev', "Paddock's full, love! Merge something or bin it.", false); tip('full', () => $('#bin')); return;
+    }
+    const gi = goalInfo(), chains = range(S.areas);
+    const focus = chapter().goal.type === 'make' ? 6 : 3;
+    const w = chains.map(c => gi.area !== undefined ? (c === gi.area ? focus : 1) : (gi.target && S.stage[c] < gi.target ? 2 : 1));
+    const tut = S.tut < 2;   // the first two crates are always eggs, placed where the tutorial can point at them
+    const c = tut ? 0 : weighted(chains, w);
+    const goldRate = chapter().goal.type === 'golden' ? 0.15 : D.GOLD_RATE;   // a golden level makes gold easier to find
+    const t = feat('tier2') && Math.random() < D.TIER2_RATE ? 2 : 1, g = feat('golden') && Math.random() < goldRate;
+    const spot = S.tut === 0 ? 11 : 13, i = tut && !S.grid[spot] ? spot : pick(empties);
+    S.grid[i] = g ? { c, t, g: 1 } : { c, t };
+    S.tape--; if (S.tape === MAX_TAPE - 1) S.regenAt = Date.now();
+    setSel(null); renderCell(i, 'spawn'); renderHUD(); sfx.spawn(); buzz(6);
+    if (g) { sfx.gold(); const [x, y] = fx.center(cellAt(i)); fx.floatText(x, y - 6, 'GOLDEN!', 'gold'); tip('golden', () => cellAt(i).querySelector('.tile')); }
+    discover(c, t);
+    const pg = chapter().goal;   // pop levels: Rex keeps the balloons coming until there are enough to finish
+    if (pg.type === 'pop' && balloons() < pg.n - S.stats.chPopped && Math.random() < 0.35) setTimeout(() => dropBalloons(1), 350);
+    if (tut) { S.tut++; ui.clearCoach(); save(); setTimeout(tutStep, 500); }
+    if (S.tape <= 5 && S.tape > 0) tip('tapeLow', () => $('#adBtn'));
+    if (Math.random() < 0.05) say('doug', pick(D.doug));
+    save();
+  }
+
+  function act(a, b) {
+    if (a === b || rolling.has(a) || rolling.has(b)) return;
+    const A = S.grid[a], B = S.grid[b]; if (!A) return;
+    if (A.b || (B && B.b)) { renderCell(a); balloonHint(); return; }
+    if (canMerge(A, B)) { merge(a, b); return; }
+    S.grid[a] = B || null; S.grid[b] = A;
+    renderCell(a); renderCell(b, 'settle'); save();
+  }
+
+  function merge(a, b, cascade = false) {
+    const A = S.grid[a], B = S.grid[b], nt = A.t + 1, gold = !!(A.g || B.g);
+    if (sel === a || sel === b) sel = null;
+    S.grid[a] = null; S.grid[b] = gold ? { c: A.c, t: nt, g: 1 } : { c: A.c, t: nt };
+    const k = bumpCombo();
+    const gain = nt * 5 * k * (gold ? 3 : 1);
+    renderCell(a); renderCell(b, 'pop');
+    const el = cellAt(b), [x, y] = fx.center(el);
+    fx.burst(x, y, D.COL[A.c]);
+    fx.floatText(x, y - 8, `+${gain}`);
+    if (cascade) { fx.floatText(x, y - 36, 'CASCADE!', 'small'); tip('cascade', () => cellAt(b).querySelector('.tile')); }
+    if (nt === 5) tip('legendary', () => cellAt(b).querySelector('.tile'));
+    if (S.tut === 2) { S.tut = 3; ui.clearCoach(); }
+    if (gold) { S.stats.golden++; S.stats.chGolden++; fx.burst(x, y, '--gold', 14); fx.floatText(x, y + 20, 'GOLD ×3', 'gold'); sfx.gold(); }
+    if (k >= 2) { const [gx, gy] = fx.center(gridEl); fx.floatText(gx, gy - 30, `COMBO ×${k}`, k >= 5 ? 'huge' : 'big'); }
+    if (k >= 4) fx.shake(k >= 6);
+    if (k === 3) say('bev', pick(D.bev));
+    if (cascade) sfx.cascade(k); else sfx.merge(nt, k);
+    buzz(cascade ? [8, 20, 8] : 12);
+    addFans(gain);
+    pushCrowd(C.merge * nt * (1 + 0.25 * (k - 1)) * (gold ? 2 : 1));
+    popAround(b);
+    discover(A.c, nt);
+    echo(A.c, nt, el);
+    maybeMystery(nt);
+    save(); checkChapter();
+    setTimeout(() => cascadeFrom(b), fx.RM ? 150 : 330);
+  }
+
+  function cascadeFrom(b) {
+    const it = S.grid[b];
+    if (!it || it.m || it.b || it.t >= 5 || rolling.has(b)) return;
+    const nb = [b - 5, b + 5]; if (b % 5) nb.push(b - 1); if (b % 5 < 4) nb.push(b + 1);
+    for (const n of nb) {
+      if (n < 0 || n >= N || rolling.has(n) || (drag && drag.i === n)) continue;
+      if (canMerge(S.grid[n], it)) { merge(n, b, true); return; }
+    }
+  }
+
+  function echo(c, t, fromEl) {
+    const ns = t - 1; if (ns <= S.stage[c]) return;
+    S.stage[c] = ns; save();
+    fx.fly(fromEl, plotAt(c), D.COL[c], () => {
+      renderPlots(c); fx.cheer();
+      const [px, py] = fx.center(plotAt(c));
+      fx.floatText(px, py - 6, 'MOVED IN!', 'big');
+      sfx.ripple(); buzz([10, 40, 14]);
+      say('kev', linesOf(c)[ns]);
+      if (S.tut === 3) setTimeout(tutStep, 700);
+      const bonus = 20 * ns; setTimeout(() => fx.floatText(px, py + 18, `+${bonus}`), 180);
+      addFans(bonus); save(); checkChapter();
+    });
+  }
+
+  function discover(c, t) {
+    const k = keyOf(c, t); if (S.found.includes(k)) return;
+    S.found.push(k);
+    const [e, name] = D.chains[c].items[t - 1];
+    if (S.tut >= TUT_END) ui.toast({ e, name, flavor: D.chains[c].flavor[t - 1], n: S.found.length });   // no toasts over the tutorial
+    addFans(25); pushCrowd(C.discover);
+  }
+
+  function maybeMystery(nt) {
+    const sure = chapter().goal.type === 'open' && !S.grid.some(v => v && v.m);
+    if (!feat('mystery') || (!sure && Math.random() >= 0.04 + 0.02 * nt)) return;
+    const e = emptyCells(); if (!e.length) return;
+    const j = pick(e); S.grid[j] = { m: 1 }; renderCell(j, 'spawn');
+    setTimeout(() => {
+      if (!S.grid[j] || !S.grid[j].m) return;
+      sfx.mystery();
+      const [x, y] = fx.center(cellAt(j)); fx.floatText(x, y - 10, 'MYSTERY!', 'small');
+      tip('mystery', () => cellAt(j).querySelector('.tile'));
+    }, 260);
+  }
+
+  function openMystery(i) {
+    if (rolling.has(i)) return;
+    setSel(null);
+    const tile = cellAt(i).querySelector('.tile'), face = tile && tile.querySelector('.face');
+    if (!face) return;
+    rolling.add(i);
+    tile.classList.add('rolling');
+    const r = weighted(D.mystery, D.mystery.map(m => m.w));
+    let n = 0; const total = fx.RM ? 3 : 15;
+    const roll = () => {
+      n++; face.textContent = D.slotFaces[n % D.slotFaces.length]; sfx.tick(n);
+      if (n < total) setTimeout(roll, 45 + n * n * 1.5); else finishMystery(i, r);
+    };
+    roll();
+  }
+  function finishMystery(i, r) {
+    rolling.delete(i);
+    if (r.kind === 'gold' && !feat('golden')) r = D.mystery.find(m => m.kind === 'item');
+    S.stats.chOpened++;
+    const [x, y] = fx.center(cellAt(i));
+    if (r.kind === 'tape') { S.grid[i] = null; S.tape += r.n; renderHUD(); }
+    else if (r.kind === 'fans') { S.grid[i] = null; addFans(r.n); }
+    else {
+      const c = pick(range(S.areas));
+      S.grid[i] = r.kind === 'gold' ? { c, t: r.t, g: 1 } : { c, t: r.t };
+      discover(c, r.t); echo(c, r.t, cellAt(i));
+      if (r.kind === 'gold') tip('golden', () => cellAt(i).querySelector('.tile'));
+    }
+    renderCell(i, 'pop');
+    fx.burst(x, y, '--sun', 14);
+    fx.floatText(x, y - 10, r.label, r.kind === 'jackpot' ? 'huge' : (r.kind === 'gold' ? 'gold' : 'big'));
+    if (r.kind === 'jackpot') { fx.confetti(); fx.shake(true); sfx.jackpot(); say('bev', 'JACKPOT! Doug, get the good biscuits!'); }
+    else if (r.kind === 'gold') sfx.gold();
+    else sfx.ripple();
+    buzz([10, 30, 10]); save(); checkChapter();
+  }
+
+  function balloonHint() { sfx.bad(); say('kev', "That's one of Rex's balloons. Merge two animals right next to it to pop it.", false); }
+  function discard(i) {
+    if (!S.grid[i] || rolling.has(i)) return;
+    if (S.grid[i].b) { balloonHint(); return; }
+    const [x, y] = fx.center(cellAt(i)); S.grid[i] = null; if (sel === i) sel = null;
+    renderCell(i); fx.floatText(x, y, 'poof', 'small'); sfx.bin(); save();
+  }
+
+  function deliver(i) {
+    const it = S.grid[i]; if (!it || it.m || it.t !== 5) return;
+    const name = D.chains[it.c].items[4][1], from = fx.center(cellAt(i));
+    S.grid[i] = null; if (sel === i) sel = null;
+    S.stats.delivered++; S.stats.chDelivered++; S.stats.chDel[it.c]++;
+    const rn = ++S.renown[it.c], pay = (150 + 50 * (rn - 1)) * (it.g ? 3 : 1);
+    renderCell(i); fx.burst(from[0], from[1], D.COL[it.c], 14);
+    fx.floatText(from[0], from[1], 'STAR ATTRACTION!', 'big');
+    save();
+    fx.fly(from, plotAt(it.c), D.COL[it.c], () => {
+      renderPlots(it.c); fx.cheer(); sfx.ripple(); buzz([10, 40, 14]); pushCrowd(C.legend);
+      const [px, py] = fx.center(plotAt(it.c)); fx.floatText(px, py, `+${fmt(pay)}`, 'big');
+      setTimeout(() => fx.floatText(px, py + 22, `👑 ${rn}`, 'small'), 220);
+      say('kev', `A legendary ${it.g ? 'golden ' : ''}${name} is the new star of the ${D.chains[it.c].area}. The queue goes round the block. Renown ${rn}.`);
+      addFans(pay); save(); checkChapter();
+    });
+  }
+
+  /* ---------- zoo areas: visitor requests and visitor fans ---------- */
+  function newRequest(c) {
+    const s = S.stage[c], lo = Math.max(2, s), hi = Math.min(5, s + 2);
+    S.req[c] = { t: lo + Math.floor(Math.random() * (hi - lo + 1)) };
+    S.reqAt[c] = 0;
+  }
+  const visitRate = c => (S.stage[c] ? S.stage[c] * 0.1 + S.happy[c] * 0.04 + S.renown[c] * 0.05 : 0) * crowdMult();     // fans per second; a bigger crowd pays more
+  const visitCap = c => 40 + S.stage[c] * 40 + S.happy[c] * 10 + S.renown[c] * 20;
+
+  function fulfill(i, c) {
+    const it = S.grid[i], r = S.req[c];
+    if (!it || it.m || it.b || !r || c >= S.areas || it.c !== c || it.t !== r.t || rolling.has(i)) return false;
+    const from = fx.center(cellAt(i)), name = D.chains[c].items[it.t - 1][1];
+    const mult = (it.g ? 2 : 1) * (feat('fence') ? 0.5 + S.crowd / 100 : 1), fans = Math.round(15 * r.t * r.t * mult), tape = r.t;
+    S.grid[i] = null; if (sel === i) sel = null;
+    S.req[c] = null; S.reqAt[c] = Date.now() + D.REQ_DELAY;
+    S.happy[c] = Math.min(10, S.happy[c] + 1);
+    S.stats.orders++; S.stats.chOrders++;
+    renderGrid(); renderPlots();
+    fx.burst(from[0], from[1], D.COL[c]); sfx.select();
+    fx.fly(from, plotAt(c), D.COL[c], () => {
+      renderPlots(c);
+      const [px, py] = fx.center(plotAt(c));
+      fx.floatText(px, py - 10, 'THANKS!', 'big'); fx.burst(px, py, '--sun', 14);
+      setTimeout(() => fx.floatText(px, py + 14, `+${fans} 🎟 +${tape} 🥕`, 'small'), 200);
+      sfx.order(); buzz([10, 30, 10]);
+      S.tape += tape; addFans(fans); pushCrowd(C.request + C.reqTier * r.t);
+      say('fan', pick(D.reviews).replace('{a}', (it.g ? 'golden ' : '') + name));
+      save(); checkChapter();
+    });
+    save(); return true;
+  }
+  function wrongArea(c) {
+    const el = plotAt(c); if (el) fx.restart(el, 'nope');
+    sfx.bad();
+    if (c >= S.areas) { say('kev', `The ${D.chains[c].area} isn't open yet.`, false); return; }
+    const r = S.req[c], ch = D.chains[c];
+    say('kev', r ? `${ch.area} visitors want a ${ch.items[r.t - 1][0]} ${ch.items[r.t - 1][1]}.` : `${ch.area} visitors are happy for now. New request soon.`, false);
+  }
+  function collect(c) {
+    const v = Math.floor(S.visit[c]); if (v < D.VISIT_SHOW) return false;
+    S.visit[c] -= v; S.stats.chCollect++; pushCrowd(C.collect);
+    const el = plotAt(c), from = fx.center(el.querySelector('.coin') || el);
+    refreshPlots(); fx.burst(from[0], from[1], '--sun', 12); sfx.coin(); buzz(8);
+    for (let k = 0; k < 3; k++) setTimeout(() => fx.fly(from, $('#fans'), '--sun', () => {
+      sfx.coin();
+      if (k === 2) { addFans(v); const [x, y] = fx.center($('#fans')); fx.floatText(x, y + 26, `+${v}`, 'big'); save(); checkChapter(); }
+    }), k * 90);
+    return true;
+  }
+  function tapArea(c) {
+    sfx.unlock();
+    if (c >= S.areas) { wrongArea(c); return; }
+    if (sel !== null) { const s = sel; setSel(null); if (!fulfill(s, c)) wrongArea(c); return; }
+    if (collect(c)) return;
+    const r = S.req[c], ch = D.chains[c];
+    if (r) {
+      const i = findItem(c, r.t);
+      if (i >= 0) { fulfill(i, c); return; }
+      say('kev', `${ch.area} visitors want a ${ch.items[r.t - 1][0]} ${ch.items[r.t - 1][1]}. Merge one up and drag it here.`, false);
+      poke(plotAt(c).querySelector('.req'));
+    } else say('kev', `${ch.area}: ${stagesOf(c)[S.stage[c]][1]}. New visitor request coming soon.`, false);
+  }
+
+  function adForTape() {
+    ui.ad('+20 🥕', () => {
+      S.tape += 20; renderHUD(); sfx.ripple();
+      const [x, y] = fx.center($('#tape')); fx.floatText(x, y + 24, '+20 🥕', 'big'); save();
+    });
+  }
+
+  function introDone() {
+    S.intro = true; S.storyV = STORY_V; save(); sfx.unlock(); sfx.fanfare();
+    say('bev', 'Go on, Kevin. Show that Rex what a real zoo looks like.');
+    if (S.tut < TUT_END) setTimeout(tutStep, 900); else checkChapter();
+  }
+
+  /* ---------- tutorial: one mechanic at a time, with a pointing hand ---------- */
+  function tutStep() {
+    if (S.tut >= TUT_END || ui.modalOpen()) return;
+    const T = D.tutorial[S.tut], step = `${S.tut + 1}/${TUT_END}`;
+    if (S.tut <= 1) {
+      ui.coach({ ...T, step, targets: [$('#crate'), S.tut === 1 ? $('#tape').closest('.pill') : null], hand: 'tap' });
+    } else if (S.tut === 2) {
+      const eggs = range(N).filter(i => S.grid[i] && !S.grid[i].m && S.grid[i].c === 0 && S.grid[i].t === 1);
+      if (eggs.length < 2) { S.tut = eggs.length ? 1 : 0; save(); tutStep(); return; }
+      ui.coach({ ...T, step, targets: [cellAt(eggs[0]).querySelector('.tile'), cellAt(eggs[1]).querySelector('.tile')], hand: 'drag' });
+    } else {
+      ui.coach({ ...T, step, targets: [plotAt(0)], button: 'Nice!', onButton: () => {
+        S.tut = TUT_END; save(); renderAll();
+        tip('album', () => $('#albumBtn')); checkChapter();   // Level 1 is done: the level screen explains what's next
+      } });
+    }
+  }
+
+  /* ---------- one-time tips, queued so they never stack ---------- */
+  const tipQ = [];
+  const TIP_MIN = { combo: 8, cascade: 13 };   // level index before which these tips stay quiet
+  function tip(id, target) {
+    if (!S || S.tut < TUT_END || S.tips[id] || tipQ.some(q => q.id === id) || !D.tips[id]) return;
+    if (S.chapter < (TIP_MIN[id] || 0)) return;   // save it for the level that teaches it
+    tipQ.push({ id, target }); setTimeout(pumpTips, 400);
+  }
+  function pumpTips() {
+    if (!tipQ.length || ui.coachVisible() || ui.modalOpen() || drag || chapterOpen) return;
+    const { id, target } = tipQ.shift();
+    if (S.tips[id]) { pumpTips(); return; }
+    S.tips[id] = 1; save();
+    const t = D.tips[id], el = typeof target === 'function' ? target() : target;
+    ui.coach({ title: t.title, text: t.text, targets: [el], button: 'Got it', onButton: () => setTimeout(pumpTips, 350) });
+  }
+
+  function reset(skipIntro) {
+    const muted = S.muted; setState(fresh()); S.muted = muted;
+    sel = null; chapterOpen = false; combo = 0; shownFans = 0; rolling.clear();
+    tipQ.length = 0; ui.clearCoach(); epCache.clear();
+    save(); renderAll(); say('kev', "Day one at Bev's Beasts. One feather, one trolley, big plans.", false);
+    if (skipIntro) introDone(); else ui.intro();
+  }
+
+  /* ---------- input ---------- */
+  function setSel(i) { const p = sel; sel = i; if (p !== null && p !== i) renderCell(p); if (i !== null) renderCell(i); }
+
+  function tap(i) {
+    sfx.unlock();
+    if (rolling.has(i)) return;
+    const it = S.grid[i];
+    if (sel === null) {
+      if (!it) return;
+      if (it.m) { openMystery(i); return; }
+      if (it.b) { balloonHint(); tip('balloon', () => cellAt(i).querySelector('.tile')); return; }
+      if (it.t === 5) { deliver(i); return; }
+      setSel(i); sfx.select(); return;
+    }
+    if (sel === i) { setSel(null); return; }
+    const s = sel; sel = null; renderCell(s); act(s, i);
+  }
+
+  let overEl = null;
+  function setOver(el) { if (overEl === el) return; overEl && overEl.classList.remove('over'); overEl = el; el && el.classList.add('over'); }
+
+  gridEl.addEventListener('pointerdown', e => {
+    const cell = e.target.closest('.cell'); if (!cell) return;
+    drag = { i: +cell.dataset.cell, x0: e.clientX, y0: e.clientY, moved: false };
+  });
+  window.addEventListener('pointermove', e => {
+    if (!drag) return;
+    if (!drag.moved) {
+      if (Math.hypot(e.clientX - drag.x0, e.clientY - drag.y0) < 8 || !S.grid[drag.i] || S.grid[drag.i].b || rolling.has(drag.i)) return;
+      drag.moved = true; setSel(null);
+      const src = cellAt(drag.i).querySelector('.tile');
+      const r = src.getBoundingClientRect(), g = src.cloneNode(true);
+      g.classList.remove('pop', 'spawn', 'sel', 'settle'); g.classList.add('ghost');
+      g.style.width = r.width + 'px'; g.style.height = r.height + 'px';
+      document.body.append(g); src.classList.add('dim');
+      Object.assign(drag, { ghost: g, src, w: r.width, h: r.height });
+      sfx.select();
+    }
+    drag.ghost.style.left = (e.clientX - drag.w / 2) + 'px';
+    drag.ghost.style.top = (e.clientY - drag.h / 2) + 'px';
+    const t = document.elementFromPoint(e.clientX, e.clientY);
+    setOver(t ? (t.closest('#bin') || t.closest('.plot') || t.closest('.cell')) : null);
+  });
+  function endDrag(e, cancel) {
+    if (!drag) return; const d = drag; drag = null; setOver(null);
+    if (d.moved) {
+      d.ghost.remove(); d.src && d.src.classList.remove('dim');
+      if (cancel) return;
+      const t = document.elementFromPoint(e.clientX, e.clientY);
+      if (t && t.closest('#bin')) { discard(d.i); return; }
+      const p = t && t.closest('.plot');
+      if (p) { const pc = +p.dataset.plot; if (!fulfill(d.i, pc)) wrongArea(pc); return; }
+      const c = t && t.closest('.cell'); if (c) act(d.i, +c.dataset.cell);
+    } else if (!cancel) tap(d.i);
+  }
+  window.addEventListener('pointerup', e => endDrag(e, false));
+  window.addEventListener('pointercancel', e => endDrag(e, true));
+
+  $('#crate').onclick = () => { sfx.unlock(); spawn(); };
+  $('#bin').onclick = () => { if (sel !== null) discard(sel); else say('bev', 'Drag an animal onto the bin to let it go. Gently.', false); };
+  $('#adBtn').onclick = adForTape;
+  $('#mute').onclick = () => { S.muted = !S.muted; renderHUD(); save(); };
+  $('#msg').onclick = ui.log;
+  plotsEl.addEventListener('click', e => { const p = e.target.closest('.plot'); if (p) tapArea(+p.dataset.plot); });
+  plotsEl.addEventListener('keydown', e => {
+    const p = e.target.closest('.plot');
+    if (p && (e.key === 'Enter' || e.key === ' ')) { e.preventDefault(); tapArea(+p.dataset.plot); }
+  });
+  $('#albumBtn').onclick = ui.album;
+
+  /* ---------- clocks ---------- */
+  function tick() {
+    if (S.tape < MAX_TAPE) { if (Date.now() - S.regenAt >= REGEN_MS) { S.tape++; S.regenAt = Date.now(); $('#tape').textContent = S.tape; save(); } }
+    else S.regenAt = Date.now();
+    tickAreas();
+  }
+  let tickN = 0, areaRenderDue = false;
+  function tickAreas() {
+    const now = Date.now(), dt = Math.max(0, Math.min(now - S.visitAt, D.OFFLINE_CAP_S * 1000)) / 1000;
+    S.visitAt = now;
+    const reqOn = feat('requests'), coinOn = feat('coins');
+    if (feat('fence')) {   // Rex pulls the crowd back toward his share; in a showdown he pulls harder and aims lower
+      const g = chapter().goal, sh = g.type === 'rival', B = sh ? C.showBase : C.base, k = sh ? g.pull : C.pull;
+      S.crowd = S.crowd > B ? B + (S.crowd - B) * Math.exp(-k * dt) : B - (B - S.crowd) * Math.exp(-0.02 * dt);
+      renderFence();
+    }
+    for (let c = 0; c < S.areas; c++) {
+      if (coinOn) S.visit[c] = Math.min(visitCap(c), S.visit[c] + visitRate(c) * dt);
+      if (reqOn && !S.req[c] && now >= S.reqAt[c]) { newRequest(c); areaRenderDue = true; }
+    }
+    if (reqOn && S.req.some(Boolean)) tip('requests', () => plotsEl.querySelector('.req'));
+    pumpTips();
+    if (areaRenderDue && !drag) {
+      areaRenderDue = false;
+      renderPlots(); renderGrid();
+      plotsEl.querySelectorAll('.req').forEach(poke);
+    } else refreshPlots();
+    if (++tickN % 5 === 0) save();
+  }
+
+  /* ---------- boot ---------- */
+  function markStarters() { S.grid.forEach(v => { if (v && !v.m && !v.b) { const k = keyOf(v.c, v.t); if (!S.found.includes(k)) S.found.push(k); } }); }
+
+  RZ.game = { resume: () => { if (S.tut < TUT_END) setTimeout(tutStep, 400); else checkChapter(); }, completeChapter, adForTape, introDone, reset, goalInfo, chapter, fmt, checkChapter, stagesOf, chapterLabel: () => levelLabel(S.chapter), preview: () => preview(S.chapter + 1), crowd: () => S.crowd };
+
+  gridEl.innerHTML = range(N).map(i => `<div class="cell" data-cell="${i}"></div>`).join('');
+  markStarters();
+  S.level = Math.max(S.level, levelOf(S.fans));
+  renderAll(); tick(); setInterval(tick, 1000);
+  const last = S.log[S.log.length - 1];
+  if (last) say(last[0], last[1], false);
+  else say('kev', "Day one at Bev's Beasts. One feather, one trolley, big plans.", false);
+  if (!S.intro) ui.intro();
+  else if ((S.storyV || 0) < STORY_V) { S.storyV = STORY_V; save(); ui.intro('returning'); }   // returning players see the new story once
+  else if (S.tut < TUT_END) setTimeout(tutStep, 600); else checkChapter();
+})();
+
+</script>
+</body>
+</html>

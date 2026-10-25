@@ -1,4 +1,4 @@
-// Brain viewer — read-only window onto the private Brain repo.
+// Brain viewer — window onto the private Brain repo, plus two narrow QUEUE edits.
 // Data comes from /api/brain (worker-brain/), behind Cloudflare Access.
 
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js';
@@ -31,10 +31,18 @@ class ApiError extends Error {
 
 // redirect: 'manual' so an expired Access session (which answers with a redirect to the
 // login page) shows a clear "sign in again" state instead of an opaque CORS failure.
-async function api(path) {
+async function api(path, payload) {
+  const init = { credentials: 'same-origin', redirect: 'manual', headers: { Accept: 'application/json' } };
+  if (payload) {
+    // The Worker refuses writes without JSON, the site's Origin and this header.
+    init.method = 'POST';
+    init.headers['Content-Type'] = 'application/json';
+    init.headers['X-Brain-Write'] = '1';
+    init.body = JSON.stringify(payload);
+  }
   let res;
   try {
-    res = await fetch(API + path, { credentials: 'same-origin', redirect: 'manual', headers: { Accept: 'application/json' } });
+    res = await fetch(API + path, init);
   } catch {
     throw new ApiError('offline');
   }
@@ -109,7 +117,7 @@ function renderNav() {
         const status = state.statuses.get(slug);
         const dot = `<span class="status-dot" data-status="${escapeHtml(status || '')}"${status ? ` title="${escapeHtml(status)}"` : ''}></span>`;
         const active = files.includes(state.current) ? ' active' : '';
-        return `<li class="project${active}"><span class="project-name">${dot}<span class="slug">${escapeHtml(slug)}</span>` +
+        return `<li class="project${active}"><span class="project-name">${dot}<span class="slug" title="${escapeHtml(slug)}">${escapeHtml(slug)}</span>` +
           `${status ? `<span class="visually-hidden">, ${escapeHtml(status)}</span>` : ''}</span>` +
           `<span class="project-files">${files.map((p) => link(p, escapeHtml(p.split('/').slice(2).join('/').replace(/\.md$/i, '')))).join('')}</span></li>`;
       }).join('');
@@ -236,6 +244,7 @@ async function show(path) {
     if (/\.md$/i.test(path)) {
       const { meta, body } = parseFrontmatter(text);
       els.doc.innerHTML = renderMeta(meta) + renderMarkdown(body, { linkFor: linkFor(path) });
+      addQueueControls(path);
     } else {
       els.doc.innerHTML = `<h1>${escapeHtml(path.split('/').pop())}</h1>` + renderJson(path, text);
     }
@@ -268,10 +277,112 @@ function currentPath() {
   try { return decodeURI(raw) || HOME; } catch { return HOME; }
 }
 
-async function load() {
+// ---- queue writes -------------------------------------------------------------
+// The only two edits this page makes: mark a groomed card done, add an Inbox line.
+// Everything else in Brain goes through a Claude session.
+
+const QUEUE_PATH = /^projects\/([a-z0-9]+(?:-[a-z0-9]+)*)\/QUEUE\.md$/;
+
+function addQueueControls(path) {
+  const slug = path.match(QUEUE_PATH)?.[1];
+  const inbox = slug && [...els.doc.querySelectorAll('h2')].find((h) => h.textContent.trim() === 'Inbox');
+  if (!inbox) return;
+
+  // Groomed cards are the H3s above the Inbox; each carries its id in a `id: …` code span.
+  for (const h3 of els.doc.querySelectorAll('h3')) {
+    if (!(h3.compareDocumentPosition(inbox) & Node.DOCUMENT_POSITION_FOLLOWING)) continue;
+    let id = null;
+    for (let el = h3.nextElementSibling; el && !/^H[1-3]$/.test(el.tagName) && !id; el = el.nextElementSibling) {
+      for (const code of el.querySelectorAll('code')) {
+        const m = code.dataset.key === 'id' && code.textContent.match(/^id\s*(\S+)$/);
+        if (m) { id = m[1]; break; }
+      }
+    }
+    if (!id || !id.startsWith(`${slug}-`)) continue;
+    const ctl = document.createElement('span');
+    ctl.className = 'card-act';
+    ctl.dataset.id = id;
+    ctl.innerHTML = '<button type="button" class="mini-btn" data-act="done">Done</button>';
+    h3.append(' ', ctl);
+  }
+
+  let end = inbox;
+  while (end.nextElementSibling && !/^H[12]$/.test(end.nextElementSibling.tagName)) end = end.nextElementSibling;
+  const form = document.createElement('form');
+  form.className = 'inbox-add';
+  form.dataset.project = slug;
+  form.innerHTML = '<input type="text" name="text" maxlength="500" required autocomplete="off" ' +
+    'placeholder="Add to inbox…" aria-label="Add to inbox">' +
+    '<button type="submit" class="text-btn">Add</button>' +
+    '<p class="write-msg" role="status" hidden></p>';
+  end.after(form);
+}
+
+function setMessage(el, text, bad = true) {
+  el.textContent = text || '';
+  el.hidden = !text;
+  el.classList.toggle('bad', bad);
+}
+
+function writeError(err) {
+  if (err?.kind === 'signin') return 'Signed out. Reload to sign in again.';
+  if (err?.kind === 'offline') return 'Can’t reach Brain. Try again.';
+  return err?.status === 409 ? `Not saved: ${err.kind}.` : `Not saved: ${err?.kind || 'error'}.`;
+}
+
+async function write(route, body) {
+  await api(route, body);
+  // The write cleared this isolate's tree cache; ask for a fresh tree anyway in case the
+  // next request lands on another one.
+  await load(true);
+}
+
+els.doc.addEventListener('click', async (e) => {
+  const btn = e.target.closest('.card-act button');
+  if (!btn) return;
+  const ctl = btn.closest('.card-act');
+  const act = btn.dataset.act;
+  if (act === 'done') {
+    ctl.innerHTML = `<span class="confirm">Mark ${escapeHtml(ctl.dataset.id)} done?</span>` +
+      '<button type="button" class="mini-btn primary" data-act="yes">Yes</button>' +
+      '<button type="button" class="mini-btn" data-act="cancel">Cancel</button>';
+    ctl.querySelector('[data-act="yes"]').focus();
+  } else if (act === 'cancel') {
+    ctl.innerHTML = '<button type="button" class="mini-btn" data-act="done">Done</button>';
+  } else if (act === 'yes') {
+    for (const b of ctl.querySelectorAll('button')) b.disabled = true;
+    const project = state.current.match(QUEUE_PATH)[1];
+    try {
+      await write('/done', { project, id: ctl.dataset.id });
+    } catch (err) {
+      ctl.innerHTML = `<span class="write-err">${escapeHtml(writeError(err))}</span>` +
+        '<button type="button" class="mini-btn" data-act="cancel">OK</button>';
+    }
+  }
+});
+
+els.doc.addEventListener('submit', async (e) => {
+  const form = e.target.closest('.inbox-add');
+  if (!form) return;
+  e.preventDefault();
+  const input = form.elements.text;
+  const msg = form.querySelector('.write-msg');
+  const text = input.value.trim();
+  if (!text) { setMessage(msg, 'Type something first.'); return; }
+  for (const el of form.elements) el.disabled = true;
+  setMessage(msg, 'Saving…', false);
+  try {
+    await write('/inbox', { project: form.dataset.project, text });
+  } catch (err) {
+    for (const el of form.elements) el.disabled = false;
+    setMessage(msg, writeError(err));
+  }
+});
+
+async function load(fresh = false) {
   els.doc.innerHTML = '<p class="status">Loading Brain…</p>';
   try {
-    state.tree = await api('/tree');
+    state.tree = await api(fresh === true ? '/tree?fresh=1' : '/tree');
   } catch (err) {
     showError(err);
     els.nav.innerHTML = '';
@@ -309,7 +420,7 @@ els.filter.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Escape') { els.filter.value = ''; renderNav(); els.filter.blur(); }
 });
-els.refresh.addEventListener('click', load);
+els.refresh.addEventListener('click', () => load());
 els.menu.addEventListener('click', openSide);
 els.sideClose.addEventListener('click', closeSide);
 els.scrim.addEventListener('click', closeSide);

@@ -8,7 +8,7 @@ No wordmark, no taglines, no label copy. The domain is the only identifier.
 - **Background** `#FAFAF8` · **Text** `#1A1A1A` · **Secondary** `#6B6B6B` · **Hairlines** `#E4E4E0`
 - **No accent colour.** Links are underlined text in the text colour.
 - **Type:** system font stack only. Body 16px/1.55. Project names 20px semibold. Row metadata 13px secondary.
-- **Layout:** single centred column, max 640px, generous whitespace. Two sections — "Games" first, then "Projects" — each a 13px secondary heading over rows divided by hairlines. Games holds the playable games (Cubicle, then Jaryd's Last Day); Projects holds CafePass, Shaman Starman, and Trolley.
+- **Layout:** single centred column, max 640px, generous whitespace. Two sections — "Games" first, then "Projects" — each a 13px secondary heading over rows divided by hairlines. Games holds the playable games (Cubicle, then Jaryd's Last Day, then Rewind Zoo); Projects holds CafePass, Shaman Starman, and Trolley.
 - **Motion:** expand/collapse only (native `<details>`). Nothing else moves.
 - **Copy:** plain and factual. A row is: name · type · one factual line.
 
@@ -35,6 +35,13 @@ Current panels:
   meter bars (Mayhem red, Heat amber, Legend navy, Severance green), a rotated red
   `#b3372c` "FINAL DAY" stamp on the scene card, tier chips. Arial for everything, by
   design — the document nobody chose a font for. Copy uses the suite's HR-software voice.
+- **Rewind Zoo** (`.rewind`): bright cartoon skin lifted from the game — sky `#A6E4FF` with
+  a dot grid, thick ink `#27174B` outlines with hard drop shadows, paper `#FFFAF0` "Bev's Beasts"
+  card holding area plots (request bubble, visitor-fan coin) and the crowd Fence (mint yours vs
+  tangerine rival, walker and 🚩 target), then the back paddock in field green `#3E9A6A` with mowed
+  stripes, a combo pill and chain-coloured tiles (sun, aqua, pink, mint, gold, striped mystery
+  crate, dashed balloon). Rounded system fonts stand in for Lilita One and Fredoka (no
+  external fonts in the shell). Sun-yellow chunky CTA through to `rewind-zoo.html`.
 - **CafePass** (`.cafepass`): warm coffee palette lifted from the product — cream sheet
   `#F4EFE6`, dark ink `#1A1410` header with gold `#C9A876` accents, Georgia serif for
   drink names, sans for UI chrome. Shows the "usual order" card, feature badges, and a

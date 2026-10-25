@@ -2157,6 +2157,9 @@ function commitLockIn() {
 
 // ==================== EVENT TRIGGER ====================
 function maybeTriggerEvent() {
+  // finishTurn() locks input (pendingEvent) while an event is "incoming". Only showEvent()
+  // used to release it, so any early return below left the player locked out for good.
+  pendingEvent = false;
   if (!state.alive) return;
   // Post-event breathing room — blocks everything, callbacks included, so two
   // modals never stack back-to-back (was especially bad in Open Plan).
@@ -2742,9 +2745,11 @@ function finishTurn(justStimmed = false) {
 
   // Event check with delay + EVENT INCOMING state
   // Look ahead: if an event is due now, flag pendingEvent during delay
-  const eventDue = state.scheduled.some(s => s.at <= state.time) ||
-                   state.stim > 90 ||
-                   state.time >= state.nextEventTime;
+  // Mirrors maybeTriggerEvent()'s gates (cooldown, whiteout) so it doesn't cry wolf.
+  const eventDue = state.time >= (state.eventCooldownUntil || 0) && (
+                   state.scheduled.some(s => s.at <= state.time) ||
+                   (state.stim > 90 && state.time >= state.whiteoutUntil) ||
+                   state.time >= state.nextEventTime);
 
   if (eventDue) {
     pendingEvent = true;
