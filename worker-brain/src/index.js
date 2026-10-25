@@ -16,8 +16,8 @@
 // the meantime is refused (409) rather than overwritten.
 //
 // Routed at staldex.com/api/brain/* (see wrangler.toml). Endpoints:
-//   GET  /api/brain/tree[?fresh=1]   → { repo, ref, commit, viewer, files: [{ path, sha, size }] }
-//   GET  /api/brain/file?path=<path> → { path, sha, text }
+//   GET  /api/brain/tree[?fresh=1 | ?commit=<sha>]   → { repo, ref, commit, viewer, files: [{ path, sha, size }] }
+//   GET  /api/brain/file?path=<path>[&commit=<sha>]  → { path, sha, text }
 //   POST /api/brain/done   { project, id }   → { path, sha, commit }
 //   POST /api/brain/inbox  { project, text } → { path, sha, commit }
 
@@ -31,15 +31,18 @@ const MAX_BODY_BYTES = 4 * 1024;
 const WRITE_ORIGIN = 'https://staldex.com';
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CARD_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}$/;
+const COMMIT_SHA = /^[0-9a-f]{40}$/;
+const COMMIT_CACHE_MAX = 20;
 
 // Only readable text formats, never dotfile config, and never the machine-local paths file
 // even though Brain's .gitignore should already keep it out of the repo.
 const READABLE = /\.(md|json|jsonl)$/i;
 const EXCLUDED = new Set(['context/local-paths.json']);
 
-// Isolate-local caches. The tree is short-lived so new pushes show up quickly; blobs are
-// keyed by content hash and therefore never stale.
+// Isolate-local caches. The branch tree is short-lived so new pushes show up quickly;
+// trees pinned to a commit and blobs are keyed by hash and therefore never stale.
 let treeCache = null; // { key, at, value }
+const commitTrees = new Map(); // commit sha → tree value
 const blobCache = new Map();
 
 class UpstreamError extends Error {
@@ -86,13 +89,17 @@ function repoPath(env) {
   return (env.BRAIN_REPO || 'LOriti/brain').split('/').map(encodeURIComponent).join('/');
 }
 
-async function loadTree(env, now, fresh = false) {
+// The tree at the branch head, or at one exact commit. A write answers with the commit it
+// made, and the page reloads pinned to it: GitHub can briefly serve the branch head from
+// before a commit it has just accepted, and a commit's tree never changes.
+async function loadTree(env, now, { fresh = false, commit: pinned = null } = {}) {
   const ref = env.BRAIN_REF || 'main';
   const key = `${env.BRAIN_REPO}@${ref}`;
-  if (!fresh && treeCache && treeCache.key === key && now - treeCache.at < TREE_TTL_MS) return treeCache.value;
+  if (pinned && commitTrees.has(pinned)) return commitTrees.get(pinned);
+  if (!pinned && !fresh && treeCache && treeCache.key === key && now - treeCache.at < TREE_TTL_MS) return treeCache.value;
 
   const repo = repoPath(env);
-  const commit = await (await github(env, `/repos/${repo}/commits/${encodeURIComponent(ref)}`)).json();
+  const commit = await (await github(env, `/repos/${repo}/commits/${encodeURIComponent(pinned || ref)}`)).json();
   const tree = await (await github(env, `/repos/${repo}/git/trees/${commit.commit.tree.sha}?recursive=1`)).json();
 
   const files = tree.tree
@@ -110,7 +117,9 @@ async function loadTree(env, now, fresh = false) {
     },
     files,
   };
-  treeCache = { key, at: now, value };
+  if (!pinned) treeCache = { key, at: now, value };
+  if (commitTrees.size >= COMMIT_CACHE_MAX) commitTrees.delete(commitTrees.keys().next().value);
+  commitTrees.set(commit.sha, value);
   return value;
 }
 
@@ -225,24 +234,31 @@ async function write(request, url, env) {
 // ---- reads ----------------------------------------------------------------------
 
 async function route(url, env, viewer) {
-  const now = Date.now();
-  if (url.pathname === '/api/brain/tree') {
-    const tree = await loadTree(env, now, url.searchParams.get('fresh') === '1');
-    return json({ ...tree, viewer: viewer.email || null });
-  }
+  const isTree = url.pathname === '/api/brain/tree';
+  const path = url.searchParams.get('path') || '';
+  if (!isTree && url.pathname !== '/api/brain/file') return json({ error: 'not found' }, 404);
+  if (!isTree && !isReadable(path)) return json({ error: 'not readable' }, 400);
 
-  if (url.pathname === '/api/brain/file') {
-    const path = url.searchParams.get('path') || '';
-    if (!isReadable(path)) return json({ error: 'not readable' }, 400);
-    // Only paths present in the current tree resolve, so nothing outside the allowlist
-    // (or a crafted sha) can be requested.
-    const entry = (await loadTree(env, now)).files.find((f) => f.path === path);
-    if (!entry) return json({ error: 'not found' }, 404);
-    if (entry.size > MAX_FILE_BYTES) return json({ error: 'file too large' }, 413);
-    return json({ path: entry.path, sha: entry.sha, text: await loadBlob(env, entry.sha) });
+  // Optional pin to one commit, so the page reads exactly the tree it was shown.
+  const commit = url.searchParams.get('commit');
+  if (commit !== null && !COMMIT_SHA.test(commit)) return json({ error: 'bad commit' }, 400);
+  let tree;
+  try {
+    tree = await loadTree(env, Date.now(), { fresh: url.searchParams.get('fresh') === '1', commit });
+  } catch (err) {
+    if (commit && err instanceof UpstreamError && (err.status === 404 || err.status === 422)) {
+      return json({ error: 'not found' }, 404);
+    }
+    throw err;
   }
+  if (isTree) return json({ ...tree, viewer: viewer.email || null });
 
-  return json({ error: 'not found' }, 404);
+  // Only paths present in the tree resolve, so nothing outside the allowlist (or a crafted
+  // blob sha) can be requested.
+  const entry = tree.files.find((f) => f.path === path);
+  if (!entry) return json({ error: 'not found' }, 404);
+  if (entry.size > MAX_FILE_BYTES) return json({ error: 'file too large' }, 413);
+  return json({ path: entry.path, sha: entry.sha, text: await loadBlob(env, entry.sha) });
 }
 
 export default {
@@ -275,5 +291,6 @@ export default {
 // Test hook: drop isolate-local caches between cases.
 export function _resetCaches() {
   treeCache = null;
+  commitTrees.clear();
   blobCache.clear();
 }

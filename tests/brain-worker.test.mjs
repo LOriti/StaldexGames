@@ -33,7 +33,8 @@ const TREE = [
   { path: 'scripts/brain.py', type: 'blob', sha: 's-py', size: 20 },
   { path: 'projects', type: 'tree', sha: 't1' },
 ];
-const BLOBS = { 's-index': '# Portfolio', 's-state': '# State' };
+const BLOBS = { 's-index': '# Portfolio', 's-state': '# State', 's-state2': '# State, newer' };
+const PINNED = '0123456789abcdef0123456789abcdef01234567';
 
 const calls = [];
 const extraKeys = [];
@@ -46,6 +47,14 @@ globalThis.fetch = async (input, init = {}) => {
     return ok({ sha: 'abc1234def', commit: { message: 'state(brain): x\n\nbody', committer: { date: '2026-10-16T00:00:00Z' }, tree: { sha: 'root' } } });
   }
   if (url.endsWith('/repos/LOriti/brain/git/trees/root?recursive=1')) return ok({ tree: TREE, truncated: false });
+  // A newer commit than the (lagging) branch head, as just made by a write.
+  if (url.endsWith(`/repos/LOriti/brain/commits/${PINNED}`)) {
+    return ok({ sha: PINNED, commit: { message: 'web: inbox demo', committer: { date: '2026-10-17T00:00:00Z' }, tree: { sha: 'root2' } } });
+  }
+  if (url.endsWith('/repos/LOriti/brain/git/trees/root2?recursive=1')) {
+    return ok({ tree: TREE.map((e) => (e.sha === 's-state' ? { ...e, sha: 's-state2' } : e)), truncated: false });
+  }
+  if (/\/repos\/LOriti\/brain\/commits\/[0-9a-f]{40}$/.test(url)) return new Response('{}', { status: 422 });
   const blob = url.match(/\/git\/blobs\/(.+)$/);
   if (blob && BLOBS[blob[1]]) return ok(BLOBS[blob[1]], true);
   if (url.startsWith(`https://api.github.com/repos/LOriti/brain/contents/projects/${repo.slug}/QUEUE.md`)) {
@@ -228,6 +237,42 @@ test('inbox commits one line', async () => {
   assert.equal(res.status, 200);
   assert.equal(repo.puts[0].message, 'web: inbox demo');
   assert.match(Buffer.from(repo.puts[0].content, 'base64').toString('utf8'), /- Idea, with ünïcode\.\n- Buy milk\n$/);
+});
+
+test('tree and file can be pinned to one commit, ahead of a lagging branch head', async () => {
+  const token = await sign({});
+  const get = async (path) => {
+    const res = await worker.default.fetch(new Request(`https://staldex.com${path}`, { headers: { 'Cf-Access-Jwt-Assertion': token } }), ENV);
+    return { status: res.status, body: await res.json() };
+  };
+  worker._resetCaches();
+  assert.equal((await get('/api/brain/tree')).body.commit.sha, 'abc1234def'); // head cached for 30 s
+  const pinned = await get(`/api/brain/tree?commit=${PINNED}`);
+  assert.equal(pinned.status, 200);
+  assert.equal(pinned.body.commit.sha, PINNED);
+  assert.equal(pinned.body.files.find((f) => f.path === 'projects/brain/STATE.md').sha, 's-state2');
+  assert.deepEqual((await get(`/api/brain/file?path=projects/brain/STATE.md&commit=${PINNED}`)).body,
+    { path: 'projects/brain/STATE.md', sha: 's-state2', text: '# State, newer' });
+  assert.equal((await get('/api/brain/file?path=projects/brain/STATE.md')).body.text, '# State', 'unpinned reads the head');
+  // The pinned commit applies the same readable-file allowlist.
+  assert.equal((await get(`/api/brain/file?path=scripts/brain.py&commit=${PINNED}`)).status, 400);
+  assert.equal((await get(`/api/brain/file?path=context/local-paths.json&commit=${PINNED}`)).status, 400);
+  for (const bad of ['main', 'abc', PINNED.toUpperCase(), `${PINNED}0`, '../x']) {
+    assert.equal((await get(`/api/brain/tree?commit=${encodeURIComponent(bad)}`)).status, 400, bad);
+  }
+  assert.equal((await get(`/api/brain/tree?commit=${'f'.repeat(40)}`)).status, 404);
+});
+
+test('a pinned commit tree is fetched once and kept', async () => {
+  const token = await sign({});
+  worker._resetCaches();
+  const get = (path) => worker.default.fetch(new Request(`https://staldex.com${path}`, { headers: { 'Cf-Access-Jwt-Assertion': token } }), ENV);
+  const pinnedCalls = () => calls.filter((c) => c.url.endsWith(`/commits/${PINNED}`)).length;
+  await get(`/api/brain/tree?commit=${PINNED}`);
+  const before = pinnedCalls();
+  await get(`/api/brain/file?path=projects/brain/STATE.md&commit=${PINNED}`);
+  await get(`/api/brain/tree?commit=${PINNED}&fresh=1`);
+  assert.equal(pinnedCalls(), before);
 });
 
 test('tree?fresh=1 skips the isolate cache', async () => {
