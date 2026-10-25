@@ -43,17 +43,30 @@ Do these in order; the Worker refuses to serve anything until steps 1–3 are do
 
 ### 1. Cloudflare Access application
 
-1. Cloudflare dashboard → **Zero Trust**. First time only: pick a team name (the free plan
-   covers up to 50 users). Your team domain is `<team>.cloudflareaccess.com`.
-2. **Settings → Authentication → Login methods**: One-time PIN is on by default (a code
-   by email). Add Google too if you want one-tap sign-in.
-3. **Access → Applications → Add an application → Self-hosted**:
-   - Name: `Brain`. Session duration: whatever you like (e.g. 1 week on your own devices).
-   - Destinations (add both):
+1. Cloudflare dashboard → **Zero Trust** → **Settings** shows the team domain
+   (`<team>.cloudflareaccess.com`). An account has one team: if one already exists for
+   another project, reuse it and **don't rename it** (that breaks the other project's
+   logins). Access applications are independent, so adding Brain doesn't touch them.
+   First time only: pick a team name (the free plan covers up to 50 users).
+2. **Access controls → Applications → Create new application**. In the dialog, pick the
+   **Self-hosted and private** tab, then the **Public DNS** sub-tab (the default
+   "Private destinations" opens a private-IP form, which is wrong here), then continue.
+   - Destinations, both **public hostname**, subdomain blank:
      - `staldex.com` path `brain`
      - `staldex.com` path `api/brain`
-   - Policy: **Allow**, Include → **Emails** → your email address. Nobody else.
-4. Open the application → **Overview** → copy the **Application Audience (AUD) Tag**.
+   - Browser-based RDP/SSH/VNC: **off**.
+   - Access policies → **Create new policy**: Action **Allow**, Include → **Emails** (not
+     "Emails ending in") → your address. Nobody else. Leave MFA, purpose justification and
+     the RDP connection settings at their defaults.
+   - Authentication → Identity: turn **off** "Accept all available identity providers",
+     choose **One-time PIN** only, and turn **on** "Apply instant authentication".
+     (Access can't use your Cloudflare dashboard login; Google needs its own OAuth app.)
+   - Name `Brain`; session duration to taste (e.g. 1 week on your own devices). Create.
+3. Open the application → copy the **Application Audience (AUD) Tag** (a 64-character
+   hex string, on its overview or application details).
+
+The login page may show a different `*.cloudflareaccess.com` host from the team domain.
+That's cosmetic: the Worker still accepts only tokens issued by `ACCESS_TEAM_DOMAIN`.
 
 ### 2. Commit the two Access values
 
@@ -74,7 +87,17 @@ Neither is a secret (they identify the Access app, they don't grant entry). Comm
      read-only token still serves the viewer and makes every write answer 502.
    - Expiration: up to a year; put the renewal date in your calendar.
 2. After step 4 creates the Worker: Workers & Pages → `brain-viewer` → **Settings →
-   Variables and Secrets** → add a **Secret** named `GITHUB_TOKEN` with the token.
+   Runtime variables and secrets** (Production) → **Add variable** → key `GITHUB_TOKEN`,
+   paste the token, tick **Secret** → *Add variable and deploy*. It takes effect at once.
+   - Not the **Variables and secrets** box under *Build* (next to Root directory and API
+     token): values there exist only while Cloudflare builds, so the running Worker
+     still answers `not configured`.
+   - Ignore the banner suggesting you copy the change into `wrangler.toml`: a secret must
+     never go in this public file, and dashboard secrets survive Git deploys anyway.
+   - The runtime list should then show `ACCESS_AUD`, `ACCESS_TEAM_DOMAIN`, `BRAIN_REF`,
+     `BRAIN_REPO` (from `wrangler.toml`) and `GITHUB_TOKEN` (Secret).
+   - **Renewal:** on GitHub open the token → *Regenerate token* (same repo and
+     permissions), then on the runtime `GITHUB_TOKEN` row → *Rotate* → paste.
 3. Optional second gate: add a plain variable `ALLOWED_EMAILS` (comma-separated). Keep it
    out of `wrangler.toml` — this repo is public, and a value there would override the
    dashboard one. `keep_vars = true` keeps dashboard values across Git deploys.
@@ -82,9 +105,22 @@ Neither is a secret (they identify the Access app, they don't grant entry). Comm
 ### 4. Connect the Worker to this repo
 
 Same as `worker/` and `worker-lrmp/`: Workers & Pages → Create → Workers → connect to
-Git → this repo → project name `brain-viewer` → root directory (Path) `worker-brain`.
-Deploys on every push to `main`. Then do step 3.2 and re-deploy once so the secret is
-picked up.
+Git → this repo, then:
+
+| Field | Value |
+|---|---|
+| Project name | `brain-viewer` (must match `name` in `wrangler.toml`, or the build fails) |
+| Build command | blank |
+| Deploy command | `npx wrangler deploy` |
+| Enable Preview builds | off |
+| Protect with Cloudflare Access | off (the `Brain` app already covers the route; that toggle would add a second app for `workers.dev`) |
+| Advanced settings → Path | `worker-brain` |
+| API token | *Create new token* (a dedicated build token; it can't read Brain) |
+| Build variables | blank (the GitHub token is a runtime secret, step 3.2) |
+
+It deploys on every push to `main`. If Settings ever shows *API token: Configured API
+token unavailable*, pick or create a token there and *Retry build* under Deployments,
+or the next push won't deploy. Then do step 3.2.
 
 The page itself (`site/brain/`) ships with the normal Pages deploy.
 
@@ -101,7 +137,16 @@ The page itself (`site/brain/`) ships with the normal Pages deploy.
    the index changed). Mark a throwaway card **Done** the same way. Then remove the test
    line in a session.
 
-Page messages map to API states: **Not set up yet** = 503 (step 2 or 3 missing),
+After a deploy that changes `site/brain/`, hard-refresh (Ctrl+Shift+R): the browser may
+keep the old `app.js`/`style.css` for a while.
+
+To diagnose, open `https://staldex.com/api/brain/tree` in the signed-in window: it shows
+the API's raw answer (`{"error": "not configured"}`, a file list, or a Cloudflare error
+page). The page itself shows "The Brain API answered: error" for anything that isn't JSON.
+
+Page messages map to API states: **Not set up yet** = 503 (`not configured`: step 2 or
+3.2 missing, often a token added as a *build* secret; `access unavailable`: the Worker
+couldn't fetch the Access signing keys),
 **Signed out** = Access session ended or token rejected (401), **github 401/404** = the
 token expired or lost access to the repo, **Not saved: changed elsewhere, refresh** = the
 QUEUE moved on since it was read (409); press Refresh and try again.
