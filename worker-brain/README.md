@@ -156,9 +156,16 @@ QUEUE moved on since it was read (409); press Refresh and try again.
 All require a valid Access token, all answer `Cache-Control: private, no-store`.
 
 - `GET /api/brain/tree` → `{ repo, ref, truncated, commit: { sha, date, message }, viewer, files: [{ path, sha, size }] }`.
-  `?fresh=1` skips the 30 s isolate cache (the page uses it after a write).
-- `GET /api/brain/file?path=<path>` → `{ path, sha, text }`. Only paths in the current
-  readable tree resolve. Files over 512 KB are refused.
+  `?fresh=1` skips the 30 s isolate cache. `?commit=<40-hex sha>` returns the tree at that
+  exact commit instead of the branch head (404 if the repo has no such commit).
+- `GET /api/brain/file?path=<path>[&commit=<sha>]` → `{ path, sha, text }`. Only paths in
+  the readable tree (of the head, or of the pinned commit) resolve. Files over 512 KB are
+  refused.
+
+After a write the page reloads with `?commit=` set to the commit the write returned, and
+pins every file read to the tree it is showing. Right after a commit GitHub can briefly
+serve the branch head from before it, which used to make a fresh write look as if it
+hadn't happened. Commit trees never change, so they're cached per isolate (last 20).
 - `POST /api/brain/done` `{ project, id }` → `{ path, sha, commit }`
 - `POST /api/brain/inbox` `{ project, text }` → `{ path, sha, commit }`. `text` is trimmed
   and folded onto one line; empty or over 500 characters is refused.

@@ -228,8 +228,9 @@ async function fileText(path) {
   const entry = state.tree.files.find((f) => f.path === path);
   if (!entry) return null;
   if (state.files.has(entry.sha)) return state.files.get(entry.sha);
-  const { text } = await api(`/file?path=${encodeURIComponent(path)}`);
-  state.files.set(entry.sha, text);
+  // Pinned to the commit the tree came from, so the text always matches the tree shown.
+  const { sha, text } = await api(`/file?path=${encodeURIComponent(path)}&commit=${state.tree.commit.sha}`);
+  state.files.set(sha, text);
   return text;
 }
 
@@ -341,10 +342,10 @@ function writeError(err) {
 }
 
 async function write(route, body) {
-  await api(route, body);
-  // The write cleared this isolate's tree cache; ask for a fresh tree anyway in case the
-  // next request lands on another one.
-  await load(true);
+  const { commit } = await api(route, body);
+  // Reload pinned to the commit just made: GitHub can briefly serve the branch head from
+  // before it, which would hide the change.
+  await load(commit);
 }
 
 els.doc.addEventListener('click', async (e) => {
@@ -389,10 +390,11 @@ els.doc.addEventListener('submit', async (e) => {
   }
 });
 
-async function load(fresh = false) {
+// `commit` (after a write) loads that exact commit; otherwise the branch head.
+async function load(commit = null) {
   els.doc.innerHTML = '<p class="status">Loading Brain…</p>';
   try {
-    state.tree = await api(fresh === true ? '/tree?fresh=1' : '/tree');
+    state.tree = await api(typeof commit === 'string' && commit ? `/tree?commit=${encodeURIComponent(commit)}` : '/tree');
   } catch (err) {
     showError(err);
     els.nav.innerHTML = '';
