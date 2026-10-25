@@ -48,8 +48,33 @@ globalThis.fetch = async (input, init = {}) => {
   if (url.endsWith('/repos/LOriti/brain/git/trees/root?recursive=1')) return ok({ tree: TREE, truncated: false });
   const blob = url.match(/\/git\/blobs\/(.+)$/);
   if (blob && BLOBS[blob[1]]) return ok(BLOBS[blob[1]], true);
+  if (url.startsWith(`https://api.github.com/repos/LOriti/brain/contents/projects/${repo.slug}/QUEUE.md`)) {
+    if ((init.method || 'GET') === 'GET') {
+      return ok({ type: 'file', encoding: 'base64', size: repo.text.length, sha: repo.sha, content: Buffer.from(repo.text).toString('base64') });
+    }
+    const put = JSON.parse(init.body);
+    repo.puts.push(put);
+    if (repo.putStatus !== 200) return new Response('{}', { status: repo.putStatus });
+    return ok({ content: { sha: 'new-sha' }, commit: { sha: 'commit-sha' } });
+  }
   return new Response('nope', { status: 404 });
 };
+
+// Synthetic queue the contents API serves for project `demo`.
+const QUEUE = '---\nproject: demo\ntype: queue\nupdated: 2030-01-01\n---\n\n# demo\n\n' +
+  '### A card\n\n`id: demo-001` `priority: P1`\n\nOutcome: x.\n\n## Inbox\n\n- Idea, with ünïcode.\n';
+const repo = { slug: 'demo', text: QUEUE, sha: 'old-sha', puts: [], putStatus: 200 };
+
+const WRITE_HEADERS = { 'Content-Type': 'application/json', Origin: 'https://staldex.com', 'X-Brain-Write': '1' };
+
+async function post(path, body, { token, headers = WRITE_HEADERS, env = ENV } = {}) {
+  worker._resetCaches();
+  const all = { ...headers, ...(token ? { 'Cf-Access-Jwt-Assertion': token } : {}) };
+  const res = await worker.default.fetch(new Request(`https://staldex.com${path}`, {
+    method: 'POST', headers: all, body: typeof body === 'string' ? body : JSON.stringify(body),
+  }), env);
+  return { status: res.status, body: await res.json() };
+}
 
 async function call(path, { token, env = ENV, method = 'GET' } = {}) {
   worker._resetCaches();
@@ -120,6 +145,101 @@ test('a rotated signing key is picked up without waiting for the cert cache', as
   assert.equal((await call('/api/brain/tree', { token: await sign({}, 'k2', next.privateKey) })).status, 200);
 });
 
-test('read-only: anything but GET is refused before auth', async () => {
-  assert.equal((await call('/api/brain/tree', { method: 'PUT', token: await sign({}) })).status, 405);
+test('read routes take GET only and write routes POST only, before auth', async () => {
+  const token = await sign({});
+  assert.equal((await call('/api/brain/tree', { method: 'PUT', token })).status, 405);
+  assert.equal((await call('/api/brain/tree', { method: 'POST', token })).status, 405);
+  assert.equal((await call('/api/brain/done', { token })).status, 405);
+  assert.equal((await call('/api/brain/inbox', { method: 'PUT', token })).status, 405);
+});
+
+test('writes need JSON, the site origin and the custom header', async () => {
+  const token = await sign({});
+  repo.puts.length = 0;
+  const body = { project: 'demo', text: 'x' };
+  const without = (key) => Object.fromEntries(Object.entries(WRITE_HEADERS).filter(([k]) => k !== key));
+  for (const headers of [
+    without('Content-Type'),
+    { ...WRITE_HEADERS, 'Content-Type': 'text/plain' },
+    { ...WRITE_HEADERS, 'Content-Type': 'application/x-www-form-urlencoded' },
+    without('Origin'),
+    { ...WRITE_HEADERS, Origin: 'https://evil.example' },
+    { ...WRITE_HEADERS, Origin: 'https://staldex.com.evil.example' },
+    { ...WRITE_HEADERS, Origin: 'http://staldex.com' },
+    { ...WRITE_HEADERS, Origin: 'https://staldex.pages.dev' },
+    without('X-Brain-Write'),
+    { ...WRITE_HEADERS, 'X-Brain-Write': 'yes' },
+  ]) {
+    assert.equal((await post('/api/brain/inbox', body, { token, headers })).status, 403, JSON.stringify(headers));
+  }
+  assert.equal((await post('/api/brain/inbox', body, { token, headers: { ...WRITE_HEADERS, 'Content-Type': 'application/json; charset=utf-8' } })).status, 200);
+  assert.equal(repo.puts.length, 1);
+});
+
+test('writes fail closed exactly like reads', async () => {
+  repo.puts.length = 0;
+  const body = { project: 'demo', text: 'x' };
+  assert.equal((await post('/api/brain/inbox', body)).status, 401);
+  assert.equal((await post('/api/brain/inbox', body, { token: await sign({ aud: ['other'] }) })).status, 401);
+  assert.equal((await post('/api/brain/inbox', body, { token: await sign({}), env: { ...ENV, ACCESS_AUD: 'REPLACE_ME' } })).status, 503);
+  assert.equal((await post('/api/brain/inbox', body, { token: await sign({}), env: { ...ENV, GITHUB_TOKEN: '' } })).status, 503);
+  assert.equal((await post('/api/brain/inbox', body, { token: await sign({}), env: { ...ENV, ALLOWED_EMAILS: 'x@y.z' } })).status, 401);
+  assert.equal(repo.puts.length, 0);
+});
+
+test('write bodies are validated against the path-safety rules', async () => {
+  const token = await sign({});
+  repo.puts.length = 0;
+  const bad = [
+    'not json', '[]', '{}',
+    { project: '../x', text: 'a' }, { project: 'demo/../other', text: 'a' }, { project: '.github', text: 'a' },
+    { project: '_template', text: 'a' }, { project: 'Demo', text: 'a' }, { project: 'demo', text: 42 },
+    { project: 'demo', text: 'a'.repeat(5000) },
+  ];
+  for (const body of bad) assert.equal((await post('/api/brain/inbox', body, { token })).status, 400, JSON.stringify(body));
+  for (const id of [undefined, 'other-001', 'demo-1', 'demo-001/x', '../demo-001']) {
+    assert.equal((await post('/api/brain/done', { project: 'demo', id }, { token })).status, 400, String(id));
+  }
+  assert.equal((await post('/api/brain/inbox', { project: 'demo', text: '   ' }, { token })).status, 400);
+  assert.equal((await post('/api/brain/done', { project: 'demo', id: 'demo-009' }, { token })).status, 404);
+  assert.equal((await post('/api/brain/inbox', { project: 'nope', text: 'a' }, { token })).status, 404);
+  assert.equal(repo.puts.length, 0);
+});
+
+test('done commits one transformed file with the read sha', async () => {
+  repo.puts.length = 0;
+  const res = await post('/api/brain/done', { project: 'demo', id: 'demo-001' }, { token: await sign({}) });
+  assert.equal(res.status, 200);
+  assert.deepEqual(res.body, { path: 'projects/demo/QUEUE.md', sha: 'new-sha', commit: 'commit-sha' });
+  assert.equal(repo.puts.length, 1);
+  const [put] = repo.puts;
+  assert.equal(put.message, 'web: done demo-001');
+  assert.equal(put.sha, 'old-sha');
+  assert.equal(put.branch, 'main');
+  assert.equal(put.committer, undefined);
+  const text = Buffer.from(put.content, 'base64').toString('utf8');
+  assert.match(text, /^updated: \d{4}-\d{2}-\d{2}$/m);
+  assert.match(text, /## Inbox\n\n- Idea, with ünïcode\.\n\n## Done\n\n### A card\n\n`id: demo-001` `priority: P1` `done: \d{4}-\d{2}-\d{2}`\n/);
+});
+
+test('inbox commits one line', async () => {
+  repo.puts.length = 0;
+  const res = await post('/api/brain/inbox', { project: 'demo', text: ' Buy  milk\n' }, { token: await sign({}) });
+  assert.equal(res.status, 200);
+  assert.equal(repo.puts[0].message, 'web: inbox demo');
+  assert.match(Buffer.from(repo.puts[0].content, 'base64').toString('utf8'), /- Idea, with ünïcode\.\n- Buy milk\n$/);
+});
+
+test('a stale sha is reported as 409 and never retried', async () => {
+  for (const status of [409, 422]) {
+    repo.puts.length = 0;
+    repo.putStatus = status;
+    const res = await post('/api/brain/inbox', { project: 'demo', text: 'x' }, { token: await sign({}) });
+    assert.equal(res.status, 409);
+    assert.deepEqual(res.body, { error: 'changed elsewhere, refresh' });
+    assert.equal(repo.puts.length, 1, 'exactly one attempt');
+  }
+  repo.putStatus = 500;
+  assert.equal((await post('/api/brain/inbox', { project: 'demo', text: 'x' }, { token: await sign({}) })).status, 502);
+  repo.putStatus = 200;
 });
