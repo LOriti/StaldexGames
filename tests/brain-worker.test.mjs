@@ -230,6 +230,19 @@ test('inbox commits one line', async () => {
   assert.match(Buffer.from(repo.puts[0].content, 'base64').toString('utf8'), /- Idea, with ünïcode\.\n- Buy milk\n$/);
 });
 
+test('tree?fresh=1 skips the isolate cache', async () => {
+  const token = await sign({});
+  worker._resetCaches();
+  const tree = (path) => worker.default.fetch(new Request(`https://staldex.com${path}`, { headers: { 'Cf-Access-Jwt-Assertion': token } }), ENV);
+  const commitCalls = () => calls.filter((c) => c.url.endsWith('/commits/main')).length;
+  await tree('/api/brain/tree');
+  const before = commitCalls();
+  await tree('/api/brain/tree');
+  assert.equal(commitCalls(), before, 'cached');
+  await tree('/api/brain/tree?fresh=1');
+  assert.equal(commitCalls(), before + 1, 'refetched');
+});
+
 test('a stale sha is reported as 409 and never retried', async () => {
   for (const status of [409, 422]) {
     repo.puts.length = 0;

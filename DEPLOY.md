@@ -111,18 +111,27 @@ Tests (repo root):
 
 Unlike everything above, this is **authenticated, not just unlisted**. The page shell
 (`site/brain/`) ships with the normal Pages deploy but contains no Brain content; it reads the
-private `LOriti/brain` repo live through its own read-only Worker (`worker-brain/`, route
+private `LOriti/brain` repo live through its own Worker (`worker-brain/`, route
 `staldex.com/api/brain/*`) using a GitHub token stored as a Worker secret. Cloudflare Access
 gates both `/brain` and `/api/brain`, and the Worker re-verifies the Access token, so it serves
 nothing until Access is configured. Never commit Brain content, the token, or an email
 allowlist to this repo.
 
-One-time setup (Access app, two `wrangler.toml` values, a fine-grained read-only token, Git
-connect with root directory `worker-brain/`) and the smoke test: `worker-brain/README.md`.
+Writes are limited to two QUEUE actions: **mark a card done** (`POST /api/brain/done`) and
+**add an Inbox line** (`POST /api/brain/inbox`). Each needs the Access token *and*
+`Content-Type: application/json`, `Origin: https://staldex.com` and `X-Brain-Write: 1`
+(forged cross-site requests get 403). Each is one sha-guarded commit (`web: …`) to Brain's
+`main`; if the file changed in the meantime the API answers 409 and never overwrites it.
+Brain's own `index.yml` Action then regenerates `INDEX.md`. Free-form editing stays in
+Claude sessions.
+
+One-time setup (Access app, two `wrangler.toml` values, a fine-grained token with Contents
+read and write on `brain` only, Git connect with root directory `worker-brain/`) and the
+smoke test: `worker-brain/README.md`.
 
 Tests (repo root):
 
-    node --test tests/brain-worker.test.mjs tests/brain-markdown.test.mjs
+    node --test tests/brain-worker.test.mjs tests/brain-markdown.test.mjs tests/brain-queue.test.mjs
 
 ## Notes
 
