@@ -104,7 +104,9 @@ function renderNav() {
   els.nav.innerHTML = grouped(paths).map((g) => {
     let body;
     if (g.key === 'projects') {
-      // One row per project: slug, status from INDEX, then its STATE / QUEUE files.
+      // One row per project: slug, status from INDEX, then its QUEUE / STATE links. Any other
+      // documents in the project folder sit in a collapsed list under the row, so a project
+      // with many documents can't squeeze its own name out of the sidebar.
       const bySlug = new Map();
       for (const p of g.items) {
         const slug = p.split('/')[1];
@@ -114,12 +116,20 @@ function renderNav() {
       const slugs = [...bySlug.keys()].sort((a, b) => (a.startsWith('_') - b.startsWith('_')) || a.localeCompare(b));
       body = slugs.map((slug) => {
         const files = bySlug.get(slug);
+        const main = files.filter((p) => /^projects\/[^/]+\/(QUEUE|STATE)\.md$/.test(p));
+        const docs = files.filter((p) => !main.includes(p));
         const status = state.statuses.get(slug);
         const dot = `<span class="status-dot" data-status="${escapeHtml(status || '')}"${status ? ` title="${escapeHtml(status)}"` : ''}></span>`;
-        const active = files.includes(state.current) ? ' active' : '';
-        return `<li class="project${active}"><span class="project-name">${dot}<span class="slug" title="${escapeHtml(slug)}">${escapeHtml(slug)}</span>` +
+        const active = main.includes(state.current) ? ' active' : '';
+        const name = (p) => escapeHtml(p.split('/').slice(2).join('/').replace(/\.md$/i, ''));
+        const row = `<li class="project${active}"><span class="project-name">${dot}<span class="slug" title="${escapeHtml(slug)}">${escapeHtml(slug)}</span>` +
           `${status ? `<span class="visually-hidden">, ${escapeHtml(status)}</span>` : ''}</span>` +
-          `<span class="project-files">${files.map((p) => link(p, escapeHtml(p.split('/').slice(2).join('/').replace(/\.md$/i, '')))).join('')}</span></li>`;
+          `<span class="project-files">${main.map((p) => link(p, name(p))).join('')}</span></li>`;
+        if (!docs.length) return row;
+        // Open while filtering or when the current file is one of these documents.
+        const open = q || docs.includes(state.current) ? ' open' : '';
+        return `${row}<li class="project-docs"><details${open}><summary>${docs.length} ${docs.length === 1 ? 'doc' : 'docs'}</summary>` +
+          `<ul>${docs.map((p) => `<li>${link(p, name(p))}</li>`).join('')}</ul></details></li>`;
       }).join('');
     } else {
       body = g.items.map((p) => {

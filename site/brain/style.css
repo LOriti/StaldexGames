@@ -115,6 +115,13 @@ a { color: var(--accent); text-underline-offset: 2px; }
 }
 .project-files a:hover { background: var(--sheet); color: var(--ink); }
 .project-files a[aria-current="page"] { background: var(--accent); color: var(--sheet); font-weight: 600; }
+.project-docs { padding-left: 23px; }
+.project-docs summary {
+  cursor: pointer; padding: 1px 8px; border-radius: 6px;
+  font-size: 12px; color: var(--faint); list-style-position: inside;
+}
+.project-docs summary:hover { color: var(--muted); }
+.project-docs li > a { font-size: 13px; padding: 2px 8px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 
 .side-foot {
   border-top: 1px solid var(--line); padding-top: 10px;
