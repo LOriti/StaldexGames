@@ -1,7 +1,8 @@
 // Brain viewer — window onto the private Brain repo, plus two narrow QUEUE edits.
 // Data comes from /api/brain (worker-brain/), behind Cloudflare Access.
 
-import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js';
+import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026';
+import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -20,6 +21,25 @@ const state = {
   statuses: new Map(), // project slug → status, read from INDEX.md
   current: null,
 };
+
+// The command centre home (Brain brain-032): what the page opens on unless a file is asked for.
+const home = { view: null, sha: null, lens: null, filter: null };
+
+function homeTab() {
+  const match = /^#(?:\/)?(focus|priority|allocation)?$/.exec(location.hash || '#');
+  return match ? (match[1] || 'focus') : null;
+}
+
+function storedLens() {
+  try {
+    const saved = JSON.parse(localStorage.getItem('brain.lens') || 'null');
+    return saved && saved.day === new Date().toDateString() && LENSES.includes(saved.lens) ? saved.lens : null;
+  } catch { return null; }
+}
+
+function storeLens(lens) {
+  try { localStorage.setItem('brain.lens', JSON.stringify({ lens, day: new Date().toDateString() })); } catch { /* private mode */ }
+}
 
 class ApiError extends Error {
   constructor(kind, status) {
@@ -283,6 +303,55 @@ function showError(err) {
 
 // ---- routing & chrome --------------------------------------------------------
 
+function route() {
+  const tab = homeTab();
+  return tab ? showHome(tab) : show(currentPath());
+}
+
+async function showHome(tab) {
+  state.current = null;
+  els.crumbs.innerHTML = '<li aria-current="page">Home</li>';
+  els.source.hidden = true;
+  renderNav();
+  closeSide();
+  const entry = state.tree.files.find((f) => f.path === VIEW_PATH);
+  if (!entry) return show(HOME); // Brain has not generated the view yet
+  els.doc.classList.add('loading');
+  try {
+    if (home.sha !== entry.sha) {
+      home.view = JSON.parse(await fileText(VIEW_PATH));
+      home.sha = entry.sha;
+    }
+    home.lens = home.lens || storedLens() || defaultLens(home.view.work_hours);
+    renderHome(tab);
+    document.title = 'Brain — Staldex';
+    window.scrollTo(0, 0);
+  } catch (err) {
+    showError(err);
+  } finally {
+    els.doc.classList.remove('loading');
+  }
+}
+
+function renderHome(tab = homeTab() || 'focus') {
+  const when = state.tree.commit.date ? new Date(state.tree.commit.date).toLocaleString('en-AU', {
+    timeZone: 'Australia/Perth', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
+  }) : '';
+  const asOf = `${home.view.date}${when ? `, last change ${when}` : ''}`;
+  els.doc.innerHTML = homeHtml(home.view, { lens: home.lens, tab, filter: home.filter, asOf });
+}
+
+els.doc.addEventListener('click', (e) => {
+  const el = e.target.closest('[data-cc-lens], [data-cc-context], [data-cc-area], [data-cc-clear]');
+  if (!el || !home.view) return;
+  const d = el.dataset;
+  if (d.ccLens) { home.lens = d.ccLens; home.filter = null; storeLens(d.ccLens); return renderHome(); }
+  if (d.ccClear) { home.filter = null; return renderHome(); }
+  home.filter = d.ccContext ? { type: 'context', value: d.ccContext } : { type: 'area', value: d.ccArea };
+  if (location.hash === '#priority') renderHome('priority');
+  else location.hash = '#priority';
+});
+
 function currentPath() {
   const raw = location.hash.replace(/^#\/?/, '');
   try { return decodeURI(raw) || HOME; } catch { return HOME; }
@@ -403,10 +472,10 @@ async function load(commit = null) {
   state.paths = new Set(state.tree.files.map((f) => f.path));
   renderFoot();
   // Statuses come from INDEX.md; fetch it in the background if we didn't land on it.
-  if (currentPath() !== HOME && state.paths.has(HOME)) {
+  if ((homeTab() || currentPath() !== HOME) && state.paths.has(HOME)) {
     fileText(HOME).then((t) => { readStatuses(t); renderNav(); }).catch(() => {});
   }
-  await show(currentPath());
+  await route();
 }
 
 function openSide() {
@@ -423,7 +492,7 @@ function closeSide() {
   els.menu.setAttribute('aria-expanded', 'false');
 }
 
-window.addEventListener('hashchange', () => { if (state.tree) show(currentPath()); });
+window.addEventListener('hashchange', () => { if (state.tree) route(); });
 els.filter.addEventListener('input', () => { if (state.tree) renderNav(); });
 els.filter.addEventListener('keydown', (e) => {
   if (e.key === 'Enter') {

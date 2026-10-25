@@ -293,3 +293,50 @@ a { color: var(--accent); text-underline-offset: 2px; }
   .shell { display: block; }
   .doc { max-width: none; padding: 0; }
 }
+
+/* ---- command centre home (Brain brain-032): phone first, read-only ---- */
+
+.cc { display: grid; gap: 14px; }
+.cc-head { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; justify-content: space-between; }
+.cc-seg { display: inline-flex; border: 1px solid var(--line); border-radius: 9px; overflow: hidden; background: var(--sheet); }
+.cc-seg button { border: 0; border-left: 1px solid var(--line); background: none; padding: 7px 12px; font: 600 13px/1 var(--sans); color: var(--muted); cursor: pointer; }
+.cc-seg button:first-child { border-left: 0; }
+.cc-seg button[aria-pressed="true"] { background: var(--accent); color: var(--paper); }
+.cc-tabs { display: flex; gap: 2px; }
+.cc-tabs a { padding: 7px 11px; border-radius: 7px; color: var(--muted); font: 600 14px/1 var(--sans); text-decoration: none; }
+.cc-tabs a[aria-current="page"] { background: var(--accent-soft); color: var(--accent); }
+.cc-focal { display: grid; gap: 8px; padding: 16px 18px; border: 1px solid var(--line); border-left: 4px solid var(--bad); border-radius: 12px; background: var(--sheet); color: var(--ink); text-decoration: none; }
+.cc-focal.calm { border-left-color: var(--accent); }
+.cc-k { font: 600 11px/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--bad); }
+.cc-focal.calm .cc-k { color: var(--accent); }
+.cc-ttl { font: 600 clamp(20px, 5vw, 24px)/1.25 var(--serif); }
+.cc-two { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+@media (max-width: 760px) { .cc-two { grid-template-columns: 1fr; } }
+.doc .cc-gh { display: flex; justify-content: space-between; margin: 0 2px 7px; padding: 0; border: 0; font: 600 11px/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.cc-gh em { font-style: normal; font-weight: 500; letter-spacing: 0; color: var(--faint); }
+.cc-box { background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.cc-row { display: flex; gap: 9px; padding: 10px 12px; border-top: 1px solid var(--line); color: var(--ink); text-decoration: none; }
+.cc-row:first-child, .cc-sec + .cc-row { border-top: 0; }
+a.cc-row:hover { background: var(--accent-soft); }
+.cc-m { display: grid; gap: 3px; min-width: 0; flex: 1; }
+.cc-t { overflow-wrap: anywhere; }
+.cc-id { font: 11.5px/1.4 var(--mono); color: var(--muted); overflow-wrap: anywhere; }
+.cc-why { display: flex; flex-wrap: wrap; gap: 5px; align-items: center; font-size: 12.5px; color: var(--muted); }
+.cc-stripe { width: 3px; border-radius: 2px; background: var(--line); flex: none; }
+.cc-stripe.hot { background: var(--bad); } .cc-stripe.ok { background: var(--accent); }
+.cc-chip { font-size: 11.5px; padding: 1px 8px; border-radius: 99px; background: var(--code); color: var(--muted); }
+.cc-chip.hot { background: var(--bad-soft); color: var(--bad); font-weight: 600; }
+.cc-chip.warn { background: var(--warn-soft); color: var(--warn); }
+.cc-empty { margin: 0; padding: 12px; font-size: 13.5px; color: var(--muted); }
+.cc-quiet { margin: 0; padding: 9px 12px; display: flex; flex-wrap: wrap; gap: 6px 16px; border: 1px dashed var(--line); border-radius: 9px; font-size: 13px; color: var(--muted); }
+.cc-doors { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
+.cc-lbl { width: 72px; font: 600 10.5px/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--faint); }
+.cc-door { display: inline-flex; gap: 7px; align-items: center; padding: 7px 11px; border: 1px solid var(--line); border-radius: 9px; background: var(--sheet); color: var(--ink); font: 14px/1 var(--sans); cursor: pointer; }
+.cc-door .c { color: var(--muted); font-variant-numeric: tabular-nums; }
+.cc-hd { width: 7px; height: 7px; border-radius: 50%; background: var(--bad); }
+.doc .cc-sec { margin: 0; padding: 10px 12px 6px; border: 0; background: var(--paper); font: 600 11px/1 var(--sans); letter-spacing: 0.08em; text-transform: uppercase; color: var(--muted); }
+.cc-lanes { display: grid; gap: 9px; }
+.cc-lane { display: grid; gap: 6px; padding: 10px 12px; background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; }
+.cc-lane.float { background: transparent; border-style: dashed; }
+.cc-nm { font-weight: 600; } .cc-nm small { display: block; font-weight: 400; font-size: 12.5px; color: var(--muted); }
+.cc-note { margin: 0; font-size: 13px; color: var(--muted); }

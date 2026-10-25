@@ -9,8 +9,8 @@
   <meta name="theme-color" content="#f4f2ec" media="(prefers-color-scheme: light)">
   <meta name="theme-color" content="#141613" media="(prefers-color-scheme: dark)">
   <title>Brain — Staldex</title>
-  <link rel="stylesheet" href="./style.css">
-  <script type="module" src="./app.js"></script>
+  <link rel="stylesheet" href="./style.css?v=20261026">
+  <script type="module" src="./app.js?v=20261026"></script>
 </head>
 <body>
   <!-- Empty shell. Every word of Brain arrives from /api/brain behind Cloudflare Access;
@@ -18,7 +18,7 @@
   <div class="shell" id="shell">
     <aside class="side" id="side" aria-label="Brain files">
       <div class="side-head">
-        <a class="mark" href="#/INDEX.md" aria-label="Brain portfolio index">
+        <a class="mark" href="#focus" aria-label="Brain command centre">
           <span class="mark-glyph" aria-hidden="true">B</span>
           <span class="mark-text">Brain <small>viewer</small></span>
         </a>
@@ -39,6 +39,7 @@
         <button type="button" class="icon-btn menu" id="menu" aria-label="Open file list" aria-controls="side" aria-expanded="false">☰</button>
         <ol class="crumbs" id="crumbs" aria-label="Current file"></ol>
         <div class="bar-actions">
+          <a class="text-btn" href="#focus" title="The command centre home">Home</a>
           <button type="button" class="text-btn" id="refresh" title="Fetch the latest commit">Refresh</button>
           <a class="text-btn" id="source" href="#" target="_blank" rel="noopener noreferrer" hidden>GitHub ↗</a>
         </div>

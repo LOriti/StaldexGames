@@ -19,7 +19,11 @@ Notes for anyone, human or agent, changing this repo. Keep it short and team-neu
   Worker runtime secrets.
 - **Brain viewer** (`site/brain/`, `worker-brain/`): it reads a private repository live
   through the Worker, behind Cloudflare Access. Never commit Brain content here, not even
-  in test fixtures; use synthetic data.
+  in test fixtures; use synthetic data. Its home page (`site/brain/home.js`) renders the
+  read-only command centre view that Brain generates as `views/command-centre.json`;
+  keep `home.js` free of imports so the tests can load it alone. Bump the `?v=` on the
+  asset URLs in `index.html` and the imports in `app.js` when those files change, so
+  phones pick up a deploy without a hard refresh.
 - Change things through pull requests to `main`; `main` deploys.
 - Run the tests before pushing: `node --test tests/*.test.mjs` from the repo root.
 
