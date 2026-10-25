@@ -1,6 +1,6 @@
 # Brain viewer — Cloudflare Worker + Access
 
-Read-only API behind the private page at `staldex.com/brain/` (shell in `site/brain/`).
+API behind the private page at `staldex.com/brain/` (shell in `site/brain/`).
 It reads the **private** `LOriti/brain` repo live through the GitHub API, so no Brain
 content is ever committed to this public repo or baked into the Pages deploy.
 
@@ -15,9 +15,27 @@ knowing the URL. Brain holds personal admin and portfolio state, so it has two g
    mis-scoped, the API answers 401 instead of serving Brain. While `ACCESS_TEAM_DOMAIN`,
    `ACCESS_AUD` or `GITHUB_TOKEN` are unset it answers 503 and serves nothing.
 
-Read-only by design: Brain is a single-writer control plane, so changes still go through
-a normal session + `handoff`. Only `.md`, `.json` and `.jsonl` files outside dot-folders
-are exposed, never `context/local-paths.json`.
+Reads cover only `.md`, `.json` and `.jsonl` files outside dot-folders, never
+`context/local-paths.json`.
+
+**Writes are exactly two actions**, both on one project's `projects/<slug>/QUEUE.md`:
+mark a groomed card done (it moves under `## Done` with a `done:` Perth date) and add a
+line under `## Inbox`. There is no free-form editing; everything else in Brain still goes
+through a Claude session. Each write:
+
+- passes the same two gates as a read (fails closed the same way), plus a forged-request
+  guard: `Content-Type: application/json`, `Origin: https://staldex.com` exactly, and
+  `X-Brain-Write: 1`. A cross-site page can't send that without a CORS preflight, which
+  the Worker never grants, so anything else gets 403 before Access is even checked;
+- validates the slug (`[a-z0-9-]`, no dots or slashes) and the card id (`<slug>-NNN`);
+- reads the file and its blob `sha`, applies a pure transform (`src/queue.js`, no I/O)
+  and `PUT`s it back with that `sha`. If the file changed in between, GitHub refuses and
+  the API answers **409 `changed elsewhere, refresh`**. It never retries or forces;
+- makes one commit per action: `web: done <id>` or `web: inbox <slug>`. GitHub requires an
+  email with a custom committer, so none is sent and the commit is attributed to the
+  token's owner; the `web:` prefix marks where it came from.
+
+In Brain, `.github/workflows/index.yml` regenerates `INDEX.md` after each such commit.
 
 ## Setup (once, dashboard only — about 15 minutes)
 
@@ -51,8 +69,9 @@ Neither is a secret (they identify the Access app, they don't grant entry). Comm
 1. GitHub → Settings → Developer settings → **Fine-grained personal access tokens** →
    Generate new token.
    - Resource owner: `LOriti`. Repository access: **Only select repositories → `brain`**.
-   - Permissions: **Contents → Read-only** (Metadata read-only is added automatically).
-     Nothing else.
+   - Permissions: **Contents → Read and write** (Metadata read-only is added
+     automatically). Nothing else. Write is needed only for the two queue actions; a
+     read-only token still serves the viewer and makes every write answer 502.
    - Expiration: up to a year; put the renewal date in your calendar.
 2. After step 4 creates the Worker: Workers & Pages → `brain-viewer` → **Settings →
    Variables and Secrets** → add a **Secret** named `GITHUB_TOKEN` with the token.
@@ -77,18 +96,32 @@ The page itself (`site/brain/`) ships with the normal Pages deploy.
 2. Push a change to Brain → click **Refresh** within ~30 s → it shows up.
 3. Still in a fresh incognito window (not signed in), open
    `https://staldex.com/api/brain/tree` → Access login page, not JSON.
+4. Open a project's QUEUE → **Add to inbox** a test line → the page reloads with it, and
+   Brain gets a `web: inbox <slug>` commit followed shortly by an `index:` commit (only if
+   the index changed). Mark a throwaway card **Done** the same way. Then remove the test
+   line in a session.
 
 Page messages map to API states: **Not set up yet** = 503 (step 2 or 3 missing),
 **Signed out** = Access session ended or token rejected (401), **github 401/404** = the
-token expired or lost access to the repo.
+token expired or lost access to the repo, **Not saved: changed elsewhere, refresh** = the
+QUEUE moved on since it was read (409); press Refresh and try again.
 
 ## API
 
-All `GET`, all require a valid Access token, all `Cache-Control: private, no-store`.
+All require a valid Access token, all answer `Cache-Control: private, no-store`.
 
-- `GET /api/brain/tree` → `{ repo, ref, truncated, commit: { sha, date, message }, viewer, files: [{ path, sha, size }] }`
+- `GET /api/brain/tree` → `{ repo, ref, truncated, commit: { sha, date, message }, viewer, files: [{ path, sha, size }] }`.
+  `?fresh=1` skips the 30 s isolate cache (the page uses it after a write).
 - `GET /api/brain/file?path=<path>` → `{ path, sha, text }`. Only paths in the current
   readable tree resolve. Files over 512 KB are refused.
+- `POST /api/brain/done` `{ project, id }` → `{ path, sha, commit }`
+- `POST /api/brain/inbox` `{ project, text }` → `{ path, sha, commit }`. `text` is trimmed
+  and folded onto one line; empty or over 500 characters is refused.
+
+Write errors: 400 bad body, slug, id or text · 403 missing JSON type, Origin or
+`X-Brain-Write` · 404 no such project or groomed card · 409 changed elsewhere ·
+422 QUEUE not in the expected shape (no `## Inbox`, duplicate id) · 502 GitHub refused
+(for example a read-only token). Read and write routes refuse each other's method (405).
 
 ## Design notes
 
@@ -96,6 +129,9 @@ All `GET`, all require a valid Access token, all `Cache-Control: private, no-sto
   so a page view costs at most three GitHub calls and usually zero.
 - The `staldex.pages.dev` mirror is outside Access, but it only carries the empty shell:
   its `/api/brain` doesn't exist, so it has nothing to show.
-- Tests (repo root): `node --test tests/brain-worker.test.mjs tests/brain-markdown.test.mjs`.
-  They cover the fail-closed config, forged/expired/wrong-audience tokens, key rotation,
-  the email allowlist, the file allowlist, and HTML/script escaping in the renderer.
+- Tests (repo root): `node --test tests/brain-*.test.mjs`. They cover the fail-closed
+  config, forged/expired/wrong-audience tokens, key rotation, the email allowlist, the
+  file allowlist, HTML/script escaping in the renderer, the write guards, the stale-sha
+  409, commit messages, and the QUEUE transforms (CRLF, missing or existing `## Done`,
+  unknown and duplicate ids, a card right before `## Inbox`, a missing Inbox, and
+  byte-for-byte preservation of everything else).
