@@ -5,7 +5,7 @@ import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './mar
 import {
   VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
   closeKind, fmtElapsed, fmtMinutes, clockMinutes,
-} from './home.js?v=20261027a';
+} from './home.js?v=20261027b';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -716,6 +716,32 @@ modal.addEventListener('click', async (e) => {
     renderTask();
     modal.querySelector('textarea, [data-tk="done"]')?.focus();
     return;
+  }
+  if (act === 'confirm' || act === 'reject') {
+    // The register's own Confirm and Reject (Brain DEV-61025.13), from the card.
+    for (const b of modal.querySelectorAll('button')) b.disabled = true;
+    try {
+      await write(`/${act}`, { id: entry.ref, flag: 'unconfirmed' });
+      if (act === 'reject') {
+        if (clock && clock.ref === entry.ref) await stopClock();
+        dropFromView(entry.ref);
+        task.ref = null;
+      } else {
+        // Confirming drops the `P-`; this page's copy follows until Brain regenerates the view.
+        const landed = entry.ref.replace(/^P-/, '');
+        for (const slot of Object.values(home.view.lenses)) {
+          slot.hot = slot.hot.map((r) => (r === entry.ref ? landed : r));
+          if (slot.focal && slot.focal.ref === entry.ref) slot.focal.ref = landed;
+        }
+        if (clock && clock.ref === entry.ref) clock.ref = landed;
+        entry.ref = landed;
+        task.ref = landed;
+        task.message = `Confirmed as ${landed}.`;
+      }
+    } catch (err) {
+      task.message = writeError(err);
+    }
+    return refreshAll();
   }
   if (act === 'done') {
     for (const b of modal.querySelectorAll('button')) b.disabled = true;

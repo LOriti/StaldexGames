@@ -137,6 +137,13 @@ export function inboxHref(r) {
   return r.ref ? `#/${encodeURI(r.path)}?item=${encodeURIComponent(r.ref)}` : `#/${encodeURI(r.path)}`;
 }
 
+// The add box starts on a project in the lens being looked at.
+function defaultProject(view, lens, projects) {
+  if (lens === 'all') return projects[0];
+  const homes = [...(view.inbox || []), ...view.entries].filter((r) => r.lens === lens).map((r) => /^project:(.+)$/.exec(r.home || '')?.[1]);
+  return homes.find((slug) => projects.includes(slug)) || projects[0];
+}
+
 export function inboxHtml(view, lens, { projects = [], all = false } = {}) {
   const rows = (view.inbox || []).filter((r) => lens === 'all' || r.lens === lens);
   const shown = all ? rows : rows.slice(0, INBOX_SHOWN);
@@ -148,7 +155,7 @@ export function inboxHtml(view, lens, { projects = [], all = false } = {}) {
   if (rows.length > shown.length) html += `<button type="button" class="text-btn cc-more" data-cc-inbox-all="1">Show all ${rows.length}</button>`;
   if (projects.length) {
     html += '<form class="cc-inbox-add"><label class="visually-hidden" for="cc-inbox-project">Project</label>' +
-      `<select id="cc-inbox-project" name="project">${projects.map((p) => `<option value="${esc(p)}">${esc(p)}</option>`).join('')}</select>` +
+      `<select id="cc-inbox-project" name="project">${projects.map((p) => `<option value="${esc(p)}"${p === defaultProject(view, lens, projects) ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select>` +
       '<input type="text" name="text" maxlength="500" required autocomplete="off" placeholder="Capture something…" aria-label="New inbox line">' +
       '<button type="submit" class="mini-btn primary">Add</button><span class="write-msg" hidden></span></form>';
   }
@@ -198,7 +205,11 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
   const progressBtn = kind !== 'decision' && kind !== 'none' ? '<button type="button" class="mini-btn" data-tk="progress-ask">Add progress…</button>' : '';
   html += `<div class="tk-acts">${closeBtn}${progressBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
   if (kind === 'decision') html += '<p class="cc-note">A decision is settled by replying to it in a session; it is not closed here.</p>';
-  if (kind === 'unconfirmed') html += '<p class="cc-note">Confirm this new item in the register first; then it can be closed here.</p>';
+  if (kind === 'unconfirmed') {
+    html += '<div class="tk-panel"><p>A routine found this new item. Confirm it to keep it (then it can be closed here), or reject it.</p>' +
+      '<span class="tk-acts"><button type="button" class="mini-btn primary" data-tk="confirm">Confirm</button>' +
+      '<button type="button" class="mini-btn" data-tk="reject">Reject</button></span></div>';
+  }
   html += panel;
   if (message) html += `<p class="write-msg${/^Not |^Clock not/.test(message) ? ' bad' : ''}">${esc(message)}</p>`;
   return html;
