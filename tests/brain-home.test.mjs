@@ -174,7 +174,9 @@ test('the task card: estimate, clock and what closing means', () => {
   assert.equal(home.closeKind(entry('X-1.01')), 'item');
   assert.doesNotMatch(home.taskHtml(entry('D-4')), /data-tk="done-ask"/);
   assert.match(home.taskPanel('done', card), /data-tk="done"/);
-  assert.match(home.taskHtml(entry('P-X-1.01')), /data-tk="confirm"[\s\S]*data-tk="reject"/);
+  assert.match(home.taskHtml(entry('P-X-1.01')), /data-tk="confirm"[\s\S]*data-tk="reject-ask"/);
+  assert.doesNotMatch(home.taskHtml(entry('P-X-1.01')), /data-tk="reject"/, 'Reject asks first');
+  assert.match(home.taskPanel('reject', entry('P-X-1.01')), /Reject P-X-1\.01\?[\s\S]*data-tk="reject">Yes, reject[\s\S]*data-tk="cancel"/);
   assert.match(home.homeHtml({ ...VIEW, inbox: [] }, { lens: 'ventures', projects: ['aaa', 'alpha'] }), /<option value="alpha" selected>/);
   assert.match(home.taskPanel('done', entry('X-1.01')), /data-tk-form="close"/);
   assert.match(home.homeHtml(VIEW, { lens: 'work' }), /data-cc-ref="A-1"/);
