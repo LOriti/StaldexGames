@@ -5,7 +5,7 @@ import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './mar
 import {
   VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext,
-} from './home.js?v=20261027c';
+} from './home.js?v=20261027d';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';

@@ -205,3 +205,8 @@ test('finishing a task rewards it and moves the next hot item into focus', () =>
   assert.match(html, /45 min on it today · 3 done today/);
   assert.match(html, /data-tk="next" data-ref="A-3">Next: Next one/);
 });
+
+test('contexts and areas filter Priority, not Focus (Brain D-101 B)', () => {
+  assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', tab: 'focus' }), /class="cc-doors"/);
+  assert.match(home.homeHtml(VIEW, { lens: 'work', tab: 'priority' }), /class="cc-doors"><span class="cc-lbl">Contexts/);
+});

@@ -280,7 +280,12 @@ function focusTab(view, lens, byRef, opts = {}) {
   html += inboxHtml(view, lens, { projects: opts.projects || [], all: opts.inboxAll });
   const waiting = clarifyCount(view, lens);
   if (waiting) html += `<p class="cc-quiet"><a href="#clarify">${waiting} to clarify: confirm, estimate, date or hand over →</a></p>`;
-  html += `<div class="cc-doors"><span class="cc-lbl">Contexts</span>${Object.entries(slot.contexts).map(([k, c]) =>
+  return html;
+}
+
+// Contexts and areas filter the Priority list (Brain D-101 B); Focus keeps what is hot.
+function doorsHtml(slot) {
+  let html = `<div class="cc-doors"><span class="cc-lbl">Contexts</span>${Object.entries(slot.contexts).map(([k, c]) =>
     `<button type="button" class="cc-door" data-cc-context="${esc(k)}">${CONTEXT_NAMES[k] || esc(k)} <span class="c">${c.count}</span>${c.hot ? '<span class="cc-hd" title="something hot"></span>' : ''}</button>`).join('')}</div>`;
   if (Object.keys(slot.areas).length) {
     html += `<div class="cc-doors"><span class="cc-lbl">Areas</span>${Object.entries(slot.areas).map(([k, a]) =>
@@ -292,7 +297,8 @@ function focusTab(view, lens, byRef, opts = {}) {
 function priorityTab(view, lens, filter, clock = null) {
   const rows = lensEntries(view, lens).filter((e) => !filter
     || (filter.type === 'context' ? e.context === filter.value : (e.area || 'untagged') === filter.value));
-  let html = filter
+  let html = doorsHtml(view.lenses[lens]);
+  html += filter
     ? `<p class="cc-note">Showing ${esc(filter.type === 'context' ? CONTEXT_NAMES[filter.value] || filter.value : (view.lenses[lens].areas[filter.value] || {}).name || filter.value)} · <button type="button" class="text-btn" data-cc-clear="1">Show everything</button></p>`
     : '<p class="cc-note">Everything for this lens, ranked: hot first, then in the order <code>brain.py next</code> gives. Tap an item to open it.</p>';
   let section = null;
