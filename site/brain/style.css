@@ -446,3 +446,4 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .tk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
 .tk-grid span { display: grid; gap: 4px; }
 .cc-chip.ok { background: var(--accent-soft); color: var(--accent); }
+.tk-head .tk-back { margin-right: 4px; }

@@ -472,7 +472,8 @@ export function parseFamilies(markdown) {
 
 // `target` is { kind: 'line', text, details, family, home } for an Inbox line, or
 // { kind: 'item', entry } for an open register item.
-export function categoriseHtml(target, { families = [], message = '' } = {}) {
+// With `back`, the card was opened from a task's card: Back and Cancel return there.
+export function categoriseHtml(target, { families = [], message = '', back = false } = {}) {
   const line = target.kind === 'line';
   const e = target.entry || {};
   const det = target.details || {};
@@ -482,7 +483,8 @@ export function categoriseHtml(target, { families = [], message = '' } = {}) {
   const fams = families.length ? families : [{ code: v.family, covers: '' }];
   const opt = (value, label, chosen) => `<option value="${esc(value)}"${String(value) === String(chosen) ? ' selected' : ''}>${esc(label)}</option>`;
   const fresh = !line && ((e.flags || []).includes('unconfirmed') || /^P-/.test(e.ref));
-  let html = `<div class="tk-head"><span class="cc-id">${line ? `Inbox · ${esc(target.home)}` : `${esc(e.ref)} · ${esc(e.home)}`}</span>` +
+  let html = `<div class="tk-head">${back ? '<button type="button" class="mini-btn tk-back" data-tk="back">‹ Back</button>' : ''}` +
+    `<span class="cc-id">${line ? `Inbox · ${esc(target.home)}` : `${esc(e.ref)} · ${esc(e.home)}`}</span>` +
     '<button type="button" class="icon-btn tk-x" data-tk="hide" aria-label="Close">✕</button></div>' +
     `<h2 class="tk-ttl" id="tk-title">Categorise</h2><p class="cc-note">${line
       ? 'Give it what a card needs. The next scheduled groom (every 2 hours, 07:00 to 21:00) turns it into a card.'
@@ -496,7 +498,7 @@ export function categoriseHtml(target, { families = [], message = '' } = {}) {
     `<span><label for="cg-due">Due</label><input id="cg-due" name="due" type="date" value="${esc(v.due)}"></span>` +
     `<span><label for="cg-owner">Owner</label><input id="cg-owner" name="owner" maxlength="40" value="${esc(v.owner)}"></span></div>` +
     `<span class="tk-acts"><button type="submit" class="mini-btn primary">${line ? 'Save for grooming' : fresh ? 'Save and confirm' : 'Save'}</button>` +
-    '<button type="button" class="mini-btn" data-tk="hide">Cancel</button></span></form>';
+    `<button type="button" class="mini-btn" data-tk="${back ? 'back' : 'hide'}">Cancel</button></span></form>`;
   if (message) html += `<p class="write-msg${/^Not /.test(message) ? ' bad' : ''}">${esc(message)}</p>`;
   return html;
 }

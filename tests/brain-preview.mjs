@@ -203,6 +203,12 @@ if (await focal.count()) {
   await shot('task-clock');
   await page.locator('[data-tk="progress-ask"]').click(); await settle(); await shot('task-progress');
   await page.locator('[data-tk="cancel"]').click();
+  // Categorise from the task's card, then Back returns to the card rather than closing it.
+  if (await page.locator('[data-tk="categorise"]').count()) {
+    await page.locator('[data-tk="categorise"]').click(); await settle(); await shot('categorise-from-task');
+    await page.locator('[data-tk="back"].tk-back').click(); await settle();
+    if (!(await page.locator('.tk-wrap:not([hidden]) [data-tk="start"], .tk-wrap:not([hidden]) .tk-time').count())) problems.push('Back from Categorise did not return to the task card');
+  }
   await page.locator('[data-tk="hide"].tk-x').click(); await settle();
   if (await page.locator('.clock-bar:not([hidden])').count()) await shot('clock-bar');
   else problems.push('closing the card did not leave the clock bar');
