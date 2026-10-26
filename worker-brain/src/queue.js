@@ -175,3 +175,29 @@ export function addInbox(text, raw, today) {
   }
   return q.lines.join('');
 }
+
+// Leon's details on an Inbox line, for the scheduled groom to turn into a card (Brain
+// D-100 B, D-102 A). The line is found by its text (continuation lines joined, earlier
+// details ignored) and rewritten as one line: the title, then the details as code spans.
+const plainBullet = (t) => t.replace(/^[-*] (\[[ x]\] )?/, '').replace(/\s*`[^`]*`/g, '').replace(/\s+/g, ' ').trim();
+
+export function categoriseLine(text, raw, details, attrs, today) {
+  if (typeof raw !== 'string' || !raw.trim()) throw new QueueError('unknown-id', 'no inbox line given');
+  const q = parse(text);
+  const end = sectionEnd(q, q.inbox);
+  const bullets = [];
+  for (let i = q.inbox.index + 1; i < end; i++) {
+    if (/^[-*] /.test(content(q.lines[i]))) bullets.push({ start: i, end: i + 1 });
+    else if (bullets.length && /^\s+\S/.test(content(q.lines[i])) && bullets.at(-1).end === i) bullets.at(-1).end = i + 1;
+  }
+  const want = plainBullet(raw);
+  const matches = bullets.filter((b) => plainBullet(q.lines.slice(b.start, b.end).map(content).join(' ')) === want);
+  if (!matches.length) throw new QueueError('unknown-id', 'that inbox line is no longer there');
+  if (matches.length > 1) throw new QueueError('duplicate-id', 'more than one inbox line reads the same');
+  const { start, end: stop } = matches[0];
+  const title = details.title || want;
+  const ending = q.lines[stop - 1].slice(content(q.lines[stop - 1]).length) || q.eol;
+  q.lines.splice(start, stop - start, `- ${title} ${attrs}${ending}`);
+  bumpUpdated(q, today);
+  return q.lines.join('');
+}

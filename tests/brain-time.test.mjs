@@ -9,6 +9,7 @@ const worker = await import('../worker-brain/src/index.js');
 const timelog = await import('../worker-brain/src/timelog.js');
 const queue = await import('../worker-brain/src/queue.js');
 const register = await import('../worker-brain/src/register.js');
+const categorise = await import('../worker-brain/src/categorise.js');
 
 const TEAM = 'team.cloudflareaccess.com';
 const AUD = 'aud-tag';
@@ -189,4 +190,20 @@ test('time returns parsed rows from the daily-log branch only', async () => {
     headers: { 'Cf-Access-Jwt-Assertion': await sign() },
   }), ENV);
   assert.equal(bad.status, 400);
+});
+
+test('categorise: details are checked, then land on an Inbox line or a register item', async () => {
+  assert.throws(() => categorise.cleanDetails({ next: 'x', family: 'work' }), /family/);
+  assert.throws(() => categorise.cleanDetails({ next: 'x', family: 'WORK-SYS', minutes: 45 }), /half hours/);
+  assert.throws(() => categorise.cleanDetails({ family: 'WORK-SYS' }), /next step/);
+  const d = categorise.cleanDetails({ title: 'Ask `Bob`', next: 'Ring | him', family: 'DEV', priority: 'P2', minutes: '60', owner: 'Leon' });
+  assert.deepEqual([d.title, d.next, d.minutes, d.owner], ["Ask 'Bob'", "Ring ' him", 60, 'leon']);
+  const res = await post('/api/brain/categorise', { project: 'demo', line: 'Idea', details: { next: 'Write it up', family: 'DEV', priority: 'P2', minutes: 30 } });
+  assert.equal(res.status, 200);
+  assert.equal(files['projects/demo/QUEUE.md'].puts.at(-1).message, 'web: categorise inbox demo');
+  assert.match(written('projects/demo/QUEUE.md'), /- Idea `categorised: \d{4}-\d{2}-\d{2}` `family: DEV` `priority: P2` `minutes: 30` `owner: leon` `next: Write it up`\n$/);
+  assert.equal((await post('/api/brain/categorise', { project: 'demo', line: 'Gone', details: { next: 'x', family: 'DEV' } })).status, 404);
+  const item = await post('/api/brain/categorise', { id: 'P-DEV-01014.01', details: { next: 'Do it', family: 'DEV', owner: 'leon', due: '2030-02-01', minutes: 90 } });
+  assert.equal(item.status, 200);
+  assert.match(written('register/open-items.md'), /`id: DEV-01014\.01` `kind: action` `state: open` `owner: leon` `due: 2030-02-01` `minutes: 90`\n\nSource: s\nNext: Do it\n/);
 });

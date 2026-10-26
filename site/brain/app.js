@@ -4,8 +4,8 @@
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
 import {
   VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
-  closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext,
-} from './home.js?v=20261027d';
+  closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
+} from './home.js?v=20261027e';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -356,10 +356,16 @@ function renderHome(tab = homeTab() || 'focus') {
 
 els.doc.addEventListener('click', (e) => {
   // A task row opens its card (Brain D-97 A); a modified click still opens the file.
-  const taskLink = e.target.closest('a[data-cc-ref]');
+  const taskLink = e.target.closest('a[data-cc-ref], a[data-cc-line], a[data-cc-sort]');
   if (taskLink && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
     e.preventDefault();
-    openTask(taskLink.dataset.ccRef);
+    const d = taskLink.dataset;
+    if (d.ccRef) openTask(d.ccRef);
+    else if (d.ccSort) openSort({ kind: 'item', entry: entryFor(d.ccSort) });
+    else {
+      const row = (home.view.inbox || []).find((r) => r.kind === 'line' && (r.raw || r.text) === d.ccLine && r.home === `project:${d.ccProject}`);
+      if (row) openSort({ ...row, kind: 'line' });
+    }
     return;
   }
   const el = e.target.closest('[data-cc-lens], [data-cc-context], [data-cc-area], [data-cc-clear], [data-cc-inbox-all]');
@@ -567,7 +573,8 @@ els.doc.addEventListener('submit', async (e) => {
 // clock runs at a time. Finishing a task shows the reward and moves the next hot item up.
 
 let clock = null; // { ref, title, area, lens, date, start, startMs, written }
-const task = { ref: null, panel: '', message: '', reward: null };
+const task = { ref: null, panel: '', message: '', reward: null, sort: null };
+let families = [];
 
 const modal = document.createElement('div');
 modal.className = 'tk-wrap';
@@ -586,6 +593,11 @@ function projectSlugs() {
 const entryFor = (ref) => home.view?.entries.find((e) => e.ref === ref) || null;
 
 function renderTask() {
+  if (task.sort) {
+    modal.querySelector('.tk').innerHTML = categoriseHtml(task.sort, { families, message: task.message });
+    modal.hidden = false;
+    return;
+  }
   if (task.reward) {
     modal.querySelector('.tk').innerHTML = rewardHtml(task.reward);
     modal.hidden = false;
@@ -616,8 +628,19 @@ setInterval(() => {
 
 function openTask(ref) {
   if (!entryFor(ref)) return;
-  Object.assign(task, { ref, panel: '', message: '', reward: null });
+  Object.assign(task, { ref, panel: '', message: '', reward: null, sort: null });
   refreshAll();
+}
+
+// The categorisation card (Brain D-100 B), with the family list read from Brain.
+async function openSort(target) {
+  if (target.kind === 'item' && !target.entry) return;
+  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: target });
+  refreshAll();
+  if (!families.length && state.paths.has('context/families.md')) {
+    try { families = parseFamilies(await fileText('context/families.md')); } catch { /* the card falls back to the item's own family */ }
+    if (task.sort === target) renderTask();
+  }
 }
 
 const placeOf = (entry) => ({ area: entry.lens === 'work' ? entry.area || '' : '', lens: entry.lens || '' });
@@ -720,8 +743,31 @@ async function stopIfMine(entry) {
 }
 
 function hideTask() {
-  Object.assign(task, { ref: null, panel: '', reward: null });
+  Object.assign(task, { ref: null, panel: '', reward: null, sort: null });
   refreshAll();
+}
+
+// After a save, this page's copy follows until Brain regenerates the view.
+function afterSort(target, d) {
+  const today = perthDay().today;
+  if (target.kind === 'line') {
+    const row = (home.view.inbox || []).find((r) => r === target || ((r.raw || r.text) === (target.raw || target.text) && r.home === target.home));
+    if (row) Object.assign(row, { text: d.title || row.text, details: { ...d, categorised: today } });
+    return 'Saved. It becomes a card at the next groom.';
+  }
+  const e = target.entry;
+  const number = e.ref.match(/-(\d{5}\.\d{2,3})$/)[1];
+  const landed = `${d.family}-${number}`;
+  for (const slot of Object.values(home.view.lenses)) {
+    slot.quiet.unconfirmed = slot.quiet.unconfirmed.filter((r) => r !== e.ref);
+    slot.hot = slot.hot.map((r) => (r === e.ref ? landed : r));
+    if (slot.focal && slot.focal.ref === e.ref) slot.focal.ref = landed;
+  }
+  home.view.inbox = (home.view.inbox || []).filter((r) => !(r.kind === 'unconfirmed' && r.ref === e.ref));
+  if (clock && clock.ref === e.ref) clock.ref = landed;
+  Object.assign(e, { ref: landed, title: d.title || e.title, next: d.next, owner: d.owner, due: d.due || 'unknown',
+    minutes: d.minutes ? String(d.minutes) : e.minutes, flags: (e.flags || []).filter((f) => f !== 'unconfirmed') });
+  return `Saved as ${landed}.`;
 }
 
 modal.addEventListener('click', async (e) => {
@@ -730,6 +776,7 @@ modal.addEventListener('click', async (e) => {
   const entry = entryFor(task.ref);
   const act = btn.dataset.tk;
   if (act === 'next') return openTask(btn.dataset.ref);
+  if (act === 'categorise' && entry) return openSort({ kind: 'item', entry });
   if (act === 'file') { task.ref = null; modal.hidden = true; renderClock(); return; }
   if (act === 'hide' || !entry) return hideTask();
   if (act === 'stop') { await stopClock(); return; }
@@ -808,6 +855,26 @@ modal.addEventListener('submit', async (e) => {
   const form = e.target.closest('[data-tk-form]');
   if (!form) return;
   e.preventDefault();
+  if (form.dataset.tkForm === 'categorise') {
+    const target = task.sort;
+    const f = form.elements;
+    const d = { title: f.title.value.trim(), next: f.next.value.trim(), family: f.family.value, priority: f.priority ? f.priority.value : '',
+      minutes: f.minutes.value ? Number(f.minutes.value) : null, due: f.due.value, owner: f.owner.value.trim().toLowerCase() || 'leon' };
+    for (const el of f) el.disabled = true;
+    try {
+      const body = target.kind === 'line' ? { project: projectOf(target), line: target.raw || target.text, details: d } : { id: target.entry.ref, details: d };
+      await write('/categorise', body);
+      const done = afterSort(target, d);
+      Object.assign(task, { sort: null, ref: null });
+      refreshAll();
+      bar.hidden = false;
+      bar.innerHTML = `<span class="cb-t">${escapeHtml(done)}</span><button type="button" class="mini-btn" data-cb="dismiss">OK</button>`;
+    } catch (err) {
+      task.message = writeError(err);
+      renderTask();
+    }
+    return;
+  }
   const entry = entryFor(task.ref);
   if (!entry) return;
   if (form.dataset.tkForm === 'time') {
@@ -853,6 +920,7 @@ modal.addEventListener('submit', async (e) => {
 bar.addEventListener('click', async (e) => {
   const act = e.target.closest('[data-cb]')?.dataset.cb;
   if (act === 'open' && clock) openTask(clock.ref);
+  if (act === 'dismiss') renderClock();
   if (act === 'stop') await stopClock();
 });
 

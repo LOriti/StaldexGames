@@ -30,11 +30,13 @@
 //   POST /api/brain/close   { id, text }    → { path, sha, commit }   register items only
 //   POST /api/brain/clock   { action, ref, start[, date], title, area, lens } → on daily-log
 //   POST /api/brain/hours   { minutes, area | lens | ref, note } → on daily-log
+//   POST /api/brain/categorise { project, line, details } | { id, details } → an Inbox line or an open item
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
-import { QueueError, addInbox, cardProgress, markDone, perthDate } from './queue.js';
-import { FLAGS, REGISTER_ID, REGISTER_PATH, closeItem, confirmFlag, itemProgress, rejectFlag } from './register.js';
+import { QueueError, addInbox, cardProgress, categoriseLine, markDone, perthDate } from './queue.js';
+import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, itemProgress, rejectFlag } from './register.js';
+import { cleanDetails, lineAttrs } from './categorise.js';
 import { DATE, LOG_BRANCH, appendTime, clockRow, hoursRow, logPath, parseTime, perthClock } from './timelog.js';
 
 const TREE_TTL_MS = 30 * 1000;
@@ -196,6 +198,17 @@ const WRITES = {
     valid: (body) => typeof body.text === 'string' && isRegisterItem(body),
     apply: (text, body, today) => closeItem(text, body.id, body.text, today),
     message: (body) => `web: close ${body.id}`,
+  },
+  // Leon's details for an Inbox line (kept on the line for the scheduled groom) or an open
+  // register item (set, and a new item confirmed): Brain D-100 B.
+  '/api/brain/categorise': {
+    path: (body) => (body.id !== undefined ? REGISTER_PATH : queuePath(body)),
+    valid: (body) => (body.id !== undefined ? isRegisterItem(body) : typeof body.line === 'string') && typeof body.details === 'object',
+    apply: (text, body, today) => {
+      const d = cleanDetails(body.details);
+      return body.id !== undefined ? categoriseItem(text, body.id, d, today) : categoriseLine(text, body.line, d, lineAttrs(d, today), today);
+    },
+    message: (body) => `web: categorise ${body.id || `inbox ${body.project}`}`,
   },
   // Task clock rows (Brain D-97 A) and hours typed in (D-96 C), appended to today's log
   // on the daily-log branch, which may not have today's file yet.

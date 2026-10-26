@@ -123,7 +123,7 @@ test('the inbox sits under Also hot, filtered by lens, capped, with an add box',
   assert.match(html, /Show all 10/);
   assert.match(html, /href="#\/register\/open-items\.md\?item=P-X-1\.01"/);
   const known = { ...view, entries: [...view.entries, entry('P-X-1.01')] };
-  assert.match(home.homeHtml(known, { lens: 'work' }), /item=P-X-1\.01" data-cc-ref="P-X-1\.01"/);
+  assert.match(home.homeHtml(known, { lens: 'work' }), /item=P-X-1\.01" data-cc-sort="P-X-1\.01"/);
   assert.match(html, /<form class="cc-inbox-add">[\s\S]*<option value="alpha"( selected)?>/);
   assert.doesNotMatch(html, /&lt;b&gt;x/, 'personal capture hidden in Work');
   assert.match(home.homeHtml(view, { lens: 'all', inboxAll: true }), /&lt;b&gt;x&lt;\/b&gt;/);
@@ -209,4 +209,26 @@ test('finishing a task rewards it and moves the next hot item into focus', () =>
 test('contexts and areas filter Priority, not Focus (Brain D-101 B)', () => {
   assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', tab: 'focus' }), /class="cc-doors"/);
   assert.match(home.homeHtml(VIEW, { lens: 'work', tab: 'priority' }), /class="cc-doors"><span class="cc-lbl">Contexts/);
+});
+
+test('inbox lines and new items open the categorisation card', () => {
+  const view = { ...VIEW, inbox: [
+    { kind: 'line', text: 'Buy milk', raw: 'Buy milk', details: {}, family: '?', home: 'project:alpha', date: '2030-01-01', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'work' },
+    { kind: 'line', text: 'Done one', raw: 'Done one `categorised: 2030-01-01`', details: { categorised: '2030-01-01' }, family: 'DEV', home: 'project:alpha', date: '2030-01-01', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'work' },
+    { kind: 'unconfirmed', text: 'New', home: 'project:alpha', date: '2030-01-01', path: 'register/open-items.md', ref: 'A-2', lens: 'work' },
+  ] };
+  const html = home.homeHtml(view, { lens: 'work' });
+  assert.match(html, /data-cc-line="Buy milk" data-cc-project="alpha"/);
+  assert.match(html, /data-cc-sort="A-2"/);
+  assert.match(html, /categorised · becomes a card/);
+  const fams = home.parseFamilies('| Family | Covers |\n|---|---|\n| WORK-SYS | Systems |\n| `?` | Awaiting |');
+  assert.deepEqual(fams.map((f) => f.code), ['WORK-SYS', '?']);
+  const card = home.categoriseHtml({ kind: 'line', text: 'Buy <milk>', details: {}, family: 'WORK-SYS', home: 'project:alpha' }, { families: fams });
+  assert.match(card, /value="Buy &lt;milk&gt;"/);
+  assert.match(card, /<option value="WORK-SYS" selected>/);
+  assert.match(card, /name="priority"/);
+  assert.match(card, /Save for grooming/);
+  const item = home.categoriseHtml({ kind: 'item', entry: entry('P-WORK-COMP-60101.07', { flags: ['unconfirmed'] }) }, { families: fams });
+  assert.match(item, /Save and confirm/);
+  assert.doesNotMatch(item, /name="priority"/);
 });
