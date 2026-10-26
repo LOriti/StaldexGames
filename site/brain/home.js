@@ -46,6 +46,11 @@ export function sourcePath(entry) {
   return /^D-\d+$/.test(entry.ref) ? 'register/decisions.md' : 'register/open-items.md';
 }
 
+// The link for an entry: its file, with `?item=` so the viewer scrolls to that card or item.
+export function entryHref(entry) {
+  return `#/${encodeURI(sourcePath(entry))}?item=${encodeURIComponent(entry.ref)}`;
+}
+
 export function lensEntries(view, lens) {
   return view.entries.filter((e) => lens === 'all' || e.lens === lens);
 }
@@ -60,7 +65,7 @@ function row(e, open = true) {
   const stripe = e.section === 'hot' ? 'hot' : e.claude === 'back' ? 'ok' : '';
   const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(e.ref)} · ${esc(e.home)}${e.area ? ` · area ${esc(e.area)}` : ''}</span>` +
     `<span class="cc-t">${esc(e.title)}</span>${chips(e) ? `<span class="cc-why">${chips(e)}</span>` : ''}</span>`;
-  return open ? `<a class="cc-row" href="#/${encodeURI(sourcePath(e))}">${body}</a>` : `<div class="cc-row">${body}</div>`;
+  return open ? `<a class="cc-row" href="${entryHref(e)}">${body}</a>` : `<div class="cc-row">${body}</div>`;
 }
 
 function focusTab(view, lens, byRef) {
@@ -68,7 +73,7 @@ function focusTab(view, lens, byRef) {
   const focal = slot.focal && byRef.get(slot.focal.ref);
   let html = '';
   if (focal) {
-    html += `<a class="cc-focal" href="#/${encodeURI(sourcePath(focal))}"><span class="cc-k">The one thing</span>` +
+    html += `<a class="cc-focal" href="${entryHref(focal)}"><span class="cc-k">The one thing</span>` +
       `<span class="cc-ttl">${esc(focal.title)}</span><span class="cc-why">${chips(focal)}</span>` +
       `<span class="cc-id">${esc(focal.ref)} · ${esc(focal.home)} · ${esc(slot.focal.reason)}</span></a>`;
   } else {

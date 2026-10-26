@@ -2,7 +2,7 @@
 // Data comes from /api/brain (worker-brain/), behind Cloudflare Access.
 
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
-import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026e';
+import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026f';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -286,7 +286,8 @@ async function show(path) {
     const title = els.doc.querySelector('h1')?.textContent || label(path);
     document.title = `${title} — Brain`;
     els.doc.focus({ preventScroll: true });
-    window.scrollTo(0, 0);
+    const item = currentItem();
+    if (!item || !jumpToItem(item)) window.scrollTo(0, 0);
   } catch (err) {
     showError(err);
   } finally {
@@ -359,8 +360,25 @@ els.doc.addEventListener('click', (e) => {
 });
 
 function currentPath() {
-  const raw = location.hash.replace(/^#\/?/, '');
+  const raw = location.hash.replace(/^#\/?/, '').split('?')[0];
   try { return decodeURI(raw) || HOME; } catch { return HOME; }
+}
+
+// `#/<file>?item=<id>` from a home row: the card or item to scroll to once the file shows.
+function currentItem() {
+  const query = location.hash.split('?')[1] || '';
+  return new URLSearchParams(query).get('item');
+}
+
+// The H3 whose attribute line carries this id, highlighted and scrolled into view.
+function jumpToItem(ref) {
+  const value = ref.toLowerCase();
+  const field = [...els.doc.querySelectorAll('code.field[data-key="id"]')].find((f) => f.dataset.value === value);
+  const h3 = field?.closest('p')?.previousElementSibling;
+  if (!h3 || h3.tagName !== 'H3') return false;
+  h3.classList.add('target');
+  h3.scrollIntoView({ block: 'start' });
+  return true;
 }
 
 // ---- queue and register writes ---------------------------------------------------
