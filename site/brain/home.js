@@ -87,7 +87,7 @@ function focusTab(view, lens, byRef) {
   const parts = [];
   if (q.needs_review_date.length) parts.push(`${q.needs_review_date.length} parked without a review date (${esc(q.needs_review_date.join(', '))})`);
   if (q.no_owner.length) parts.push(`${q.no_owner.length} with no owner: delegate? (${esc(q.no_owner.join(', '))})`);
-  if (q.unconfirmed.length || q.close_proposed.length) parts.push(`Clarify: ${q.unconfirmed.length} unconfirmed, ${q.close_proposed.length} close proposed`);
+  if (q.unconfirmed.length || q.close_proposed.length) parts.push(`<a href="#/register/open-items.md">Clarify: ${q.unconfirmed.length} unconfirmed, ${q.close_proposed.length} close proposed</a>`);
   if (parts.length) html += `<p class="cc-quiet">${parts.map((p) => `<span>${p}</span>`).join('')}</p>`;
   html += `<div class="cc-doors"><span class="cc-lbl">Contexts</span>${Object.entries(slot.contexts).map(([k, c]) =>
     `<button type="button" class="cc-door" data-cc-context="${esc(k)}">${CONTEXT_NAMES[k] || esc(k)} <span class="c">${c.count}</span>${c.hot ? '<span class="cc-hd" title="something hot"></span>' : ''}</button>`).join('')}</div>`;
