@@ -206,11 +206,12 @@ test('write bodies are validated against the path-safety rules', async () => {
     { project: 'demo', text: 'a'.repeat(5000) },
   ];
   for (const body of bad) assert.equal((await post('/api/brain/inbox', body, { token })).status, 400, JSON.stringify(body));
-  for (const id of [undefined, 'other-001', 'demo-1', 'demo-001/x', '../demo-001']) {
+  for (const id of [undefined, 'other-001', 'demo-1', 'demo-001/x', '../demo-001', 'DEV-6102.01', 'dev-61025.14', 'DEV-61025.14/x', 'P DEV-61025.14']) {
     assert.equal((await post('/api/brain/done', { project: 'demo', id }, { token })).status, 400, String(id));
   }
   assert.equal((await post('/api/brain/inbox', { project: 'demo', text: '   ' }, { token })).status, 400);
   assert.equal((await post('/api/brain/done', { project: 'demo', id: 'demo-009' }, { token })).status, 404);
+  assert.equal((await post('/api/brain/done', { project: 'demo', id: 'DEV-61025.99' }, { token })).status, 404);
   assert.equal((await post('/api/brain/inbox', { project: 'nope', text: 'a' }, { token })).status, 404);
   assert.equal(repo.puts.length, 0);
 });

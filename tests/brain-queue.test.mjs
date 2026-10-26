@@ -183,3 +183,11 @@ test('perthDate is UTC+8 with no daylight saving', () => {
   assert.equal(perthDate(Date.UTC(2030, 0, 14, 16, 0)), '2030-01-15');
   assert.equal(perthDate(Date.UTC(2030, 6, 14, 16, 0)), '2030-07-15');
 });
+
+test('done finds a card by its date-based id, dots and question marks included', () => {
+  const dated = QUEUE.replace('`id: demo-002`', '`id: ?-61025.14` `alias: demo-002`');
+  const out = markDone(dated, '?-61025.14', TODAY);
+  assert.match(out, /## Done\n\n### [^\n]+\n\n`id: \?-61025\.14` `alias: demo-002`.*`done: 2030-01-15`/);
+  assert.throws(() => markDone(dated, '?-61025.1', TODAY), QueueError);
+  assert.throws(() => markDone(dated, 'X-61025.14', TODAY), QueueError);
+});
