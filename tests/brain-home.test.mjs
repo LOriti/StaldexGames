@@ -25,11 +25,13 @@ const VIEW = {
     entry('A-2', { title: '<img src=x onerror=alert(1)>' }),
     entry('alpha-001', { source: 'card', lens: 'ventures', context: 'computer', claude: 'ready' }),
     entry('D-9', { home: 'project:alpha', lens: 'ventures' }),
+    entry('beta-001', { home: 'project:beta', lens: 'brain' }),
   ],
   lenses: {
     work: slot({ focal: { ref: 'A-1', reason: 'chosen by the morning brief' }, hot: [], hot_total: 1 }),
     ventures: slot({ claude: ['alpha-001'], claude_total: 1 }),
     personal: slot(),
+    brain: slot(),
     all: slot({ focal: { ref: 'A-1', reason: 'hottest by rule' }, hot_total: 1, claude: ['alpha-001'], claude_total: 1 }),
   },
   allocation: { areas: { 1: { name: 'Systems', hours: 16 } }, float: 6, total: 40 },
@@ -85,4 +87,15 @@ test('the quiet line links what awaits confirmation to the register', () => {
   assert.match(home.homeHtml(view, { lens: 'work', tab: 'focus' }),
     /<a href="#\/register\/open-items\.md">Clarify: 1 unconfirmed, 2 close proposed<\/a>/);
   assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', tab: 'focus' }), /Clarify/);
+});
+
+test('Brain has its own lens, and an older view without it falls back to All', () => {
+  const brain = home.homeHtml(VIEW, { lens: 'brain', tab: 'priority' });
+  assert.match(brain, /data-cc-lens="brain" aria-pressed="true">Brain</);
+  assert.match(brain, /beta-001/);
+  assert.doesNotMatch(brain, /alpha-001/);
+  const { brain: _drop, ...older } = VIEW.lenses;
+  const html = home.homeHtml({ ...VIEW, lenses: older }, { lens: 'brain', tab: 'focus' });
+  assert.doesNotMatch(html, /data-cc-lens="brain"/);
+  assert.match(html, /data-cc-lens="all" aria-pressed="true"/);
 });
