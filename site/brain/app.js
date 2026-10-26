@@ -4,8 +4,8 @@
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
 import {
   VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
-  closeKind, fmtElapsed, fmtMinutes, clockMinutes,
-} from './home.js?v=20261027b';
+  closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext,
+} from './home.js?v=20261027c';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -29,7 +29,7 @@ const state = {
 const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false };
 
 function homeTab() {
-  const match = /^#(?:\/)?(focus|priority|allocation)?$/.exec(location.hash || '#');
+  const match = /^#(?:\/)?(focus|priority|clarify|allocation)?$/.exec(location.hash || '#');
   return match ? (match[1] || 'focus') : null;
 }
 
@@ -350,6 +350,7 @@ function renderHome(tab = homeTab() || 'focus') {
   const asOf = `${home.view.date}${when ? `, last change ${when}` : ''}`;
   els.doc.innerHTML = homeHtml(home.view, {
     lens: home.lens, tab, filter: home.filter, asOf, time: home.time, clock, projects: projectSlugs(), inboxAll: home.inboxAll,
+    today: perthDay().today,
   });
 }
 
@@ -559,14 +560,14 @@ els.doc.addEventListener('submit', async (e) => {
 });
 
 // ---- the task card and its clock (Brain D-96 C, D-97 A, D-98 A) -------------------------
-// Tapping a task opens its card and starts its clock. The clock is saved as a `started`
-// row on Brain's daily log after its first minute, so a stray tap records nothing, and a
-// `tracked` row when it stops. Closing the card leaves the clock running, shown in a bar;
-// any screen reading the daily log sees the same clock. One clock runs at a time.
+// Tapping a task opens its card. Its clock starts only when Leon presses Start, which
+// writes a `started` row on Brain's daily log; Stop writes the `tracked` row, and Add time
+// writes an `entered` row for time he did not clock. Closing the card leaves the clock
+// running, shown in a bar; any screen reading the daily log sees the same clock. One
+// clock runs at a time. Finishing a task shows the reward and moves the next hot item up.
 
 let clock = null; // { ref, title, area, lens, date, start, startMs, written }
-let clockSave = null;
-const task = { ref: null, panel: '', message: '' };
+const task = { ref: null, panel: '', message: '', reward: null };
 
 const modal = document.createElement('div');
 modal.className = 'tk-wrap';
@@ -585,6 +586,11 @@ function projectSlugs() {
 const entryFor = (ref) => home.view?.entries.find((e) => e.ref === ref) || null;
 
 function renderTask() {
+  if (task.reward) {
+    modal.querySelector('.tk').innerHTML = rewardHtml(task.reward);
+    modal.hidden = false;
+    return;
+  }
   const entry = task.ref && entryFor(task.ref);
   if (!entry) { modal.hidden = true; task.ref = null; return; }
   const panel = task.panel ? taskPanel(task.panel, entry) : '';
@@ -609,28 +615,22 @@ setInterval(() => {
 }, 1000);
 
 function openTask(ref) {
-  const entry = entryFor(ref);
-  if (!entry) return;
-  task.ref = ref;
-  task.panel = '';
-  task.message = '';
-  if (!clock) startClock(entry);
+  if (!entryFor(ref)) return;
+  Object.assign(task, { ref, panel: '', message: '', reward: null });
   refreshAll();
 }
 
-function startClock(entry) {
-  const { today, hhmm } = perthDay();
-  clock = { ref: entry.ref, title: entry.title, area: entry.lens === 'work' ? entry.area || '' : '', lens: entry.lens || '', date: today, start: hhmm, startMs: Date.now(), written: false };
-  clearTimeout(clockSave);
-  const mine = clock;
-  clockSave = setTimeout(() => saveStart(mine), 60 * 1000);
-}
+const placeOf = (entry) => ({ area: entry.lens === 'work' ? entry.area || '' : '', lens: entry.lens || '' });
 
-async function saveStart(c) {
-  if (clock !== c || c.written) return;
+// Starting is deliberate, so the start row is written at once.
+async function startClock(entry) {
+  const { today, hhmm } = perthDay();
+  const next = { ref: entry.ref, title: entry.title, ...placeOf(entry), date: today, start: hhmm, startMs: Date.now(), written: false };
   try {
-    await api('/clock', { action: 'start', ref: c.ref, title: c.title, area: c.area, lens: c.lens, start: c.start });
-    c.written = true;
+    await api('/clock', { action: 'start', ref: next.ref, title: next.title, area: next.area, lens: next.lens, start: next.start });
+    next.written = true;
+    clock = next;
+    task.message = '';
   } catch (err) {
     task.message = `Clock not saved: ${writeError(err)}`;
   }
@@ -641,7 +641,6 @@ async function saveStart(c) {
 async function stopClock() {
   const c = clock;
   if (!c) return true;
-  clearTimeout(clockSave);
   clock = null;
   if (c.written) {
     try {
@@ -681,21 +680,47 @@ async function loadTime() {
   refreshAll();
 }
 
-// A closed task leaves this page's copy of the view at once; Brain regenerates the view
-// within a minute or two of the commit.
+// A finished task leaves this page's copy of the view at once and the next hot item moves
+// up; Brain regenerates the view within a minute or two of the commit.
 function dropFromView(ref) {
-  const v = home.view;
-  v.entries = v.entries.filter((e) => e.ref !== ref);
-  for (const slot of Object.values(v.lenses)) {
-    slot.hot = slot.hot.filter((r) => r !== ref);
-    slot.claude = slot.claude.filter((r) => r !== ref);
-    if (slot.focal && slot.focal.ref === ref) slot.focal = null;
-  }
+  promoteNext(home.view, ref);
+}
+
+// Minutes recorded against a task today, from the daily log's rows.
+function minutesToday(ref) {
+  const { today } = perthDay();
+  return (home.time?.rows || []).filter((r) => r.ref === ref && r.date === today && r.kind !== 'started' && r.kind !== 'planned')
+    .reduce((n, r) => n + (r.minutes || 0), 0);
+}
+
+function doneTodayCount() {
+  const key = `brain.done.${perthDay().today}`;
+  let n = 1;
+  try { n = Number(localStorage.getItem(key) || 0) + 1; localStorage.setItem(key, String(n)); } catch { /* private mode */ }
+  return n;
+}
+
+// The task is done: drop it, show the reward, and offer the item now in focus.
+function celebrate(entry, clockedNow) {
+  const minutes = minutesToday(entry.ref) + clockedNow;
+  dropFromView(entry.ref);
+  const slot = home.view.lenses[home.lens] || home.view.lenses.all;
+  const next = slot.focal ? entryFor(slot.focal.ref) : null;
+  task.reward = { title: entry.title, ref: entry.ref, minutes, today: doneTodayCount(), next };
+  task.ref = null;
+  refreshAll();
+}
+
+// Stops this task's clock if it is the one running; returns the minutes it ran, or null
+// when the stop could not be saved.
+async function stopIfMine(entry) {
+  if (!clock || clock.ref !== entry.ref) return 0;
+  const ran = clockMinutes(clock);
+  return (await stopClock()) ? ran : null;
 }
 
 function hideTask() {
-  task.ref = null;
-  task.panel = '';
+  Object.assign(task, { ref: null, panel: '', reward: null });
   refreshAll();
 }
 
@@ -704,17 +729,36 @@ modal.addEventListener('click', async (e) => {
   if (!btn) return;
   const entry = entryFor(task.ref);
   const act = btn.dataset.tk;
+  if (act === 'next') return openTask(btn.dataset.ref);
   if (act === 'file') { task.ref = null; modal.hidden = true; renderClock(); return; }
   if (act === 'hide' || !entry) return hideTask();
   if (act === 'stop') { await stopClock(); return; }
-  if (act === 'start') { startClock(entry); task.message = ''; return refreshAll(); }
-  if (act === 'switch') { if (await stopClock()) { startClock(entry); refreshAll(); } return; }
+  if (act === 'start') { await startClock(entry); return; }
+  if (act === 'switch') { if (await stopClock()) await startClock(entry); return; }
   if (act === 'cancel') { task.panel = ''; return renderTask(); }
-  if (act === 'done-ask' || act === 'progress-ask') {
-    task.panel = act === 'done-ask' ? 'done' : 'progress';
+  if (act === 'confirm-close' || act === 'reject-close') {
+    for (const b of modal.querySelectorAll('button')) b.disabled = true;
+    try {
+      if (act === 'confirm-close') {
+        const ran = await stopIfMine(entry);
+        if (ran === null) return;
+        await write('/confirm', { id: entry.ref, flag: 'close-proposed' });
+        return celebrate(entry, ran);
+      }
+      await write('/reject', { id: entry.ref, flag: 'close-proposed' });
+      for (const slot of Object.values(home.view.lenses)) slot.quiet.close_proposed = slot.quiet.close_proposed.filter((r) => r !== entry.ref);
+      entry.flags = (entry.flags || []).filter((f) => f !== 'close-proposed');
+      task.message = 'Kept open.';
+    } catch (err) {
+      task.message = writeError(err);
+    }
+    return refreshAll();
+  }
+  if (act === 'done-ask' || act === 'progress-ask' || act === 'time-ask') {
+    task.panel = { 'done-ask': 'done', 'progress-ask': 'progress', 'time-ask': 'time' }[act];
     task.message = '';
     renderTask();
-    modal.querySelector('textarea, [data-tk="done"]')?.focus();
+    modal.querySelector('textarea, input, [data-tk="done"]')?.focus();
     return;
   }
   if (act === 'confirm' || act === 'reject') {
@@ -732,7 +776,10 @@ modal.addEventListener('click', async (e) => {
         for (const slot of Object.values(home.view.lenses)) {
           slot.hot = slot.hot.map((r) => (r === entry.ref ? landed : r));
           if (slot.focal && slot.focal.ref === entry.ref) slot.focal.ref = landed;
+          slot.quiet.unconfirmed = slot.quiet.unconfirmed.filter((r) => r !== entry.ref);
+          slot.quiet.close_proposed = slot.quiet.close_proposed.map((r) => (r === entry.ref ? landed : r));
         }
+        entry.flags = (entry.flags || []).filter((f) => f !== 'unconfirmed');
         if (clock && clock.ref === entry.ref) clock.ref = landed;
         entry.ref = landed;
         task.ref = landed;
@@ -745,12 +792,11 @@ modal.addEventListener('click', async (e) => {
   }
   if (act === 'done') {
     for (const b of modal.querySelectorAll('button')) b.disabled = true;
-    if (clock && clock.ref === entry.ref && !(await stopClock())) return;
+    const ran = await stopIfMine(entry);
+    if (ran === null) return;
     try {
       await write('/done', { project: projectOf(entry), id: entry.ref });
-      dropFromView(entry.ref);
-      task.ref = null;
-      refreshAll();
+      celebrate(entry, ran);
     } catch (err) {
       task.message = writeError(err);
       renderTask();
@@ -763,16 +809,33 @@ modal.addEventListener('submit', async (e) => {
   if (!form) return;
   e.preventDefault();
   const entry = entryFor(task.ref);
+  if (!entry) return;
+  if (form.dataset.tkForm === 'time') {
+    const minutes = Math.round(Number(form.elements.minutes.value) / 15) * 15;
+    if (!(minutes > 0)) return;
+    for (const el of form.elements) el.disabled = true;
+    try {
+      await api('/hours', { minutes, ref: entry.ref, ...placeOf(entry), note: entry.title });
+      task.panel = '';
+      task.message = `Added ${fmtMinutes(minutes)} to ${entry.ref}.`;
+      await loadTime();
+    } catch (err) {
+      task.message = writeError(err);
+      for (const el of form.elements) el.disabled = false;
+      renderTask();
+    }
+    return;
+  }
   const text = form.elements.text.value.trim();
-  if (!entry || !text) return;
+  if (!text) return;
   for (const el of form.elements) el.disabled = true;
   const closing = form.dataset.tkForm === 'close';
   try {
     if (closing) {
-      if (clock && clock.ref === entry.ref && !(await stopClock())) { for (const el of form.elements) el.disabled = false; return; }
+      const ran = await stopIfMine(entry);
+      if (ran === null) { for (const el of form.elements) el.disabled = false; return; }
       await write('/close', { id: entry.ref, text });
-      dropFromView(entry.ref);
-      task.ref = null;
+      return celebrate(entry, ran);
     } else {
       const card = closeKind(entry) === 'card';
       await write('/progress', { id: entry.ref, text, ...(card ? { project: projectOf(entry) } : {}) });
@@ -789,7 +852,7 @@ modal.addEventListener('submit', async (e) => {
 
 bar.addEventListener('click', async (e) => {
   const act = e.target.closest('[data-cb]')?.dataset.cb;
-  if (act === 'open' && clock) { task.ref = clock.ref; task.panel = ''; task.message = ''; refreshAll(); }
+  if (act === 'open' && clock) openTask(clock.ref);
   if (act === 'stop') await stopClock();
 });
 

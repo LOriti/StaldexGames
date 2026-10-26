@@ -83,12 +83,23 @@ test('allocation lists the areas and float', () => {
   assert.match(html, /Float/);
 });
 
-test('the quiet line links what awaits confirmation to the register', () => {
-  const quiet = { needs_review_date: [], no_owner: [], unconfirmed: ['P-X-1'], close_proposed: ['Y-2', 'Y-3'] };
+test('what is not prioritised lives on the Clarify tab, with a count and a link from Focus', () => {
+  const quiet = { needs_review_date: ['A-2'], no_owner: [], unconfirmed: ['A-1'], close_proposed: [] };
   const view = { ...VIEW, lenses: { ...VIEW.lenses, work: { ...VIEW.lenses.work, quiet } } };
-  assert.match(home.homeHtml(view, { lens: 'work', tab: 'focus' }),
-    /<a href="#\/register\/open-items\.md">Clarify: 1 unconfirmed, 2 close proposed<\/a>/);
-  assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', tab: 'focus' }), /Clarify/);
+  const focus = home.homeHtml(view, { lens: 'work', tab: 'focus' });
+  assert.match(focus, /<a href="#clarify">\d+ to clarify/);
+  assert.match(focus, /href="#clarify">Clarify <span class="cc-n">\d+<\/span>/);
+  const clarify = home.homeHtml(view, { lens: 'work', tab: 'clarify' });
+  assert.match(clarify, /New items to confirm <em>1<\/em>[\s\S]*data-cc-ref="A-1"/);
+  assert.match(clarify, /Parked without a review date <em>1<\/em>[\s\S]*data-cc-ref="A-2"/);
+  assert.match(clarify, /No estimate yet/);
+  const sorted = { ...VIEW, entries: VIEW.entries.map((e) => ({ ...e, minutes: '30' })) };
+  assert.match(home.homeHtml(sorted, { lens: 'personal', tab: 'clarify' }), /Nothing to clarify in this lens/);
+});
+
+test('a view from an earlier Perth day says so', () => {
+  assert.match(home.homeHtml(VIEW, { lens: 'work', today: '2026-10-27' }), /class="cc-stale"[^>]*>This view was made for 2026-10-26/);
+  assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', today: '2026-10-26' }), /cc-stale/);
 });
 
 test('Brain has its own lens, and an older view without it falls back to All', () => {
@@ -102,15 +113,17 @@ test('Brain has its own lens, and an older view without it falls back to All', (
   assert.match(html, /data-cc-lens="all" aria-pressed="true"/);
 });
 
-test('the inbox leads the home, filtered by lens, capped, with an add box', () => {
+test('the inbox sits under Also hot, filtered by lens, capped, with an add box', () => {
   const inbox = Array.from({ length: 10 }, (_, i) => ({ kind: i ? 'line' : 'unconfirmed', text: `Idea ${i}`, home: 'project:alpha',
     date: '2030-01-01', path: i ? 'projects/alpha/QUEUE.md' : 'register/open-items.md', ref: i ? null : 'P-X-1.01', lens: 'work' }));
   const view = { ...VIEW, inbox: [...inbox, { kind: 'capture', text: '<b>x</b>', home: 'area:y', date: '2030-01-02', path: 'inbox/a.md', ref: null, lens: 'personal' }] };
   const html = home.homeHtml(view, { lens: 'work', projects: ['alpha'] });
-  assert.ok(html.indexOf('cc-inbox') < html.indexOf('cc-focal'), 'inbox comes first');
+  assert.ok(html.indexOf('cc-inbox') > html.indexOf('Also hot'), 'inbox sits under Also hot');
   assert.equal((html.match(/class="cc-row cc-in"/g) || []).length, 8);
   assert.match(html, /Show all 10/);
   assert.match(html, /href="#\/register\/open-items\.md\?item=P-X-1\.01"/);
+  const known = { ...view, entries: [...view.entries, entry('P-X-1.01')] };
+  assert.match(home.homeHtml(known, { lens: 'work' }), /item=P-X-1\.01" data-cc-ref="P-X-1\.01"/);
   assert.match(html, /<form class="cc-inbox-add">[\s\S]*<option value="alpha"( selected)?>/);
   assert.doesNotMatch(html, /&lt;b&gt;x/, 'personal capture hidden in Work');
   assert.match(home.homeHtml(view, { lens: 'all', inboxAll: true }), /&lt;b&gt;x&lt;\/b&gt;/);
@@ -165,4 +178,30 @@ test('the task card: estimate, clock and what closing means', () => {
   assert.match(home.homeHtml({ ...VIEW, inbox: [] }, { lens: 'ventures', projects: ['aaa', 'alpha'] }), /<option value="alpha" selected>/);
   assert.match(home.taskPanel('done', entry('X-1.01')), /data-tk-form="close"/);
   assert.match(home.homeHtml(VIEW, { lens: 'work' }), /data-cc-ref="A-1"/);
+});
+
+test('the clock starts only by hand, and time can be added by hand', () => {
+  const card = entry('alpha-001', { source: 'card' });
+  const idle = home.taskHtml(card);
+  assert.match(idle, /data-tk="start">Start clock/);
+  assert.match(idle, /data-tk="time-ask">Add time/);
+  assert.match(home.taskPanel('time', card), /data-tk-form="time"[\s\S]*name="minutes"[\s\S]*step="15"/);
+  const proposed = home.taskHtml(entry('X-1.02', { flags: ['close-proposed'] }));
+  assert.match(proposed, /data-tk="confirm-close"[\s\S]*data-tk="reject-close"/);
+  assert.equal(home.closeKind(entry('X-1.03', { flags: ['unconfirmed'] })), 'unconfirmed');
+});
+
+test('finishing a task rewards it and moves the next hot item into focus', () => {
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, entry('A-3', { section: 'hot', hot: ['due today'] }), entry('A-4', { section: 'hot' })] }));
+  view.lenses.work.hot = ['A-3', 'A-4'];
+  home.promoteNext(view, 'A-1');
+  assert.deepEqual(view.lenses.work.focal, { ref: 'A-3', reason: 'next hot, after the last one was done' });
+  assert.deepEqual(view.lenses.work.hot, ['A-4']);
+  assert.equal(view.lenses.work.hot_total, 2);
+  assert.ok(!view.entries.some((e) => e.ref === 'A-1'));
+  const html = home.rewardHtml({ title: 'Send <it>', ref: 'A-1', minutes: 45, today: 3, next: { ref: 'A-3', title: 'Next one' } }, () => 0);
+  assert.match(html, /Task completed/);
+  assert.match(html, /Send &lt;it&gt;/);
+  assert.match(html, /45 min on it today · 3 done today/);
+  assert.match(html, /data-tk="next" data-ref="A-3">Next: Next one/);
 });

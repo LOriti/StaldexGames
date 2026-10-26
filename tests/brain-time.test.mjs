@@ -125,6 +125,10 @@ test('clock and hours rows are validated', () => {
   assert.equal(timelog.hoursRow({ minutes: 45, area: '3' }).lens, 'work');
   assert.throws(() => timelog.hoursRow({ minutes: 50, area: '3' }), /multiple of 15/);
   assert.throws(() => timelog.hoursRow({ minutes: 60 }), /area or lens/);
+  const onTask = timelog.hoursRow({ minutes: 30, ref: 'DEV-01010.01', lens: 'brain', note: 'A card' });
+  assert.deepEqual([onTask.ref, onTask.lens, onTask.note], ['DEV-01010.01', 'brain', 'A card']);
+  assert.equal(timelog.hoursRow({ minutes: 30, ref: 'DEV-01010.01' }).ref, 'DEV-01010.01', 'a task with no lens still records');
+  assert.throws(() => timelog.hoursRow({ minutes: 30, ref: 'x y' }), /id/);
 });
 
 // ---- endpoints -----------------------------------------------------------------------

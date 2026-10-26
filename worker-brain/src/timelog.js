@@ -96,15 +96,17 @@ export function clockRow(body, clock) {
   throw new QueueError('invalid-text', 'action must be start or stop');
 }
 
-// Hours typed in on the Allocation tab (Brain D-96 C), in quarter hours up to 12 h.
+// Hours typed in on the Allocation tab or a task's card (Brain D-96 C), in quarter hours
+// up to 12 h; from a card they carry the task's id.
 export function hoursRow(body) {
   const { area, lens } = cleanPlace(body.area, body.lens);
-  if (!lens) throw new QueueError('invalid-text', 'an area or lens is required');
+  const ref = body.ref ? cleanRef(body.ref) : '';
+  if (!lens && !ref) throw new QueueError('invalid-text', 'an area or lens is required');
   const minutes = body.minutes;
   if (!Number.isInteger(minutes) || minutes <= 0 || minutes > MAX_MINUTES || minutes % 15) {
     throw new QueueError('invalid-text', 'minutes must be a positive multiple of 15, at most 720');
   }
-  return { kind: 'entered', start: '', end: '', minutes, ref: '', area, lens, note: cleanCell(body.note) || 'entered on the viewer' };
+  return { kind: 'entered', start: '', end: '', minutes, ref, area, lens, note: cleanCell(body.note) || 'entered on the viewer' };
 }
 
 // Every row of every `## HH:MM Time` table in one day's log.

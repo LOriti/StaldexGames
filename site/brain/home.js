@@ -7,7 +7,7 @@
 
 export const VIEW_PATH = 'views/command-centre.json';
 export const LENSES = ['work', 'ventures', 'personal', 'brain', 'all'];
-export const TABS = ['focus', 'priority', 'allocation'];
+export const TABS = ['focus', 'priority', 'clarify', 'allocation'];
 const LENS_NAMES = { work: 'Work', ventures: 'Ventures', personal: 'Personal', brain: 'Brain', all: 'All' };
 const CONTEXT_NAMES = {
   emails: 'Emails', calls: 'Calls', computer: 'Computer', errands: 'Errands',
@@ -144,11 +144,14 @@ function defaultProject(view, lens, projects) {
   return homes.find((slug) => projects.includes(slug)) || projects[0];
 }
 
-export function inboxHtml(view, lens, { projects = [], all = false } = {}) {
+export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inbox' } = {}) {
   const rows = (view.inbox || []).filter((r) => lens === 'all' || r.lens === lens);
   const shown = all ? rows : rows.slice(0, INBOX_SHOWN);
-  let html = `<section class="cc-inbox"><h2 class="cc-gh">Inbox <em>${rows.length}</em></h2><div class="cc-box">`;
-  html += shown.map((r) => `<a class="cc-row cc-in" href="${inboxHref(r)}"><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
+  let html = `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${rows.length}</em></h2><div class="cc-box">`;
+  // A flagged register item opens its card (Confirm, Reject, close); a raw line or capture
+  // opens its file until its own card lands (Brain DEV-61026.27, D-100).
+  const known = new Set(view.entries.map((e) => e.ref));
+  html += shown.map((r) => `<a class="cc-row cc-in" href="${inboxHref(r)}"${r.ref && known.has(r.ref) ? ` data-cc-ref="${esc(r.ref)}"` : ''}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
     `<span class="cc-m"><span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(r.home)}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span>` +
     `<span class="cc-t">${esc(r.text)}</span></span></a>`).join('');
   if (!rows.length) html += `<p class="cc-empty">Inbox empty${lens === 'all' ? '' : ' in this lens'}. Nothing waits to be clarified.</p>`;
@@ -173,7 +176,7 @@ export function projectOf(entry) {
 export function closeKind(entry) {
   if (/^D-\d+$/.test(entry.ref)) return 'decision';
   if (entry.source === 'card') return projectOf(entry) ? 'card' : 'none';
-  if (/^P-/.test(entry.ref)) return 'unconfirmed';
+  if (/^P-/.test(entry.ref) || (entry.flags || []).includes('unconfirmed')) return 'unconfirmed';
   if (entry.kind === 'decision') return 'decision';
   return 'item';
 }
@@ -192,19 +195,25 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
   if (mine) {
     const over = Number.parseInt(entry.minutes, 10) > 0 && spent > Number.parseInt(entry.minutes, 10);
     html += `<div class="tk-clock${over ? ' over' : ''}"><span class="tk-time" data-tk-time="1">${esc(fmtElapsed(clock, now))}</span>` +
-      `<span class="tk-sub">since ${esc(clock.start)}${est ? ` · estimate ${esc(est)}` : ''}${clock.written ? '' : ' · saved after the first minute'}</span>` +
+      `<span class="tk-sub">since ${esc(clock.start)}${est ? ` · estimate ${esc(est)}` : ''}</span>` +
       '<button type="button" class="mini-btn" data-tk="stop">Stop clock</button></div>';
   } else if (other) {
     html += `<div class="tk-clock idle"><span class="tk-sub">The clock is running on ${esc(clock.ref)} (${esc(fmtMinutes(clockMinutes(clock, now)))}).</span>` +
       '<button type="button" class="mini-btn primary" data-tk="switch">Switch the clock to this</button></div>';
   } else {
-    html += '<div class="tk-clock idle"><span class="tk-sub">Clock stopped.</span><button type="button" class="mini-btn primary" data-tk="start">Start clock</button></div>';
+    html += `<div class="tk-clock idle"><span class="tk-sub">Not timing this${est ? ` · estimate ${esc(est)}` : ''}.</span>` +
+      '<button type="button" class="mini-btn primary" data-tk="start">Start clock</button><button type="button" class="mini-btn" data-tk="time-ask">Add time…</button></div>';
   }
   const kind = closeKind(entry);
   const closeBtn = kind === 'card' || kind === 'item' ? '<button type="button" class="mini-btn primary" data-tk="done-ask">Done…</button>' : '';
   const progressBtn = kind !== 'decision' && kind !== 'none' ? '<button type="button" class="mini-btn" data-tk="progress-ask">Add progress…</button>' : '';
   html += `<div class="tk-acts">${closeBtn}${progressBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
   if (kind === 'decision') html += '<p class="cc-note">A decision is settled by replying to it in a session; it is not closed here.</p>';
+  if ((entry.flags || []).includes('close-proposed') && kind !== 'unconfirmed') {
+    html += '<div class="tk-panel"><p>A routine thinks this is done (its evidence is on the item in the register). Close it, or keep it open.</p>' +
+      '<span class="tk-acts"><button type="button" class="mini-btn primary" data-tk="confirm-close">Yes, it’s done</button>' +
+      '<button type="button" class="mini-btn" data-tk="reject-close">No, keep it open</button></span></div>';
+  }
   if (kind === 'unconfirmed') {
     html += '<div class="tk-panel"><p>A routine found this new item. Confirm it to keep it (then it can be closed here), or reject it.</p>' +
       '<span class="tk-acts"><button type="button" class="mini-btn primary" data-tk="confirm">Confirm</button>' +
@@ -223,6 +232,11 @@ export function fmtElapsed(clock, now = Date.now()) {
 }
 
 export function taskPanel(kind, entry) {
+  if (kind === 'time') {
+    return '<form class="tk-panel" data-tk-form="time"><label for="tk-min">Time spent on this, in minutes (quarter hours)</label>' +
+      '<input id="tk-min" name="minutes" type="number" min="15" max="720" step="15" required inputmode="numeric" placeholder="30">' +
+      '<button type="submit" class="mini-btn primary">Add time</button><button type="button" class="mini-btn" data-tk="cancel">Cancel</button></form>';
+  }
   if (kind === 'done' && closeKind(entry) === 'card') {
     return `<div class="tk-panel"><p>Mark ${esc(entry.ref)} done? It moves under Done in its queue, and the clock stops.</p>` +
       '<button type="button" class="mini-btn primary" data-tk="done">Yes, done</button><button type="button" class="mini-btn" data-tk="cancel">Cancel</button></div>';
@@ -245,7 +259,7 @@ function focusTab(view, lens, byRef, opts = {}) {
   const slot = view.lenses[lens];
   const focal = slot.focal && byRef.get(slot.focal.ref);
   const clock = opts.clock || null;
-  let html = inboxHtml(view, lens, { projects: opts.projects || [], all: opts.inboxAll });
+  let html = '';
   if (focal) {
     const est = estimateText(focal);
     html += `<a class="cc-focal" href="${entryHref(focal)}" data-cc-ref="${esc(focal.ref)}"><span class="cc-k">The one thing${clock && clock.ref === focal.ref ? ' · clock running' : ''}</span>` +
@@ -263,12 +277,9 @@ function focusTab(view, lens, byRef, opts = {}) {
     (hot.map((e) => row(e, true, clock)).join('') || '<p class="cc-empty">Nothing else is hot.</p>') + '</div></section>' +
     `<section><h2 class="cc-gh">Claude can help <em>${slot.claude_total}</em></h2><div class="cc-box">` +
     (lane.map((e) => row(e, true, clock)).join('') || '<p class="cc-empty">Nothing is marked for Claude yet.</p>') + '</div></section></div>';
-  const q = slot.quiet;
-  const parts = [];
-  if (q.needs_review_date.length) parts.push(`${q.needs_review_date.length} parked without a review date (${esc(q.needs_review_date.join(', '))})`);
-  if (q.no_owner.length) parts.push(`${q.no_owner.length} with no owner: delegate? (${esc(q.no_owner.join(', '))})`);
-  if (q.unconfirmed.length || q.close_proposed.length) parts.push(`<a href="#/register/open-items.md">Clarify: ${q.unconfirmed.length} unconfirmed, ${q.close_proposed.length} close proposed</a>`);
-  if (parts.length) html += `<p class="cc-quiet">${parts.map((p) => `<span>${p}</span>`).join('')}</p>`;
+  html += inboxHtml(view, lens, { projects: opts.projects || [], all: opts.inboxAll });
+  const waiting = clarifyCount(view, lens);
+  if (waiting) html += `<p class="cc-quiet"><a href="#clarify">${waiting} to clarify: confirm, estimate, date or hand over →</a></p>`;
   html += `<div class="cc-doors"><span class="cc-lbl">Contexts</span>${Object.entries(slot.contexts).map(([k, c]) =>
     `<button type="button" class="cc-door" data-cc-context="${esc(k)}">${CONTEXT_NAMES[k] || esc(k)} <span class="c">${c.count}</span>${c.hot ? '<span class="cc-hd" title="something hot"></span>' : ''}</button>`).join('')}</div>`;
   if (Object.keys(slot.areas).length) {
@@ -292,6 +303,42 @@ function priorityTab(view, lens, filter, clock = null) {
   }
   if (!rows.length) html += '<p class="cc-empty">Nothing here.</p>';
   return html + '</div>';
+}
+
+// ---- clarify: what is not prioritised yet (Leon's morning sort) ------------------------
+
+function clarifyGroups(view, lens) {
+  const q = view.lenses[lens].quiet;
+  const inLens = lensEntries(view, lens);
+  const byRef = new Map(view.entries.map((e) => [e.ref, e]));
+  const pick = (refs) => refs.map((r) => byRef.get(r)).filter(Boolean);
+  return [
+    ['New items to confirm', pick(q.unconfirmed)],
+    ['Proposed closes', pick(q.close_proposed)],
+    ['No estimate yet', inLens.filter((e) => ['hot', 'next'].includes(e.section) && !(Number.parseInt(e.minutes, 10) > 0)
+      && !q.unconfirmed.includes(e.ref) && !q.close_proposed.includes(e.ref))],
+    ['Parked without a review date', pick(q.needs_review_date)],
+    ['No owner: yours, or hand it over?', pick(q.no_owner)],
+  ];
+}
+
+export function clarifyCount(view, lens) {
+  const inbox = (view.inbox || []).filter((r) => (lens === 'all' || r.lens === lens) && (r.kind === 'line' || r.kind === 'capture')).length;
+  return inbox + clarifyGroups(view, lens).reduce((n, [, rows]) => n + rows.length, 0);
+}
+
+function clarifyTab(view, lens, opts) {
+  let html = '<p class="cc-note">Not prioritised yet. Work down this list each morning: confirm or reject what the routines found, ' +
+    'settle proposed closes, and give each task an estimate, a date and an owner. Tap a row to open it.</p>';
+  html += inboxHtml({ ...view, inbox: (view.inbox || []).filter((r) => r.kind === 'line' || r.kind === 'capture') }, lens,
+    { projects: opts.projects || [], all: true, title: 'Inbox to sort' });
+  for (const [title, rows] of clarifyGroups(view, lens)) {
+    if (!rows.length) continue;
+    html += `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${rows.length}</em></h2><div class="cc-box">` +
+      rows.map((e) => row(e, true, opts.clock)).join('') + '</div></section>';
+  }
+  if (!clarifyCount(view, lens)) html += `<p class="cc-empty">Nothing to clarify${lens === 'all' ? '' : ' in this lens'}.</p>`;
+  return html;
 }
 
 const HOURS_TARGETS = [['1', 'work'], ['2', 'work'], ['3', 'work'], ['4', 'work'], ['5', 'work'], ['vol', 'work'],
@@ -334,17 +381,61 @@ function allocationTab(view, lens, time) {
   return html + (lens === 'work' || lens === 'all' ? '' : '<p class="cc-note">The allocation covers Work; Ventures, Personal and Brain have no budgets.</p>');
 }
 
-export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false } = {}) {
+export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '' } = {}) {
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
   // Only the lenses this view carries, so an older view without Brain's own lens still renders.
   const shown = LENSES.filter((l) => view.lenses[l]);
   if (!view.lenses[lens]) lens = 'all';
   const seg = shown.map((l) => `<button type="button" data-cc-lens="${l}" aria-pressed="${l === lens}">${LENS_NAMES[l]}</button>`).join('');
-  const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${t[0].toUpperCase()}${t.slice(1)}</a>`).join('');
+  const count = clarifyCount(view, lens);
+  const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${t[0].toUpperCase()}${t.slice(1)}${t === 'clarify' && count ? ` <span class="cc-n">${count}</span>` : ''}</a>`).join('');
   const body = tab === 'priority' ? priorityTab(view, lens, filter, clock)
-    : tab === 'allocation' ? allocationTab(view, lens, time) : focusTab(view, lens, byRef, { clock, projects, inboxAll });
+    : tab === 'allocation' ? allocationTab(view, lens, time)
+      : tab === 'clarify' ? clarifyTab(view, lens, { clock, projects })
+        : focusTab(view, lens, byRef, { clock, projects, inboxAll });
+  // A view made on an earlier Perth day has yesterday's "overdue" and "due soon".
+  const stale = today && view.date && view.date < today
+    ? `<p class="cc-stale" role="status">This view was made for ${esc(view.date)}; today’s refresh has not run yet, so overdue and due-soon may be a day behind. Refresh in a few minutes.</p>` : '';
   return `<div class="cc"><div class="cc-head"><div class="cc-seg" role="group" aria-label="Lens">${seg}</div>` +
     `<nav class="cc-tabs" aria-label="Command centre">${tabs}</nav>` +
-    '<a class="cc-files" href="#/INDEX.md">Browse files</a></div>' + body +
+    '<a class="cc-files" href="#/INDEX.md">Browse files</a></div>' + stale + body +
     `<p class="cc-note">${esc(view.gaps.join(' '))}${asOf ? ` As of ${esc(asOf)}.` : ''}</p></div>`;
+}
+
+// ---- the reward when a task is done ------------------------------------------------------
+
+const CHEERS = [
+  'One less thing on your plate.', 'Done and dusted.', 'That’s momentum.', 'Closed. Onto the next.',
+  'Nice work. Breathe, then pick the next one.', 'Off the list for good.', 'That one won’t nag you again.',
+];
+
+// `done` is { title, ref, minutes, today, next } where `next` is the item now in focus.
+export function rewardHtml(done, pick = Math.random) {
+  const cheer = CHEERS[Math.floor(pick() * CHEERS.length) % CHEERS.length];
+  const bits = Array.from({ length: 18 }, (_, i) => `<i style="--a:${i * 20}deg;--d:${(i % 3) * 60}ms"></i>`).join('');
+  const stats = [done.minutes ? `${fmtMinutes(done.minutes)} on it today` : '', `${done.today} done today`].filter(Boolean).join(' · ');
+  return `<div class="tk-reward"><div class="rw-burst" aria-hidden="true">${bits}</div><div class="rw-tick" aria-hidden="true">✓</div>` +
+    `<p class="rw-k">Task completed</p><h2 class="tk-ttl" id="tk-title">${esc(done.title)}</h2><p class="rw-cheer">${esc(cheer)}</p>` +
+    `<p class="cc-note">${esc(done.ref)} · ${esc(stats)}</p><div class="tk-acts">` +
+    (done.next ? `<button type="button" class="mini-btn primary" data-tk="next" data-ref="${esc(done.next.ref)}">Next: ${esc(done.next.title)}</button>` : '') +
+    '<button type="button" class="mini-btn" data-tk="hide">Back to the home</button></div></div>';
+}
+
+// After a task leaves, the next hot item moves into focus and the hot list refills from the
+// ranked entries, as Brain does on its next render (D-64 A).
+export function promoteNext(view, ref) {
+  view.entries = view.entries.filter((e) => e.ref !== ref);
+  for (const [lens, slot] of Object.entries(view.lenses)) {
+    const hot = lensEntries(view, lens).filter((e) => e.section === 'hot');
+    slot.claude = slot.claude.filter((r) => r !== ref);
+    slot.claude_total = slot.claude.length;
+    for (const list of Object.values(slot.quiet)) { const i = list.indexOf(ref); if (i !== -1) list.splice(i, 1); }
+    if (!slot.focal || slot.focal.ref === ref) {
+      slot.focal = hot[0] ? { ref: hot[0].ref, reason: 'next hot, after the last one was done' } : null;
+    }
+    const focal = slot.focal && slot.focal.ref;
+    slot.hot = hot.filter((e) => e.ref !== focal).slice(0, 3).map((e) => e.ref);
+    slot.hot_total = hot.length;
+  }
+  return view;
 }
