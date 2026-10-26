@@ -45,6 +45,7 @@ const VIEW = {
     entry('PA-ADMIN-60101.05', { lens: 'personal', context: 'errands' }),
     entry('DEV-60101.06', { source: 'card', home: 'project:beta', lens: 'brain', section: 'hot', hot: ['flagged hot'] }),
     entry('D-1', { home: 'project:beta', lens: 'brain', kind: 'decision' }),
+    entry('P-WORK-COMP-60101.07', { area: '2', flags: ['unconfirmed'], title: 'A new item the brief found' }),
   ],
   lenses: {
     work: slot({ focal: { ref: 'WORK-SYS-60101.01', reason: 'chosen by the morning brief' }, hot_total: 1,
@@ -70,7 +71,8 @@ const FILES = {
   'INDEX.md': '# Portfolio\n\n| Project | Status |\n|---|---|\n| alpha | active |\n| beta | active |\n',
   'views/command-centre.json': JSON.stringify(VIEW),
   'register/open-items.md': `# Open items\n\n${filler(20)}\n\n${['WORK-SYS-60101.01', 'WORK-COMP-60101.02', 'PA-ADMIN-60101.05']
-    .map((id) => `${item(id, `Synthetic task ${id}`, 'project:alpha')}\n${filler(6)}`).join('\n')}`,
+    .map((id) => `${item(id, `Synthetic task ${id}`, 'project:alpha')}\n${filler(6)}`).join('\n')}\n${filler(2)}\n\n` +
+    item('P-WORK-COMP-60101.07', 'A new item the brief found', 'project:alpha').replace('`review: unknown`', '`review: unknown` `unconfirmed: 2026-01-02`'),
   'register/decisions.md': `# Decisions\n\n${filler(10)}\n\n${item('D-1', 'Synthetic decision D-1', 'project:beta').replace('kind: action', 'kind: decision')}`,
   'projects/alpha/QUEUE.md': `---\nproject: alpha\ntype: queue\nupdated: 2026-01-01\n---\n\n# alpha — queue\n\n${filler(12)}\n\n${card('PROJ-TT-60101.03', 'Synthetic task PROJ-TT-60101.03')}\n## Inbox\n\n- A raw idea\n`,
   'projects/beta/QUEUE.md': `---\nproject: beta\ntype: queue\nupdated: 2026-01-01\n---\n\n# beta — queue\n\n${filler(12)}\n\n${card('DEV-60101.06', 'Synthetic task DEV-60101.06')}\n## Inbox\n`,
@@ -163,6 +165,29 @@ if (await line.count()) {
   await page.locator('[data-tk-form="categorise"] button[type="submit"]').click(); await settle();
   if (!writes.some(([path]) => path === '/api/brain/categorise')) problems.push('saving the categorisation card wrote nothing');
 }
+// Reject asks first, from the task card and on the register; nothing is written until Yes.
+const rejects = () => writes.filter(([path]) => path === '/api/brain/reject').length;
+await page.goto(`${base}/brain/#priority`); await settle();
+await page.locator('[data-cc-lens="work"]').click(); await settle();
+const fresh = page.locator('a[data-cc-ref="P-WORK-COMP-60101.07"]');
+if (await fresh.count()) {
+  await fresh.click(); await settle();
+  await page.locator('[data-tk="reject-ask"]').click(); await settle();
+  if (!(await page.locator('.tk-panel [data-tk="reject"]').count())) problems.push('Reject on the task card did not ask first');
+  if (rejects()) problems.push('Reject on the task card wrote before Yes');
+  await shot('task-reject');
+  await page.locator('.tk-panel [data-tk="cancel"]').click(); await settle();
+  if (rejects()) problems.push('Cancel on the task card still rejected');
+  await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+} else problems.push('no Priority row for the unconfirmed item');
+await page.goto(`${base}/brain/#/register/open-items.md`);
+await page.waitForSelector('.card-act[data-flag="unconfirmed"]', { timeout: 10_000 }).catch(() => problems.push('the register shows no Confirm and Reject'));
+await page.locator('.card-act[data-flag="unconfirmed"] [data-act="reject-ask"]').click(); await settle();
+if (rejects()) problems.push('Reject on the register wrote before Yes');
+await page.locator('.card-act[data-flag="unconfirmed"]').scrollIntoViewIfNeeded(); await shot('register-reject');
+await page.locator('.card-act[data-flag="unconfirmed"] [data-act="reject"]').click(); await settle();
+if (rejects() !== 1) problems.push('Yes on the register did not reject');
+
 await page.goto(`${base}/brain/#allocation`); await settle(); await page.waitForTimeout(600); await shot('allocation');
 if (!(await page.locator('.cc-meter').count())) problems.push('the Allocation tab shows no actuals');
 await page.goto(`${base}/brain/#focus`); await settle();

@@ -5,7 +5,7 @@ import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './mar
 import {
   VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
-} from './home.js?v=20261027e';
+} from './home.js?v=20261027f';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -454,7 +454,7 @@ function actsHtml(ctl) {
   if (!flag) return '<button type="button" class="mini-btn" data-act="done">Done</button>';
   return `<span class="flag-k">${FLAGS[flag]}</span>` +
     '<button type="button" class="mini-btn primary" data-act="confirm">Confirm</button>' +
-    '<button type="button" class="mini-btn" data-act="reject">Reject</button>';
+    '<button type="button" class="mini-btn" data-act="reject-ask">Reject…</button>';
 }
 
 // On the register, each flagged item gets Confirm and Reject per flag, and the page opens
@@ -524,10 +524,15 @@ els.doc.addEventListener('click', async (e) => {
       '<button type="button" class="mini-btn primary" data-act="yes">Yes</button>' +
       '<button type="button" class="mini-btn" data-act="cancel">Cancel</button>';
     ctl.querySelector('[data-act="yes"]').focus();
+  } else if (act === 'reject-ask') {
+    // Reject asks first, like Done; Confirm is one tap.
+    ctl.innerHTML = `<span class="confirm">Reject ${escapeHtml(ctl.dataset.id)}${ctl.dataset.flag === 'close-proposed' ? '’s proposed close' : ''}?</span>` +
+      '<button type="button" class="mini-btn primary" data-act="reject">Yes</button>' +
+      '<button type="button" class="mini-btn" data-act="cancel">Cancel</button>';
+    ctl.querySelector('[data-act="reject"]').focus();
   } else if (act === 'cancel') {
     ctl.innerHTML = actsHtml(ctl);
   } else if (act === 'confirm' || act === 'reject') {
-    // One tap: each is a single reviewable `web:` commit that a session can undo.
     for (const b of ctl.querySelectorAll('button')) b.disabled = true;
     try {
       await write(`/${act}`, { id: ctl.dataset.id, flag: ctl.dataset.flag });
@@ -801,11 +806,11 @@ modal.addEventListener('click', async (e) => {
     }
     return refreshAll();
   }
-  if (act === 'done-ask' || act === 'progress-ask' || act === 'time-ask') {
-    task.panel = { 'done-ask': 'done', 'progress-ask': 'progress', 'time-ask': 'time' }[act];
+  if (act === 'done-ask' || act === 'progress-ask' || act === 'time-ask' || act === 'reject-ask') {
+    task.panel = { 'done-ask': 'done', 'progress-ask': 'progress', 'time-ask': 'time', 'reject-ask': 'reject' }[act];
     task.message = '';
     renderTask();
-    modal.querySelector('textarea, input, [data-tk="done"]')?.focus();
+    modal.querySelector('textarea, input, [data-tk="done"], [data-tk="reject"]')?.focus();
     return;
   }
   if (act === 'confirm' || act === 'reject') {

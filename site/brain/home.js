@@ -223,7 +223,7 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
   if (kind === 'unconfirmed') {
     html += '<div class="tk-panel"><p>A routine found this new item. Confirm it to keep it (then it can be closed here), or reject it.</p>' +
       '<span class="tk-acts"><button type="button" class="mini-btn primary" data-tk="confirm">Confirm</button>' +
-      '<button type="button" class="mini-btn" data-tk="reject">Reject</button></span></div>';
+      '<button type="button" class="mini-btn" data-tk="reject-ask">Reject…</button></span></div>';
   }
   html += panel;
   if (message) html += `<p class="write-msg${/^Not |^Clock not/.test(message) ? ' bad' : ''}">${esc(message)}</p>`;
@@ -238,6 +238,10 @@ export function fmtElapsed(clock, now = Date.now()) {
 }
 
 export function taskPanel(kind, entry) {
+  if (kind === 'reject') {
+    return `<div class="tk-panel"><p>Reject ${esc(entry.ref)}? It is marked rejected in the register and leaves your lists; only a session can bring it back.</p>` +
+      '<button type="button" class="mini-btn primary" data-tk="reject">Yes, reject</button><button type="button" class="mini-btn" data-tk="cancel">Cancel</button></div>';
+  }
   if (kind === 'time') {
     return '<form class="tk-panel" data-tk-form="time"><label for="tk-min">Time spent on this, in minutes (quarter hours)</label>' +
       '<input id="tk-min" name="minutes" type="number" min="15" max="720" step="15" required inputmode="numeric" placeholder="30">' +
