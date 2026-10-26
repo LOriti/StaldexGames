@@ -5,9 +5,9 @@
 // string from Brain goes through esc().
 
 export const VIEW_PATH = 'views/command-centre.json';
-export const LENSES = ['work', 'ventures', 'personal', 'all'];
+export const LENSES = ['work', 'ventures', 'personal', 'brain', 'all'];
 export const TABS = ['focus', 'priority', 'allocation'];
-const LENS_NAMES = { work: 'Work', ventures: 'Ventures', personal: 'Personal', all: 'All' };
+const LENS_NAMES = { work: 'Work', ventures: 'Ventures', personal: 'Personal', brain: 'Brain', all: 'All' };
 const CONTEXT_NAMES = {
   emails: 'Emails', calls: 'Calls', computer: 'Computer', errands: 'Errands',
   agendas: 'Agendas', waiting: 'Waiting for', claude: 'Claude',
@@ -128,12 +128,15 @@ function allocationTab(view, lens) {
   }
   const untagged = (areas.untagged || {}).count || 0;
   html += `<div class="cc-lane float"><span class="cc-nm">Float<small>${esc(a.float)} h, undeclared · not a target</small></span><span class="cc-why">${untagged ? `<span class="cc-chip warn">${untagged} work item${untagged === 1 ? '' : 's'} with no area yet</span>` : ''}</span></div></div>`;
-  return html + (lens === 'work' || lens === 'all' ? '' : '<p class="cc-note">The allocation covers Work; Ventures and Personal have no budgets.</p>');
+  return html + (lens === 'work' || lens === 'all' ? '' : '<p class="cc-note">The allocation covers Work; Ventures, Personal and Brain have no budgets.</p>');
 }
 
 export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '' } = {}) {
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
-  const seg = LENSES.map((l) => `<button type="button" data-cc-lens="${l}" aria-pressed="${l === lens}">${LENS_NAMES[l]}</button>`).join('');
+  // Only the lenses this view carries, so an older view without Brain's own lens still renders.
+  const shown = LENSES.filter((l) => view.lenses[l]);
+  if (!view.lenses[lens]) lens = 'all';
+  const seg = shown.map((l) => `<button type="button" data-cc-lens="${l}" aria-pressed="${l === lens}">${LENS_NAMES[l]}</button>`).join('');
   const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${t[0].toUpperCase()}${t.slice(1)}</a>`).join('');
   const body = tab === 'priority' ? priorityTab(view, lens, filter) : tab === 'allocation' ? allocationTab(view, lens) : focusTab(view, lens, byRef);
   return `<div class="cc"><div class="cc-head"><div class="cc-seg" role="group" aria-label="Lens">${seg}</div>` +

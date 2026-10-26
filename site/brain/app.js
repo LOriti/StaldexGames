@@ -2,7 +2,7 @@
 // Data comes from /api/brain (worker-brain/), behind Cloudflare Access.
 
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
-import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026c';
+import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026e';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
