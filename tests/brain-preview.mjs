@@ -150,6 +150,8 @@ for (const lens of ['work', 'brain', 'all']) {
   else problems.push(`no ${lens} lens button`);
 }
 await page.goto(`${base}/brain/#priority`); await settle(); await shot('priority');
+await page.goto(`${base}/brain/#clarify`); await settle(); await shot('clarify');
+if (!(await page.locator('.cc-inbox').count())) problems.push('the Clarify tab is empty');
 await page.goto(`${base}/brain/#allocation`); await settle(); await page.waitForTimeout(600); await shot('allocation');
 if (!(await page.locator('.cc-meter').count())) problems.push('the Allocation tab shows no actuals');
 await page.goto(`${base}/brain/#focus`); await settle();
@@ -158,8 +160,11 @@ if (!(await page.locator('.cc-inbox .cc-row').count())) problems.push('no inbox 
 const focal = page.locator('a.cc-focal');
 if (await focal.count()) {
   await focal.click(); await settle();
-  if (await page.locator('.tk-wrap:not([hidden]) .tk-time').count()) await shot('task-card');
-  else problems.push('tapping the focal item did not open its card with a running clock');
+  if (await page.locator('.tk-wrap:not([hidden]) [data-tk="start"]').count()) await shot('task-card');
+  else problems.push('tapping the focal item did not open its card, clock not started');
+  await page.locator('[data-tk="start"]').click(); await settle();
+  if (!(await page.locator('.tk-wrap:not([hidden]) .tk-time').count())) problems.push('Start did not start the clock');
+  await shot('task-clock');
   await page.locator('[data-tk="progress-ask"]').click(); await settle(); await shot('task-progress');
   await page.locator('[data-tk="cancel"]').click();
   await page.locator('[data-tk="hide"].tk-x').click(); await settle();
@@ -170,8 +175,14 @@ if (await focal.count()) {
   const target = await page.evaluate(() => document.querySelector('.doc h3.target')?.textContent || null);
   if (!target) problems.push('Open in file did not land on the item');
   await shot('open-in-file');
-  await page.locator('[data-cb="stop"]').click(); await settle();
-  if (await page.locator('.clock-bar:not([hidden])').count()) problems.push('Stop left the clock bar showing');
+  await page.locator('[data-cb="open"]').click(); await settle();
+  await page.locator('[data-tk="done-ask"]').click(); await settle();
+  await page.locator('#tk-text').fill('Sent it.');
+  await page.locator('[data-tk-form="close"] button[type="submit"]').click();
+  await page.waitForSelector('.tk-reward', { timeout: 10_000 }).catch(() => problems.push('closing a task showed no reward'));
+  await page.waitForTimeout(1000); await shot('reward');
+  if (await page.locator('.clock-bar:not([hidden])').count()) problems.push('finishing the task left its clock running');
+  if (!writes.some(([path]) => path === '/api/brain/clock') || !writes.some(([path]) => path === '/api/brain/close')) problems.push('expected clock and close writes');
 }
 
 await browser.close();

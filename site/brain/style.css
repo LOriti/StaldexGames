@@ -420,3 +420,23 @@ a.mini-btn { text-decoration: none; display: inline-flex; align-items: center; }
 .cb-time { font: 600 15px/1 var(--mono); color: var(--accent); }
 body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .tk .mini-btn, .clock-bar .mini-btn, .cc-inbox-add .mini-btn, .cc-hours .mini-btn { font-size: 14px; padding: 6px 12px; border-radius: 8px; }
+
+/* Clarify tab and freshness (Brain DEV-61026.28, DEV-61026.22). */
+.cc-n { display: inline-block; min-width: 1.5em; padding: 0 6px; margin-left: 2px; border-radius: 99px; background: var(--warn-soft); color: var(--warn); font-size: 12px; font-weight: 700; text-align: center; }
+.cc-stale { margin: 0; padding: 8px 12px; border-radius: 10px; background: var(--warn-soft); color: var(--warn); font-size: 13.5px; }
+.cc-quiet a { font-weight: 600; }
+
+/* The reward when a task is done. */
+.tk-reward { position: relative; display: grid; justify-items: center; text-align: center; gap: 8px; padding: 12px 4px 4px; overflow: hidden; }
+.tk-reward .tk-acts { justify-content: center; }
+.rw-tick { width: 64px; height: 64px; border-radius: 50%; display: grid; place-items: center; background: var(--accent); color: var(--sheet); font: 700 34px/1 var(--sans); animation: rw-pop 450ms cubic-bezier(.2, 1.6, .4, 1) both; }
+.rw-k { margin: 0; font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+.rw-cheer { margin: 0; font-size: 16px; color: var(--ink); }
+.rw-burst { position: absolute; left: 50%; top: 44px; width: 0; height: 0; pointer-events: none; }
+.rw-burst i { position: absolute; width: 8px; height: 8px; border-radius: 2px; background: var(--accent); opacity: 0; transform: rotate(var(--a)) translateY(0); animation: rw-fly 900ms ease-out var(--d) both; }
+.rw-burst i:nth-child(3n) { background: var(--warn); }
+.rw-burst i:nth-child(3n+1) { background: var(--bad); border-radius: 50%; }
+@keyframes rw-pop { from { transform: scale(.3); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+@keyframes rw-fly { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-90px); } }
+@media (prefers-reduced-motion: reduce) { .rw-tick, .rw-burst i { animation: none; } .rw-burst { display: none; } }
+.tk-panel input[type="number"] { font: inherit; font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; width: 8em; }

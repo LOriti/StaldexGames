@@ -29,7 +29,7 @@
 //   POST /api/brain/progress { id, text[, project] } → { path, sha, commit }   project: a card's
 //   POST /api/brain/close   { id, text }    → { path, sha, commit }   register items only
 //   POST /api/brain/clock   { action, ref, start[, date], title, area, lens } → on daily-log
-//   POST /api/brain/hours   { minutes, area | lens, note } → on daily-log
+//   POST /api/brain/hours   { minutes, area | lens | ref, note } → on daily-log
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
@@ -213,7 +213,7 @@ const WRITES = {
     path: todaysLog,
     valid: (body) => Number.isInteger(body.minutes),
     apply: (text, body, today, clock) => appendTime(text, clock.date, clock.hhmm, hoursRow(body)),
-    message: (body) => `time: ${perthClock().date} hours ${body.area || body.lens}`,
+    message: (body) => `time: ${perthClock().date} hours ${body.ref || body.area || body.lens}`,
   },
 };
 

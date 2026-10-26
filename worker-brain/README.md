@@ -187,7 +187,7 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
 - `POST /api/brain/close` `{ id, text }` → an open register item becomes `state: done` with
   `Evidence: <text>`. Refused (409) for an unconfirmed item, a decision or a closed item.
 - `POST /api/brain/clock` `{ action: start | stop, ref, start, date?, title, area, lens }` and
-  `POST /api/brain/hours` `{ minutes, area | lens, note }` → append a `## HH:MM Time` row to
+  `POST /api/brain/hours` `{ minutes, area | lens | ref, note }` → append a `## HH:MM Time` row to
   `logs/daily/<Perth date>.md` on Brain's `daily-log` branch (created if missing), as a
   `time: …` commit. Stop rows count minutes since the start, capped at 12 h; hours are
   quarter hours up to 12 h.
