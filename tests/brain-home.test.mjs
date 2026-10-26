@@ -111,7 +111,7 @@ test('the inbox leads the home, filtered by lens, capped, with an add box', () =
   assert.equal((html.match(/class="cc-row cc-in"/g) || []).length, 8);
   assert.match(html, /Show all 10/);
   assert.match(html, /href="#\/register\/open-items\.md\?item=P-X-1\.01"/);
-  assert.match(html, /<form class="cc-inbox-add">[\s\S]*<option value="alpha">/);
+  assert.match(html, /<form class="cc-inbox-add">[\s\S]*<option value="alpha"( selected)?>/);
   assert.doesNotMatch(html, /&lt;b&gt;x/, 'personal capture hidden in Work');
   assert.match(home.homeHtml(view, { lens: 'all', inboxAll: true }), /&lt;b&gt;x&lt;\/b&gt;/);
   assert.match(home.homeHtml({ ...VIEW, inbox: [] }, { lens: 'work' }), /Inbox empty in this lens/);
@@ -161,6 +161,8 @@ test('the task card: estimate, clock and what closing means', () => {
   assert.equal(home.closeKind(entry('X-1.01')), 'item');
   assert.doesNotMatch(home.taskHtml(entry('D-4')), /data-tk="done-ask"/);
   assert.match(home.taskPanel('done', card), /data-tk="done"/);
+  assert.match(home.taskHtml(entry('P-X-1.01')), /data-tk="confirm"[\s\S]*data-tk="reject"/);
+  assert.match(home.homeHtml({ ...VIEW, inbox: [] }, { lens: 'ventures', projects: ['aaa', 'alpha'] }), /<option value="alpha" selected>/);
   assert.match(home.taskPanel('done', entry('X-1.01')), /data-tk-form="close"/);
   assert.match(home.homeHtml(VIEW, { lens: 'work' }), /data-cc-ref="A-1"/);
 });
