@@ -2,7 +2,10 @@
 // Data comes from /api/brain (worker-brain/), behind Cloudflare Access.
 
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
-import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026f';
+import {
+  VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
+  closeKind, fmtElapsed, fmtMinutes, clockMinutes,
+} from './home.js?v=20261027a';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -23,7 +26,7 @@ const state = {
 };
 
 // The command centre home (Brain brain-032): what the page opens on unless a file is asked for.
-const home = { view: null, sha: null, lens: null, filter: null };
+const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false };
 
 function homeTab() {
   const match = /^#(?:\/)?(focus|priority|allocation)?$/.exec(location.hash || '#');
@@ -345,13 +348,23 @@ function renderHome(tab = homeTab() || 'focus') {
     timeZone: 'Australia/Perth', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
   }) : '';
   const asOf = `${home.view.date}${when ? `, last change ${when}` : ''}`;
-  els.doc.innerHTML = homeHtml(home.view, { lens: home.lens, tab, filter: home.filter, asOf });
+  els.doc.innerHTML = homeHtml(home.view, {
+    lens: home.lens, tab, filter: home.filter, asOf, time: home.time, clock, projects: projectSlugs(), inboxAll: home.inboxAll,
+  });
 }
 
 els.doc.addEventListener('click', (e) => {
-  const el = e.target.closest('[data-cc-lens], [data-cc-context], [data-cc-area], [data-cc-clear]');
+  // A task row opens its card (Brain D-97 A); a modified click still opens the file.
+  const taskLink = e.target.closest('a[data-cc-ref]');
+  if (taskLink && !e.metaKey && !e.ctrlKey && !e.shiftKey && e.button === 0) {
+    e.preventDefault();
+    openTask(taskLink.dataset.ccRef);
+    return;
+  }
+  const el = e.target.closest('[data-cc-lens], [data-cc-context], [data-cc-area], [data-cc-clear], [data-cc-inbox-all]');
   if (!el || !home.view) return;
   const d = el.dataset;
+  if (d.ccInboxAll) { home.inboxAll = true; return renderHome(); }
   if (d.ccLens) { home.lens = d.ccLens; home.filter = null; storeLens(d.ccLens); return renderHome(); }
   if (d.ccClear) { home.filter = null; return renderHome(); }
   home.filter = d.ccContext ? { type: 'context', value: d.ccContext } : { type: 'area', value: d.ccArea };
@@ -545,6 +558,255 @@ els.doc.addEventListener('submit', async (e) => {
   }
 });
 
+// ---- the task card and its clock (Brain D-96 C, D-97 A, D-98 A) -------------------------
+// Tapping a task opens its card and starts its clock. The clock is saved as a `started`
+// row on Brain's daily log after its first minute, so a stray tap records nothing, and a
+// `tracked` row when it stops. Closing the card leaves the clock running, shown in a bar;
+// any screen reading the daily log sees the same clock. One clock runs at a time.
+
+let clock = null; // { ref, title, area, lens, date, start, startMs, written }
+let clockSave = null;
+const task = { ref: null, panel: '', message: '' };
+
+const modal = document.createElement('div');
+modal.className = 'tk-wrap';
+modal.hidden = true;
+modal.innerHTML = '<div class="tk-scrim" data-tk="hide"></div><section class="tk" role="dialog" aria-modal="true" aria-labelledby="tk-title"></section>';
+const bar = document.createElement('div');
+bar.className = 'clock-bar';
+bar.hidden = true;
+bar.setAttribute('role', 'status');
+document.body.append(modal, bar);
+
+function projectSlugs() {
+  return state.tree ? state.tree.files.map((f) => f.path.match(QUEUE_PATH)?.[1]).filter(Boolean).sort() : [];
+}
+
+const entryFor = (ref) => home.view?.entries.find((e) => e.ref === ref) || null;
+
+function renderTask() {
+  const entry = task.ref && entryFor(task.ref);
+  if (!entry) { modal.hidden = true; task.ref = null; return; }
+  const panel = task.panel ? taskPanel(task.panel, entry) : '';
+  modal.querySelector('.tk').innerHTML = taskHtml(entry, { clock, panel, message: task.message });
+  modal.hidden = false;
+}
+
+function renderClock() {
+  bar.hidden = !clock || !modal.hidden;
+  bar.innerHTML = clock ? clockBarHtml(clock, entryFor(clock.ref)) : '';
+}
+
+function refreshAll() {
+  renderTask();
+  renderClock();
+  if (home.view && homeTab()) renderHome();
+}
+
+setInterval(() => {
+  if (!clock) return;
+  for (const el of document.querySelectorAll('[data-tk-time]')) el.textContent = fmtElapsed(clock);
+}, 1000);
+
+function openTask(ref) {
+  const entry = entryFor(ref);
+  if (!entry) return;
+  task.ref = ref;
+  task.panel = '';
+  task.message = '';
+  if (!clock) startClock(entry);
+  refreshAll();
+}
+
+function startClock(entry) {
+  const { today, hhmm } = perthDay();
+  clock = { ref: entry.ref, title: entry.title, area: entry.lens === 'work' ? entry.area || '' : '', lens: entry.lens || '', date: today, start: hhmm, startMs: Date.now(), written: false };
+  clearTimeout(clockSave);
+  const mine = clock;
+  clockSave = setTimeout(() => saveStart(mine), 60 * 1000);
+}
+
+async function saveStart(c) {
+  if (clock !== c || c.written) return;
+  try {
+    await api('/clock', { action: 'start', ref: c.ref, title: c.title, area: c.area, lens: c.lens, start: c.start });
+    c.written = true;
+  } catch (err) {
+    task.message = `Clock not saved: ${writeError(err)}`;
+  }
+  refreshAll();
+}
+
+// Stops the running clock; false when it could not be saved (it then keeps running).
+async function stopClock() {
+  const c = clock;
+  if (!c) return true;
+  clearTimeout(clockSave);
+  clock = null;
+  if (c.written) {
+    try {
+      await api('/clock', { action: 'stop', ref: c.ref, title: c.title, area: c.area, lens: c.lens, start: c.start, date: c.date });
+      task.message = `Recorded ${fmtMinutes(clockMinutes(c))} on ${c.ref}.`;
+      loadTime();
+    } catch (err) {
+      clock = c;
+      task.message = `Clock not saved: ${writeError(err)}`;
+      refreshAll();
+      return false;
+    }
+  } else {
+    task.message = 'Under a minute, so nothing was recorded.';
+  }
+  refreshAll();
+  return true;
+}
+
+// This week's time rows from the daily log: actuals for the Allocation tab, and a clock
+// started on another screen.
+async function loadTime() {
+  const { monday } = perthDay();
+  try {
+    const body = await api(`/time?from=${monday}`);
+    home.time = { rows: body.rows, monday };
+    const open = openClock(body.rows);
+    if (open && !(clock && clock.ref === open.ref && clock.start === open.start) && (!clock || clock.written)) {
+      clock = { ref: open.ref, title: open.note, area: open.area, lens: open.lens, date: open.date, start: open.start,
+        startMs: Date.parse(`${open.date}T${open.start}:00+08:00`), written: true };
+    } else if (!open && clock && clock.written) {
+      clock = null; // stopped on another screen
+    }
+  } catch (err) {
+    home.time = { rows: [], monday, error: writeError(err).replace(/^Not saved: /, '') };
+  }
+  refreshAll();
+}
+
+// A closed task leaves this page's copy of the view at once; Brain regenerates the view
+// within a minute or two of the commit.
+function dropFromView(ref) {
+  const v = home.view;
+  v.entries = v.entries.filter((e) => e.ref !== ref);
+  for (const slot of Object.values(v.lenses)) {
+    slot.hot = slot.hot.filter((r) => r !== ref);
+    slot.claude = slot.claude.filter((r) => r !== ref);
+    if (slot.focal && slot.focal.ref === ref) slot.focal = null;
+  }
+}
+
+function hideTask() {
+  task.ref = null;
+  task.panel = '';
+  refreshAll();
+}
+
+modal.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-tk]');
+  if (!btn) return;
+  const entry = entryFor(task.ref);
+  const act = btn.dataset.tk;
+  if (act === 'file') { task.ref = null; modal.hidden = true; renderClock(); return; }
+  if (act === 'hide' || !entry) return hideTask();
+  if (act === 'stop') { await stopClock(); return; }
+  if (act === 'start') { startClock(entry); task.message = ''; return refreshAll(); }
+  if (act === 'switch') { if (await stopClock()) { startClock(entry); refreshAll(); } return; }
+  if (act === 'cancel') { task.panel = ''; return renderTask(); }
+  if (act === 'done-ask' || act === 'progress-ask') {
+    task.panel = act === 'done-ask' ? 'done' : 'progress';
+    task.message = '';
+    renderTask();
+    modal.querySelector('textarea, [data-tk="done"]')?.focus();
+    return;
+  }
+  if (act === 'done') {
+    for (const b of modal.querySelectorAll('button')) b.disabled = true;
+    if (clock && clock.ref === entry.ref && !(await stopClock())) return;
+    try {
+      await write('/done', { project: projectOf(entry), id: entry.ref });
+      dropFromView(entry.ref);
+      task.ref = null;
+      refreshAll();
+    } catch (err) {
+      task.message = writeError(err);
+      renderTask();
+    }
+  }
+});
+
+modal.addEventListener('submit', async (e) => {
+  const form = e.target.closest('[data-tk-form]');
+  if (!form) return;
+  e.preventDefault();
+  const entry = entryFor(task.ref);
+  const text = form.elements.text.value.trim();
+  if (!entry || !text) return;
+  for (const el of form.elements) el.disabled = true;
+  const closing = form.dataset.tkForm === 'close';
+  try {
+    if (closing) {
+      if (clock && clock.ref === entry.ref && !(await stopClock())) { for (const el of form.elements) el.disabled = false; return; }
+      await write('/close', { id: entry.ref, text });
+      dropFromView(entry.ref);
+      task.ref = null;
+    } else {
+      const card = closeKind(entry) === 'card';
+      await write('/progress', { id: entry.ref, text, ...(card ? { project: projectOf(entry) } : {}) });
+      task.panel = '';
+      task.message = 'Progress saved.';
+    }
+    refreshAll();
+  } catch (err) {
+    task.message = writeError(err);
+    for (const el of form.elements) el.disabled = false;
+    renderTask();
+  }
+});
+
+bar.addEventListener('click', async (e) => {
+  const act = e.target.closest('[data-cb]')?.dataset.cb;
+  if (act === 'open' && clock) { task.ref = clock.ref; task.panel = ''; task.message = ''; refreshAll(); }
+  if (act === 'stop') await stopClock();
+});
+
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape' && !modal.hidden) hideTask();
+});
+
+// The inbox box on the home and hours entered on the Allocation tab.
+els.doc.addEventListener('submit', async (e) => {
+  const inbox = e.target.closest('.cc-inbox-add');
+  const hours = e.target.closest('.cc-hours');
+  if (!inbox && !hours) return;
+  e.preventDefault();
+  const form = inbox || hours;
+  const msg = form.querySelector('.write-msg');
+  let route; let body;
+  if (inbox) {
+    const text = form.elements.text.value.trim();
+    if (!text) { setMessage(msg, 'Type something first.'); return; }
+    route = '/inbox';
+    body = { project: form.elements.project.value, text };
+  } else {
+    const minutes = Math.round((Number(form.elements.hours.value) * 60) / 15) * 15;
+    if (!(minutes > 0)) { setMessage(msg, 'Enter hours, in quarter hours.'); return; }
+    const [area, lens] = form.elements.where.value.split('|');
+    route = '/hours';
+    body = { minutes, area, lens, note: form.elements.note.value.trim() };
+  }
+  for (const el of form.elements) el.disabled = true;
+  setMessage(msg, 'Saving…', false);
+  try {
+    if (inbox) {
+      await write(route, body);
+    } else {
+      await api(route, body);
+      await loadTime();
+    }
+  } catch (err) {
+    for (const el of form.elements) el.disabled = false;
+    setMessage(msg, writeError(err));
+  }
+});
+
 // `commit` (after a write) loads that exact commit; otherwise the branch head.
 async function load(commit = null) {
   els.doc.innerHTML = '<p class="status">Loading Brain…</p>';
@@ -562,6 +824,7 @@ async function load(commit = null) {
     fileText(HOME).then((t) => { readStatuses(t); renderNav(); }).catch(() => {});
   }
   await route();
+  if (!home.time) loadTime(); // the week's time rows and any clock running elsewhere
 }
 
 function openSide() {
@@ -587,7 +850,7 @@ els.filter.addEventListener('keydown', (e) => {
   }
   if (e.key === 'Escape') { els.filter.value = ''; renderNav(); els.filter.blur(); }
 });
-els.refresh.addEventListener('click', () => load());
+els.refresh.addEventListener('click', () => { home.time = null; load(); });
 els.menu.addEventListener('click', openSide);
 els.sideClose.addEventListener('click', closeSide);
 els.scrim.addEventListener('click', closeSide);

@@ -1,11 +1,12 @@
 // Brain viewer preview: screenshots of the real page with synthetic data. Not a test.
 //
-//   node tests/brain-preview.mjs [--url https://staldexgames.pages.dev] [--out <dir>]
+//   node tests/brain-preview.mjs [--url https://staldexgames.pages.dev] [--out <dir>] [--wide]
 //
 // Without --url it serves `site/` from this checkout on 127.0.0.1, so a change can be seen
 // before it merges. With --url it opens the deployed site instead, to confirm a deploy is
-// live. Either way the Worker API (/api/brain/*) is answered here with made-up data, so
-// no Brain content, token or sign-in is involved. Needs Playwright with Chromium.
+// live. --wide uses a desktop window instead of a phone. Either way the Worker API
+// (/api/brain/*) is answered here with made-up data, so no Brain content, token or
+// sign-in is involved. Needs Playwright with Chromium.
 import { createServer } from 'node:http';
 import { mkdir, readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
@@ -38,7 +39,7 @@ const VIEW = {
   schema: 'brain-command-centre/1', date: new Date().toISOString().slice(0, 10),
   work_hours: { work_days: [0, 1, 2, 3, 4], work_start: '08:00', work_end: '17:00' },
   entries: [
-    entry('WORK-SYS-60101.01', { section: 'hot', hot: ['due tomorrow'], context: 'emails', area: '1' }),
+    entry('WORK-SYS-60101.01', { section: 'hot', hot: ['due tomorrow'], context: 'emails', area: '1', minutes: '60', due: '2026-01-02', priority: 'P1' }),
     entry('WORK-COMP-60101.02', { area: '2' }),
     entry('PROJ-TT-60101.03', { source: 'card', home: 'project:alpha', lens: 'ventures', section: 'hot', hot: ['blocks PROJ-TT-60101.04'] }),
     entry('PA-ADMIN-60101.05', { lens: 'personal', context: 'errands' }),
@@ -55,6 +56,11 @@ const VIEW = {
       hot: ['PROJ-TT-60101.03', 'DEV-60101.06'], hot_total: 3 }),
   },
   allocation: { areas: { 1: { name: 'Systems', hours: 16 }, 2: { name: 'Compliance', hours: 8 } }, float: 6, total: 40 },
+  inbox: [
+    { kind: 'line', text: 'A raw idea typed on the phone', home: 'project:alpha', date: new Date().toISOString().slice(0, 10), path: 'projects/alpha/QUEUE.md', ref: null, lens: 'ventures' },
+    { kind: 'unconfirmed', text: 'A new item the brief found', home: 'project:alpha', date: '2026-01-02', path: 'register/open-items.md', ref: 'P-WORK-COMP-60101.07', lens: 'work' },
+    { kind: 'close', text: 'An item the debrief thinks is done', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-SYS-60101.01', lens: 'work' },
+  ],
   gaps: ['Synthetic preview data.'],
 };
 const filler = (n) => Array.from({ length: n }, (_, i) => `Filler paragraph ${i + 1} so the jump has somewhere to scroll.`).join('\n\n');
@@ -76,8 +82,18 @@ const TREE = {
   files: Object.entries(FILES).map(([path, text]) => ({ path, sha: sha(path), size: text.length })),
 };
 
-function answer(url) {
+const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+const TIME = [
+  { date: today, kind: 'tracked', start: '08:30', end: '10:00', minutes: 90, ref: 'WORK-SYS-60101.01', area: '1', lens: 'work', note: 'Synthetic' },
+  { date: today, kind: 'entered', start: '', end: '', minutes: 120, ref: '', area: '2', lens: 'work', note: 'entered on the viewer' },
+  { date: today, kind: 'tracked', start: '19:00', end: '20:00', minutes: 60, ref: 'DEV-60101.06', area: '', lens: 'brain', note: 'Synthetic' },
+];
+const writes = [];
+
+function answer(url, method = 'GET', body = null) {
   const u = new URL(url);
+  if (method === 'POST') { writes.push([u.pathname, body]); return { path: 'synthetic', sha: 'x', commit: null }; }
+  if (u.pathname === '/api/brain/time') return { from: u.searchParams.get('from'), to: today, rows: TIME };
   if (u.pathname === '/api/brain/tree') return TREE;
   const path = u.searchParams.get('path');
   return path in FILES ? { path, sha: sha(path), text: FILES[path] } : null;
@@ -105,12 +121,14 @@ const server = opt('--url') ? null : await serveSite();
 const base = (opt('--url') || `http://127.0.0.1:${server.address().port}`).replace(/\/$/, '');
 await mkdir(OUT, { recursive: true });
 const browser = await chromium.launch();
-const page = await browser.newPage({ viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+const wide = args.includes('--wide');
+const page = await browser.newPage(wide ? { viewport: { width: 1400, height: 900 } } : { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
 const problems = [];
 page.on('pageerror', (e) => problems.push(`page error: ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') problems.push(`console: ${m.text()}`); });
 await page.route('**/api/brain/**', (route) => {
-  const body = answer(route.request().url());
+  const req = route.request();
+  const body = answer(req.url(), req.method(), req.postData());
   return route.fulfill({ status: body ? 200 : 404, contentType: 'application/json', body: JSON.stringify(body || { error: 'not found' }) });
 });
 
@@ -132,15 +150,28 @@ for (const lens of ['work', 'brain', 'all']) {
   else problems.push(`no ${lens} lens button`);
 }
 await page.goto(`${base}/brain/#priority`); await settle(); await shot('priority');
-await page.goto(`${base}/brain/#allocation`); await settle(); await shot('allocation');
+await page.goto(`${base}/brain/#allocation`); await settle(); await page.waitForTimeout(600); await shot('allocation');
+if (!(await page.locator('.cc-meter').count())) problems.push('the Allocation tab shows no actuals');
 await page.goto(`${base}/brain/#focus`); await settle();
 await page.locator('[data-cc-lens="work"]').click(); await settle();
+if (!(await page.locator('.cc-inbox .cc-row').count())) problems.push('no inbox rows on the home');
 const focal = page.locator('a.cc-focal');
 if (await focal.count()) {
-  await focal.click(); await page.waitForSelector('.doc h3', { timeout: 10_000 }).catch(() => {}); await settle();
+  await focal.click(); await settle();
+  if (await page.locator('.tk-wrap:not([hidden]) .tk-time').count()) await shot('task-card');
+  else problems.push('tapping the focal item did not open its card with a running clock');
+  await page.locator('[data-tk="progress-ask"]').click(); await settle(); await shot('task-progress');
+  await page.locator('[data-tk="cancel"]').click();
+  await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+  if (await page.locator('.clock-bar:not([hidden])').count()) await shot('clock-bar');
+  else problems.push('closing the card did not leave the clock bar');
+  await page.locator('[data-cb="open"]').click(); await settle();
+  await page.locator('[data-tk="file"]').click(); await page.waitForSelector('.doc h3', { timeout: 10_000 }).catch(() => {}); await settle();
   const target = await page.evaluate(() => document.querySelector('.doc h3.target')?.textContent || null);
-  if (!target) problems.push('tapping the focal item did not land on its heading');
-  await shot('tap-focal');
+  if (!target) problems.push('Open in file did not land on the item');
+  await shot('open-in-file');
+  await page.locator('[data-cb="stop"]').click(); await settle();
+  if (await page.locator('.clock-bar:not([hidden])').count()) problems.push('Stop left the clock bar showing');
 }
 
 await browser.close();

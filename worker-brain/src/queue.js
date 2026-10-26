@@ -83,10 +83,9 @@ function insertAfterBlank(q, at, block) {
 
 const ID_TOKEN = (id) => new RegExp('`id:\\s*' + id.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\s*`');
 
-// Moves the groomed card with this id under `## Done` with a `done:` stamp.
-export function markDone(text, id, today) {
+// The groomed card (above `## Inbox`) carrying this id: its first and past-last line.
+function findCard(q, id) {
   if (typeof id !== 'string' || !id) throw new QueueError('unknown-id', 'no card id given');
-  const q = parse(text);
   const cards = q.headings.filter((h) => h.level === 3 && h.index < q.inbox.index);
   const blocks = cards.map((h) => {
     const next = q.headings.find((x) => x.index > h.index && x.level <= 3);
@@ -97,8 +96,33 @@ export function markDone(text, id, today) {
   const matches = blocks.filter((b) => q.lines.slice(b.start + 1, b.end).some((l) => token.test(content(l))));
   if (!matches.length) throw new QueueError('unknown-id', `no groomed card ${id}`);
   if (matches.length > 1) throw new QueueError('duplicate-id', `more than one card has id ${id}`);
+  return matches[0];
+}
 
-  const { start, end } = matches[0];
+// Sets the card's `Progress:` line, the latest movement only (Brain D-37), replacing an
+// earlier one or adding it after the card's last line.
+export function cardProgress(text, id, raw, today) {
+  const note = cleanInboxText(raw);
+  const q = parse(text);
+  const { start, end } = findCard(q, id);
+  const line = `Progress: ${today}, ${note}`;
+  const at = q.lines.findIndex((l, i) => i > start && i < end && content(l).startsWith('Progress:'));
+  if (at !== -1) {
+    q.lines[at] = line + (q.lines[at].slice(content(q.lines[at]).length) || q.eol);
+  } else {
+    const last = lastContent(q, start, end);
+    q.lines[last - 1] = terminated(q.lines[last - 1], q.eol);
+    q.lines.splice(last, 0, `${line}${q.eol}`);
+  }
+  bumpUpdated(q, today);
+  return q.lines.join('');
+}
+
+// Moves the groomed card with this id under `## Done` with a `done:` stamp.
+export function markDone(text, id, today) {
+  const q = parse(text);
+  const token = ID_TOKEN(id);
+  const { start, end } = findCard(q, id);
   const block = q.lines.slice(start, lastContent(q, start, end));
   const attr = block.findIndex((l, i) => i > 0 && token.test(content(l)));
   const attrLine = block[attr];

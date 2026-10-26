@@ -101,3 +101,66 @@ test('Brain has its own lens, and an older view without it falls back to All', (
   assert.doesNotMatch(html, /data-cc-lens="brain"/);
   assert.match(html, /data-cc-lens="all" aria-pressed="true"/);
 });
+
+test('the inbox leads the home, filtered by lens, capped, with an add box', () => {
+  const inbox = Array.from({ length: 10 }, (_, i) => ({ kind: i ? 'line' : 'unconfirmed', text: `Idea ${i}`, home: 'project:alpha',
+    date: '2030-01-01', path: i ? 'projects/alpha/QUEUE.md' : 'register/open-items.md', ref: i ? null : 'P-X-1.01', lens: 'work' }));
+  const view = { ...VIEW, inbox: [...inbox, { kind: 'capture', text: '<b>x</b>', home: 'area:y', date: '2030-01-02', path: 'inbox/a.md', ref: null, lens: 'personal' }] };
+  const html = home.homeHtml(view, { lens: 'work', projects: ['alpha'] });
+  assert.ok(html.indexOf('cc-inbox') < html.indexOf('cc-focal'), 'inbox comes first');
+  assert.equal((html.match(/class="cc-row cc-in"/g) || []).length, 8);
+  assert.match(html, /Show all 10/);
+  assert.match(html, /href="#\/register\/open-items\.md\?item=P-X-1\.01"/);
+  assert.match(html, /<form class="cc-inbox-add">[\s\S]*<option value="alpha">/);
+  assert.doesNotMatch(html, /&lt;b&gt;x/, 'personal capture hidden in Work');
+  assert.match(home.homeHtml(view, { lens: 'all', inboxAll: true }), /&lt;b&gt;x&lt;\/b&gt;/);
+  assert.match(home.homeHtml({ ...VIEW, inbox: [] }, { lens: 'work' }), /Inbox empty in this lens/);
+});
+
+test('one clock across screens: the latest start with no matching stop', () => {
+  const rows = [
+    { date: '2030-01-01', kind: 'started', start: '09:00', ref: 'A-1' },
+    { date: '2030-01-01', kind: 'tracked', start: '09:00', ref: 'A-1', minutes: 30 },
+    { date: '2030-01-01', kind: 'started', start: '10:00', ref: 'B-1' },
+    { date: '2030-01-02', kind: 'started', start: '08:00', ref: 'C-1' },
+  ];
+  assert.equal(home.openClock(rows).ref, 'C-1');
+  assert.equal(home.openClock(rows.slice(0, 2)), null);
+  assert.equal(home.clockMinutes({ date: '2030-01-01', start: '09:00' }, Date.parse('2030-01-01T09:45:00+08:00')), 45);
+});
+
+test('actuals count time spent, not plans or running clocks', () => {
+  const rows = [
+    { date: '2030-01-06', kind: 'tracked', minutes: 90, area: '1', lens: 'work' },
+    { date: '2030-01-07', kind: 'entered', minutes: 60, area: '1', lens: 'work' },
+    { date: '2030-01-07', kind: 'planned', minutes: 120, area: '2', lens: 'work' },
+    { date: '2030-01-07', kind: 'started', minutes: 0, area: '2', lens: 'work' },
+    { date: '2030-01-07', kind: 'tracked', minutes: 30, area: '', lens: 'brain' },
+    { date: '2030-01-05', kind: 'tracked', minutes: 999, area: '1', lens: 'work' },
+  ];
+  const a = home.weekActuals(rows, '2030-01-06');
+  assert.deepEqual(a.byArea, { 1: 150 });
+  assert.deepEqual(a.byLens, { work: 150, brain: 30 });
+  assert.equal(a.days, 2);
+  const tab = home.homeHtml(VIEW, { lens: 'work', tab: 'allocation', time: { rows, monday: '2030-01-06' } });
+  assert.match(tab, /2 h 30 min of 16 h a week/);
+  assert.match(tab, /<form class="cc-hours">/);
+  assert.match(home.homeHtml(VIEW, { lens: 'work', tab: 'allocation', time: { rows: [], monday: '2030-01-06' } }), /Nothing recorded this week yet/);
+});
+
+test('the task card: estimate, clock and what closing means', () => {
+  const card = entry('alpha-001', { source: 'card', effort: 'M', next: 'Do it' });
+  const clock = { ref: 'alpha-001', date: '2030-01-01', start: '09:00', startMs: Date.parse('2030-01-01T09:00:00+08:00'), written: true };
+  const html = home.taskHtml(card, { clock, now: Date.parse('2030-01-01T09:05:07+08:00') });
+  assert.match(html, /5:07/);
+  assert.match(html, /M · up to 4 h/);
+  assert.match(html, /data-tk="done-ask"/);
+  assert.match(home.taskHtml(card, { clock: { ...clock, ref: 'B-1' } }), /data-tk="switch"/);
+  assert.equal(home.closeKind(entry('D-4')), 'decision');
+  assert.equal(home.closeKind(entry('P-X-1.01')), 'unconfirmed');
+  assert.equal(home.closeKind(entry('X-1.01')), 'item');
+  assert.doesNotMatch(home.taskHtml(entry('D-4')), /data-tk="done-ask"/);
+  assert.match(home.taskPanel('done', card), /data-tk="done"/);
+  assert.match(home.taskPanel('done', entry('X-1.01')), /data-tk-form="close"/);
+  assert.match(home.homeHtml(VIEW, { lens: 'work' }), /data-cc-ref="A-1"/);
+});
