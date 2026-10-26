@@ -57,13 +57,14 @@ globalThis.fetch = async (input, init = {}) => {
   if (/\/repos\/LOriti\/brain\/commits\/[0-9a-f]{40}$/.test(url)) return new Response('{}', { status: 422 });
   const blob = url.match(/\/git\/blobs\/(.+)$/);
   if (blob && BLOBS[blob[1]]) return ok(BLOBS[blob[1]], true);
-  if (url.startsWith(`https://api.github.com/repos/LOriti/brain/contents/projects/${repo.slug}/QUEUE.md`)) {
+  const file = [repo, register].find((f) => url.startsWith(`https://api.github.com/repos/LOriti/brain/contents/${f.path}`));
+  if (file) {
     if ((init.method || 'GET') === 'GET') {
-      return ok({ type: 'file', encoding: 'base64', size: repo.text.length, sha: repo.sha, content: Buffer.from(repo.text).toString('base64') });
+      return ok({ type: 'file', encoding: 'base64', size: file.text.length, sha: file.sha, content: Buffer.from(file.text).toString('base64') });
     }
     const put = JSON.parse(init.body);
-    repo.puts.push(put);
-    if (repo.putStatus !== 200) return new Response('{}', { status: repo.putStatus });
+    file.puts.push(put);
+    if (file.putStatus !== 200) return new Response('{}', { status: file.putStatus });
     return ok({ content: { sha: 'new-sha' }, commit: { sha: 'commit-sha' } });
   }
   return new Response('nope', { status: 404 });
@@ -72,7 +73,13 @@ globalThis.fetch = async (input, init = {}) => {
 // Synthetic queue the contents API serves for project `demo`.
 const QUEUE = '---\nproject: demo\ntype: queue\nupdated: 2030-01-01\n---\n\n# demo\n\n' +
   '### A card\n\n`id: demo-001` `priority: P1`\n\nOutcome: x.\n\n## Inbox\n\n- Idea, with ünïcode.\n';
-const repo = { slug: 'demo', text: QUEUE, sha: 'old-sha', puts: [], putStatus: 200 };
+const repo = { path: 'projects/demo/QUEUE.md', text: QUEUE, sha: 'old-sha', puts: [], putStatus: 200 };
+
+// Synthetic open-items register: one item awaiting confirmation, one proposed close.
+const REGISTER = '---\ntype: register\nupdated: 2030-01-01\n---\n\n# Open items\n\n' +
+  '### New\n`id: P-DEV-01014.01` `kind: action` `state: open` `unconfirmed: 2030-01-14`\n\nSource: s, 2030-01-14\nNext: n.\n\n' +
+  '### Closing\n`id: DEV-01012.02` `kind: action` `state: open` `close-proposed: 2030-01-14`\n\nSource: s, 2030-01-12\nNext: n.\nEvidence: e.\n';
+const register = { path: 'register/open-items.md', text: REGISTER, sha: 'reg-sha', puts: [], putStatus: 200 };
 
 const WRITE_HEADERS = { 'Content-Type': 'application/json', Origin: 'https://staldex.com', 'X-Brain-Write': '1' };
 
@@ -160,6 +167,8 @@ test('read routes take GET only and write routes POST only, before auth', async 
   assert.equal((await call('/api/brain/tree', { method: 'POST', token })).status, 405);
   assert.equal((await call('/api/brain/done', { token })).status, 405);
   assert.equal((await call('/api/brain/inbox', { method: 'PUT', token })).status, 405);
+  assert.equal((await call('/api/brain/confirm', { token })).status, 405);
+  assert.equal((await call('/api/brain/reject', { token })).status, 405);
 });
 
 test('writes need JSON, the site origin and the custom header', async () => {
@@ -180,7 +189,9 @@ test('writes need JSON, the site origin and the custom header', async () => {
     { ...WRITE_HEADERS, 'X-Brain-Write': 'yes' },
   ]) {
     assert.equal((await post('/api/brain/inbox', body, { token, headers })).status, 403, JSON.stringify(headers));
+    assert.equal((await post('/api/brain/confirm', { id: 'P-DEV-01014.01', flag: 'unconfirmed' }, { token, headers })).status, 403);
   }
+  assert.equal(register.puts.length, 0);
   assert.equal((await post('/api/brain/inbox', body, { token, headers: { ...WRITE_HEADERS, 'Content-Type': 'application/json; charset=utf-8' } })).status, 200);
   assert.equal(repo.puts.length, 1);
 });
@@ -194,6 +205,11 @@ test('writes fail closed exactly like reads', async () => {
   assert.equal((await post('/api/brain/inbox', body, { token: await sign({}), env: { ...ENV, GITHUB_TOKEN: '' } })).status, 503);
   assert.equal((await post('/api/brain/inbox', body, { token: await sign({}), env: { ...ENV, ALLOWED_EMAILS: 'x@y.z' } })).status, 401);
   assert.equal(repo.puts.length, 0);
+  const flag = { id: 'P-DEV-01014.01', flag: 'unconfirmed' };
+  assert.equal((await post('/api/brain/reject', flag)).status, 401);
+  assert.equal((await post('/api/brain/reject', flag, { token: await sign({ aud: ['other'] }) })).status, 401);
+  assert.equal((await post('/api/brain/reject', flag, { token: await sign({}), env: { ...ENV, GITHUB_TOKEN: '' } })).status, 503);
+  assert.equal(register.puts.length, 0);
 });
 
 test('write bodies are validated against the path-safety rules', async () => {
@@ -214,6 +230,56 @@ test('write bodies are validated against the path-safety rules', async () => {
   assert.equal((await post('/api/brain/done', { project: 'demo', id: 'DEV-61025.99' }, { token })).status, 404);
   assert.equal((await post('/api/brain/inbox', { project: 'nope', text: 'a' }, { token })).status, 404);
   assert.equal(repo.puts.length, 0);
+  for (const route of ['/api/brain/confirm', '/api/brain/reject']) {
+    for (const body of [
+      {}, { id: 'P-DEV-01014.01' }, { id: 'P-DEV-01014.01', flag: 'done' }, { id: 'P-DEV-01014.01', flag: ['unconfirmed'] },
+      { id: 'D-12', flag: 'unconfirmed' }, { id: 'demo-001', flag: 'unconfirmed' }, { id: '../P-DEV-01014.01', flag: 'unconfirmed' },
+      { id: 'P-DEV-01014.01 ', flag: 'unconfirmed' }, { id: 42, flag: 'unconfirmed' },
+    ]) assert.equal((await post(route, body, { token })).status, 400, `${route} ${JSON.stringify(body)}`);
+    assert.equal((await post(route, { id: 'DEV-01099.01', flag: 'unconfirmed' }, { token })).status, 404);
+  }
+  // Settled already, or out of order: refused as a conflict, nothing written.
+  assert.deepEqual(await post('/api/brain/confirm', { id: 'DEV-01012.02', flag: 'unconfirmed' }, { token }),
+    { status: 409, body: { error: 'DEV-01012.02 is no longer unconfirmed' } });
+  assert.equal((await post('/api/brain/reject', { id: 'P-DEV-01014.01', flag: 'close-proposed' }, { token })).status, 409);
+  assert.equal(register.puts.length, 0);
+});
+
+test('confirm and reject each commit one register edit with the read sha', async () => {
+  const token = await sign({});
+  const cases = [
+    ['/api/brain/confirm', 'P-DEV-01014.01', 'unconfirmed', 'web: confirm P-DEV-01014.01', /`id: DEV-01014\.01` `kind: action` `state: open`\n/],
+    ['/api/brain/reject', 'P-DEV-01014.01', 'unconfirmed', 'web: reject P-DEV-01014.01',
+      /`id: P-DEV-01014\.01` `kind: action` `state: rejected`\n\nSource: s, 2030-01-14\nNext: n\.\nCorrection: \d{4}-\d{2}-\d{2}: rejected in the viewer/],
+    ['/api/brain/confirm', 'DEV-01012.02', 'close-proposed', 'web: confirm close DEV-01012.02', /`id: DEV-01012\.02` `kind: action` `state: done`\n\nSource: s, 2030-01-12\nNext: n\.\nEvidence: e\.\n$/],
+    ['/api/brain/reject', 'DEV-01012.02', 'close-proposed', 'web: reject close DEV-01012.02',
+      /`id: DEV-01012\.02` `kind: action` `state: open`\n\nSource: s, 2030-01-12\nNext: n\.\nCorrection: \d{4}-\d{2}-\d{2}: proposed close rejected in the viewer \(D-42\); its evidence was: e\.\n$/],
+  ];
+  for (const [route, id, flag, message, expected] of cases) {
+    register.puts.length = 0;
+    const res = await post(route, { id, flag }, { token });
+    assert.equal(res.status, 200, message);
+    assert.deepEqual(res.body, { path: 'register/open-items.md', sha: 'new-sha', commit: 'commit-sha' });
+    assert.equal(register.puts.length, 1);
+    const [put] = register.puts;
+    assert.equal(put.message, message);
+    assert.equal(put.sha, 'reg-sha');
+    assert.equal(put.branch, 'main');
+    const text = Buffer.from(put.content, 'base64').toString('utf8');
+    assert.match(text, expected, message);
+    assert.match(text, /^updated: \d{4}-\d{2}-\d{2}$/m);
+    assert.doesNotMatch(text, /updated: 2030-01-01/);
+  }
+  assert.equal(repo.puts.length, 0, 'queues untouched');
+});
+
+test('a register edit racing another change is a 409, never retried', async () => {
+  register.puts.length = 0;
+  register.putStatus = 409;
+  const res = await post('/api/brain/confirm', { id: 'P-DEV-01014.01', flag: 'unconfirmed' }, { token: await sign({}) });
+  assert.deepEqual(res, { status: 409, body: { error: 'changed elsewhere, refresh' } });
+  assert.equal(register.puts.length, 1);
+  register.putStatus = 200;
 });
 
 test('done commits one transformed file with the read sha', async () => {

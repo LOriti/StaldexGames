@@ -18,24 +18,32 @@ knowing the URL. Brain holds personal admin and portfolio state, so it has two g
 Reads cover only `.md`, `.json` and `.jsonl` files outside dot-folders, never
 `context/local-paths.json`.
 
-**Writes are exactly two actions**, both on one project's `projects/<slug>/QUEUE.md`:
+**Writes are exactly four actions.** Two on one project's `projects/<slug>/QUEUE.md`:
 mark a groomed card done (it moves under `## Done` with a `done:` Perth date) and add a
-line under `## Inbox`. There is no free-form editing; everything else in Brain still goes
-through a Claude session. Each write:
+line under `## Inbox`. Two on `register/open-items.md`, settling what a daily routine
+flagged: **Confirm** or **Reject** an item carrying `unconfirmed` (a new item) or
+`close-proposed` (evidence it is done), with exactly Brain's edits (`src/register.js`
+lists them). There is no free-form editing; everything else in Brain still goes through a
+Claude session. Each write:
 
 - passes the same two gates as a read (fails closed the same way), plus a forged-request
   guard: `Content-Type: application/json`, `Origin: https://staldex.com` exactly, and
   `X-Brain-Write: 1`. A cross-site page can't send that without a CORS preflight, which
   the Worker never grants, so anything else gets 403 before Access is even checked;
-- validates the slug (`[a-z0-9-]`, no dots or slashes) and the card id (`<slug>-NNN`);
-- reads the file and its blob `sha`, applies a pure transform (`src/queue.js`, no I/O)
+- validates the slug (`[a-z0-9-]`, no dots or slashes), the card id (date-based like
+  `DEV-61025.14`, or the older `<slug>-NNN`), the register id (the same, with an optional
+  `P-`) and the flag;
+- reads the file and its blob `sha`, applies a pure transform (`src/queue.js` or
+  `src/register.js`, no I/O)
   and `PUT`s it back with that `sha`. If the file changed in between, GitHub refuses and
   the API answers **409 `changed elsewhere, refresh`**. It never retries or forces;
-- makes one commit per action: `web: done <id>` or `web: inbox <slug>`. GitHub requires an
+- makes one commit per action: `web: done <id>`, `web: inbox <slug>`,
+  `web: confirm [close ]<id>` or `web: reject [close ]<id>`. GitHub requires an
   email with a custom committer, so none is sent and the commit is attributed to the
   token's owner; the `web:` prefix marks where it came from.
 
-In Brain, `.github/workflows/index.yml` regenerates `INDEX.md` after each such commit.
+In Brain, `.github/workflows/index.yml` regenerates `INDEX.md` and the command centre
+view after each such commit.
 
 ## Setup (once, dashboard only — about 15 minutes)
 
@@ -83,7 +91,7 @@ Neither is a secret (they identify the Access app, they don't grant entry). Comm
    Generate new token.
    - Resource owner: `LOriti`. Repository access: **Only select repositories → `brain`**.
    - Permissions: **Contents → Read and write** (Metadata read-only is added
-     automatically). Nothing else. Write is needed only for the two queue actions; a
+     automatically). Nothing else. Write is needed only for the four write actions; a
      read-only token still serves the viewer and makes every write answer 502.
    - Expiration: up to a year; put the renewal date in your calendar.
 2. After step 4 creates the Worker: Workers & Pages → `brain-viewer` → **Settings →
@@ -136,20 +144,23 @@ The page itself (`site/brain/`) ships with the normal Pages deploy.
    Brain gets a `web: inbox <slug>` commit followed shortly by an `index:` commit (only if
    the index changed). Mark a throwaway card **Done** the same way. Then remove the test
    line in a session.
+5. Open `register/open-items.md` (or tap **Clarify** on the home page): a box at the top
+   lists what awaits confirmation, and each flagged item has **Confirm** and **Reject**.
 
 After a deploy that changes `site/brain/`, hard-refresh (Ctrl+Shift+R): the browser may
 keep the old `app.js`/`style.css` for a while.
 
 To diagnose, open `https://staldex.com/api/brain/tree` in the signed-in window: it shows
 the API's raw answer (`{"error": "not configured"}`, a file list, or a Cloudflare error
-page). The page itself shows "The Brain API answered: error" for anything that isn't JSON.
+page). The page shows the API's own error, or `HTTP <status>` for anything that isn't JSON.
 
-Page messages map to API states: **Not set up yet** = 503 (`not configured`: step 2 or
-3.2 missing, often a token added as a *build* secret; `access unavailable`: the Worker
-couldn't fetch the Access signing keys),
+Page messages map to API states: **Not set up yet** = 503 `not configured` (step 2 or
+3.2 missing, often a token added as a *build* secret); **access unavailable** = 503, the
+Worker couldn't fetch the Access signing keys;
 **Signed out** = Access session ended or token rejected (401), **github 401/404** = the
 token expired or lost access to the repo, **Not saved: changed elsewhere, refresh** = the
-QUEUE moved on since it was read (409); press Refresh and try again.
+file moved on since it was read (409); press Refresh and try again. **Not saved: … is no
+longer unconfirmed** (or `close-proposed`) = a session settled that item already (409).
 
 ## API
 
@@ -169,10 +180,13 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
 - `POST /api/brain/done` `{ project, id }` → `{ path, sha, commit }`
 - `POST /api/brain/inbox` `{ project, text }` → `{ path, sha, commit }`. `text` is trimmed
   and folded onto one line; empty or over 500 characters is refused.
+- `POST /api/brain/confirm` and `POST /api/brain/reject` `{ id, flag }` → `{ path, sha, commit }`,
+  `flag` being `unconfirmed` or `close-proposed`, on `register/open-items.md`.
 
-Write errors: 400 bad body, slug, id or text · 403 missing JSON type, Origin or
-`X-Brain-Write` · 404 no such project or groomed card · 409 changed elsewhere ·
-422 QUEUE not in the expected shape (no `## Inbox`, duplicate id) · 502 GitHub refused
+Write errors: 400 bad body, slug, id, flag or text · 403 missing JSON type, Origin or
+`X-Brain-Write` · 404 no such project, groomed card or register item · 409 changed
+elsewhere, the item no longer carries the flag, or a proposed close on an item not yet
+confirmed · 422 file not in the expected shape (no `## Inbox`, duplicate id) · 502 GitHub refused
 (for example a read-only token). Read and write routes refuse each other's method (405).
 
 ## Design notes
@@ -184,6 +198,7 @@ Write errors: 400 bad body, slug, id or text · 403 missing JSON type, Origin or
 - Tests (repo root): `node --test tests/brain-*.test.mjs`. They cover the fail-closed
   config, forged/expired/wrong-audience tokens, key rotation, the email allowlist, the
   file allowlist, HTML/script escaping in the renderer, the write guards, the stale-sha
-  409, commit messages, and the QUEUE transforms (CRLF, missing or existing `## Done`,
+  409, commit messages, the QUEUE transforms (CRLF, missing or existing `## Done`,
   unknown and duplicate ids, a card right before `## Inbox`, a missing Inbox, and
-  byte-for-byte preservation of everything else).
+  byte-for-byte preservation of everything else) and the four register edits (each flag
+  confirmed and rejected, both flags on one item, settled, unknown and duplicate ids).

@@ -1,8 +1,8 @@
-// Brain viewer — window onto the private Brain repo, plus two narrow QUEUE edits.
+// Brain viewer — window onto the private Brain repo, plus narrow QUEUE and register edits.
 // Data comes from /api/brain (worker-brain/), behind Cloudflare Access.
 
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
-import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026b';
+import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026c';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -67,10 +67,12 @@ async function api(path, payload) {
     throw new ApiError('offline');
   }
   if (res.type === 'opaqueredirect' || res.status === 401 || res.status === 403) throw new ApiError('signin', res.status);
-  if (res.status === 503) throw new ApiError('setup', res.status);
   let body = null;
   try { body = await res.json(); } catch { /* handled below */ }
-  if (!res.ok || !body) throw new ApiError(body?.error || 'error', res.status);
+  // Only the Worker's own "not configured" means setup; any other 503 (Access certs
+  // unreachable, a Cloudflare error page) shows what came back.
+  if (res.status === 503 && body?.error === 'not configured') throw new ApiError('setup', res.status);
+  if (!res.ok || !body) throw new ApiError(body?.error || `HTTP ${res.status}`, res.status);
   return body;
 }
 
@@ -277,6 +279,7 @@ async function show(path) {
       const { meta, body } = parseFrontmatter(text);
       els.doc.innerHTML = renderMeta(meta) + renderMarkdown(body, { linkFor: linkFor(path) });
       addQueueControls(path);
+      addRegisterControls(path);
     } else {
       els.doc.innerHTML = `<h1>${escapeHtml(path.split('/').pop())}</h1>` + renderJson(path, text);
     }
@@ -360,9 +363,10 @@ function currentPath() {
   try { return decodeURI(raw) || HOME; } catch { return HOME; }
 }
 
-// ---- queue writes -------------------------------------------------------------
-// The only two edits this page makes: mark a groomed card done, add an Inbox line.
-// Everything else in Brain goes through a Claude session.
+// ---- queue and register writes ---------------------------------------------------
+// The only edits this page makes: mark a groomed card done, add an Inbox line, and
+// confirm or reject what a daily routine flagged in the register. Everything else in
+// Brain goes through a Claude session.
 
 const QUEUE_PATH = /^projects\/([a-z0-9]+(?:-[a-z0-9]+)*)\/QUEUE\.md$/;
 
@@ -386,7 +390,7 @@ function addQueueControls(path) {
     const ctl = document.createElement('span');
     ctl.className = 'card-act';
     ctl.dataset.id = id;
-    ctl.innerHTML = '<button type="button" class="mini-btn" data-act="done">Done</button>';
+    ctl.innerHTML = actsHtml(ctl);
     h3.append(' ', ctl);
   }
 
@@ -400,6 +404,57 @@ function addQueueControls(path) {
     '<button type="submit" class="text-btn">Add</button>' +
     '<p class="write-msg" role="status" hidden></p>';
   end.after(form);
+}
+
+const REGISTER_PATH = 'register/open-items.md';
+const REGISTER_ID = /^(?:P-)?(?:\?|[A-Z]+(?:-[A-Z]+)?)-\d{5}\.\d{2,3}$/;
+// What a daily routine flags for confirmation (Brain D-42), and how each reads here.
+const FLAGS = { unconfirmed: 'New item', 'close-proposed': 'Close proposed' };
+
+function actsHtml(ctl) {
+  const flag = ctl.dataset.flag;
+  if (!flag) return '<button type="button" class="mini-btn" data-act="done">Done</button>';
+  return `<span class="flag-k">${FLAGS[flag]}</span>` +
+    '<button type="button" class="mini-btn primary" data-act="confirm">Confirm</button>' +
+    '<button type="button" class="mini-btn" data-act="reject">Reject</button>';
+}
+
+// On the register, each flagged item gets Confirm and Reject per flag, and the page opens
+// with a list of everything waiting, each entry jumping to its item.
+function addRegisterControls(path) {
+  if (path !== REGISTER_PATH) return;
+  const waiting = [];
+  for (const h3 of els.doc.querySelectorAll('h3')) {
+    const attrs = h3.nextElementSibling;
+    if (!attrs || attrs.tagName !== 'P') continue;
+    const field = (key) => attrs.querySelector(`code.field[data-key="${key}"]`);
+    const id = field('id')?.textContent.match(/^id\s*(\S+)$/)?.[1];
+    const state = field('state')?.dataset.value;
+    if (!id || !REGISTER_ID.test(id) || state === 'done' || state === 'rejected') continue;
+    const title = h3.textContent.trim();
+    for (const flag of Object.keys(FLAGS)) {
+      if (!field(flag)) continue;
+      const ctl = document.createElement('span');
+      ctl.className = 'card-act';
+      ctl.dataset.id = id;
+      ctl.dataset.flag = flag;
+      ctl.innerHTML = actsHtml(ctl);
+      h3.append(' ', ctl);
+      waiting.push({ h3, title, id, flag });
+    }
+  }
+  if (!waiting.length) return;
+  const count = (flag) => waiting.filter((w) => w.flag === flag).length;
+  const box = document.createElement('section');
+  box.className = 'reg-todo';
+  box.innerHTML = `<p><strong>To confirm or reject:</strong> ${count('unconfirmed')} new, ${count('close-proposed')} close proposed.</p><ul>` +
+    waiting.map((w, i) => `<li><button type="button" class="jump" data-jump="${i}">${escapeHtml(w.title)}</button>` +
+      ` <code>${escapeHtml(w.id)}</code> <span class="flag-k">${FLAGS[w.flag]}</span></li>`).join('') + '</ul>';
+  box.addEventListener('click', (e) => {
+    const jump = e.target.closest('[data-jump]');
+    if (jump) waiting[Number(jump.dataset.jump)].h3.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+  (els.doc.querySelector('h1') || els.doc.firstChild).after(box);
 }
 
 function setMessage(el, text, bad = true) {
@@ -432,7 +487,16 @@ els.doc.addEventListener('click', async (e) => {
       '<button type="button" class="mini-btn" data-act="cancel">Cancel</button>';
     ctl.querySelector('[data-act="yes"]').focus();
   } else if (act === 'cancel') {
-    ctl.innerHTML = '<button type="button" class="mini-btn" data-act="done">Done</button>';
+    ctl.innerHTML = actsHtml(ctl);
+  } else if (act === 'confirm' || act === 'reject') {
+    // One tap: each is a single reviewable `web:` commit that a session can undo.
+    for (const b of ctl.querySelectorAll('button')) b.disabled = true;
+    try {
+      await write(`/${act}`, { id: ctl.dataset.id, flag: ctl.dataset.flag });
+    } catch (err) {
+      ctl.innerHTML = `<span class="write-err">${escapeHtml(writeError(err))}</span>` +
+        '<button type="button" class="mini-btn" data-act="cancel">OK</button>';
+    }
   } else if (act === 'yes') {
     for (const b of ctl.querySelectorAll('button')) b.disabled = true;
     const project = state.current.match(QUEUE_PATH)[1];

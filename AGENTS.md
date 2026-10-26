@@ -21,7 +21,9 @@ Notes for anyone, human or agent, changing this repo. Keep it short and team-neu
   through the Worker, behind Cloudflare Access. Never commit Brain content here, not even
   in test fixtures; use synthetic data. Its home page (`site/brain/home.js`) renders the
   read-only command centre view that Brain generates as `views/command-centre.json`;
-  keep `home.js` free of imports so the tests can load it alone. Bump the `?v=` on the
+  keep `home.js` free of imports so the tests can load it alone. Its only writes are the
+  Worker's `WRITES` table: two queue edits and Confirm or Reject on the register; their
+  edits follow Brain's own rules, so change them only from a Brain request. Bump the `?v=` on the
   asset URLs in `index.html` and the imports in `app.js` when those files change, so
   phones pick up a deploy without a hard refresh.
 - Change things through pull requests to `main`; `main` deploys.

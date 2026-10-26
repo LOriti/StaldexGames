@@ -78,3 +78,11 @@ test('allocation lists the areas and float', () => {
   assert.match(html, /1 Systems/);
   assert.match(html, /Float/);
 });
+
+test('the quiet line links what awaits confirmation to the register', () => {
+  const quiet = { needs_review_date: [], no_owner: [], unconfirmed: ['P-X-1'], close_proposed: ['Y-2', 'Y-3'] };
+  const view = { ...VIEW, lenses: { ...VIEW.lenses, work: { ...VIEW.lenses.work, quiet } } };
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'focus' }),
+    /<a href="#\/register\/open-items\.md">Clarify: 1 unconfirmed, 2 close proposed<\/a>/);
+  assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', tab: 'focus' }), /Clarify/);
+});

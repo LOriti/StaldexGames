@@ -9,20 +9,25 @@
 //   1. Cloudflare Access in front of /brain and /api/brain (identity login at the edge).
 //   2. This Worker re-verifying the Access JWT, so it fails closed if (1) is ever missing.
 //
-// Reads cover the whole readable tree. Writes are exactly two narrow actions on one
-// project's QUEUE.md (mark a card done, add an Inbox line); everything else in Brain
-// still goes through a Claude session. Each write reads the file and its blob sha, applies
-// a pure transform (queue.js) and PUTs it back with that sha, so a file that changed in
-// the meantime is refused (409) rather than overwritten.
+// Reads cover the whole readable tree. Writes are four narrow actions: two on one
+// project's QUEUE.md (mark a card done, add an Inbox line) and two on the open-items
+// register (confirm or reject an item a daily routine flagged unconfirmed or proposed
+// closing); everything else in Brain still goes through a Claude session. Each write reads
+// the file and its blob sha, applies a pure transform (queue.js, register.js) and PUTs it
+// back with that sha, so a file that changed in the meantime is refused (409) rather than
+// overwritten.
 //
 // Routed at staldex.com/api/brain/* (see wrangler.toml). Endpoints:
 //   GET  /api/brain/tree[?fresh=1 | ?commit=<sha>]   → { repo, ref, commit, viewer, files: [{ path, sha, size }] }
 //   GET  /api/brain/file?path=<path>[&commit=<sha>]  → { path, sha, text }
 //   POST /api/brain/done   { project, id }   → { path, sha, commit }
 //   POST /api/brain/inbox  { project, text } → { path, sha, commit }
+//   POST /api/brain/confirm { id, flag }    → { path, sha, commit }   flag: unconfirmed | close-proposed
+//   POST /api/brain/reject  { id, flag }    → { path, sha, commit }
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
 import { QueueError, addInbox, markDone, perthDate } from './queue.js';
+import { FLAGS, REGISTER_ID, REGISTER_PATH, confirmFlag, rejectFlag } from './register.js';
 
 const TREE_TTL_MS = 30 * 1000;
 const BLOB_CACHE_MAX = 200;
@@ -138,20 +143,42 @@ async function loadBlob(env, sha) {
 
 // ---- writes ---------------------------------------------------------------------
 
+const queuePath = (body) => (typeof body.project === 'string' && SLUG.test(body.project) ? `projects/${body.project}/QUEUE.md` : null);
+const flagged = (body) => typeof body.id === 'string' && REGISTER_ID.test(body.id) && FLAGS.includes(body.flag);
+const flagWord = (body) => (body.flag === 'close-proposed' ? 'close ' : '');
+
 const WRITES = {
   '/api/brain/done': {
+    path: queuePath,
     valid: (body) => isCardId(body.id, body.project),
     apply: (text, body, today) => markDone(text, body.id, today),
     message: (body) => `web: done ${body.id}`,
   },
   '/api/brain/inbox': {
+    path: queuePath,
     valid: (body) => typeof body.text === 'string',
     apply: (text, body, today) => addInbox(text, body.text, today),
     message: (body) => `web: inbox ${body.project}`,
   },
+  '/api/brain/confirm': {
+    path: () => REGISTER_PATH,
+    valid: flagged,
+    apply: (text, body, today) => confirmFlag(text, body.id, body.flag, today),
+    message: (body) => `web: confirm ${flagWord(body)}${body.id}`,
+  },
+  '/api/brain/reject': {
+    path: () => REGISTER_PATH,
+    valid: flagged,
+    apply: (text, body, today) => rejectFlag(text, body.id, body.flag, today),
+    message: (body) => `web: reject ${flagWord(body)}${body.id}`,
+  },
 };
 
-const QUEUE_STATUS = { 'unknown-id': 404, 'duplicate-id': 422, malformed: 422, 'invalid-text': 400 };
+// 'not-flagged': someone settled the item since the page loaded; 'order': confirm the
+// item before its proposed close.
+const WRITE_STATUS = {
+  'unknown-id': 404, 'duplicate-id': 422, malformed: 422, 'invalid-text': 400, 'not-flagged': 409, order: 409,
+};
 
 // Forged-request guard on top of Access. A cross-site page can't send a JSON body with a
 // custom header without a CORS preflight, which this Worker never grants, and the Origin
@@ -189,9 +216,8 @@ async function readBody(request) {
 async function write(request, url, env) {
   const action = WRITES[url.pathname];
   const body = await readBody(request);
-  if (!body || typeof body.project !== 'string' || !SLUG.test(body.project)) return json({ error: 'bad request' }, 400);
-  const path = `projects/${body.project}/QUEUE.md`;
-  if (!isReadable(path) || !action.valid(body)) return json({ error: 'bad request' }, 400);
+  const path = body && action.path(body);
+  if (!path || !isReadable(path) || !action.valid(body)) return json({ error: 'bad request' }, 400);
 
   const ref = env.BRAIN_REF || 'main';
   const contents = `/repos/${repoPath(env)}/contents/${path.split('/').map(encodeURIComponent).join('/')}`;
@@ -210,7 +236,7 @@ async function write(request, url, env) {
   try {
     next = action.apply(base64ToUtf8(current.content), body, perthDate());
   } catch (err) {
-    if (err instanceof QueueError) return json({ error: err.message }, QUEUE_STATUS[err.code] || 422);
+    if (err instanceof QueueError) return json({ error: err.message }, WRITE_STATUS[err.code] || 422);
     if (err instanceof TypeError) return json({ error: 'not editable' }, 422); // not UTF-8
     throw err;
   }
