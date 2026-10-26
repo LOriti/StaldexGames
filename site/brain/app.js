@@ -5,7 +5,7 @@ import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './mar
 import {
   VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
-} from './home.js?v=20261027f';
+} from './home.js?v=20261027g';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -578,7 +578,7 @@ els.doc.addEventListener('submit', async (e) => {
 // clock runs at a time. Finishing a task shows the reward and moves the next hot item up.
 
 let clock = null; // { ref, title, area, lens, date, start, startMs, written }
-const task = { ref: null, panel: '', message: '', reward: null, sort: null };
+const task = { ref: null, panel: '', message: '', reward: null, sort: null, back: null };
 let families = [];
 
 const modal = document.createElement('div');
@@ -599,7 +599,7 @@ const entryFor = (ref) => home.view?.entries.find((e) => e.ref === ref) || null;
 
 function renderTask() {
   if (task.sort) {
-    modal.querySelector('.tk').innerHTML = categoriseHtml(task.sort, { families, message: task.message });
+    modal.querySelector('.tk').innerHTML = categoriseHtml(task.sort, { families, message: task.message, back: Boolean(task.back) });
     modal.hidden = false;
     return;
   }
@@ -633,14 +633,15 @@ setInterval(() => {
 
 function openTask(ref) {
   if (!entryFor(ref)) return;
-  Object.assign(task, { ref, panel: '', message: '', reward: null, sort: null });
+  Object.assign(task, { ref, panel: '', message: '', reward: null, sort: null, back: null });
   refreshAll();
 }
 
 // The categorisation card (Brain D-100 B), with the family list read from Brain.
-async function openSort(target) {
+// `from` is the task whose card it was opened from, so Back and Cancel return there.
+async function openSort(target, from = null) {
   if (target.kind === 'item' && !target.entry) return;
-  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: target });
+  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: target, back: from });
   refreshAll();
   if (!families.length && state.paths.has('context/families.md')) {
     try { families = parseFamilies(await fileText('context/families.md')); } catch { /* the card falls back to the item's own family */ }
@@ -748,7 +749,7 @@ async function stopIfMine(entry) {
 }
 
 function hideTask() {
-  Object.assign(task, { ref: null, panel: '', reward: null, sort: null });
+  Object.assign(task, { ref: null, panel: '', reward: null, sort: null, back: null });
   refreshAll();
 }
 
@@ -781,7 +782,8 @@ modal.addEventListener('click', async (e) => {
   const entry = entryFor(task.ref);
   const act = btn.dataset.tk;
   if (act === 'next') return openTask(btn.dataset.ref);
-  if (act === 'categorise' && entry) return openSort({ kind: 'item', entry });
+  if (act === 'categorise' && entry) return openSort({ kind: 'item', entry }, entry.ref);
+  if (act === 'back') { Object.assign(task, { sort: null, ref: task.back, back: null, message: '' }); return refreshAll(); }
   if (act === 'file') { task.ref = null; modal.hidden = true; renderClock(); return; }
   if (act === 'hide' || !entry) return hideTask();
   if (act === 'stop') { await stopClock(); return; }
@@ -870,10 +872,14 @@ modal.addEventListener('submit', async (e) => {
       const body = target.kind === 'line' ? { project: projectOf(target), line: target.raw || target.text, details: d } : { id: target.entry.ref, details: d };
       await write('/categorise', body);
       const done = afterSort(target, d);
-      Object.assign(task, { sort: null, ref: null });
+      // Opened from a task's card: return to it (under its new id once confirmed).
+      const fromTask = Boolean(task.back);
+      Object.assign(task, { sort: null, ref: fromTask ? target.entry.ref : null, back: null, message: fromTask ? done : '' });
       refreshAll();
-      bar.hidden = false;
-      bar.innerHTML = `<span class="cb-t">${escapeHtml(done)}</span><button type="button" class="mini-btn" data-cb="dismiss">OK</button>`;
+      if (!fromTask) { // back on the home: say so in the bar
+        bar.hidden = false;
+        bar.innerHTML = `<span class="cb-t">${escapeHtml(done)}</span><button type="button" class="mini-btn" data-cb="dismiss">OK</button>`;
+      }
     } catch (err) {
       task.message = writeError(err);
       renderTask();

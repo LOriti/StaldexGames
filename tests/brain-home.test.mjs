@@ -234,3 +234,13 @@ test('inbox lines and new items open the categorisation card', () => {
   assert.match(item, /Save and confirm/);
   assert.doesNotMatch(item, /name="priority"/);
 });
+
+test('a categorisation card opened from a task goes back to it', () => {
+  const target = { kind: 'item', entry: entry('X-1.01') };
+  const from = home.categoriseHtml(target, { back: true });
+  assert.match(from, /data-tk="back">‹ Back/);
+  assert.match(from, /data-tk="back">Cancel/);
+  const direct = home.categoriseHtml(target);
+  assert.doesNotMatch(direct, /data-tk="back"/);
+  assert.match(direct, /data-tk="hide">Cancel/);
+});
