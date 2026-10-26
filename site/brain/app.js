@@ -1,8 +1,8 @@
 // Brain viewer — window onto the private Brain repo, plus two narrow QUEUE edits.
 // Data comes from /api/brain (worker-brain/), behind Cloudflare Access.
 
-import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026';
-import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026';
+import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
+import { VIEW_PATH, LENSES, defaultLens, homeHtml } from './home.js?v=20261026b';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -255,6 +255,7 @@ async function fileText(path) {
 }
 
 async function show(path) {
+  els.shell.classList.remove('home-mode');
   state.current = path;
   renderCrumbs(path);
   renderNav();
@@ -310,6 +311,8 @@ function route() {
 
 async function showHome(tab) {
   state.current = null;
+  // The home view is the whole page: no file list beside it (Leon, 26 Oct).
+  els.shell.classList.add('home-mode');
   els.crumbs.innerHTML = '<li aria-current="page">Home</li>';
   els.source.hidden = true;
   renderNav();

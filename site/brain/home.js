@@ -137,6 +137,7 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '' }
   const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${t[0].toUpperCase()}${t.slice(1)}</a>`).join('');
   const body = tab === 'priority' ? priorityTab(view, lens, filter) : tab === 'allocation' ? allocationTab(view, lens) : focusTab(view, lens, byRef);
   return `<div class="cc"><div class="cc-head"><div class="cc-seg" role="group" aria-label="Lens">${seg}</div>` +
-    `<nav class="cc-tabs" aria-label="Command centre">${tabs}</nav></div>${body}` +
+    `<nav class="cc-tabs" aria-label="Command centre">${tabs}</nav>` +
+    '<a class="cc-files" href="#/INDEX.md">Browse files</a></div>' + body +
     `<p class="cc-note">${esc(view.gaps.join(' '))}${asOf ? ` As of ${esc(asOf)}.` : ''}</p></div>`;
 }
