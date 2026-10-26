@@ -222,3 +222,38 @@ function cleanNote(raw) {
   if ([...text].length > NOTE_MAX) throw new QueueError('invalid-text', `text is over ${NOTE_MAX} characters`);
   return text;
 }
+
+// Leon categorises an open item from its card (Brain D-100 B): owner, due date, estimate
+// and next step, and its family when he changes it (the id's prefix changes and the old
+// id stays as an alias, Brain D-90). A new item a routine found is confirmed at the same
+// time, so its `P-` and flag go. Items carry no priority; that is a card's.
+const setOrAddAttr = (line, key, value) => (new RegExp('`' + escapeRe(key) + ':[^`]*`').test(line)
+  ? line.replace(new RegExp('`' + escapeRe(key) + ':[^`]*`'), `\`${key}: ${value}\``)
+  : `${line} \`${key}: ${value}\``);
+
+export function categoriseItem(text, id, d, today) {
+  return edit(text, id, today, ({ block, attr, item, line, r }) => {
+    const number = id.match(/-(\d{5}\.\d{2,3})$/)?.[1];
+    if (!number) throw new QueueError('malformed', `${id} is not a date-based id`);
+    const current = id.replace(/^P-/, '');
+    const family = current.slice(0, -number.length - 1);
+    const landed = d.family && d.family !== family ? `${d.family}-${number}` : current;
+    if (landed !== id && r.items.some((other) => other !== item && [other.attrs.id, `P-${other.attrs.id}`].includes(landed))) {
+      throw new QueueError('duplicate-id', `another item already has id ${landed}`);
+    }
+    line((l) => {
+      let out = l.replace(new RegExp('`id:\\s*' + escapeRe(id) + '\\s*`'), `\`id: ${landed}\``);
+      if (landed !== current) {
+        const alias = item.attrs.alias ? `${item.attrs.alias}, ${current}` : current;
+        out = setOrAddAttr(out, 'alias', alias);
+      }
+      out = dropAttr(out, 'unconfirmed');
+      out = setOrAddAttr(out, 'owner', d.owner);
+      out = setOrAddAttr(out, 'due', d.due || 'unknown');
+      if (d.minutes) out = setOrAddAttr(out, 'minutes', d.minutes);
+      return out;
+    });
+    if (d.title) block[0] = `### ${d.title}` + ending(block[0]);
+    setField(block, attr, 'Next', d.next, r.eol);
+  });
+}

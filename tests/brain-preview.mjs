@@ -57,7 +57,7 @@ const VIEW = {
   },
   allocation: { areas: { 1: { name: 'Systems', hours: 16 }, 2: { name: 'Compliance', hours: 8 } }, float: 6, total: 40 },
   inbox: [
-    { kind: 'line', text: 'A raw idea typed on the phone', home: 'project:alpha', date: new Date().toISOString().slice(0, 10), path: 'projects/alpha/QUEUE.md', ref: null, lens: 'ventures' },
+    { kind: 'line', raw: 'A raw idea typed on the phone', details: {}, family: 'PROJ-TT', text: 'A raw idea typed on the phone', home: 'project:alpha', date: new Date().toISOString().slice(0, 10), path: 'projects/alpha/QUEUE.md', ref: null, lens: 'ventures' },
     { kind: 'unconfirmed', text: 'A new item the brief found', home: 'project:alpha', date: '2026-01-02', path: 'register/open-items.md', ref: 'P-WORK-COMP-60101.07', lens: 'work' },
     { kind: 'close', text: 'An item the debrief thinks is done', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-SYS-60101.01', lens: 'work' },
   ],
@@ -152,6 +152,17 @@ for (const lens of ['work', 'brain', 'all']) {
 await page.goto(`${base}/brain/#priority`); await settle(); await shot('priority');
 await page.goto(`${base}/brain/#clarify`); await settle(); await shot('clarify');
 if (!(await page.locator('.cc-inbox').count())) problems.push('the Clarify tab is empty');
+await page.goto(`${base}/brain/#clarify`); await settle();
+const line = page.locator('a[data-cc-line]').first();
+if (await line.count()) {
+  await line.click(); await settle();
+  if (!(await page.locator('[data-tk-form="categorise"]').count())) problems.push('an inbox line did not open its categorisation card');
+  await page.locator('#cg-next').fill('Write it up');
+  await page.locator('#cg-minutes').selectOption('60');
+  await shot('categorise');
+  await page.locator('[data-tk-form="categorise"] button[type="submit"]').click(); await settle();
+  if (!writes.some(([path]) => path === '/api/brain/categorise')) problems.push('saving the categorisation card wrote nothing');
+}
 await page.goto(`${base}/brain/#allocation`); await settle(); await page.waitForTimeout(600); await shot('allocation');
 if (!(await page.locator('.cc-meter').count())) problems.push('the Allocation tab shows no actuals');
 await page.goto(`${base}/brain/#focus`); await settle();

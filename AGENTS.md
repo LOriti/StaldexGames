@@ -22,8 +22,8 @@ Notes for anyone, human or agent, changing this repo. Keep it short and team-neu
   in test fixtures; use synthetic data. Its home page (`site/brain/home.js`) renders the
   read-only command centre view that Brain generates as `views/command-centre.json`;
   keep `home.js` free of imports so the tests can load it alone. Its only writes are the
-  Worker's `WRITES` table: queue edits (done, Inbox line, Progress), register edits
-  (Confirm, Reject, Progress, close with Evidence) and time rows on Brain's `daily-log`
+  Worker's `WRITES` table: queue edits (done, Inbox line, Progress, categorise a line),
+  register edits (Confirm, Reject, Progress, close with Evidence, categorise) and time rows on Brain's `daily-log`
   branch (task clock, hours entered); their edits follow Brain's own rules, so change them
   only from a Brain request. Bump the `?v=` on the
   asset URLs in `index.html` and the imports in `app.js` when those files change, so

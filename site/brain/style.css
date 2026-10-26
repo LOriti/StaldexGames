@@ -440,3 +440,9 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 @keyframes rw-fly { 0% { opacity: 1; transform: rotate(var(--a)) translateY(0); } 100% { opacity: 0; transform: rotate(var(--a)) translateY(-90px); } }
 @media (prefers-reduced-motion: reduce) { .rw-tick, .rw-burst i { animation: none; } .rw-burst { display: none; } }
 .tk-panel input[type="number"] { font: inherit; font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; width: 8em; }
+
+/* The categorisation card (Brain D-100 B). */
+.tk-sort input, .tk-sort select { font: inherit; font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; min-width: 0; width: 100%; }
+.tk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
+.tk-grid span { display: grid; gap: 4px; }
+.cc-chip.ok { background: var(--accent-soft); color: var(--accent); }

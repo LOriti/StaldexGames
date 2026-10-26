@@ -151,9 +151,14 @@ export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inb
   // A flagged register item opens its card (Confirm, Reject, close); a raw line or capture
   // opens its file until its own card lands (Brain DEV-61026.27, D-100).
   const known = new Set(view.entries.map((e) => e.ref));
-  html += shown.map((r) => `<a class="cc-row cc-in" href="${inboxHref(r)}"${r.ref && known.has(r.ref) ? ` data-cc-ref="${esc(r.ref)}"` : ''}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
+  // A raw line opens its categorisation card (Brain D-100 B); a new register item opens its
+  // card, which categorises and confirms it.
+  const open = (r) => (r.kind === 'line' ? ` data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(projectOf(r) || '')}"`
+    : r.ref && known.has(r.ref) ? ` data-cc-${r.kind === 'unconfirmed' ? 'sort' : 'ref'}="${esc(r.ref)}"` : '');
+  const sorted = (r) => (r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · becomes a card at the next groom</span>' : '');
+  html += shown.map((r) => `<a class="cc-row cc-in" href="${inboxHref(r)}"${open(r)}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
     `<span class="cc-m"><span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(r.home)}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span>` +
-    `<span class="cc-t">${esc(r.text)}</span></span></a>`).join('');
+    `<span class="cc-t">${esc(r.text)}${sorted(r)}</span></span></a>`).join('');
   if (!rows.length) html += `<p class="cc-empty">Inbox empty${lens === 'all' ? '' : ' in this lens'}. Nothing waits to be clarified.</p>`;
   if (rows.length > shown.length) html += `<button type="button" class="text-btn cc-more" data-cc-inbox-all="1">Show all ${rows.length}</button>`;
   if (projects.length) {
@@ -207,7 +212,8 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
   const kind = closeKind(entry);
   const closeBtn = kind === 'card' || kind === 'item' ? '<button type="button" class="mini-btn primary" data-tk="done-ask">Done…</button>' : '';
   const progressBtn = kind !== 'decision' && kind !== 'none' ? '<button type="button" class="mini-btn" data-tk="progress-ask">Add progress…</button>' : '';
-  html += `<div class="tk-acts">${closeBtn}${progressBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
+  const sortBtn = entry.source === 'item' && kind !== 'decision' ? '<button type="button" class="mini-btn" data-tk="categorise">Categorise…</button>' : '';
+  html += `<div class="tk-acts">${closeBtn}${progressBtn}${sortBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
   if (kind === 'decision') html += '<p class="cc-note">A decision is settled by replying to it in a session; it is not closed here.</p>';
   if ((entry.flags || []).includes('close-proposed') && kind !== 'unconfirmed') {
     html += '<div class="tk-panel"><p>A routine thinks this is done (its evidence is on the item in the register). Close it, or keep it open.</p>' +
@@ -444,4 +450,49 @@ export function promoteNext(view, ref) {
     slot.hot_total = hot.length;
   }
   return view;
+}
+
+// ---- the categorisation card (Brain D-100 B) --------------------------------------------
+
+const ESTIMATES = [30, 60, 90, 120, 180, 240, 360, 480];
+
+// Family codes from the table in Brain's context/families.md.
+export function parseFamilies(markdown) {
+  const out = [];
+  for (const line of String(markdown || '').split(/\r?\n/)) {
+    const m = line.match(/^\|\s*([A-Z]+(?:-[A-Z]+)?|`\?`)\s*\|\s*([^|]+?)\s*\|/);
+    if (m && m[1] !== 'Family') out.push({ code: m[1].replace(/`/g, ''), covers: m[2] });
+  }
+  return out;
+}
+
+// `target` is { kind: 'line', text, details, family, home } for an Inbox line, or
+// { kind: 'item', entry } for an open register item.
+export function categoriseHtml(target, { families = [], message = '' } = {}) {
+  const line = target.kind === 'line';
+  const e = target.entry || {};
+  const det = target.details || {};
+  const v = line
+    ? { title: target.text, next: det.next || '', family: det.family || target.family || '?', priority: det.priority || 'P2', minutes: det.minutes || '', due: det.due || '', owner: det.owner || 'leon' }
+    : { title: e.title, next: e.next || '', family: (e.ref.replace(/^P-/, '').match(/^(.*)-\d{5}\.\d{2,3}$/) || [])[1] || '?', minutes: e.minutes || '', due: e.due && e.due !== 'unknown' ? e.due : '', owner: e.owner && e.owner !== 'unknown' ? e.owner : 'leon' };
+  const fams = families.length ? families : [{ code: v.family, covers: '' }];
+  const opt = (value, label, chosen) => `<option value="${esc(value)}"${String(value) === String(chosen) ? ' selected' : ''}>${esc(label)}</option>`;
+  const fresh = !line && ((e.flags || []).includes('unconfirmed') || /^P-/.test(e.ref));
+  let html = `<div class="tk-head"><span class="cc-id">${line ? `Inbox · ${esc(target.home)}` : `${esc(e.ref)} · ${esc(e.home)}`}</span>` +
+    '<button type="button" class="icon-btn tk-x" data-tk="hide" aria-label="Close">✕</button></div>' +
+    `<h2 class="tk-ttl" id="tk-title">Categorise</h2><p class="cc-note">${line
+      ? 'Give it what a card needs. The next scheduled groom (every 2 hours, 07:00 to 21:00) turns it into a card.'
+      : fresh ? 'A routine found this. Give it its details and it is confirmed with them.' : 'Set its details.'}</p>` +
+    `<form class="tk-panel tk-sort" data-tk-form="categorise">` +
+    `<label for="cg-title">What it is</label><input id="cg-title" name="title" maxlength="200" value="${esc(v.title)}" required>` +
+    `<label for="cg-next">Next step</label><input id="cg-next" name="next" maxlength="300" value="${esc(v.next)}" required placeholder="The very next physical action">` +
+    `<div class="tk-grid"><span><label for="cg-family">Family</label><select id="cg-family" name="family">${fams.map((f) => opt(f.code, f.covers ? `${f.code} · ${f.covers.slice(0, 48)}` : f.code, v.family)).join('')}</select></span>` +
+    (line ? `<span><label for="cg-priority">Priority</label><select id="cg-priority" name="priority">${['P0', 'P1', 'P2', 'P3'].map((p) => opt(p, p, v.priority)).join('')}</select></span>` : '') +
+    `<span><label for="cg-minutes">Estimate</label><select id="cg-minutes" name="minutes">${opt('', 'Not sure yet', v.minutes)}${ESTIMATES.map((m) => opt(m, fmtMinutes(m), v.minutes)).join('')}</select></span>` +
+    `<span><label for="cg-due">Due</label><input id="cg-due" name="due" type="date" value="${esc(v.due)}"></span>` +
+    `<span><label for="cg-owner">Owner</label><input id="cg-owner" name="owner" maxlength="40" value="${esc(v.owner)}"></span></div>` +
+    `<span class="tk-acts"><button type="submit" class="mini-btn primary">${line ? 'Save for grooming' : fresh ? 'Save and confirm' : 'Save'}</button>` +
+    '<button type="button" class="mini-btn" data-tk="hide">Cancel</button></span></form>';
+  if (message) html += `<p class="write-msg${/^Not /.test(message) ? ' bad' : ''}">${esc(message)}</p>`;
+  return html;
 }

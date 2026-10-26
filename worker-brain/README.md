@@ -191,6 +191,10 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
   `logs/daily/<Perth date>.md` on Brain's `daily-log` branch (created if missing), as a
   `time: …` commit. Stop rows count minutes since the start, capped at 12 h; hours are
   quarter hours up to 12 h.
+- `POST /api/brain/categorise` `{ project, line, details }` or `{ id, details }` → Leon's details
+  (`title`, `next`, `family`, `priority`, `minutes`, `due`, `owner`) kept on an Inbox line as
+  code spans for Brain's scheduled groom, or set on an open register item, which is confirmed
+  if new (a family change keeps the old id as an alias).
 - `GET /api/brain/time?from=<date>` → `{ from, to, rows }`: the parsed time rows of the
   daily logs from `from` to today, at most 14 days. Only rows leave the Worker.
 
