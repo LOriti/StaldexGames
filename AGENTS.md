@@ -28,6 +28,10 @@ Notes for anyone, human or agent, changing this repo. Keep it short and team-neu
   phones pick up a deploy without a hard refresh.
 - Change things through pull requests to `main`; `main` deploys.
 - Run the tests before pushing: `node --test tests/*.test.mjs` from the repo root.
+- For a Brain viewer change, look at it before merging: `node tests/brain-preview.mjs`
+  serves `site/` locally with synthetic data and saves phone-size screenshots of the home,
+  its tabs and a tapped item (`--out <dir>`, default `brain-preview/`). After the deploy,
+  `--url https://staldexgames.pages.dev` runs the same check against the live site.
 
 ## Decisions
 
