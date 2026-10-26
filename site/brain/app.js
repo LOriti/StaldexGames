@@ -381,7 +381,8 @@ function addQueueControls(path) {
         if (m) { id = m[1]; break; }
       }
     }
-    if (!id || !id.startsWith(`${slug}-`)) continue;
+    // Date-based ids (DEV-61025.14) or, from before brain-021, `<slug>-NNN`.
+    if (!id || !(/^(?:\?|[A-Z]+(?:-[A-Z]+)?)-\d{5}\.\d{2,3}$/.test(id) || id.startsWith(`${slug}-`))) continue;
     const ctl = document.createElement('span');
     ctl.className = 'card-act';
     ctl.dataset.id = id;

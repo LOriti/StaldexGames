@@ -31,6 +31,10 @@ const MAX_BODY_BYTES = 4 * 1024;
 const WRITE_ORIGIN = 'https://staldex.com';
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CARD_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}$/;
+// Brain's date-based ids (brain-021): FAMILY-YMMDD.XX, such as DEV-61025.14 or ?-60828.08.
+const DATED_ID = /^(?:\?|[A-Z]+(?:-[A-Z]+)?)-\d{5}\.\d{2,3}$/;
+export const isCardId = (id, project) =>
+  typeof id === 'string' && (DATED_ID.test(id) || (CARD_ID.test(id) && id.startsWith(`${project}-`)));
 const COMMIT_SHA = /^[0-9a-f]{40}$/;
 const COMMIT_CACHE_MAX = 20;
 
@@ -136,7 +140,7 @@ async function loadBlob(env, sha) {
 
 const WRITES = {
   '/api/brain/done': {
-    valid: (body) => typeof body.id === 'string' && CARD_ID.test(body.id) && body.id.startsWith(`${body.project}-`),
+    valid: (body) => isCardId(body.id, body.project),
     apply: (text, body, today) => markDone(text, body.id, today),
     message: (body) => `web: done ${body.id}`,
   },
