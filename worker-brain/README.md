@@ -182,6 +182,17 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
   and folded onto one line; empty or over 500 characters is refused.
 - `POST /api/brain/confirm` and `POST /api/brain/reject` `{ id, flag }` → `{ path, sha, commit }`,
   `flag` being `unconfirmed` or `close-proposed`, on `register/open-items.md`.
+- `POST /api/brain/progress` `{ id, text[, project] }` → sets the `Progress: <date>, <text>`
+  line of a groomed card (with `project`) or an open register item.
+- `POST /api/brain/close` `{ id, text }` → an open register item becomes `state: done` with
+  `Evidence: <text>`. Refused (409) for an unconfirmed item, a decision or a closed item.
+- `POST /api/brain/clock` `{ action: start | stop, ref, start, date?, title, area, lens }` and
+  `POST /api/brain/hours` `{ minutes, area | lens, note }` → append a `## HH:MM Time` row to
+  `logs/daily/<Perth date>.md` on Brain's `daily-log` branch (created if missing), as a
+  `time: …` commit. Stop rows count minutes since the start, capped at 12 h; hours are
+  quarter hours up to 12 h.
+- `GET /api/brain/time?from=<date>` → `{ from, to, rows }`: the parsed time rows of the
+  daily logs from `from` to today, at most 14 days. Only rows leave the Worker.
 
 Write errors: 400 bad body, slug, id, flag or text · 403 missing JSON type, Origin or
 `X-Brain-Write` · 404 no such project, groomed card or register item · 409 changed

@@ -9,13 +9,15 @@
 //   1. Cloudflare Access in front of /brain and /api/brain (identity login at the edge).
 //   2. This Worker re-verifying the Access JWT, so it fails closed if (1) is ever missing.
 //
-// Reads cover the whole readable tree. Writes are four narrow actions: two on one
-// project's QUEUE.md (mark a card done, add an Inbox line) and two on the open-items
-// register (confirm or reject an item a daily routine flagged unconfirmed or proposed
-// closing); everything else in Brain still goes through a Claude session. Each write reads
-// the file and its blob sha, applies a pure transform (queue.js, register.js) and PUTs it
-// back with that sha, so a file that changed in the meantime is refused (409) rather than
-// overwritten.
+// Reads cover the whole readable tree, plus the time rows of the `daily-log` branch.
+// Writes are narrow actions (Brain D-42, D-96 C, D-97 A, D-98 A): on one project's
+// QUEUE.md, mark a card done, add an Inbox line or set its Progress; on the open-items
+// register, confirm or reject what a daily routine flagged, set an item's Progress or
+// close it with Evidence; and on the daily log, a task clock's start and stop rows and
+// hours entered by hand. Everything else in Brain still goes through a Claude session.
+// Each write reads the file and its blob sha, applies a pure transform (queue.js,
+// register.js, timelog.js) and PUTs it back with that sha, so a file that changed in the
+// meantime is refused (409) rather than overwritten.
 //
 // Routed at staldex.com/api/brain/* (see wrangler.toml). Endpoints:
 //   GET  /api/brain/tree[?fresh=1 | ?commit=<sha>]   → { repo, ref, commit, viewer, files: [{ path, sha, size }] }
@@ -24,10 +26,16 @@
 //   POST /api/brain/inbox  { project, text } → { path, sha, commit }
 //   POST /api/brain/confirm { id, flag }    → { path, sha, commit }   flag: unconfirmed | close-proposed
 //   POST /api/brain/reject  { id, flag }    → { path, sha, commit }
+//   POST /api/brain/progress { id, text[, project] } → { path, sha, commit }   project: a card's
+//   POST /api/brain/close   { id, text }    → { path, sha, commit }   register items only
+//   POST /api/brain/clock   { action, ref, start[, date], title, area, lens } → on daily-log
+//   POST /api/brain/hours   { minutes, area | lens, note } → on daily-log
+//   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
-import { QueueError, addInbox, markDone, perthDate } from './queue.js';
-import { FLAGS, REGISTER_ID, REGISTER_PATH, confirmFlag, rejectFlag } from './register.js';
+import { QueueError, addInbox, cardProgress, markDone, perthDate } from './queue.js';
+import { FLAGS, REGISTER_ID, REGISTER_PATH, closeItem, confirmFlag, itemProgress, rejectFlag } from './register.js';
+import { DATE, LOG_BRANCH, appendTime, clockRow, hoursRow, logPath, parseTime, perthClock } from './timelog.js';
 
 const TREE_TTL_MS = 30 * 1000;
 const BLOB_CACHE_MAX = 200;
@@ -42,6 +50,7 @@ export const isCardId = (id, project) =>
   typeof id === 'string' && (DATED_ID.test(id) || (CARD_ID.test(id) && id.startsWith(`${project}-`)));
 const COMMIT_SHA = /^[0-9a-f]{40}$/;
 const COMMIT_CACHE_MAX = 20;
+const TIME_DAYS_MAX = 14;
 
 // Only readable text formats, never dotfile config, and never the machine-local paths file
 // even though Brain's .gitignore should already keep it out of the repo.
@@ -50,7 +59,7 @@ const EXCLUDED = new Set(['context/local-paths.json']);
 
 // Isolate-local caches. The branch tree is short-lived so new pushes show up quickly;
 // trees pinned to a commit and blobs are keyed by hash and therefore never stale.
-let treeCache = null; // { key, at, value }
+const treeCache = new Map(); // repo@ref → { at, value }
 const commitTrees = new Map(); // commit sha → tree value
 const blobCache = new Map();
 
@@ -101,11 +110,11 @@ function repoPath(env) {
 // The tree at the branch head, or at one exact commit. A write answers with the commit it
 // made, and the page reloads pinned to it: GitHub can briefly serve the branch head from
 // before a commit it has just accepted, and a commit's tree never changes.
-async function loadTree(env, now, { fresh = false, commit: pinned = null } = {}) {
-  const ref = env.BRAIN_REF || 'main';
+async function loadTree(env, now, { fresh = false, commit: pinned = null, ref = env.BRAIN_REF || 'main' } = {}) {
   const key = `${env.BRAIN_REPO}@${ref}`;
   if (pinned && commitTrees.has(pinned)) return commitTrees.get(pinned);
-  if (!pinned && !fresh && treeCache && treeCache.key === key && now - treeCache.at < TREE_TTL_MS) return treeCache.value;
+  const cached = treeCache.get(key);
+  if (!pinned && !fresh && cached && now - cached.at < TREE_TTL_MS) return cached.value;
 
   const repo = repoPath(env);
   const commit = await (await github(env, `/repos/${repo}/commits/${encodeURIComponent(pinned || ref)}`)).json();
@@ -126,7 +135,7 @@ async function loadTree(env, now, { fresh = false, commit: pinned = null } = {})
     },
     files,
   };
-  if (!pinned) treeCache = { key, at: now, value };
+  if (!pinned) treeCache.set(key, { at: now, value });
   if (commitTrees.size >= COMMIT_CACHE_MAX) commitTrees.delete(commitTrees.keys().next().value);
   commitTrees.set(commit.sha, value);
   return value;
@@ -144,6 +153,8 @@ async function loadBlob(env, sha) {
 // ---- writes ---------------------------------------------------------------------
 
 const queuePath = (body) => (typeof body.project === 'string' && SLUG.test(body.project) ? `projects/${body.project}/QUEUE.md` : null);
+const isRegisterItem = (body) => typeof body.id === 'string' && REGISTER_ID.test(body.id);
+const todaysLog = () => logPath(perthClock().date);
 const flagged = (body) => typeof body.id === 'string' && REGISTER_ID.test(body.id) && FLAGS.includes(body.flag);
 const flagWord = (body) => (body.flag === 'close-proposed' ? 'close ' : '');
 
@@ -172,12 +183,45 @@ const WRITES = {
     apply: (text, body, today) => rejectFlag(text, body.id, body.flag, today),
     message: (body) => `web: reject ${flagWord(body)}${body.id}`,
   },
+  // A card's (with `project`) or an open item's latest movement (Brain D-98 A).
+  '/api/brain/progress': {
+    path: (body) => (body.project !== undefined ? queuePath(body) : REGISTER_PATH),
+    valid: (body) => typeof body.text === 'string' && (body.project !== undefined ? isCardId(body.id, body.project) : isRegisterItem(body)),
+    apply: (text, body, today) => (body.project !== undefined ? cardProgress : itemProgress)(text, body.id, body.text, today),
+    message: (body) => `web: progress ${body.id}`,
+  },
+  // Close an open item with Leon's Evidence; a card closes through /done.
+  '/api/brain/close': {
+    path: () => REGISTER_PATH,
+    valid: (body) => typeof body.text === 'string' && isRegisterItem(body),
+    apply: (text, body, today) => closeItem(text, body.id, body.text, today),
+    message: (body) => `web: close ${body.id}`,
+  },
+  // Task clock rows (Brain D-97 A) and hours typed in (D-96 C), appended to today's log
+  // on the daily-log branch, which may not have today's file yet.
+  '/api/brain/clock': {
+    branch: LOG_BRANCH,
+    create: true,
+    path: todaysLog,
+    valid: (body) => body.action === 'start' || body.action === 'stop',
+    apply: (text, body, today, clock) => appendTime(text, clock.date, clock.hhmm, clockRow(body, clock)),
+    message: (body) => `time: ${perthClock().date} clock ${body.action} ${body.ref}`,
+  },
+  '/api/brain/hours': {
+    branch: LOG_BRANCH,
+    create: true,
+    path: todaysLog,
+    valid: (body) => Number.isInteger(body.minutes),
+    apply: (text, body, today, clock) => appendTime(text, clock.date, clock.hhmm, hoursRow(body)),
+    message: (body) => `time: ${perthClock().date} hours ${body.area || body.lens}`,
+  },
 };
 
 // 'not-flagged': someone settled the item since the page loaded; 'order': confirm the
 // item before its proposed close.
 const WRITE_STATUS = {
   'unknown-id': 404, 'duplicate-id': 422, malformed: 422, 'invalid-text': 400, 'not-flagged': 409, order: 409,
+  closed: 409, decision: 409,
 };
 
 // Forged-request guard on top of Access. A cross-site page can't send a JSON body with a
@@ -219,22 +263,22 @@ async function write(request, url, env) {
   const path = body && action.path(body);
   if (!path || !isReadable(path) || !action.valid(body)) return json({ error: 'bad request' }, 400);
 
-  const ref = env.BRAIN_REF || 'main';
+  const ref = action.branch || env.BRAIN_REF || 'main';
   const contents = `/repos/${repoPath(env)}/contents/${path.split('/').map(encodeURIComponent).join('/')}`;
-  let current;
+  let current = null;
   try {
     current = await (await github(env, `${contents}?ref=${encodeURIComponent(ref)}`)).json();
   } catch (err) {
-    if (err instanceof UpstreamError && err.status === 404) return json({ error: 'not found' }, 404);
-    throw err;
+    if (!(err instanceof UpstreamError && err.status === 404)) throw err;
+    if (!action.create) return json({ error: 'not found' }, 404);
   }
-  if (current.type !== 'file' || current.encoding !== 'base64' || current.size > MAX_FILE_BYTES) {
+  if (current && (current.type !== 'file' || current.encoding !== 'base64' || current.size > MAX_FILE_BYTES)) {
     return json({ error: 'not editable' }, 422);
   }
 
   let next;
   try {
-    next = action.apply(base64ToUtf8(current.content), body, perthDate());
+    next = action.apply(current ? base64ToUtf8(current.content) : '', body, perthDate(), perthClock());
   } catch (err) {
     if (err instanceof QueueError) return json({ error: err.message }, WRITE_STATUS[err.code] || 422);
     if (err instanceof TypeError) return json({ error: 'not editable' }, 422); // not UTF-8
@@ -249,7 +293,7 @@ async function write(request, url, env) {
   try {
     saved = await (await github(env, contents, 'application/vnd.github+json', {
       method: 'PUT',
-      body: JSON.stringify({ message: action.message(body), content: utf8ToBase64(next), sha: current.sha, branch: ref }),
+      body: JSON.stringify({ message: action.message(body), content: utf8ToBase64(next), ...(current ? { sha: current.sha } : {}), branch: ref }),
     })).json();
   } catch (err) {
     if (err instanceof UpstreamError && (err.status === 409 || err.status === 422)) {
@@ -257,13 +301,41 @@ async function write(request, url, env) {
     }
     throw err;
   }
-  treeCache = null;
+  treeCache.clear();
   return json({ path, sha: saved.content?.sha || null, commit: saved.commit?.sha || null });
 }
 
 // ---- reads ----------------------------------------------------------------------
 
+// Time rows from `from` to today (Perth), at most TIME_DAYS_MAX days, read from the
+// daily-log branch. Only the parsed rows leave the Worker, not the rest of each log.
+async function timeRows(url, env) {
+  const today = perthClock().date;
+  const from = url.searchParams.get('from') || today;
+  if (!DATE.test(from) || from > today) return json({ error: 'bad from' }, 400);
+  const dates = [];
+  for (let d = new Date(`${today}T00:00:00Z`); dates.length < TIME_DAYS_MAX; d.setUTCDate(d.getUTCDate() - 1)) {
+    const date = d.toISOString().slice(0, 10);
+    if (date < from) break;
+    dates.unshift(date);
+  }
+  let tree;
+  try {
+    tree = await loadTree(env, Date.now(), { ref: LOG_BRANCH });
+  } catch (err) {
+    if (err instanceof UpstreamError && (err.status === 404 || err.status === 422)) return json({ from: dates[0], to: today, rows: [] });
+    throw err;
+  }
+  const rows = [];
+  for (const date of dates) {
+    const entry = tree.files.find((f) => f.path === logPath(date));
+    if (entry && entry.size <= MAX_FILE_BYTES) rows.push(...parseTime(await loadBlob(env, entry.sha), date));
+  }
+  return json({ from: dates[0], to: today, rows });
+}
+
 async function route(url, env, viewer) {
+  if (url.pathname === '/api/brain/time') return timeRows(url, env);
   const isTree = url.pathname === '/api/brain/tree';
   const path = url.searchParams.get('path') || '';
   if (!isTree && url.pathname !== '/api/brain/file') return json({ error: 'not found' }, 404);
@@ -320,7 +392,7 @@ export default {
 
 // Test hook: drop isolate-local caches between cases.
 export function _resetCaches() {
-  treeCache = null;
+  treeCache.clear();
   commitTrees.clear();
   blobCache.clear();
 }

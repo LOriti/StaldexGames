@@ -117,8 +117,10 @@ gates both `/brain` and `/api/brain`, and the Worker re-verifies the Access toke
 nothing until Access is configured. Never commit Brain content, the token, or an email
 allowlist to this repo.
 
-Writes are limited to two QUEUE actions: **mark a card done** (`POST /api/brain/done`) and
-**add an Inbox line** (`POST /api/brain/inbox`). Each needs the Access token *and*
+Writes are narrow actions listed in `worker-brain/README.md`: on a QUEUE, mark a card done,
+add an Inbox line or set its Progress; on the register, confirm, reject, set Progress or
+close an item; and on Brain's `daily-log` branch, a task clock's rows and hours entered
+(`time: …` commits). Each needs the Access token *and*
 `Content-Type: application/json`, `Origin: https://staldex.com` and `X-Brain-Write: 1`
 (forged cross-site requests get 403). Each is one sha-guarded commit (`web: …`) to Brain's
 `main`; if the file changed in the meantime the API answers 409 and never overwrites it.

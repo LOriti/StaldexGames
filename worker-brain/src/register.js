@@ -166,3 +166,59 @@ export function rejectFlag(text, id, flag, today) {
     }
   });
 }
+
+// An open item's block, for edits that are not flag settlements: progress and close.
+function edit(text, id, today, fn) {
+  const r = parse(text);
+  const item = find(r, id);
+  if (CLOSED.has(item.attrs.state)) throw new QueueError('closed', `${id} is already ${item.attrs.state}`);
+  const block = r.lines.slice(item.start, item.end);
+  const attr = item.attr - item.start;
+  fn({ block, attr, item, r, line: (f) => { block[attr] = f(content(block[attr])) + ending(block[attr]); } });
+  r.lines[r.updated] = `updated: ${today}` + ending(r.lines[r.updated]);
+  r.lines.splice(item.start, item.end - item.start, ...block);
+  return r.lines.join('');
+}
+
+// Replaces the labelled line, or adds it after the item's last line.
+function setField(block, attr, label, value, eol) {
+  const at = fieldIndex(block, attr, label);
+  if (at !== -1) {
+    for (let i = block.length - 1; i > at; i--) if (content(block[i]).startsWith(`${label}:`)) block.splice(i, 1);
+    block[at] = `${label}: ${value}` + (ending(block[at]) || eol);
+    return;
+  }
+  let last = block.length;
+  while (last > attr + 1 && isBlank(block[last - 1])) last--;
+  if (!ending(block[last - 1])) block[last - 1] += eol;
+  block.splice(last, 0, `${label}: ${value}${eol}`);
+}
+
+// `Progress: <date>, <what moved>`, the latest movement only (Brain D-37).
+export function itemProgress(text, id, raw, today) {
+  const note = cleanNote(raw);
+  return edit(text, id, today, ({ block, attr, r }) => setField(block, attr, 'Progress', `${today}, ${note}`, r.eol));
+}
+
+// Leon closes an item from its card (Brain D-98 A): `state: done` with his one-line
+// Evidence. An unconfirmed item is confirmed first, and a decision is settled in a session,
+// where its outcome goes in a Correction.
+export function closeItem(text, id, raw, today) {
+  const note = cleanNote(raw);
+  return edit(text, id, today, ({ block, attr, item, line, r }) => {
+    if (Object.hasOwn(item.attrs, 'unconfirmed')) throw new QueueError('order', `confirm ${id} itself first`);
+    if (item.attrs.kind === 'decision') throw new QueueError('decision', 'decisions are settled in a session');
+    line((l) => setAttr(dropAttr(l, 'close-proposed'), 'state', 'done'));
+    setField(block, attr, 'Evidence', `${note} (Leon, in the viewer, ${today}).`, r.eol);
+  });
+}
+
+const NOTE_MAX = 500;
+function cleanNote(raw) {
+  if (typeof raw !== 'string') throw new QueueError('invalid-text', 'text is required');
+  // eslint-disable-next-line no-control-regex
+  const text = raw.replace(/[\u0000-\u001f\u007f]+/g, ' ').replace(/\s+/g, ' ').trim().replace(/\.$/, '');
+  if (!text) throw new QueueError('invalid-text', 'text is empty');
+  if ([...text].length > NOTE_MAX) throw new QueueError('invalid-text', `text is over ${NOTE_MAX} characters`);
+  return text;
+}
