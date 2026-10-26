@@ -49,6 +49,8 @@ test('tapping an entry opens where it lives', () => {
   assert.equal(home.sourcePath(entry('alpha-001', { source: 'card' })), 'projects/alpha/QUEUE.md');
   assert.equal(home.sourcePath(entry('D-9')), 'register/decisions.md');
   assert.equal(home.sourcePath(entry('A-1')), 'register/open-items.md');
+  assert.equal(home.entryHref(entry('P-X-1.01')), '#/register/open-items.md?item=P-X-1.01');
+  assert.match(home.homeHtml(VIEW, { lens: 'work' }), /href="#\/register\/open-items\.md\?item=A-1"/);
 });
 
 test('focus shows the focal item and its reason', () => {
