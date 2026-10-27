@@ -244,3 +244,17 @@ test('a categorisation card opened from a task goes back to it', () => {
   assert.doesNotMatch(direct, /data-tk="back"/);
   assert.match(direct, /data-tk="hide">Cancel/);
 });
+
+test('adding to the inbox opens a card to sort it, do it or leave it (Brain D-110 A)', () => {
+  const row = { kind: 'line', text: 'Buy <milk>', home: 'project:alpha' };
+  const html = home.addedHtml(row);
+  assert.match(html, /Added to the inbox/);
+  assert.match(html, /Buy &lt;milk&gt;/);
+  assert.match(html, /data-tk="sort-added"/);
+  assert.match(html, /data-tk="do-added"/);
+  assert.match(html, /data-tk="hide"[^>]*><b>Leave for later/);
+  const doing = home.addedHtml(row, { doing: true, message: 'Not saved: offline.' });
+  assert.match(doing, /data-tk="handled"/);
+  assert.match(doing, /data-tk="added"/);
+  assert.match(doing, /write-msg bad/);
+});

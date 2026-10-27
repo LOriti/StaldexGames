@@ -24,6 +24,7 @@
 //   GET  /api/brain/file?path=<path>[&commit=<sha>]  → { path, sha, text }
 //   POST /api/brain/done   { project, id }   → { path, sha, commit }
 //   POST /api/brain/inbox  { project, text } → { path, sha, commit }
+//   POST /api/brain/handled  { project, line } → { path, sha, commit }
 //   POST /api/brain/confirm { id, flag }    → { path, sha, commit }   flag: unconfirmed | close-proposed
 //   POST /api/brain/reject  { id, flag }    → { path, sha, commit }
 //   POST /api/brain/progress { id, text[, project] } → { path, sha, commit }   project: a card's
@@ -34,7 +35,7 @@
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
-import { QueueError, addInbox, cardProgress, categoriseLine, markDone, perthDate } from './queue.js';
+import { QueueError, addInbox, cardProgress, categoriseLine, handledLine, markDone, perthDate } from './queue.js';
 import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, itemProgress, rejectFlag } from './register.js';
 import { cleanDetails, lineAttrs } from './categorise.js';
 import { DATE, LOG_BRANCH, appendTime, clockRow, hoursRow, logPath, parseTime, perthClock } from './timelog.js';
@@ -172,6 +173,13 @@ const WRITES = {
     valid: (body) => typeof body.text === 'string',
     apply: (text, body, today) => addInbox(text, body.text, today),
     message: (body) => `web: inbox ${body.project}`,
+  },
+  // An Inbox line Leon did on the spot leaves the inbox (Brain D-110 A).
+  '/api/brain/handled': {
+    path: queuePath,
+    valid: (body) => typeof body.line === 'string',
+    apply: (text, body, today) => handledLine(text, body.line, today),
+    message: (body) => `web: handled inbox ${body.project}`,
   },
   '/api/brain/confirm': {
     path: () => REGISTER_PATH,

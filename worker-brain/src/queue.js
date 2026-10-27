@@ -158,10 +158,12 @@ export function cleanInboxText(raw) {
   return text;
 }
 
-// Appends `- <text>` as the last item of `## Inbox`.
+// Appends `- <text>` as the last item of `## Inbox`; a line already there is refused, so
+// a second tap on a slow save cannot add it twice.
 export function addInbox(text, raw, today) {
   const item = cleanInboxText(raw);
   const q = parse(text);
+  if (inboxBullets(q).some((b) => b.plain === plainBullet(item))) throw new QueueError('duplicate-id', 'that line is already in the inbox');
   bumpUpdated(q, today);
   const at = lastContent(q, q.inbox.index, sectionEnd(q, q.inbox));
   const line = `- ${item}${q.eol}`;
@@ -179,25 +181,46 @@ export function addInbox(text, raw, today) {
 // Leon's details on an Inbox line, for the scheduled groom to turn into a card (Brain
 // D-100 B, D-102 A). The line is found by its text (continuation lines joined, earlier
 // details ignored) and rewritten as one line: the title, then the details as code spans.
-const plainBullet = (t) => t.replace(/^[-*] (\[[ x]\] )?/, '').replace(/\s*`[^`]*`/g, '').replace(/\s+/g, ' ').trim();
+function plainBullet(t) {
+  return t.replace(/^[-*] (\[[ x]\] )?/, '').replace(/\s*`[^`]*`/g, '').replace(/\s+/g, ' ').trim();
+}
 
-export function categoriseLine(text, raw, details, attrs, today) {
-  if (typeof raw !== 'string' || !raw.trim()) throw new QueueError('unknown-id', 'no inbox line given');
-  const q = parse(text);
+// The bullets of `## Inbox`, each with its wrapped continuation lines.
+function inboxBullets(q) {
   const end = sectionEnd(q, q.inbox);
   const bullets = [];
   for (let i = q.inbox.index + 1; i < end; i++) {
     if (/^[-*] /.test(content(q.lines[i]))) bullets.push({ start: i, end: i + 1 });
     else if (bullets.length && /^\s+\S/.test(content(q.lines[i])) && bullets.at(-1).end === i) bullets.at(-1).end = i + 1;
   }
+  for (const b of bullets) b.plain = plainBullet(q.lines.slice(b.start, b.end).map(content).join(' '));
+  return bullets;
+}
+
+function findLine(q, raw) {
+  if (typeof raw !== 'string' || !raw.trim()) throw new QueueError('unknown-id', 'no inbox line given');
   const want = plainBullet(raw);
-  const matches = bullets.filter((b) => plainBullet(q.lines.slice(b.start, b.end).map(content).join(' ')) === want);
+  const matches = inboxBullets(q).filter((b) => b.plain === want);
   if (!matches.length) throw new QueueError('unknown-id', 'that inbox line is no longer there');
   if (matches.length > 1) throw new QueueError('duplicate-id', 'more than one inbox line reads the same');
-  const { start, end: stop } = matches[0];
-  const title = details.title || want;
+  return matches[0];
+}
+
+export function categoriseLine(text, raw, details, attrs, today) {
+  const q = parse(text);
+  const { start, end: stop, plain } = findLine(q, raw);
+  const title = details.title || plain;
   const ending = q.lines[stop - 1].slice(content(q.lines[stop - 1]).length) || q.eol;
   q.lines.splice(start, stop - start, `- ${title} ${attrs}${ending}`);
+  bumpUpdated(q, today);
+  return q.lines.join('');
+}
+
+// Removes an Inbox line Leon dealt with on the spot (Brain D-110 A); the commit keeps it.
+export function handledLine(text, raw, today) {
+  const q = parse(text);
+  const { start, end } = findLine(q, raw);
+  q.lines.splice(start, end - start);
   bumpUpdated(q, today);
   return q.lines.join('');
 }

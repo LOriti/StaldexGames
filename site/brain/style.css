@@ -447,3 +447,10 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .tk-grid span { display: grid; gap: 4px; }
 .cc-chip.ok { background: var(--accent-soft); color: var(--accent); }
 .tk-head .tk-back { margin-right: 4px; }
+.tk-choices { display: grid; gap: 8px; }
+.tk-choice { display: grid; gap: 2px; text-align: left; font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }
+.tk-choice:hover { border-color: var(--faint); }
+.tk-choice b { font-size: 15px; }
+.tk-choice span { font-size: 13px; color: var(--muted); }
+.tk-choice.primary { border-color: var(--accent); background: var(--accent-soft); }
+.tk-choice.primary b { color: var(--accent); }
