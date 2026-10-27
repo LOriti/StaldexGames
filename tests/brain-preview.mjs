@@ -165,6 +165,26 @@ if (await line.count()) {
   await page.locator('[data-tk-form="categorise"] button[type="submit"]').click(); await settle();
   if (!writes.some(([path]) => path === '/api/brain/categorise')) problems.push('saving the categorisation card wrote nothing');
 }
+// Adding to the inbox opens its card at once (Brain D-110 A): sort it, do it or leave it.
+await page.goto(`${base}/brain/#focus`); await settle();
+const addBox = page.locator('.cc-inbox-add input[name="text"]');
+if (await addBox.count()) {
+  await addBox.fill('Synthetic capture from the phone');
+  await page.locator('.cc-inbox-add button[type="submit"]').click(); await settle();
+  if (!(await page.locator('.tk-wrap:not([hidden]) [data-tk="sort-added"]').count())) problems.push('adding to the inbox opened no card');
+  if (!(await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count())) problems.push('the added line is not on the home');
+  await shot('inbox-added');
+  await page.locator('[data-tk="do-added"]').click(); await settle(); await shot('inbox-do-now');
+  await page.locator('.tk-acts [data-tk="added"]').click(); await settle();
+  await page.locator('[data-tk="sort-added"]').click(); await settle();
+  if (!(await page.locator('[data-tk-form="categorise"] [data-tk="back"]').count())) problems.push('categorising an added line has no way back');
+  await page.locator('[data-tk="back"].tk-back').click(); await settle();
+  await page.locator('[data-tk="do-added"]').click(); await settle();
+  await page.locator('[data-tk="handled"]').click(); await settle(); await shot('inbox-handled');
+  if (!writes.some(([path]) => path === '/api/brain/handled')) problems.push('Handled wrote nothing');
+  if (await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count()) problems.push('a handled line stayed on the home');
+  await page.locator('.tk button[data-tk="hide"]').first().click(); await settle();
+}
 // Reject asks first, from the task card and on the register; nothing is written until Yes.
 const rejects = () => writes.filter(([path]) => path === '/api/brain/reject').length;
 await page.goto(`${base}/brain/#priority`); await settle();

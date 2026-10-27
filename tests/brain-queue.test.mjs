@@ -4,7 +4,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 
-import { INBOX_MAX, QueueError, addInbox, cleanInboxText, markDone, perthDate } from '../worker-brain/src/queue.js';
+import { INBOX_MAX, QueueError, addInbox, categoriseLine, cleanInboxText, handledLine, markDone, perthDate } from '../worker-brain/src/queue.js';
 
 const TODAY = '2030-01-15';
 
@@ -190,4 +190,22 @@ test('done finds a card by its date-based id, dots and question marks included',
   assert.match(out, /## Done\n\n### [^\n]+\n\n`id: \?-61025\.14` `alias: demo-002`.*`done: 2030-01-15`/);
   assert.throws(() => markDone(dated, '?-61025.1', TODAY), QueueError);
   assert.throws(() => markDone(dated, 'X-61025.14', TODAY), QueueError);
+});
+
+test('an inbox line already there is not added twice (Brain D-110 A)', () => {
+  const once = addInbox(QUEUE, 'Ring the  plumber', TODAY);
+  assert.throws(() => addInbox(once, 'Ring the plumber', TODAY), (e) => e instanceof QueueError && e.code === 'duplicate-id');
+  // A categorised line still counts: its details are code spans after the text.
+  const sorted = categoriseLine(once, 'Ring the plumber', {}, '`categorised: 2030-01-15`', TODAY);
+  assert.throws(() => addInbox(sorted, 'Ring the plumber', TODAY), (e) => e.code === 'duplicate-id');
+});
+
+test('a handled inbox line leaves the inbox and nothing else changes (Brain D-110 A)', () => {
+  const two = addInbox(addInbox(QUEUE, 'Keep me', TODAY), 'Did it already', TODAY);
+  const after = handledLine(two, 'Did it already', '2030-01-16');
+  assert.doesNotMatch(after, /Did it already/);
+  assert.match(after, /- Keep me\n/);
+  assert.match(after, /updated: 2030-01-16/);
+  assert.equal(after.replace('updated: 2030-01-16', 'updated: 2030-01-15'), addInbox(QUEUE, 'Keep me', TODAY));
+  assert.throws(() => handledLine(after, 'Did it already', TODAY), (e) => e.code === 'unknown-id');
 });

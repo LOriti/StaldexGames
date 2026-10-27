@@ -4,8 +4,8 @@
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
 import {
   VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
-  closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
-} from './home.js?v=20261027g';
+  closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, addedHtml, categoriseHtml, parseFamilies,
+} from './home.js?v=20261027h';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -578,7 +578,8 @@ els.doc.addEventListener('submit', async (e) => {
 // clock runs at a time. Finishing a task shows the reward and moves the next hot item up.
 
 let clock = null; // { ref, title, area, lens, date, start, startMs, written }
-const task = { ref: null, panel: '', message: '', reward: null, sort: null, back: null };
+// `added` is an Inbox line just saved from the home (Brain D-110 A); `doing` its Do it now step.
+const task = { ref: null, panel: '', message: '', reward: null, sort: null, back: null, added: null, doing: false };
 let families = [];
 
 const modal = document.createElement('div');
@@ -598,6 +599,11 @@ function projectSlugs() {
 const entryFor = (ref) => home.view?.entries.find((e) => e.ref === ref) || null;
 
 function renderTask() {
+  if (task.added && !task.sort) {
+    modal.querySelector('.tk').innerHTML = addedHtml(task.added, { doing: task.doing, message: task.message });
+    modal.hidden = false;
+    return;
+  }
   if (task.sort) {
     modal.querySelector('.tk').innerHTML = categoriseHtml(task.sort, { families, message: task.message, back: Boolean(task.back) });
     modal.hidden = false;
@@ -638,10 +644,11 @@ function openTask(ref) {
 }
 
 // The categorisation card (Brain D-100 B), with the family list read from Brain.
-// `from` is the task whose card it was opened from, so Back and Cancel return there.
+// `from` is the task whose card it was opened from (its ref), or `{ added }` for a line just
+// added, so Back and Cancel return there.
 async function openSort(target, from = null) {
   if (target.kind === 'item' && !target.entry) return;
-  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: target, back: from });
+  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: target, back: from, added: null, doing: false });
   refreshAll();
   if (!families.length && state.paths.has('context/families.md')) {
     try { families = parseFamilies(await fileText('context/families.md')); } catch { /* the card falls back to the item's own family */ }
@@ -749,7 +756,7 @@ async function stopIfMine(entry) {
 }
 
 function hideTask() {
-  Object.assign(task, { ref: null, panel: '', reward: null, sort: null, back: null });
+  Object.assign(task, { ref: null, panel: '', reward: null, sort: null, back: null, added: null, doing: false });
   refreshAll();
 }
 
@@ -783,7 +790,17 @@ modal.addEventListener('click', async (e) => {
   const act = btn.dataset.tk;
   if (act === 'next') return openTask(btn.dataset.ref);
   if (act === 'categorise' && entry) return openSort({ kind: 'item', entry }, entry.ref);
-  if (act === 'back') { Object.assign(task, { sort: null, ref: task.back, back: null, message: '' }); return refreshAll(); }
+  if (act === 'back') {
+    const from = task.back;
+    Object.assign(task, { sort: null, ref: typeof from === 'string' ? from : null, added: from?.added || null, back: null, message: '' });
+    return refreshAll();
+  }
+  if (task.added && !task.sort) {
+    const row = task.added;
+    if (act === 'sort-added') return openSort({ ...row, kind: 'line' }, { added: row });
+    if (act === 'do-added' || act === 'added') { Object.assign(task, { doing: act === 'do-added', message: '' }); return renderTask(); }
+    if (act === 'handled') return handled(row);
+  }
   if (act === 'file') { task.ref = null; modal.hidden = true; renderClock(); return; }
   if (act === 'hide' || !entry) return hideTask();
   if (act === 'stop') { await stopClock(); return; }
@@ -873,7 +890,7 @@ modal.addEventListener('submit', async (e) => {
       await write('/categorise', body);
       const done = afterSort(target, d);
       // Opened from a task's card: return to it (under its new id once confirmed).
-      const fromTask = Boolean(task.back);
+      const fromTask = typeof task.back === 'string';
       Object.assign(task, { sort: null, ref: fromTask ? target.entry.ref : null, back: null, message: fromTask ? done : '' });
       refreshAll();
       if (!fromTask) { // back on the home: say so in the bar
@@ -939,6 +956,37 @@ document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape' && !modal.hidden) hideTask();
 });
 
+// A line added on the home shows at once and its card opens (Brain D-110 A), with no
+// reload: the view lists it once Brain regenerates, within a minute or two.
+async function added(form, body) {
+  await api('/inbox', body);
+  const home_ = `project:${body.project}`;
+  const kin = [...(home.view.inbox || []), ...home.view.entries].find((r) => r.home === home_);
+  const row = { kind: 'line', text: body.text, raw: body.text, details: {}, family: kin?.family || '?', home: home_,
+    date: perthDay().today, path: `projects/${body.project}/QUEUE.md`, ref: null, lens: kin?.lens || (home.lens === 'all' ? 'work' : home.lens) };
+  home.view.inbox = [row, ...(home.view.inbox || [])];
+  renderHome(homeTab() || 'focus');
+  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: null, back: null, added: row, doing: false });
+  refreshAll();
+}
+
+// Do it now, then handled: the line leaves the inbox and the reward shows.
+async function handled(row) {
+  for (const b of modal.querySelectorAll('button')) b.disabled = true;
+  try {
+    await api('/handled', { project: projectOf(row), line: row.raw || row.text });
+  } catch (err) {
+    task.message = writeError(err);
+    return renderTask();
+  }
+  home.view.inbox = (home.view.inbox || []).filter((r) => !(r.kind === 'line' && (r.raw || r.text) === (row.raw || row.text) && r.home === row.home));
+  renderHome(homeTab() || 'focus');
+  const slot = home.view.lenses[home.lens] || home.view.lenses.all;
+  const next = slot.focal ? entryFor(slot.focal.ref) : null;
+  Object.assign(task, { added: null, doing: false, message: '', reward: { title: row.text, ref: `Inbox · ${row.home}`, minutes: 0, today: doneTodayCount(), next } });
+  refreshAll();
+}
+
 // The inbox box on the home and hours entered on the Allocation tab.
 els.doc.addEventListener('submit', async (e) => {
   const inbox = e.target.closest('.cc-inbox-add');
@@ -964,7 +1012,7 @@ els.doc.addEventListener('submit', async (e) => {
   setMessage(msg, 'Saving…', false);
   try {
     if (inbox) {
-      await write(route, body);
+      await added(form, body);
     } else {
       await api(route, body);
       await loadTime();

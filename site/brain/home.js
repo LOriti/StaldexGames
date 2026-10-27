@@ -170,6 +170,28 @@ export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inb
   return `${html}</div></section>`;
 }
 
+// The card after an Inbox add (Brain D-110 A): sort it now, do it now, or leave it for the
+// morning sort. `doing` is the Do it now step, which ends with the line marked handled.
+export function addedHtml(row, { doing = false, message = '' } = {}) {
+  let html = `<div class="tk-head">${doing ? '<button type="button" class="mini-btn tk-back" data-tk="added">‹ Back</button>' : ''}` +
+    `<span class="cc-id">Inbox · ${esc(row.home)}</span><button type="button" class="icon-btn tk-x" data-tk="hide" aria-label="Close">✕</button></div>` +
+    `<p class="rw-k">${doing ? 'Do it now' : '✓ Added to the inbox'}</p><h2 class="tk-ttl" id="tk-title">${esc(row.text)}</h2>`;
+  if (doing) {
+    html += '<p class="cc-note">Do it now. When it’s finished, mark it handled: the line leaves the inbox, and Brain’s history keeps it.</p>' +
+      '<span class="tk-acts"><button type="button" class="mini-btn primary" data-tk="handled">Handled, remove it</button>' +
+      '<button type="button" class="mini-btn" data-tk="added">Not now</button></span>';
+  } else {
+    const choice = (act, label, note, primary = false) => `<button type="button" class="tk-choice${primary ? ' primary' : ''}" data-tk="${act}">` +
+      `<b>${label}</b><span>${note}</span></button>`;
+    html += '<div class="tk-choices">' +
+      choice('sort-added', 'Categorise now', 'Family, priority and estimate. The next groom makes it a card.', true) +
+      choice('do-added', 'Do it now', 'Quick enough to do now? Do it, then mark it handled.') +
+      choice('hide', 'Leave for later', 'It waits in the inbox and on Clarify for the morning sort.') + '</div>';
+  }
+  if (message) html += `<p class="write-msg${/^Not /.test(message) ? ' bad' : ''}">${esc(message)}</p>`;
+  return html;
+}
+
 // ---- the task card (Brain D-97 A, D-98 A) -----------------------------------------------
 
 export function projectOf(entry) {
