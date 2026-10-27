@@ -195,6 +195,9 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
   (`title`, `next`, `family`, `priority`, `minutes`, `due`, `owner`) kept on an Inbox line as
   code spans for Brain's scheduled groom, or set on an open register item, which is confirmed
   if new (a family change keeps the old id as an alias).
+- `POST /api/brain/decide` `{ id, text }` → an open register item of `kind: decision` becomes
+  `state: done` with `Correction: Decided <date>: <text>` (Brain D-111 A). Refused (409) for any
+  other kind or an unconfirmed item; Brain's own D-n decisions are not in the register file.
 - `POST /api/brain/handled` `{ project, line }` → removes an Inbox line Leon dealt with on the
   spot (Brain D-110 A); the commit keeps the record. `POST /api/brain/inbox` refuses (422) a
   line already in that inbox, so a second tap on a slow save cannot add it twice.

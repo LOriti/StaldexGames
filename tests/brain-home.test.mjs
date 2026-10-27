@@ -258,3 +258,13 @@ test('adding to the inbox opens a card to sort it, do it or leave it (Brain D-11
   assert.match(doing, /data-tk="added"/);
   assert.match(doing, /write-msg bad/);
 });
+
+test('a register decision shows Decided and asks for the outcome (Brain D-111 A)', () => {
+  const choice = entry('X-1.05', { kind: 'decision' });
+  assert.equal(home.closeKind(choice), 'decide');
+  const html = home.taskHtml(choice);
+  assert.match(html, /data-tk="done-ask">Decided…/);
+  assert.doesNotMatch(html, /settled by replying to it in a session/);
+  assert.match(home.taskPanel('done', choice), /data-tk-form="decide".*What did you decide\?/);
+  assert.match(home.taskHtml(entry('D-4')), /settled by replying to it in a session/);
+});

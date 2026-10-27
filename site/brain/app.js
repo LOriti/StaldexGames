@@ -5,7 +5,7 @@ import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './mar
 import {
   VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, addedHtml, categoriseHtml, parseFamilies,
-} from './home.js?v=20261027h';
+} from './home.js?v=20261028a';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -924,12 +924,12 @@ modal.addEventListener('submit', async (e) => {
   const text = form.elements.text.value.trim();
   if (!text) return;
   for (const el of form.elements) el.disabled = true;
-  const closing = form.dataset.tkForm === 'close';
+  const closing = form.dataset.tkForm === 'close' || form.dataset.tkForm === 'decide';
   try {
     if (closing) {
       const ran = await stopIfMine(entry);
       if (ran === null) { for (const el of form.elements) el.disabled = false; return; }
-      await write('/close', { id: entry.ref, text });
+      await write(`/${form.dataset.tkForm}`, { id: entry.ref, text });
       return celebrate(entry, ran);
     } else {
       const card = closeKind(entry) === 'card';

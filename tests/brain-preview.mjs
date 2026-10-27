@@ -46,6 +46,7 @@ const VIEW = {
     entry('DEV-60101.06', { source: 'card', home: 'project:beta', lens: 'brain', section: 'hot', hot: ['flagged hot'] }),
     entry('D-1', { home: 'project:beta', lens: 'brain', kind: 'decision' }),
     entry('P-WORK-COMP-60101.07', { area: '2', flags: ['unconfirmed'], title: 'A new item the brief found' }),
+    entry('WORK-LEAD-60101.08', { area: '1', kind: 'decision', title: 'Pick which of two clashing meetings moves', due: '2026-01-03' }),
   ],
   lenses: {
     work: slot({ focal: { ref: 'WORK-SYS-60101.01', reason: 'chosen by the morning brief' }, hot_total: 1,
@@ -185,6 +186,20 @@ if (await addBox.count()) {
   if (await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count()) problems.push('a handled line stayed on the home');
   await page.locator('.tk button[data-tk="hide"]').first().click(); await settle();
 }
+// A register decision closes with Leon's outcome (Brain D-111 A).
+await page.goto(`${base}/brain/#priority`); await settle();
+const choice = page.locator('a[data-cc-ref="WORK-LEAD-60101.08"]');
+if (await choice.count()) {
+  await choice.click(); await settle();
+  await page.locator('[data-tk="done-ask"]').click(); await settle();
+  await page.locator('[data-tk-form="decide"] textarea').fill('Moved the second meeting to Friday.');
+  await shot('decide');
+  await page.locator('[data-tk-form="decide"] button[type="submit"]').click();
+  await page.waitForTimeout(1000);
+  if (!writes.some(([path]) => path === '/api/brain/decide')) problems.push('Decided wrote nothing');
+  if (!(await page.locator('.tk-reward').count())) problems.push('deciding showed no reward');
+  await page.locator('.tk button[data-tk="hide"]').first().click(); await settle();
+} else problems.push('the register decision is not on Priority');
 // Reject asks first, from the task card and on the register; nothing is written until Yes.
 const rejects = () => writes.filter(([path]) => path === '/api/brain/reject').length;
 await page.goto(`${base}/brain/#priority`); await settle();
