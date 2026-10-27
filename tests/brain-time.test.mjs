@@ -207,3 +207,12 @@ test('categorise: details are checked, then land on an Inbox line or a register 
   assert.equal(item.status, 200);
   assert.match(written('register/open-items.md'), /`id: DEV-01014\.01` `kind: action` `state: open` `owner: leon` `due: 2030-02-01` `minutes: 90`\n\nSource: s\nNext: Do it\n/);
 });
+
+test('a register decision is decided with Leon\'s outcome (Brain D-111 A)', () => {
+  const decided = register.decideItem(REGISTER, 'DEV-01012.03', 'Moved the lunch to Friday.', '2030-02-01');
+  assert.match(decided, /`id: DEV-01012\.03` `kind: decision` `state: done`/);
+  assert.match(decided, /\nCorrection: Decided 2030-02-01: Moved the lunch to Friday \(Leon, in the viewer\)\.\n/);
+  assert.throws(() => register.decideItem(REGISTER, 'DEV-01012.02', 'x', '2030-02-01'), { code: 'decision' });
+  assert.throws(() => register.decideItem(REGISTER, 'P-DEV-01014.01', 'x', '2030-02-01'), { code: 'order' });
+  assert.throws(() => register.decideItem(decided, 'DEV-01012.03', 'again', '2030-02-01'), { code: 'closed' });
+});

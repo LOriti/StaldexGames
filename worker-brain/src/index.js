@@ -29,6 +29,7 @@
 //   POST /api/brain/reject  { id, flag }    → { path, sha, commit }
 //   POST /api/brain/progress { id, text[, project] } → { path, sha, commit }   project: a card's
 //   POST /api/brain/close   { id, text }    → { path, sha, commit }   register items only
+//   POST /api/brain/decide  { id, text }    → { path, sha, commit }   register decisions only
 //   POST /api/brain/clock   { action, ref, start[, date], title, area, lens } → on daily-log
 //   POST /api/brain/hours   { minutes, area | lens | ref, note } → on daily-log
 //   POST /api/brain/categorise { project, line, details } | { id, details } → an Inbox line or an open item
@@ -36,7 +37,7 @@
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
 import { QueueError, addInbox, cardProgress, categoriseLine, handledLine, markDone, perthDate } from './queue.js';
-import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, itemProgress, rejectFlag } from './register.js';
+import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, itemProgress, rejectFlag } from './register.js';
 import { cleanDetails, lineAttrs } from './categorise.js';
 import { DATE, LOG_BRANCH, appendTime, clockRow, hoursRow, logPath, parseTime, perthClock } from './timelog.js';
 
@@ -206,6 +207,13 @@ const WRITES = {
     valid: (body) => typeof body.text === 'string' && isRegisterItem(body),
     apply: (text, body, today) => closeItem(text, body.id, body.text, today),
     message: (body) => `web: close ${body.id}`,
+  },
+  // Settle a register decision with Leon's outcome (Brain D-111 A).
+  '/api/brain/decide': {
+    path: () => REGISTER_PATH,
+    valid: (body) => typeof body.text === 'string' && isRegisterItem(body),
+    apply: (text, body, today) => decideItem(text, body.id, body.text, today),
+    message: (body) => `web: decide ${body.id}`,
   },
   // Leon's details for an Inbox line (kept on the line for the scheduled groom) or an open
   // register item (set, and a new item confirmed): Brain D-100 B.

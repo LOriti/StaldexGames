@@ -198,13 +198,14 @@ export function projectOf(entry) {
   return /^project:([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(entry?.home || '')?.[1] || null;
 }
 
-// What closing means for this entry: a card moves to Done, an open item takes Evidence,
-// and decisions and unconfirmed items are settled elsewhere.
+// What closing means for this entry: a card moves to Done, an open item takes Evidence, a
+// register decision takes Leon's outcome (Brain D-111 A); Brain's own D-n decisions and
+// unconfirmed items are settled elsewhere.
 export function closeKind(entry) {
   if (/^D-\d+$/.test(entry.ref)) return 'decision';
   if (entry.source === 'card') return projectOf(entry) ? 'card' : 'none';
   if (/^P-/.test(entry.ref) || (entry.flags || []).includes('unconfirmed')) return 'unconfirmed';
-  if (entry.kind === 'decision') return 'decision';
+  if (entry.kind === 'decision') return 'decide';
   return 'item';
 }
 
@@ -232,7 +233,8 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
       '<button type="button" class="mini-btn primary" data-tk="start">Start clock</button><button type="button" class="mini-btn" data-tk="time-ask">Add time…</button></div>';
   }
   const kind = closeKind(entry);
-  const closeBtn = kind === 'card' || kind === 'item' ? '<button type="button" class="mini-btn primary" data-tk="done-ask">Done…</button>' : '';
+  const closeBtn = kind === 'card' || kind === 'item' || kind === 'decide'
+    ? `<button type="button" class="mini-btn primary" data-tk="done-ask">${kind === 'decide' ? 'Decided…' : 'Done…'}</button>` : '';
   const progressBtn = kind !== 'decision' && kind !== 'none' ? '<button type="button" class="mini-btn" data-tk="progress-ask">Add progress…</button>' : '';
   const sortBtn = entry.source === 'item' && kind !== 'decision' ? '<button type="button" class="mini-btn" data-tk="categorise">Categorise…</button>' : '';
   html += `<div class="tk-acts">${closeBtn}${progressBtn}${sortBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
@@ -273,10 +275,12 @@ export function taskPanel(kind, entry) {
     return `<div class="tk-panel"><p>Mark ${esc(entry.ref)} done? It moves under Done in its queue, and the clock stops.</p>` +
       '<button type="button" class="mini-btn primary" data-tk="done">Yes, done</button><button type="button" class="mini-btn" data-tk="cancel">Cancel</button></div>';
   }
-  const done = kind === 'done';
-  return `<form class="tk-panel" data-tk-form="${done ? 'close' : 'progress'}"><label for="tk-text">${done ? 'Evidence: what shows it is done' : 'What moved'}</label>` +
+  const form = kind !== 'done' ? 'progress' : closeKind(entry) === 'decide' ? 'decide' : 'close';
+  const [label, submit] = { progress: ['What moved', 'Save progress'], close: ['Evidence: what shows it is done', 'Close it'],
+    decide: ['What did you decide?', 'Record it'] }[form];
+  return `<form class="tk-panel" data-tk-form="${form}"><label for="tk-text">${label}</label>` +
     `<textarea id="tk-text" name="text" rows="2" maxlength="500" required></textarea>` +
-    `<button type="submit" class="mini-btn primary">${done ? 'Close it' : 'Save progress'}</button><button type="button" class="mini-btn" data-tk="cancel">Cancel</button></form>`;
+    `<button type="submit" class="mini-btn primary">${submit}</button><button type="button" class="mini-btn" data-tk="cancel">Cancel</button></form>`;
 }
 
 export function clockBarHtml(clock, entry, now = Date.now()) {

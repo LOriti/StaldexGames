@@ -201,8 +201,8 @@ export function itemProgress(text, id, raw, today) {
 }
 
 // Leon closes an item from its card (Brain D-98 A): `state: done` with his one-line
-// Evidence. An unconfirmed item is confirmed first, and a decision is settled in a session,
-// where its outcome goes in a Correction.
+// Evidence. An unconfirmed item is confirmed first, and a decision is settled with
+// decideItem, its outcome going in a Correction.
 export function closeItem(text, id, raw, today) {
   const note = cleanNote(raw);
   return edit(text, id, today, ({ block, attr, item, line, r }) => {
@@ -210,6 +210,18 @@ export function closeItem(text, id, raw, today) {
     if (item.attrs.kind === 'decision') throw new QueueError('decision', 'decisions are settled in a session');
     line((l) => setAttr(dropAttr(l, 'close-proposed'), 'state', 'done'));
     setField(block, attr, 'Evidence', `${note} (Leon, in the viewer, ${today}).`, r.eol);
+  });
+}
+
+// Leon settles a register decision from its card (Brain D-111 A): `state: done` with his
+// one-line outcome as its Correction. Brain's own D-n decisions are not in this file.
+export function decideItem(text, id, raw, today) {
+  const note = cleanNote(raw);
+  return edit(text, id, today, ({ block, attr, item, line, r }) => {
+    if (Object.hasOwn(item.attrs, 'unconfirmed')) throw new QueueError('order', `confirm ${id} itself first`);
+    if (item.attrs.kind !== 'decision') throw new QueueError('decision', 'only a decision is decided; close an item with Evidence');
+    line((l) => setAttr(dropAttr(l, 'close-proposed'), 'state', 'done'));
+    setField(block, attr, 'Correction', `Decided ${today}: ${note} (Leon, in the viewer).`, r.eol);
   });
 }
 
