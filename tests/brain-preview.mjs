@@ -173,38 +173,67 @@ if ((await page.locator('a[data-cc-ref="WORK-SYS-60101.10"], a.cc-in[href*="WORK
 if (!(await page.locator('a[data-cc-ref="WORK-SYS-60101.10"] .cc-chip.flag').count())) problems.push('the hot row carries no flag chip');
 if (!(await page.locator('.cc-flags').count())) problems.push('register flags have no line of their own under Inbox');
 await page.goto(`${base}/brain/#priority`); await settle(); await shot('priority');
-await page.goto(`${base}/brain/#clarify`); await settle(); await shot('clarify');
-if (!(await page.locator('.cc-inbox').count())) problems.push('the Clarify tab is empty');
+// The Inbox tab (Brain DEV-61026.33): add box first, lines to clarify, then what the routines found.
+await page.goto(`${base}/brain/#inbox`); await settle(); await shot('inbox');
+if (!(await page.locator('.cc-inbox').count())) problems.push('the Inbox tab is empty');
+if (!(await page.locator('.cc-inbox-add').count())) problems.push('the Inbox tab has no add box');
+if (await page.locator('.cc-tabs a[href="#clarify"]').count()) problems.push('the Clarify tab is still there');
 await page.goto(`${base}/brain/#clarify`); await settle();
+if (!(await page.locator('.cc-tabs a[href="#inbox"][aria-current="page"]').count())) problems.push('#clarify no longer lands on the Inbox tab');
+// A raw line walks the GTD questions: actionable, the next action, two minutes, delegate, details.
 const line = page.locator('a[data-cc-line]').first();
 if (await line.count()) {
   await line.click(); await settle();
-  if (!(await page.locator('[data-tk-form="categorise"]').count())) problems.push('an inbox line did not open its categorisation card');
-  await page.locator('#cg-next').fill('Write it up');
-  await page.locator('#cg-minutes').selectOption('60');
-  await shot('categorise');
-  await page.locator('[data-tk-form="categorise"] button[type="submit"]').click(); await settle();
-  if (!writes.some(([path]) => path === '/api/brain/categorise')) problems.push('saving the categorisation card wrote nothing');
+  if (!(await page.locator('[data-wk="yes"]').count())) problems.push('an inbox line did not open the question walk');
+  await shot('walk-actionable');
+  await page.locator('[data-wk="yes"]').click(); await settle();
+  await page.locator('#wk-next').fill('The report');
+  await page.locator('[data-wk-form="action"] button[type="submit"]').click(); await settle();
+  if (!(await page.locator('.tk .write-msg.bad').count())) problems.push('an action without a verb was not flagged');
+  await page.locator('#wk-next').fill('Write it up');
+  await shot('walk-action');
+  await page.locator('[data-wk-form="action"] button[type="submit"]').click(); await settle();
+  if (!(await page.locator('[data-wk="two-no"]').count())) problems.push('the walk did not reach the two-minute question');
+  await page.locator('[data-wk="two-no"]').click(); await settle();
+  await page.locator('[data-wk="deleg-person"]').click(); await settle();
+  await page.locator('#wk-owner').fill('sam');
+  await page.locator('#wk-follow').fill('2030-02-01');
+  await shot('walk-delegate');
+  await page.locator('[data-wk-form="person"] button[type="submit"]').click(); await settle();
+  if (!(await page.locator('[data-wk-form="details"]').count())) problems.push('the walk did not reach priority, estimate and date');
+  await page.locator('#wk-minutes').selectOption('60');
+  await shot('walk-details');
+  await page.locator('[data-wk-form="details"] button[type="submit"]').click(); await settle();
+  const saved = writes.find(([path]) => path === '/api/brain/categorise');
+  if (!saved) problems.push('saving the walk wrote nothing');
+  else if (!/"owner":"sam"/.test(saved[1]) || !/"next":"Write it up"/.test(saved[1])) problems.push(`the walk saved the wrong details: ${saved[1]}`);
 }
-// Adding to the inbox opens its card at once (Brain D-110 A): sort it, do it or leave it.
+// Adding a line opens the walk at once (Brain D-110 A folded in); Someday parks it.
 await page.goto(`${base}/brain/#focus`); await settle();
 await page.locator('[data-cc-lens="all"]').click(); await settle();
 const addBox = page.locator('.cc-inbox-add input[name="text"]');
 if (await addBox.count()) {
   await addBox.fill('Synthetic capture from the phone');
   await page.locator('.cc-inbox-add button[type="submit"]').click(); await settle();
-  if (!(await page.locator('.tk-wrap:not([hidden]) [data-tk="sort-added"]').count())) problems.push('adding to the inbox opened no card');
+  if (!(await page.locator('.tk-wrap:not([hidden]) [data-wk="someday"]').count())) problems.push('adding to the inbox opened no walk');
   if (!(await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count())) problems.push('the added line is not on the home');
   await shot('inbox-added');
-  await page.locator('[data-tk="do-added"]').click(); await settle(); await shot('inbox-do-now');
-  await page.locator('.tk-acts [data-tk="added"]').click(); await settle();
-  await page.locator('[data-tk="sort-added"]').click(); await settle();
-  if (!(await page.locator('[data-tk-form="categorise"] [data-tk="back"]').count())) problems.push('categorising an added line has no way back');
-  await page.locator('[data-tk="back"].tk-back').click(); await settle();
-  await page.locator('[data-tk="do-added"]').click(); await settle();
-  await page.locator('[data-tk="handled"]').click(); await settle(); await shot('inbox-handled');
-  if (!writes.some(([path]) => path === '/api/brain/handled')) problems.push('Handled wrote nothing');
-  if (await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count()) problems.push('a handled line stayed on the home');
+  await page.locator('[data-wk="someday"]').click(); await settle();
+  if (!writes.some(([path]) => path === '/api/brain/someday')) problems.push('Someday wrote nothing');
+  if (await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count()) problems.push('a Someday line stayed on the home');
+  // Under two minutes: the countdown, then the time recorded and the line handled.
+  await addBox.fill('Ring the plumber back');
+  await page.locator('.cc-inbox-add button[type="submit"]').click(); await settle();
+  await page.locator('[data-wk="yes"]').click(); await settle();
+  await page.locator('#wk-next').fill('Ring the plumber back');
+  await page.locator('[data-wk-form="action"] button[type="submit"]').click(); await settle();
+  await page.locator('[data-wk="two-yes"]').click(); await settle();
+  if (!(await page.locator('[data-wk-count]').count())) problems.push('the two-minute clock did not start');
+  await shot('walk-two-minutes');
+  await page.locator('[data-wk-form="done"] button[type="submit"]').click(); await settle();
+  if (!writes.some(([path]) => path === '/api/brain/hours') || !writes.some(([path]) => path === '/api/brain/handled')) problems.push('finishing in two minutes did not record the time and handle the line');
+  if (!(await page.locator('.tk-reward').count())) problems.push('finishing in two minutes showed no reward');
+  await shot('inbox-handled');
   await page.locator('.tk button[data-tk="hide"]').first().click(); await settle();
 }
 // A register decision closes with Leon's outcome (Brain D-111 A).
@@ -266,8 +295,10 @@ if (rejects() !== 1) problems.push('Yes on the register did not reject');
 await page.goto(`${base}/brain/#allocation`); await settle(); await page.waitForTimeout(600); await shot('allocation');
 if (!(await page.locator('.cc-meter').count())) problems.push('the Allocation tab shows no actuals');
 await page.goto(`${base}/brain/#focus`); await settle();
-await page.locator('[data-cc-lens="work"]').click(); await settle();
+await page.locator('[data-cc-lens="all"]').click(); await settle();
 if (!(await page.locator('.cc-inbox .cc-row').count())) problems.push('no inbox rows on the home');
+await page.locator('[data-cc-lens="work"]').click(); await settle();
+if (!(await page.locator('.cc-inbox .cc-flags').count())) problems.push('no flags line under the inbox (D-115 C)');
 const focal = page.locator('a.cc-focal');
 if (await focal.count()) {
   await focal.click(); await settle();
@@ -325,6 +356,7 @@ if (await focal.count()) {
   await page.waitForTimeout(1000); await shot('reward');
   if (await page.locator('.clock-bar:not([hidden])').count()) problems.push('finishing the task left its clock running');
   if (!writes.some(([path]) => path === '/api/brain/clock') || !writes.some(([path]) => path === '/api/brain/close')) problems.push('expected clock and close writes');
+  await page.locator('.tk button[data-tk="hide"]').first().click(); await settle();
 }
 // Allocation: an area with no rows reads "not recorded", never 0 (Brain D-114 A).
 await page.goto(`${base}/brain/#allocation`); await settle(); await page.waitForTimeout(600);
@@ -334,6 +366,27 @@ if (await page.locator('.cc-lane', { hasText: /\b0 min of/ }).count()) problems.
 await page.goto(`${base}/brain/#focus`); await page.reload({ waitUntil: 'networkidle' }); await settle(); await page.waitForTimeout(600);
 await page.locator('[data-cc-lens="work"]').click(); await settle();
 if (!(await page.locator('a.cc-focal[data-cc-ref="WORK-SYS-60101.10"]').count())) problems.push('the pick did not survive a reload');
+// What the routines found is settled from the row (Brain D-112 A): Reject asks first, Confirm is
+// one tap and the row leaves the group; Close all is one commit.
+await page.goto(`${base}/brain/#inbox`); await settle();
+await page.locator('[data-cc-lens="work"]').click(); await settle();
+const freshRow = page.locator('.cc-acts[data-cc-acts="P-WORK-COMP-60101.07"]');
+if (await freshRow.count()) {
+  if (!(await page.locator('.cc-batch[data-cc-batch="close-proposed"]').count())) problems.push('no Close all button for the proposed closes');
+  await freshRow.locator('[data-cc-act="reject-ask"]').click(); await settle();
+  if (!(await page.locator('.cc-acts[data-cc-acts="P-WORK-COMP-60101.07"] [data-cc-act="reject"]').count())) problems.push('Reject on the row did not ask first');
+  await shot('inbox-row-reject');
+  await page.locator('.cc-acts[data-cc-acts="P-WORK-COMP-60101.07"] [data-cc-act="cancel"]').click(); await settle();
+  const confirms = () => writes.filter(([path]) => path === '/api/brain/confirm').length;
+  const before = confirms();
+  await page.locator('.cc-acts[data-cc-acts="P-WORK-COMP-60101.07"] [data-cc-act="confirm"]').click(); await settle();
+  if (confirms() !== before + 1) problems.push('Confirm on the row did not write');
+  if (await page.locator('.cc-acts[data-cc-acts="P-WORK-COMP-60101.07"]').count()) problems.push('a confirmed row stayed in the group');
+  await page.locator('.cc-batch[data-cc-batch="close-proposed"]').click(); await settle();
+  if (!writes.some(([path]) => path === '/api/brain/confirm-all')) problems.push('Close all wrote nothing');
+  if (await page.locator('.cc-acts[data-cc-acts="WORK-LEAD-60101.09"]').count()) problems.push('Close all left a closed row behind');
+  await shot('inbox-after-close-all');
+} else problems.push('the new item has no row acts on the Inbox tab');
 
 await browser.close();
 server?.close();

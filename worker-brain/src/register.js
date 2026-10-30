@@ -12,7 +12,9 @@
 //                            add a Correction; the `P-` stays, as the item never landed
 //   confirm close-proposed   `state: done`, remove the flag, keep the Evidence; on a
 //                            `kind: decision` item also `Correction: Decided <date>: <the
-//                            Evidence> (confirmed in the viewer).` (Brain D-117 B)
+//                            Evidence> (confirmed in the viewer).` (Brain D-117 B); an
+//                            item still unconfirmed is confirmed first, one tap (D-112 A)
+// settleAll applies confirm to a list of ids as one edit, all or nothing (D-112 A).
 //   reject close-proposed    remove the flag and its Evidence, add a Correction
 //
 // As in queue.js, lines keep their own terminators, so everything outside the item and
@@ -143,21 +145,49 @@ function settle(text, id, flag, today, edit) {
   return r.lines.join('');
 }
 
+// The attribute line with the item confirmed: the `unconfirmed` flag and the id's `P-` gone.
+function landedLine(l, id, item, r) {
+  if (!Object.hasOwn(item.attrs, 'unconfirmed')) return l;
+  let landed = id;
+  if (id.startsWith('P-')) {
+    landed = id.slice(2);
+    if (r.items.some((other) => other !== item && other.attrs.id === landed)) {
+      throw new QueueError('duplicate-id', `another item already has id ${landed}`);
+    }
+  }
+  return dropAttr(l, 'unconfirmed').replace(new RegExp('`id:\\s*' + escapeRe(id) + '\\s*`'), `\`id: ${landed}\``);
+}
+
+// Confirm or close every id in one edit (Brain D-112 A): "Confirm all" and "Close all" on
+// the Inbox tab. Any id that is no longer flagged, closed or unknown refuses the whole
+// batch, naming the ids, so nothing is half applied.
+export function settleAll(text, ids, flag, today) {
+  if (!Array.isArray(ids) || !ids.length) throw new QueueError('invalid-text', 'no ids given');
+  let out = text;
+  const changed = [];
+  for (const id of ids) {
+    try {
+      out = confirmFlag(out, id, flag, today);
+    } catch (err) {
+      if (err instanceof QueueError && ['not-flagged', 'closed', 'unknown-id', 'duplicate-id'].includes(err.code)) changed.push(id);
+      else throw err;
+    }
+  }
+  if (changed.length) {
+    const err = new QueueError('not-flagged', `${changed.length} of ${ids.length} changed since the page loaded`);
+    err.ids = changed;
+    throw err;
+  }
+  return out;
+}
+
 export function confirmFlag(text, id, flag, today) {
   return settle(text, id, flag, today, ({ block, attr, line, item, r }) => {
     if (flag === 'unconfirmed') {
-      let landed = id;
-      if (id.startsWith('P-')) {
-        landed = id.slice(2);
-        if (r.items.some((other) => other.attrs.id === landed)) {
-          throw new QueueError('duplicate-id', `another item already has id ${landed}`);
-        }
-      }
-      line((l) => dropAttr(l, 'unconfirmed').replace(new RegExp('`id:\\s*' + escapeRe(id) + '\\s*`'), `\`id: ${landed}\``));
+      line((l) => landedLine(l, id, item, r));
     } else {
-      // Done with the flag still on would leave an unconfirmed item closed.
-      if (Object.hasOwn(item.attrs, 'unconfirmed')) throw new QueueError('order', `confirm ${id} itself first`);
-      line((l) => setAttr(dropAttr(l, 'close-proposed'), 'state', 'done'));
+      // A new item with a close proposed confirms and closes in one tap (Brain D-112 A).
+      line((l) => setAttr(dropAttr(landedLine(l, id, item, r), 'close-proposed'), 'state', 'done'));
       // A decision records its outcome (Brain D-117 B): the routine's Evidence becomes the
       // Correction the schema requires, and the Evidence line stays.
       if (item.attrs.kind === 'decision') {
@@ -218,14 +248,14 @@ export function itemProgress(text, id, raw, today) {
 }
 
 // Leon closes an item from its card (Brain D-98 A): `state: done` with his one-line
-// Evidence. An unconfirmed item is confirmed first, and a decision is settled with
-// decideItem, its outcome going in a Correction.
+// Evidence. An unconfirmed item is confirmed on the way (D-112 A), and a decision is
+// settled with decideItem, its outcome going in a Correction.
 export function closeItem(text, id, raw, today) {
   const note = cleanNote(raw);
   return edit(text, id, today, ({ block, attr, item, line, r }) => {
-    if (Object.hasOwn(item.attrs, 'unconfirmed')) throw new QueueError('order', `confirm ${id} itself first`);
     if (item.attrs.kind === 'decision') throw new QueueError('decision', 'decisions are settled in a session');
-    line((l) => setAttr(dropAttr(l, 'close-proposed'), 'state', 'done'));
+    // An unconfirmed item is confirmed on the way (Brain D-112 A): the `P-` and flag go.
+    line((l) => setAttr(dropAttr(landedLine(l, id, item, r), 'close-proposed'), 'state', 'done'));
     setField(block, attr, 'Evidence', `${note} (Leon, in the viewer, ${today}).`, r.eol);
   });
 }
@@ -235,9 +265,8 @@ export function closeItem(text, id, raw, today) {
 export function decideItem(text, id, raw, today) {
   const note = cleanNote(raw);
   return edit(text, id, today, ({ block, attr, item, line, r }) => {
-    if (Object.hasOwn(item.attrs, 'unconfirmed')) throw new QueueError('order', `confirm ${id} itself first`);
     if (item.attrs.kind !== 'decision') throw new QueueError('decision', 'only a decision is decided; close an item with Evidence');
-    line((l) => setAttr(dropAttr(l, 'close-proposed'), 'state', 'done'));
+    line((l) => setAttr(dropAttr(landedLine(l, id, item, r), 'close-proposed'), 'state', 'done'));
     setField(block, attr, 'Correction', `Decided ${today}: ${note} (Leon, in the viewer).`, r.eol);
   });
 }

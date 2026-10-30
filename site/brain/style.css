@@ -447,6 +447,18 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .tk-grid span { display: grid; gap: 4px; }
 .cc-chip.ok { background: var(--accent-soft); color: var(--accent); }
 .cc-chip.flag { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+.cc-item { border-top: 1px solid var(--line); }
+.cc-item:first-child { border-top: 0; }
+.cc-item .cc-row { border-top: 0; }
+.cc-acts { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; padding: 0 12px 10px 24px; }
+.cc-ask { flex-basis: 100%; font-size: 12.5px; color: var(--muted); }
+.cc-next, .cc-ev { display: block; margin-top: 3px; font-size: 12.5px; color: var(--muted); }
+.cc-next b, .cc-ev b { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
+.cc-batch-row { margin: -4px 0 8px; }
+.cb-t.bad { color: var(--bad); }
+.tk-radio label { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--ink); }
+.wk-outcome { margin-top: 2px; }
+.tk-sort label:has(input[type=checkbox]) { display: flex; gap: 6px; align-items: center; color: var(--ink); font-size: 13.5px; }
 .cc-flags { display: block; margin: -4px 2px 8px; font-size: 12.5px; color: var(--warn); text-decoration: none; }
 .cc-focal-note { margin: 0 0 8px; color: var(--accent); }
 .tk-proposed q { quotes: "“" "”"; }

@@ -195,6 +195,14 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
 - `POST /api/brain/focal` `{ ref | '', lens }` → appends a `focal` row the same way: Leon's
   pick of the one thing for today, an empty `ref` going back to the brief's pick (Brain
   D-113 A). Both screens read the day's latest one.
+- `POST /api/brain/confirm-all` `{ ids, flag }` → one commit settling every id (`web: confirm all <n>`
+  or `web: close all <n>`, Brain D-112 A); if any id is no longer flagged the whole batch is
+  refused with **409 `{ error, ids }`** naming them, so nothing is half applied. A close on
+  an item still `unconfirmed` lands it and closes it in the one edit, as `/close` now does.
+- `POST /api/brain/someday`, `/reference` and `/trash` `{ project, line }` → the Inbox tab's
+  first question (Brain D-104 C): the line moves to the queue's `## Someday` section with a
+  `someday:` date, is tagged `reference:` for Brain's groom to file, or is removed
+  (`web: someday|reference|trash inbox <slug>`).
 - `POST /api/brain/categorise` `{ project, line, details }` or `{ id, details }` → Leon's details
   (`title`, `next`, `family`, `priority`, `minutes`, `due`, `owner`) kept on an Inbox line as
   code spans for Brain's scheduled groom, or set on an open register item, which is confirmed

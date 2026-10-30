@@ -94,7 +94,10 @@ test('item progress and close follow the register rules', () => {
   assert.match(progressed, /Evidence: e\.\nProgress: 2030-02-01, chased\n\n### Choice/);
   const closed = register.closeItem(REGISTER, 'DEV-01012.02', 'Sent the reply.', '2030-02-01');
   assert.match(closed, /`id: DEV-01012\.02` `kind: action` `state: done`\n\nSource: s\nNext: n\.\nEvidence: Sent the reply \(Leon, in the viewer, 2030-02-01\)\.\n/);
-  assert.throws(() => register.closeItem(REGISTER, 'P-DEV-01014.01', 'x', '2030-02-01'), { code: 'order' });
+  // A P- item's card no longer needs Confirm before Done (Brain D-112 A): it lands and closes.
+  const fresh = register.closeItem(REGISTER, 'P-DEV-01014.01', 'Did it.', '2030-02-01');
+  assert.match(fresh, /`id: DEV-01014\.01` `kind: action` `state: done`\n\nSource: s\nNext: n\.\nEvidence: Did it \(Leon, in the viewer, 2030-02-01\)\.\n/);
+  assert.doesNotMatch(fresh, /unconfirmed/);
   assert.throws(() => register.closeItem(REGISTER, 'DEV-01012.03', 'x', '2030-02-01'), { code: 'decision' });
   assert.throws(() => register.closeItem(closed, 'DEV-01012.02', 'again', '2030-02-01'), { code: 'closed' });
 });
@@ -151,7 +154,7 @@ test('close settles an item with Evidence and refuses what a session must do', a
   assert.equal(res.status, 200);
   assert.equal(files['register/open-items.md'].puts.at(-1).message, 'web: close DEV-01012.02');
   assert.match(written('register/open-items.md'), /`id: DEV-01012\.02` `kind: action` `state: done`/);
-  assert.deepEqual(await post('/api/brain/close', { id: 'P-DEV-01014.01', text: 'x' }), { status: 409, body: { error: 'confirm P-DEV-01014.01 itself first' } });
+  assert.equal((await post('/api/brain/close', { id: 'P-DEV-01014.01', text: 'x' })).status, 200, 'a P- item closes in one go (D-112 A)');
   assert.equal((await post('/api/brain/close', { id: 'DEV-01012.03', text: 'x' })).status, 409);
 });
 
@@ -215,8 +218,55 @@ test('time returns parsed rows from the daily-log branch only', async () => {
   assert.equal(bad.status, 400);
 });
 
+test('the Inbox tab\'s first question: Someday, Reference and Trash on a raw line (Brain D-104 C)', async () => {
+  const parked = queue.somedayLine(QUEUE, 'Idea', '2030-02-01');
+  assert.match(parked, /## Inbox\n\n## Someday\n\n- Idea `someday: 2030-02-01`\n$/);
+  assert.doesNotMatch(parked.split('## Someday')[0], /- Idea/);
+  const two = queue.somedayLine(queue.addInbox(parked, 'Another idea', '2030-02-01'), 'Another idea', '2030-02-02');
+  assert.match(two, /## Someday\n\n- Idea `someday: 2030-02-01`\n- Another idea `someday: 2030-02-02`\n$/);
+  const withDone = QUEUE + '\n## Done\n\n### Old\n\n`id: DEV-01010.03` `done: 2030-01-01`\n';
+  assert.match(queue.somedayLine(withDone, 'Idea', '2030-02-01'), /## Inbox\n\n## Someday\n\n- Idea `someday: 2030-02-01`\n\n## Done\n/);
+  const ref = queue.referenceLine(QUEUE.replace('- Idea', '- Idea `categorised: 2030-01-01` `family: DEV`'), 'Idea', '2030-02-01');
+  assert.match(ref, /## Inbox\n\n- Idea `reference: 2030-02-01`\n$/);
+  assert.throws(() => queue.somedayLine(QUEUE, 'Gone', '2030-02-01'), { code: 'unknown-id' });
+  for (const [route, message, pattern] of [
+    ['/api/brain/someday', 'web: someday inbox demo', /## Someday\n\n- Idea `someday: \d{4}-\d{2}-\d{2}`/],
+    ['/api/brain/reference', 'web: reference inbox demo', /- Idea `reference: \d{4}-\d{2}-\d{2}`/],
+    ['/api/brain/trash', 'web: trash inbox demo', /## Inbox\n*$/],
+  ]) {
+    const res = await post(route, { project: 'demo', line: 'Idea' });
+    assert.equal(res.status, 200, route);
+    assert.equal(files['projects/demo/QUEUE.md'].puts.at(-1).message, message);
+    assert.match(written('projects/demo/QUEUE.md'), pattern, route);
+  }
+  assert.equal((await post('/api/brain/someday', { project: 'demo', line: 42 })).status, 400);
+});
+
+test('Confirm all and Close all are one commit each, refused with the ids that changed (Brain D-112 A)', async () => {
+  const all = await post('/api/brain/confirm-all', { ids: ['P-DEV-01014.01'], flag: 'unconfirmed' });
+  assert.equal(all.status, 200);
+  const put = files['register/open-items.md'].puts.at(-1);
+  assert.equal(put.message, 'web: confirm all 1');
+  assert.match(written('register/open-items.md'), /`id: DEV-01014\.01` `kind: action` `state: open`\n/);
+  const closes = await post('/api/brain/confirm-all', { ids: ['DEV-01012.02'], flag: 'close-proposed' });
+  assert.equal(closes.status, 200);
+  assert.equal(files['register/open-items.md'].puts.at(-1).message, 'web: close all 1');
+  const stale = await post('/api/brain/confirm-all', { ids: ['P-DEV-01014.01', 'DEV-01012.03'], flag: 'unconfirmed' });
+  assert.deepEqual(stale, { status: 409, body: { error: '1 of 2 changed since the page loaded', ids: ['DEV-01012.03'] } });
+  for (const body of [{ ids: [], flag: 'unconfirmed' }, { ids: 'P-DEV-01014.01', flag: 'unconfirmed' }, { ids: ['P-DEV-01014.01', 'P-DEV-01014.01'], flag: 'unconfirmed' },
+    { ids: ['P-DEV-01014.01'], flag: 'done' }, { ids: ['D-1'], flag: 'unconfirmed' }, { ids: Array.from({ length: 101 }, (_, i) => `DEV-01014.${String(i).padStart(2, '0')}`), flag: 'unconfirmed' }]) {
+    assert.equal((await post('/api/brain/confirm-all', body)).status, 400, JSON.stringify(body).slice(0, 60));
+  }
+});
+
 test('categorise: details are checked, then land on an Inbox line or a register item', async () => {
   assert.throws(() => categorise.cleanDetails({ next: 'x', family: 'work' }), /family/);
+  // The question walk's extra details (Brain D-105 C, D-108 A).
+  assert.throws(() => categorise.cleanDetails({ next: 'x', family: 'DEV', kind: 'project' }), /outcome/);
+  assert.throws(() => categorise.cleanDetails({ next: 'x', family: 'DEV', ai: 'yes' }), /ai/);
+  const project = categorise.cleanDetails({ next: 'Ring the broker', family: 'DEV', kind: 'project', outcome: 'Cover is renewed', ai: 'prepare', handover: 'Brief Sam on Monday', owner: 'sam' });
+  assert.equal(categorise.lineAttrs(project, '2030-02-01'),
+    '`categorised: 2030-02-01` `family: DEV` `owner: sam` `kind: project` `outcome: Cover is renewed` `ai: prepare` `handover: Brief Sam on Monday` `next: Ring the broker`');
   assert.throws(() => categorise.cleanDetails({ next: 'x', family: 'WORK-SYS', minutes: 45 }), /half hours/);
   assert.throws(() => categorise.cleanDetails({ family: 'WORK-SYS' }), /next step/);
   const d = categorise.cleanDetails({ title: 'Ask `Bob`', next: 'Ring | him', family: 'DEV', priority: 'P2', minutes: '60', owner: 'Leon' });
@@ -236,6 +286,6 @@ test('a register decision is decided with Leon\'s outcome (Brain D-111 A)', () =
   assert.match(decided, /`id: DEV-01012\.03` `kind: decision` `state: done`/);
   assert.match(decided, /\nCorrection: Decided 2030-02-01: Moved the lunch to Friday \(Leon, in the viewer\)\.\n/);
   assert.throws(() => register.decideItem(REGISTER, 'DEV-01012.02', 'x', '2030-02-01'), { code: 'decision' });
-  assert.throws(() => register.decideItem(REGISTER, 'P-DEV-01014.01', 'x', '2030-02-01'), { code: 'order' });
+  assert.throws(() => register.decideItem(REGISTER, 'P-DEV-01014.01', 'x', '2030-02-01'), { code: 'decision' }, 'an unconfirmed action is still not a decision');
   assert.throws(() => register.decideItem(decided, 'DEV-01012.03', 'again', '2030-02-01'), { code: 'closed' });
 });

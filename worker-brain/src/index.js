@@ -26,7 +26,11 @@
 //   POST /api/brain/inbox  { project, text } → { path, sha, commit }
 //   POST /api/brain/handled  { project, line } → { path, sha, commit }
 //   POST /api/brain/confirm { id, flag }    → { path, sha, commit }   flag: unconfirmed | close-proposed
+//   POST /api/brain/confirm-all { ids, flag } → { path, sha, commit }  one commit; 409 { error, ids } if any changed
 //   POST /api/brain/reject  { id, flag }    → { path, sha, commit }
+//   POST /api/brain/someday { project, line } → { path, sha, commit }   the line moves to ## Someday
+//   POST /api/brain/reference { project, line } → { path, sha, commit } tagged for the groom to file
+//   POST /api/brain/trash   { project, line } → { path, sha, commit }   the line is removed
 //   POST /api/brain/progress { id, text[, project] } → { path, sha, commit }   project: a card's
 //   POST /api/brain/close   { id, text }    → { path, sha, commit }   register items only
 //   POST /api/brain/decide  { id, text }    → { path, sha, commit }   register decisions only
@@ -37,15 +41,16 @@
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
-import { QueueError, addInbox, cardProgress, categoriseLine, handledLine, markDone, perthDate } from './queue.js';
-import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, itemProgress, rejectFlag } from './register.js';
+import { QueueError, addInbox, cardProgress, categoriseLine, handledLine, markDone, perthDate, referenceLine, somedayLine } from './queue.js';
+import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, itemProgress, rejectFlag, settleAll } from './register.js';
 import { cleanDetails, lineAttrs } from './categorise.js';
 import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock } from './timelog.js';
 
 const TREE_TTL_MS = 30 * 1000;
 const BLOB_CACHE_MAX = 200;
 const MAX_FILE_BYTES = 512 * 1024;
-const MAX_BODY_BYTES = 4 * 1024;
+const MAX_BODY_BYTES = 8 * 1024;
+const BATCH_MAX = 100;
 const WRITE_ORIGIN = 'https://staldex.com';
 const SLUG = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
 const CARD_ID = /^[a-z0-9]+(?:-[a-z0-9]+)*-\d{3}$/;
@@ -183,11 +188,41 @@ const WRITES = {
     apply: (text, body, today) => handledLine(text, body.line, today),
     message: (body) => `web: handled inbox ${body.project}`,
   },
+  // The Inbox tab's first question (Brain DEV-61026.33, D-104 C): Someday/Maybe parks the
+  // line in `## Someday`, Reference tags it for the groom to file, Trash removes it.
+  '/api/brain/someday': {
+    path: queuePath,
+    valid: (body) => typeof body.line === 'string',
+    apply: (text, body, today) => somedayLine(text, body.line, today),
+    message: (body) => `web: someday inbox ${body.project}`,
+  },
+  '/api/brain/reference': {
+    path: queuePath,
+    valid: (body) => typeof body.line === 'string',
+    apply: (text, body, today) => referenceLine(text, body.line, today),
+    message: (body) => `web: reference inbox ${body.project}`,
+  },
+  '/api/brain/trash': {
+    path: queuePath,
+    valid: (body) => typeof body.line === 'string',
+    apply: (text, body, today) => handledLine(text, body.line, today),
+    message: (body) => `web: trash inbox ${body.project}`,
+  },
   '/api/brain/confirm': {
     path: () => REGISTER_PATH,
     valid: flagged,
     apply: (text, body, today) => confirmFlag(text, body.id, body.flag, today),
     message: (body) => `web: confirm ${flagWord(body)}${body.id}`,
+  },
+  // "Confirm all N" and "Close all N" on the Inbox tab (Brain D-112 A): one commit per batch,
+  // refused whole with the ids that changed since the page loaded.
+  '/api/brain/confirm-all': {
+    path: () => REGISTER_PATH,
+    valid: (body) => Array.isArray(body.ids) && body.ids.length > 0 && body.ids.length <= BATCH_MAX
+      && body.ids.every((id) => typeof id === 'string' && REGISTER_ID.test(id)) && new Set(body.ids).size === body.ids.length
+      && FLAGS.includes(body.flag),
+    apply: (text, body, today) => settleAll(text, body.ids, body.flag, today),
+    message: (body) => `web: ${body.flag === 'close-proposed' ? 'close' : 'confirm'} all ${body.ids.length}`,
   },
   '/api/brain/reject': {
     path: () => REGISTER_PATH,
@@ -320,7 +355,7 @@ async function write(request, url, env) {
   try {
     next = action.apply(current ? base64ToUtf8(current.content) : '', body, perthDate(), perthClock());
   } catch (err) {
-    if (err instanceof QueueError) return json({ error: err.message }, WRITE_STATUS[err.code] || 422);
+    if (err instanceof QueueError) return json({ error: err.message, ...(err.ids ? { ids: err.ids } : {}) }, WRITE_STATUS[err.code] || 422);
     if (err instanceof TypeError) return json({ error: 'not editable' }, 422); // not UTF-8
     throw err;
   }

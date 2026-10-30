@@ -4,7 +4,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 
 const { QueueError } = await import('../worker-brain/src/queue.js');
-const { confirmFlag, rejectFlag, REGISTER_ID } = await import('../worker-brain/src/register.js');
+const { confirmFlag, rejectFlag, settleAll, REGISTER_ID } = await import('../worker-brain/src/register.js');
 
 const TODAY = '2030-01-15';
 const REGISTER = '---\ntype: register\nupdated: 2030-01-01\n---\n\n# Open items\n\nIntro.\n\n' +
@@ -74,8 +74,11 @@ test('reject a proposed close: flag and Evidence go, Correction leads and keeps 
   assert.equal(outside(out, 'Probably done'), outside(REGISTER, 'Probably done'));
 });
 
-test('an item with both flags: confirm it before its close; rejecting it clears both', () => {
-  assert.throws(() => confirmFlag(REGISTER, 'P-?-01014.04', 'close-proposed', TODAY), (e) => e instanceof QueueError && e.code === 'order');
+test('an item with both flags closes in one tap, confirmed on the way (Brain D-112 A); rejecting it clears both', () => {
+  const closed = item(confirmFlag(REGISTER, 'P-?-01014.04', 'close-proposed', TODAY), 'New and done');
+  assert.match(closed, /^`id: \?-01014\.04` `home: project:demo` `kind: action` `state: done` `owner: unknown` `due: unknown` `review: unknown`\n/m);
+  assert.doesNotMatch(closed, /unconfirmed|close-proposed/);
+  assert.match(closed, /Evidence: a receipt\n$/);
   const rejected = item(rejectFlag(REGISTER, 'P-?-01014.04', 'unconfirmed', TODAY), 'New and done');
   assert.doesNotMatch(rejected, /unconfirmed|close-proposed|Evidence/);
   assert.match(rejected, /`state: rejected`[^\n]*\n\nSource: synthetic, 2030-01-14\nNext: x\.\nCorrection: 2030-01-15: rejected in the viewer \(D-42\)\.\n$/);
@@ -97,6 +100,26 @@ test('an item without the flag, an unknown id or a duplicate is refused', () => 
   const landed = REGISTER + '\n### Landed\n`id: DEV-01014.02` `state: open`\n';
   code(() => confirmFlag(landed, 'P-DEV-01014.02', 'unconfirmed', TODAY), 'duplicate-id');
   code(() => confirmFlag('# no frontmatter\n', 'P-DEV-01014.02', 'unconfirmed', TODAY), 'malformed');
+});
+
+test('Confirm all and Close all apply one edit, all or nothing, naming what changed (Brain D-112 A)', () => {
+  const both = REGISTER + '\n### Second new\n`id: P-DEV-01014.05` `home: project:demo` `kind: action` `state: open` `owner: unknown` `due: unknown` `review: unknown` `unconfirmed: 2030-01-14`\n\nSource: s\nNext: n.\n';
+  const out = settleAll(both, ['P-DEV-01014.02', 'P-DEV-01014.05'], 'unconfirmed', TODAY);
+  assert.match(out, /`id: DEV-01014\.02` `alias: OLD-02`/);
+  assert.match(out, /`id: DEV-01014\.05` `home/);
+  assert.doesNotMatch(out, /unconfirmed: 2030-01-14`\n\nSource: s\nNext: n\./);
+  assert.match(out, /^updated: 2030-01-15$/m);
+  const closes = settleAll(REGISTER, ['PA-HOME-01012.03', 'P-?-01014.04'], 'close-proposed', TODAY);
+  assert.match(item(closes, 'Probably done'), /`state: done`/);
+  assert.match(item(closes, 'New and done'), /^`id: \?-01014\.04` .*`state: done`/m);
+  // One id settled elsewhere refuses the whole batch and names it; nothing is half applied.
+  const err = assert.throws(() => settleAll(REGISTER, ['P-DEV-01014.02', 'DEV-01010.01', 'DEV-09999.99'], 'unconfirmed', TODAY), (e) => e instanceof QueueError && e.code === 'not-flagged');
+  let caught;
+  try { settleAll(REGISTER, ['P-DEV-01014.02', 'DEV-01010.01', 'DEV-09999.99'], 'unconfirmed', TODAY); } catch (e) { caught = e; }
+  assert.deepEqual(caught.ids, ['DEV-01010.01', 'DEV-09999.99']);
+  assert.match(caught.message, /2 of 3 changed/);
+  assert.throws(() => settleAll(REGISTER, [], 'unconfirmed', TODAY), (e) => e.code === 'invalid-text');
+  void err;
 });
 
 test('a settled item is refused, and a second tap finds nothing to do', () => {

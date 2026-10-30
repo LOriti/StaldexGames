@@ -34,7 +34,16 @@ export function cleanDetails(raw) {
     minutes: raw.minutes === '' || raw.minutes == null ? null : Number(raw.minutes),
     due: String(raw.due || ''),
     owner: String(raw.owner || 'leon').trim().toLowerCase(),
+    // From the Inbox tab's question walk (Brain DEV-61026.33): several actions make a
+    // project with an Outcome (D-108 A); a hand-over to Claude or a person (D-105 C).
+    kind: String(raw.kind || 'action'),
+    outcome: cleanText(raw.outcome, 300, 'the outcome'),
+    ai: String(raw.ai || ''),
+    handover: cleanText(raw.handover, 200, 'the handover'),
   };
+  if (!['action', 'project'].includes(d.kind)) throw new QueueError('invalid-text', 'kind must be action or project');
+  if (d.kind === 'project' && !d.outcome) throw new QueueError('invalid-text', 'a project needs an outcome');
+  if (d.ai && !['prepare', 'complete'].includes(d.ai)) throw new QueueError('invalid-text', 'ai must be prepare or complete');
   if (!FAMILY.test(d.family)) throw new QueueError('invalid-text', 'family must be one from context/families.md, or ?');
   if (d.priority && !PRIORITY.test(d.priority)) throw new QueueError('invalid-text', 'priority must be P0 to P3');
   if (d.minutes !== null && (!Number.isInteger(d.minutes) || d.minutes < 30 || d.minutes > 9990 || d.minutes % 30)) {
@@ -48,6 +57,8 @@ export function cleanDetails(raw) {
 // The code spans an Inbox line carries once categorised; the groom reads them.
 export function lineAttrs(d, today) {
   return [`categorised: ${today}`, `family: ${d.family}`, d.priority && `priority: ${d.priority}`,
-    d.minutes && `minutes: ${d.minutes}`, d.due && `due: ${d.due}`, `owner: ${d.owner}`, `next: ${d.next}`]
+    d.minutes && `minutes: ${d.minutes}`, d.due && `due: ${d.due}`, `owner: ${d.owner}`,
+    d.kind === 'project' && 'kind: project', d.outcome && `outcome: ${d.outcome}`, d.ai && `ai: ${d.ai}`,
+    d.handover && `handover: ${d.handover}`, `next: ${d.next}`]
     .filter(Boolean).map((a) => `\`${a}\``).join(' ');
 }

@@ -7,7 +7,8 @@
 
 export const VIEW_PATH = 'views/command-centre.json';
 export const LENSES = ['work', 'ventures', 'personal', 'brain', 'all'];
-export const TABS = ['focus', 'priority', 'clarify', 'allocation'];
+// The Inbox tab holds everything not yet clarified (Brain DEV-61026.33); Clarify folded into it.
+export const TABS = ['focus', 'inbox', 'priority', 'allocation'];
 const LENS_NAMES = { work: 'Work', ventures: 'Ventures', personal: 'Personal', brain: 'Brain', all: 'All' };
 const CONTEXT_NAMES = {
   emails: 'Emails', calls: 'Calls', computer: 'Computer', errands: 'Errands',
@@ -190,13 +191,52 @@ function chips(e) {
   return out.join(' ');
 }
 
+// What a routine flagged can be settled from the row itself (Brain D-112 A): Confirm is one
+// tap, Reject and Keep open ask first; a new item with a close proposed closes in one tap.
+// `asking` is 'reject' or 'keep' while the question is open.
+export function rowActs(e, asking = null) {
+  const flags = e.flags || [];
+  const fresh = flags.includes('unconfirmed');
+  const closing = flags.includes('close-proposed');
+  if (!fresh && !closing) return '';
+  const ref = esc(e.ref);
+  let inner;
+  if (asking === 'reject') {
+    inner = `<span class="cc-ask">Reject ${ref}? It leaves your lists; only a session brings it back.</span>` +
+      `<button type="button" class="mini-btn primary" data-cc-act="reject" data-ref="${ref}">Yes, reject</button><button type="button" class="mini-btn" data-cc-act="cancel" data-ref="${ref}">Cancel</button>`;
+  } else if (asking === 'keep') {
+    inner = `<span class="cc-ask">Keep ${ref} open? The routine's evidence is dropped and noted.</span>` +
+      `<button type="button" class="mini-btn primary" data-cc-act="keep" data-ref="${ref}">Yes, keep it open</button><button type="button" class="mini-btn" data-cc-act="cancel" data-ref="${ref}">Cancel</button>`;
+  } else if (closing) {
+    inner = `<button type="button" class="mini-btn primary" data-cc-act="close" data-ref="${ref}">Yes, it’s done</button>` +
+      (fresh ? `<button type="button" class="mini-btn" data-cc-act="confirm" data-ref="${ref}">Confirm, keep open</button>` : '') +
+      `<button type="button" class="mini-btn" data-cc-act="keep-ask" data-ref="${ref}">Keep open…</button>` +
+      (fresh ? `<button type="button" class="mini-btn" data-cc-act="reject-ask" data-ref="${ref}">Reject…</button>` : '');
+  } else {
+    inner = `<button type="button" class="mini-btn primary" data-cc-act="confirm" data-ref="${ref}">Confirm</button>` +
+      `<button type="button" class="mini-btn" data-cc-act="reject-ask" data-ref="${ref}">Reject…</button>`;
+  }
+  return `<div class="cc-acts" data-cc-acts="${ref}">${inner}</div>`;
+}
+
+// The Next step and, for a proposed close, the routine's Evidence, on the row (D-112 A).
+function flagDetail(e) {
+  const flags = e.flags || [];
+  if (!flags.length) return '';
+  let html = e.next ? `<span class="cc-next"><b>Next</b> ${esc(e.next)}</span>` : '';
+  if (flags.includes('close-proposed')) html += `<span class="cc-ev"><b>Evidence</b> ${esc(e.evidence || 'on the item in the register')}</span>`;
+  return html;
+}
+
 function row(e, open = true, clock = null) {
   const stripe = e.section === 'hot' ? 'hot' : e.claude === 'back' ? 'ok' : '';
   const est = estimateText(e);
   const ticking = clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : '';
   const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(e.ref)} · ${esc(e.home)}${e.area ? ` · area ${esc(e.area)}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
-    `<span class="cc-t">${esc(e.title)}</span>${chips(e) || ticking ? `<span class="cc-why">${ticking}${chips(e)}</span>` : ''}</span>`;
-  return open ? `<a class="cc-row" href="${entryHref(e)}" data-cc-ref="${esc(e.ref)}">${body}</a>` : `<div class="cc-row">${body}</div>`;
+    `<span class="cc-t">${esc(e.title)}</span>${chips(e) || ticking ? `<span class="cc-why">${ticking}${chips(e)}</span>` : ''}${flagDetail(e)}</span>`;
+  const link = open ? `<a class="cc-row" href="${entryHref(e)}" data-cc-ref="${esc(e.ref)}">${body}</a>` : `<div class="cc-row">${body}</div>`;
+  const acts = open ? rowActs(e) : '';
+  return acts ? `<div class="cc-item">${link}${acts}</div>` : link;
 }
 
 // ---- inbox (Brain DEV-61016.12) ---------------------------------------------------
@@ -218,16 +258,23 @@ function defaultProject(view, lens, projects) {
 // `shown` holds refs already on the screen (focal, Also hot, the Claude lane): a flagged
 // item is not repeated here. The heading counts lines and captures only; register flags
 // get their own line (Brain D-115 A).
-export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inbox', shownRefs = null } = {}) {
+// The Inbox panel on Focus holds raw lines and captures only (Brain D-115 C): what the
+// routines flagged is settled on the Inbox tab, which the flags line opens. `addFirst`
+// puts the add box above the rows (the Inbox tab, flow review F9).
+export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inbox', addFirst = false, flagsLine = true } = {}) {
   const inLens = (view.inbox || []).filter((r) => lens === 'all' || r.lens === lens);
-  const captures = inLens.filter((r) => r.kind === 'line' || r.kind === 'capture').length;
+  const rows = inLens.filter((r) => r.kind === 'line' || r.kind === 'capture');
+  const captures = rows.length;
   const flagged = { unconfirmed: 0, close: 0 };
   for (const r of inLens) if (r.kind in flagged) flagged[r.kind] += 1;
-  const rows = inLens.filter((r) => !(shownRefs && r.ref && shownRefs.has(r.ref)));
   const shown = all ? rows : rows.slice(0, INBOX_SHOWN);
-  const flagLine = flagged.unconfirmed || flagged.close
-    ? `<a class="cc-flags" href="#clarify">${[flagged.unconfirmed ? `${flagged.unconfirmed} to confirm` : '', flagged.close ? `${flagged.close} close${flagged.close === 1 ? '' : 's'} proposed` : ''].filter(Boolean).join(', ')} →</a>` : '';
-  let html = `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${captures}</em></h2>${flagLine}<div class="cc-box">`;
+  const flagLine = flagsLine && (flagged.unconfirmed || flagged.close)
+    ? `<a class="cc-flags" href="#inbox">${[flagged.unconfirmed ? `${flagged.unconfirmed} to confirm` : '', flagged.close ? `${flagged.close} close${flagged.close === 1 ? '' : 's'} proposed` : ''].filter(Boolean).join(', ')} →</a>` : '';
+  const add = projects.length ? '<form class="cc-inbox-add"><label class="visually-hidden" for="cc-inbox-project">Project</label>' +
+    `<select id="cc-inbox-project" name="project">${projects.map((p) => `<option value="${esc(p)}"${p === defaultProject(view, lens, projects) ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select>` +
+    '<input type="text" name="text" maxlength="500" required autocomplete="off" placeholder="Capture something…" aria-label="New inbox line">' +
+    '<button type="submit" class="mini-btn primary">Add</button><span class="write-msg" hidden></span></form>' : '';
+  let html = `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${captures}</em></h2>${flagLine}<div class="cc-box">${addFirst ? add : ''}`;
   // A flagged register item opens its card (Confirm, Reject, close); a raw line or capture
   // opens its file until its own card lands (Brain DEV-61026.27, D-100).
   const known = new Set(view.entries.map((e) => e.ref));
@@ -235,19 +282,14 @@ export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inb
   // card, which categorises and confirms it.
   const open = (r) => (r.kind === 'line' ? ` data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(projectOf(r) || '')}"`
     : r.ref && known.has(r.ref) ? ` data-cc-${r.kind === 'unconfirmed' ? 'sort' : 'ref'}="${esc(r.ref)}"` : '');
-  const flagOf = (r) => (r.kind === 'unconfirmed' ? ` <span class="cc-chip flag">${FLAG_CHIPS.unconfirmed}</span>` : r.kind === 'close' ? ` <span class="cc-chip flag">${FLAG_CHIPS['close-proposed']}</span>` : '');
-  const sorted = (r) => (r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · becomes a card at the next groom</span>' : flagOf(r));
+  const sorted = (r) => (r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · becomes a card at the next groom</span>'
+    : r.details && r.details.reference ? ' <span class="cc-chip ok">reference · the groom files it</span>' : '');
   html += shown.map((r) => `<a class="cc-row cc-in" href="${inboxHref(r)}"${open(r)}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
     `<span class="cc-m"><span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(r.home)}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span>` +
     `<span class="cc-t">${esc(r.text)}${sorted(r)}</span></span></a>`).join('');
-  if (!rows.length) html += `<p class="cc-empty">${inLens.length ? 'Everything here is already on this screen.' : `Inbox empty${lens === 'all' ? '' : ' in this lens'}. Nothing waits to be clarified.`}</p>`;
+  if (!rows.length) html += `<p class="cc-empty">Inbox empty${lens === 'all' ? '' : ' in this lens'}. Nothing waits to be clarified.</p>`;
   if (rows.length > shown.length) html += `<button type="button" class="text-btn cc-more" data-cc-inbox-all="1">Show all ${rows.length}</button>`;
-  if (projects.length) {
-    html += '<form class="cc-inbox-add"><label class="visually-hidden" for="cc-inbox-project">Project</label>' +
-      `<select id="cc-inbox-project" name="project">${projects.map((p) => `<option value="${esc(p)}"${p === defaultProject(view, lens, projects) ? ' selected' : ''}>${esc(p)}</option>`).join('')}</select>` +
-      '<input type="text" name="text" maxlength="500" required autocomplete="off" placeholder="Capture something…" aria-label="New inbox line">' +
-      '<button type="submit" class="mini-btn primary">Add</button><span class="write-msg" hidden></span></form>';
-  }
+  if (!addFirst) html += add;
   return `${html}</div></section>`;
 }
 
@@ -285,10 +327,11 @@ export function projectOf(entry) {
 export function closeKind(entry) {
   if (/^D-\d+$/.test(entry.ref)) return 'decision';
   if (entry.source === 'card') return projectOf(entry) ? 'card' : 'none';
-  if (/^P-/.test(entry.ref) || (entry.flags || []).includes('unconfirmed')) return 'unconfirmed';
   if (entry.kind === 'decision') return 'decide';
-  return 'item';
+  return 'item'; // a `P-` item closes in one go, confirmed on the way (Brain D-112 A)
 }
+
+export const isUnconfirmed = (entry) => /^P-/.test(entry.ref) || (entry.flags || []).includes('unconfirmed');
 
 // `focal` is { ref, mine } for the item in the focal slot: `mine` when it is Leon's pick.
 export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', message = '', focal = null } = {}) {
@@ -315,7 +358,7 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
       '<button type="button" class="mini-btn primary" data-tk="start">Start clock</button><button type="button" class="mini-btn" data-tk="time-ask">Add time…</button></div>';
   }
   const kind = closeKind(entry);
-  const proposed = (entry.flags || []).includes('close-proposed') && kind !== 'unconfirmed';
+  const proposed = (entry.flags || []).includes('close-proposed');
   // A proposed close comes first; on a decision, Decided is the alternative (Brain D-117 B).
   const closeBtn = kind === 'card' || kind === 'item' || kind === 'decide'
     ? `<button type="button" class="mini-btn${proposed ? '' : ' primary'}" data-tk="done-ask">${kind === 'decide' ? (proposed ? 'Decided otherwise…' : 'Decided…') : 'Done…'}</button>` : '';
@@ -335,9 +378,9 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
   if (isFocal) html += `<p class="cc-note cc-focal-note">This is the one thing today${focal.mine ? ', your pick' : ''}.</p>`;
   html += `<div class="tk-acts">${closeBtn}${progressBtn}${focalBtn}${sortBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
   if (kind === 'decision') html += '<p class="cc-note">A decision is settled by replying to it in a session; it is not closed here.</p>';
-  if (kind === 'unconfirmed') {
-    html += '<div class="tk-panel"><p>A routine found this new item. Confirm it to keep it (then it can be closed here), or reject it.</p>' +
-      '<span class="tk-acts"><button type="button" class="mini-btn primary" data-tk="confirm">Confirm</button>' +
+  if (isUnconfirmed(entry)) {
+    html += `<div class="tk-panel"><p>A routine found this new item. Confirm it to keep it${proposed ? '' : ', close it with Done'}, or reject it.</p>` +
+      `<span class="tk-acts"><button type="button" class="mini-btn${proposed ? '' : ' primary'}" data-tk="confirm">Confirm</button>` +
       '<button type="button" class="mini-btn" data-tk="reject-ask">Reject…</button></span></div>';
   }
   html += panel;
@@ -420,10 +463,9 @@ function focusTab(view, lens, byRef, opts = {}) {
     (hot.map((e) => row(e, true, clock)).join('') || '<p class="cc-empty">Nothing else is hot.</p>') + '</div></section>' +
     `<section><h2 class="cc-gh">Claude can help <em>${slot.claude_total}</em></h2><div class="cc-box">` +
     (lane.map((e) => row(e, true, clock)).join('') || '<p class="cc-empty">Nothing is marked for Claude yet.</p>') + '</div></section></div>';
-  const shownRefs = new Set([focal, ...hot, ...lane].filter(Boolean).map((e) => e.ref));
-  html += inboxHtml(view, lens, { projects: opts.projects || [], all: opts.inboxAll, shownRefs });
+  html += inboxHtml(view, lens, { projects: opts.projects || [], all: opts.inboxAll });
   const waiting = clarifyCount(view, lens);
-  if (waiting) html += `<p class="cc-quiet"><a href="#clarify">${waiting} to clarify: confirm, estimate, date or hand over →</a></p>`;
+  if (waiting) html += `<p class="cc-quiet"><a href="#inbox">${waiting} to clarify: confirm, estimate, date or hand over →</a></p>`;
   return html;
 }
 
@@ -457,16 +499,26 @@ function priorityTab(view, lens, filter, clock = null) {
 
 // ---- clarify: what is not prioritised yet (Leon's morning sort) ------------------------
 
+// What the routines flagged comes from the entries' own flags, which this page keeps
+// current after each write, with the view's quiet lists and inbox flag rows as sources too.
 function clarifyGroups(view, lens) {
   const q = view.lenses[lens].quiet;
   const inLens = lensEntries(view, lens);
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
   const pick = (refs) => refs.map((r) => byRef.get(r)).filter(Boolean);
+  const flagged = (flag, kind, refs) => {
+    const out = inLens.filter((e) => (e.flags || []).includes(flag));
+    const more = [...refs, ...(view.inbox || []).filter((r) => r.kind === kind && (lens === 'all' || r.lens === lens)).map((r) => r.ref)];
+    for (const r of more) { const e = byRef.get(r); if (e && !out.includes(e)) out.push(e); }
+    return out;
+  };
+  const fresh = flagged('unconfirmed', 'unconfirmed', q.unconfirmed);
+  const closing = flagged('close-proposed', 'close', q.close_proposed);
+  const settled = new Set([...fresh, ...closing].map((e) => e.ref));
   return [
-    ['New items to confirm', pick(q.unconfirmed)],
-    ['Proposed closes', pick(q.close_proposed)],
-    ['No estimate yet', inLens.filter((e) => ['hot', 'next'].includes(e.section) && !(Number.parseInt(e.minutes, 10) > 0)
-      && !q.unconfirmed.includes(e.ref) && !q.close_proposed.includes(e.ref))],
+    ['New items to confirm', fresh],
+    ['Proposed closes', closing],
+    ['No estimate yet', inLens.filter((e) => ['hot', 'next'].includes(e.section) && !(Number.parseInt(e.minutes, 10) > 0) && !settled.has(e.ref))],
     ['Parked without a review date', pick(q.needs_review_date)],
     ['No owner: yours, or hand it over?', pick(q.no_owner)],
   ];
@@ -477,14 +529,20 @@ export function clarifyCount(view, lens) {
   return inbox + clarifyGroups(view, lens).reduce((n, [, rows]) => n + rows.length, 0);
 }
 
-function clarifyTab(view, lens, opts) {
-  let html = '<p class="cc-note">Not prioritised yet. Work down this list each morning: confirm or reject what the routines found, ' +
-    'settle proposed closes, and give each task an estimate, a date and an owner. Tap a row to open it.</p>';
-  html += inboxHtml({ ...view, inbox: (view.inbox || []).filter((r) => r.kind === 'line' || r.kind === 'capture') }, lens,
-    { projects: opts.projects || [], all: true, title: 'Inbox to sort' });
-  for (const [title, rows] of clarifyGroups(view, lens)) {
+// The Inbox tab (Brain DEV-61026.33): the add box first, then raw lines and captures to
+// clarify (a tap walks the GTD questions), what the routines found with one-tap Confirm,
+// Reject, Confirm all and Close all (D-112 A), then the rest of the old Clarify groups.
+function inboxTab(view, lens, opts) {
+  let html = '<p class="cc-note">Everything not yet clarified. Tap a line to decide what it is; settle what the routines found from the row.</p>';
+  html += inboxHtml(view, lens, { projects: opts.projects || [], all: true, title: 'To clarify', addFirst: true, flagsLine: false });
+  const groups = clarifyGroups(view, lens);
+  const batch = { 'New items to confirm': ['unconfirmed', 'Confirm all'], 'Proposed closes': ['close-proposed', 'Close all'] };
+  for (const [title, rows] of groups) {
     if (!rows.length) continue;
-    html += `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${rows.length}</em></h2><div class="cc-box">` +
+    const b = batch[title];
+    const all = b && rows.length > 1
+      ? `<button type="button" class="mini-btn primary cc-batch" data-cc-batch="${b[0]}" data-ids="${esc(rows.map((e) => e.ref).join(','))}">${b[1]} ${rows.length}</button>` : '';
+    html += `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${rows.length}</em></h2>${all ? `<p class="cc-batch-row">${all}</p>` : ''}<div class="cc-box">` +
       rows.map((e) => row(e, true, opts.clock)).join('') + '</div></section>';
   }
   if (!clarifyCount(view, lens)) html += `<p class="cc-empty">Nothing to clarify${lens === 'all' ? '' : ' in this lens'}.</p>`;
@@ -542,10 +600,11 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', 
   if (!view.lenses[lens]) lens = 'all';
   const seg = shown.map((l) => `<button type="button" data-cc-lens="${l}" aria-pressed="${l === lens}">${LENS_NAMES[l]}</button>`).join('');
   const count = clarifyCount(view, lens);
-  const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${t[0].toUpperCase()}${t.slice(1)}${t === 'clarify' && count ? ` <span class="cc-n">${count}</span>` : ''}</a>`).join('');
+  if (tab === 'clarify') tab = 'inbox'; // the old tab's links still land
+  const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${t[0].toUpperCase()}${t.slice(1)}${t === 'inbox' && count ? ` <span class="cc-n">${count}</span>` : ''}</a>`).join('');
   const body = tab === 'priority' ? priorityTab(view, lens, filter, clock)
     : tab === 'allocation' ? allocationTab(view, lens, time)
-      : tab === 'clarify' ? clarifyTab(view, lens, { clock, projects })
+      : tab === 'inbox' ? inboxTab(view, lens, { clock, projects })
         : focusTab(view, lens, byRef, { clock, projects, inboxAll, focal });
   // A view made on an earlier Perth day has yesterday's "overdue" and "due soon".
   const stale = today && view.date && view.date < today
@@ -639,4 +698,113 @@ export function categoriseHtml(target, { families = [], message = '', back = fal
     `<button type="button" class="mini-btn" data-tk="${back ? 'back' : 'hide'}">Cancel</button></span></form>`;
   if (message) html += `<p class="write-msg${/^Not /.test(message) ? ' bad' : ''}">${esc(message)}</p>`;
   return html;
+}
+
+// ---- the Inbox tab's question walk (Brain DEV-61026.33) --------------------------------
+// A raw Inbox line leaves actionable, parked or gone: "Is it actionable?" then, for Yes,
+// the next physical action (D-106 C), one action or several (D-108 A), under two minutes,
+// delegate (D-105 C), and priority, estimate and date. `walk` is
+// { row, step, a: answers, startedMs }; every write is one guarded web commit.
+
+export const WALK_STEPS = ['actionable', 'action', 'two', 'doing', 'delegate', 'details'];
+export const TWO_MINUTES_MS = 2 * 60 * 1000;
+const NOT_A_VERB = new Set(['the', 'a', 'an', 'my', 'our', 'this', 'that', 'these', 'those', 'it', 'he', 'she', 'they', 're', 'fyi', 'about',
+  'for', 'with', 'to', 'on', 'in', 'of', 'at', 'from', 'meeting', 'idea', 'note', 'reminder', 'question', 'issue', 'problem', 'maybe']);
+const VAGUE = ['think about', 'look into', 'deal with', 'sort out', 'handle', 'work on', 'consider', 'figure out', 'plan for', 'follow up', 'chase up', 'organise', 'organize', 'get onto', 'do something about'];
+
+// Does the text read as a physical action? Returns { ok, note }: `ok` false when it does not
+// start with a verb, and a note when it leans on a vague phrase (D-106 C).
+export function actionCheck(text) {
+  const words = String(text || '').trim().toLowerCase().replace(/[^a-z0-9' ]+/g, ' ').split(/\s+/).filter(Boolean);
+  if (words.length < 2) return { ok: false, note: 'Say what you will physically do, starting with a verb: ring, draft, book, send, ask…' };
+  if (NOT_A_VERB.has(words[0])) return { ok: false, note: 'Start with the verb: what is the very next physical action?' };
+  const vague = VAGUE.find((v) => ` ${words.join(' ')} `.includes(` ${v} `));
+  return { ok: true, note: vague ? `“${vague}” is not an action you can finish. What is the first physical step?` : '' };
+}
+
+const ESTIMATE_OPTIONS = [30, 60, 90, 120, 180, 240, 360, 480];
+const opt = (value, label, chosen) => `<option value="${esc(value)}"${String(value) === String(chosen) ? ' selected' : ''}>${esc(label)}</option>`;
+const choice = (act, label, note, primary = false) => `<button type="button" class="tk-choice${primary ? ' primary' : ''}" data-wk="${act}"><b>${label}</b><span>${note}</span></button>`;
+
+export function walkHtml(walk, { families = [], message = '', now = Date.now() } = {}) {
+  const r = walk.row; const a = walk.a || {};
+  const head = (sub, back) => `<div class="tk-head">${back ? `<button type="button" class="mini-btn tk-back" data-wk="back">‹ Back</button>` : ''}` +
+    `<span class="cc-id">Inbox · ${esc(r.home)}</span><button type="button" class="icon-btn tk-x" data-wk="hide" aria-label="Close">✕</button></div>` +
+    `<p class="rw-k">${esc(sub)}</p><h2 class="tk-ttl" id="tk-title">${esc(r.text)}</h2>`;
+  let html = '';
+  if (walk.step === 'actionable') {
+    html = head('Is it actionable?', false) + '<div class="tk-choices">' +
+      choice('yes', 'Yes', 'It needs doing. Define the next physical action.', true) +
+      choice('someday', 'Someday / Maybe', 'Not now. It parks in this project’s Someday list.') +
+      choice('reference', 'Reference', 'Worth keeping, nothing to do. The groom files it in a project document.') +
+      choice('trash-ask', 'Trash', 'Gone. The line is removed; git keeps it.') + '</div>';
+    if (walk.asking === 'trash') {
+      html += `<div class="tk-panel"><p>Remove this line from the inbox?</p><button type="button" class="mini-btn primary" data-wk="trash">Yes, trash it</button>` +
+        '<button type="button" class="mini-btn" data-wk="cancel">Cancel</button></div>';
+    }
+  } else if (walk.step === 'action') {
+    const check = a.next ? actionCheck(a.next) : null;
+    html = head('1 · The next physical action', true) +
+      '<form class="tk-panel tk-sort" data-wk-form="action"><label for="wk-next">What exactly will you do first?</label>' +
+      `<input id="wk-next" name="next" maxlength="300" required autocomplete="off" value="${esc(a.next || '')}" placeholder="Ring Sam about the quote">` +
+      (check && !check.ok ? `<p class="write-msg bad">${esc(check.note)}</p>` : check && check.note ? `<p class="write-msg">${esc(check.note)}</p>` : '') +
+      '<p class="cc-note">One action or several? (D-108 A)</p><div class="tk-grid tk-radio">' +
+      `<label><input type="radio" name="kind" value="action"${a.kind !== 'project' ? ' checked' : ''}> One action</label>` +
+      `<label><input type="radio" name="kind" value="project"${a.kind === 'project' ? ' checked' : ''}> Several: it is a project</label></div>` +
+      `<label for="wk-outcome" class="wk-outcome">Outcome, when it is done</label><input id="wk-outcome" name="outcome" maxlength="300" autocomplete="off" value="${esc(a.outcome || '')}" placeholder="The cover is renewed and filed">` +
+      '<span class="tk-acts"><button type="submit" class="mini-btn primary">Next ›</button></span></form>';
+  } else if (walk.step === 'two') {
+    html = head('2 · Can it be done in under two minutes?', true) + `<p class="cc-note">${esc(a.next || '')}</p><div class="tk-choices">` +
+      choice('two-yes', 'Yes, do it now', 'A two-minute clock starts. Finishing records the time and closes the line.', true) +
+      choice('two-no', 'No', 'On to delegating and scheduling.') + '</div>';
+  } else if (walk.step === 'doing') {
+    const left = TWO_MINUTES_MS - (now - (walk.startedMs || now));
+    html = head('Doing it now', false) + `<p class="cc-note">${esc(a.next || '')}</p>` +
+      `<div class="tk-clock${left < 0 ? ' over' : ''}"><span class="tk-time" data-wk-count="1">${esc(fmtCountdown(left))}</span><span class="tk-sub">two minutes</span></div>` +
+      '<form class="tk-panel" data-wk-form="done"><label for="wk-min">Time it took, in minutes (quarter hours; the clock fills it in)</label>' +
+      `<input id="wk-min" name="minutes" type="number" min="15" max="720" step="15" required inputmode="numeric" value="${Math.max(15, Math.ceil((now - (walk.startedMs || now)) / 60000 / 15) * 15)}">` +
+      '<span class="tk-acts"><button type="submit" class="mini-btn primary">Done, record it</button>' +
+      '<button type="button" class="mini-btn" data-wk="carry-on">Not finished, carry on</button></span></form>';
+  } else if (walk.step === 'delegate') {
+    html = head('3 · Delegate it?', true) + `<p class="cc-note">${esc(a.next || '')}</p><div class="tk-choices">` +
+      choice('deleg-none', 'No, it is mine', 'On to priority, estimate and date.', true) +
+      choice('deleg-person', 'A person', 'They own it; you wait, with a follow-up date.') +
+      choice('deleg-claude', 'Claude', 'It joins the Claude lane: prepared for your review.') + '</div>';
+    if (walk.asking === 'person') {
+      html += '<form class="tk-panel tk-sort" data-wk-form="person"><label for="wk-owner">To whom?</label>' +
+        `<input id="wk-owner" name="owner" maxlength="40" required autocomplete="off" value="${esc(a.owner && a.owner !== 'leon' ? a.owner : '')}" placeholder="sam">` +
+        `<label for="wk-follow">Follow up on</label><input id="wk-follow" name="due" type="date" value="${esc(a.due || '')}">` +
+        `<label><input type="checkbox" name="handover"${a.handover ? ' checked' : ''}> Add the handover itself as my next action (D-105 C)</label>` +
+        '<span class="tk-acts"><button type="submit" class="mini-btn primary">Next ›</button></span></form>';
+    }
+  } else {
+    const fams = families.length ? families : [{ code: a.family || r.family || '?', covers: '' }];
+    html = head('4 · Priority, estimate and date', true) + `<p class="cc-note">${esc(a.next || '')}${a.owner && a.owner !== 'leon' ? ` · ${esc(a.owner)} owns it` : ''}${a.ai ? ' · Claude prepares it' : ''}</p>` +
+      '<form class="tk-panel tk-sort" data-wk-form="details"><div class="tk-grid">' +
+      `<span><label for="wk-family">Family</label><select id="wk-family" name="family">${fams.map((f) => opt(f.code, f.covers ? `${f.code} · ${f.covers.slice(0, 48)}` : f.code, a.family || r.family || '?')).join('')}</select></span>` +
+      `<span><label for="wk-priority">Priority</label><select id="wk-priority" name="priority">${['P0', 'P1', 'P2', 'P3'].map((p) => opt(p, p, a.priority || 'P2')).join('')}</select></span>` +
+      `<span><label for="wk-minutes">Estimate</label><select id="wk-minutes" name="minutes">${opt('', 'Not sure yet', a.minutes || '')}${ESTIMATE_OPTIONS.map((m) => opt(m, fmtMinutes(m), a.minutes || '')).join('')}</select></span>` +
+      `<span><label for="wk-due">Deadline, or leave it to float</label><input id="wk-due" name="due" type="date" value="${esc(a.due || '')}"></span></div>` +
+      '<span class="tk-acts"><button type="submit" class="mini-btn primary">Save</button></span>' +
+      '<p class="cc-note">Saved lines become cards at the next scheduled groom (every 2 hours, 07:00 to 21:00).</p></form>';
+  }
+  if (message) html += `<p class="write-msg${/^Not /.test(message) ? ' bad' : ''}">${esc(message)}</p>`;
+  return html;
+}
+
+export function fmtCountdown(ms) {
+  const over = ms < 0;
+  const secs = Math.floor(Math.abs(ms) / 1000);
+  return `${over ? '+' : ''}${Math.floor(secs / 60)}:${String(secs % 60).padStart(2, '0')}${over ? ' over' : ''}`;
+}
+
+// The details a finished walk saves on the line (categorise.js reads them).
+export function walkDetails(walk, title) {
+  const a = walk.a || {};
+  return {
+    title, next: a.next || '', family: a.family || walk.row.family || '?', priority: a.priority || 'P2',
+    minutes: a.minutes ? Number(a.minutes) : null, due: a.due || '', owner: a.owner || 'leon',
+    kind: a.kind === 'project' ? 'project' : 'action', outcome: a.kind === 'project' ? a.outcome || '' : '',
+    ai: a.ai || '', handover: a.handover && a.owner && a.owner !== 'leon' ? `Hand ${a.next || 'it'} to ${a.owner}` : '',
+  };
 }
