@@ -751,7 +751,7 @@ export function walkHtml(walk, { families = [], message = '', now = Date.now() }
       '<p class="cc-note">One action or several? (D-108 A)</p><div class="tk-grid tk-radio">' +
       `<label><input type="radio" name="kind" value="action"${a.kind !== 'project' ? ' checked' : ''}> One action</label>` +
       `<label><input type="radio" name="kind" value="project"${a.kind === 'project' ? ' checked' : ''}> Several: it is a project</label></div>` +
-      `<label for="wk-outcome" class="wk-outcome">Outcome, when it is done</label><input id="wk-outcome" name="outcome" maxlength="300" autocomplete="off" value="${esc(a.outcome || '')}" placeholder="The cover is renewed and filed">` +
+      `<label for="wk-outcome" class="wk-outcome"${a.kind === 'project' ? '' : ' hidden'}>Outcome, when it is done</label><input id="wk-outcome" name="outcome" maxlength="300" autocomplete="off" value="${esc(a.outcome || '')}" placeholder="The cover is renewed and filed"${a.kind === 'project' ? '' : ' hidden'}>` +
       '<span class="tk-acts"><button type="submit" class="mini-btn primary">Next ›</button></span></form>';
   } else if (walk.step === 'two') {
     html = head('2 · Can it be done in under two minutes?', true) + `<p class="cc-note">${esc(a.next || '')}</p><div class="tk-choices">` +

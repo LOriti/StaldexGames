@@ -1084,6 +1084,18 @@ modal.addEventListener('click', async (e) => {
   }
 });
 
+// "Several" reveals the Outcome field.
+modal.addEventListener('change', (e) => {
+  const w = task.walk;
+  if (w && e.target.matches('input[name="kind"]')) {
+    w.a.next = modal.querySelector('#wk-next')?.value ?? w.a.next;
+    w.a.outcome = modal.querySelector('#wk-outcome')?.value ?? w.a.outcome;
+    w.a.kind = e.target.value;
+    renderTask();
+    if (w.a.kind === 'project') modal.querySelector('#wk-outcome')?.focus();
+  }
+});
+
 modal.addEventListener('submit', async (e) => {
   const wform = e.target.closest('[data-wk-form]');
   const w = task.walk;
@@ -1096,7 +1108,7 @@ modal.addEventListener('submit', async (e) => {
       w.a.kind = f.kind.value;
       w.a.outcome = f.outcome.value.trim();
       const check = actionCheck(w.a.next);
-      if (!check.ok) { task.message = `Not yet: ${check.note}`; return renderTask(); }
+      if (!check.ok) { task.message = ''; renderTask(); modal.querySelector('#wk-next')?.focus(); return; } // the form shows the note
       if (w.a.kind === 'project' && !w.a.outcome) { task.message = 'Not yet: a project needs an outcome.'; return renderTask(); }
       return go('two');
     }
