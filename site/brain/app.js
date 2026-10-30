@@ -4,9 +4,10 @@
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
 import {
   VIEW_PATH, LENSES, openingLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
-  closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, addedHtml, categoriseHtml, parseFamilies,
-  latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue,
-} from './home.js?v=20261030a';
+  closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
+  latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
+  TWO_MINUTES_MS, fmtCountdown,
+} from './home.js?v=20261030b';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -32,8 +33,8 @@ const state = {
 const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false, focal: null, dirty: false };
 
 function homeTab() {
-  const match = /^#(?:\/)?(focus|priority|clarify|allocation)?$/.exec(location.hash || '#');
-  return match ? (match[1] || 'focus') : null;
+  const match = /^#(?:\/)?(focus|inbox|priority|clarify|allocation)?$/.exec(location.hash || '#');
+  return match ? (match[1] === 'clarify' ? 'inbox' : match[1] || 'focus') : null;
 }
 
 // The lens last used, kept across days (Brain D-116 A); working hours still open on Work.
@@ -66,10 +67,11 @@ function stashedView(sha) {
 }
 
 class ApiError extends Error {
-  constructor(kind, status) {
+  constructor(kind, status, body = null) {
     super(kind);
     this.kind = kind;
     this.status = status;
+    this.body = body; // the Worker's JSON, such as the ids a batch refused on
   }
 }
 
@@ -96,7 +98,7 @@ async function api(path, payload) {
   // Only the Worker's own "not configured" means setup; any other 503 (Access certs
   // unreachable, a Cloudflare error page) shows what came back.
   if (res.status === 503 && body?.error === 'not configured') throw new ApiError('setup', res.status);
-  if (!res.ok || !body) throw new ApiError(body?.error || `HTTP ${res.status}`, res.status);
+  if (!res.ok || !body) throw new ApiError(body?.error || `HTTP ${res.status}`, res.status, body);
   return body;
 }
 
@@ -395,7 +397,7 @@ els.doc.addEventListener('click', (e) => {
     else if (d.ccSort) openSort({ kind: 'item', entry: entryFor(d.ccSort) });
     else {
       const row = (home.view.inbox || []).find((r) => r.kind === 'line' && (r.raw || r.text) === d.ccLine && r.home === `project:${d.ccProject}`);
-      if (row) openSort({ ...row, kind: 'line' });
+      if (row) openWalk(row);
     }
     return;
   }
@@ -632,8 +634,9 @@ els.doc.addEventListener('submit', async (e) => {
 // clock runs at a time. Finishing a task shows the reward and moves the next hot item up.
 
 let clock = null; // { ref, title, area, lens, date, start, startMs, written, pending }
-// `added` is an Inbox line just saved from the home (Brain D-110 A); `doing` its Do it now step.
-const task = { ref: null, panel: '', message: '', reward: null, sort: null, back: null, added: null, doing: false };
+// `walk` is the Inbox tab's question walk over a raw line (Brain DEV-61026.33), which an
+// added line opens at once (D-110 A folded in).
+const task = { ref: null, panel: '', message: '', reward: null, sort: null, back: null, walk: null };
 let families = [];
 
 const modal = document.createElement('div');
@@ -653,8 +656,8 @@ function projectSlugs() {
 const entryFor = (ref) => home.view?.entries.find((e) => e.ref === ref) || null;
 
 function renderTask() {
-  if (task.added && !task.sort) {
-    modal.querySelector('.tk').innerHTML = addedHtml(task.added, { doing: task.doing, message: task.message });
+  if (task.walk) {
+    modal.querySelector('.tk').innerHTML = walkHtml(task.walk, { families, message: task.message });
     modal.hidden = false;
     return;
   }
@@ -687,14 +690,31 @@ function refreshAll() {
 }
 
 setInterval(() => {
-  if (!clock) return;
-  for (const el of document.querySelectorAll('[data-tk-time]')) el.textContent = fmtElapsed(clock);
+  if (clock) for (const el of document.querySelectorAll('[data-tk-time]')) el.textContent = fmtElapsed(clock);
+  const w = task.walk;
+  if (w && w.step === 'doing' && w.startedMs) {
+    const left = TWO_MINUTES_MS - (Date.now() - w.startedMs);
+    for (const el of document.querySelectorAll('[data-wk-count]')) { el.textContent = fmtCountdown(left); el.closest('.tk-clock')?.classList.toggle('over', left < 0); }
+  }
 }, 1000);
 
 function openTask(ref) {
   if (!entryFor(ref)) return;
-  Object.assign(task, { ref, panel: '', message: '', reward: null, sort: null, back: null });
+  Object.assign(task, { ref, panel: '', message: '', reward: null, sort: null, back: null, walk: null });
   refreshAll();
+}
+
+async function loadFamilies() {
+  if (families.length || !state.paths.has('context/families.md')) return;
+  try { families = parseFamilies(await fileText('context/families.md')); } catch { /* the form falls back to the line's own family */ }
+  renderTask();
+}
+
+// The question walk over a raw Inbox line (Brain DEV-61026.33).
+function openWalk(row) {
+  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: null, back: null, walk: { row, step: 'actionable', a: {}, history: [], asking: null } });
+  refreshAll();
+  loadFamilies();
 }
 
 // The categorisation card (Brain D-100 B), with the family list read from Brain.
@@ -702,12 +722,9 @@ function openTask(ref) {
 // added, so Back and Cancel return there.
 async function openSort(target, from = null) {
   if (target.kind === 'item' && !target.entry) return;
-  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: target, back: from, added: null, doing: false });
+  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: target, back: from, walk: null });
   refreshAll();
-  if (!families.length && state.paths.has('context/families.md')) {
-    try { families = parseFamilies(await fileText('context/families.md')); } catch { /* the card falls back to the item's own family */ }
-    if (task.sort === target) renderTask();
-  }
+  await loadFamilies();
 }
 
 const placeOf = (entry) => ({ area: entry.lens === 'work' ? entry.area || '' : '', lens: entry.lens || '' });
@@ -836,7 +853,105 @@ async function stopIfMine(entry) {
 }
 
 function hideTask() {
-  Object.assign(task, { ref: null, panel: '', reward: null, sort: null, back: null, added: null, doing: false });
+  Object.assign(task, { ref: null, panel: '', reward: null, sort: null, back: null, walk: null });
+  refreshAll();
+}
+
+// A one-line note on the bar, back on the home.
+function note(text, bad = false) {
+  bar.hidden = false;
+  bar.innerHTML = `<span class="cb-t${bad ? ' bad' : ''}">${escapeHtml(text)}</span><button type="button" class="mini-btn" data-cb="dismiss">OK</button>`;
+}
+
+// ---- settling what a routine flagged, from a row or a card (Brain D-42, D-112 A) ------------
+// This page's copy of the view follows each write until Brain renders the next view.
+
+function applyConfirmed(ref) {
+  const landed = ref.replace(/^P-/, '');
+  const swap = (r) => (r === ref ? landed : r);
+  for (const slot of Object.values(home.view.lenses)) {
+    slot.hot = slot.hot.map(swap);
+    slot.claude = slot.claude.map(swap);
+    if (slot.focal && slot.focal.ref === ref) slot.focal.ref = landed;
+    slot.quiet.unconfirmed = slot.quiet.unconfirmed.filter((r) => r !== ref);
+    for (const k of ['close_proposed', 'needs_review_date', 'no_owner']) slot.quiet[k] = slot.quiet[k].map(swap);
+  }
+  home.view.inbox = (home.view.inbox || []).filter((r) => !(r.kind === 'unconfirmed' && r.ref === ref)).map((r) => (r.ref === ref ? { ...r, ref: landed } : r));
+  const entry = entryFor(ref);
+  if (entry) { entry.flags = (entry.flags || []).filter((f) => f !== 'unconfirmed'); entry.ref = landed; }
+  if (clock && clock.ref === ref) clock.ref = landed;
+  if (task.ref === ref) task.ref = landed;
+  if (home.focal && home.focal.ref === ref) home.focal.ref = landed;
+  return landed;
+}
+
+// Closed or rejected: the item leaves this page's lists and the next hot item moves up.
+function applyGone(ref) {
+  dropFromView(ref);
+  home.view.inbox = (home.view.inbox || []).filter((r) => r.ref !== ref);
+  if (task.ref === ref) task.ref = null;
+}
+
+function applyKept(ref) {
+  const entry = entryFor(ref);
+  if (entry) entry.flags = (entry.flags || []).filter((f) => f !== 'close-proposed');
+  for (const slot of Object.values(home.view.lenses)) slot.quiet.close_proposed = slot.quiet.close_proposed.filter((r) => r !== ref);
+  home.view.inbox = (home.view.inbox || []).filter((r) => !(r.kind === 'close' && r.ref === ref));
+}
+
+// Confirm, close, reject and keep from a row (D-112 A); Reject and Keep open ask first.
+els.doc.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-cc-act], [data-cc-batch]');
+  if (!btn || !home.view) return;
+  e.preventDefault();
+  if (btn.dataset.ccBatch) return settleAll(btn.dataset.ccBatch, btn.dataset.ids.split(',').filter(Boolean), btn);
+  const { ccAct: act, ref } = btn.dataset;
+  const entry = entryFor(ref);
+  const box = btn.closest('.cc-acts');
+  if (!entry || !box) return;
+  if (act === 'reject-ask' || act === 'keep-ask') { box.outerHTML = rowActs(entry, act === 'reject-ask' ? 'reject' : 'keep'); return; }
+  if (act === 'cancel') { box.outerHTML = rowActs(entry); return; }
+  for (const b of box.querySelectorAll('button')) b.disabled = true;
+  try {
+    if (act === 'confirm') {
+      await write('/confirm', { id: ref, flag: 'unconfirmed' });
+      note(`Confirmed as ${applyConfirmed(ref)}.`);
+    } else if (act === 'close') {
+      const ran = await stopIfMine(entry);
+      if (ran === null) return;
+      await write('/confirm', { id: ref, flag: 'close-proposed' });
+      applyGone(ref);
+      note(`Closed ${ref}.`);
+    } else if (act === 'reject') {
+      if (clock && clock.ref === ref) await stopClock();
+      await write('/reject', { id: ref, flag: 'unconfirmed' });
+      applyGone(ref);
+      note(`Rejected ${ref}.`);
+    } else if (act === 'keep') {
+      await write('/reject', { id: ref, flag: 'close-proposed' });
+      applyKept(ref);
+      note(`Kept ${ref} open.`);
+    }
+  } catch (err) {
+    note(writeError(err), true);
+  }
+  refreshAll();
+});
+
+// "Confirm all N" and "Close all N": one commit; a batch the Worker refused names the ids
+// that changed since the page loaded, and the page catches up.
+async function settleAll(flag, ids, btn) {
+  if (!ids.length) return;
+  btn.disabled = true;
+  try {
+    await write('/confirm-all', { ids, flag });
+    for (const id of ids) { if (flag === 'unconfirmed') applyConfirmed(id); else applyGone(id); }
+    note(`${flag === 'unconfirmed' ? 'Confirmed' : 'Closed'} ${ids.length}.`);
+  } catch (err) {
+    const changed = err?.body?.ids;
+    note(changed ? `Not saved: ${changed.length} of ${ids.length} changed since the page loaded (${changed.join(', ')}). Catching up.` : writeError(err), true);
+    if (changed) { home.sha = null; await refreshTree(); }
+  }
   refreshAll();
 }
 
@@ -872,14 +987,8 @@ modal.addEventListener('click', async (e) => {
   if (act === 'categorise' && entry) return openSort({ kind: 'item', entry }, entry.ref);
   if (act === 'back') {
     const from = task.back;
-    Object.assign(task, { sort: null, ref: typeof from === 'string' ? from : null, added: from?.added || null, back: null, message: '' });
+    Object.assign(task, { sort: null, ref: typeof from === 'string' ? from : null, back: null, message: '' });
     return refreshAll();
-  }
-  if (task.added && !task.sort) {
-    const row = task.added;
-    if (act === 'sort-added') return openSort({ ...row, kind: 'line' }, { added: row });
-    if (act === 'do-added' || act === 'added') { Object.assign(task, { doing: act === 'do-added', message: '' }); return renderTask(); }
-    if (act === 'handled') return handled(row);
   }
   if (act === 'file') { task.ref = null; modal.hidden = true; renderClock(); return; }
   if (act === 'hide' || !entry) return hideTask();
@@ -898,8 +1007,7 @@ modal.addEventListener('click', async (e) => {
         return celebrate(entry, ran);
       }
       await write('/reject', { id: entry.ref, flag: 'close-proposed' });
-      for (const slot of Object.values(home.view.lenses)) slot.quiet.close_proposed = slot.quiet.close_proposed.filter((r) => r !== entry.ref);
-      entry.flags = (entry.flags || []).filter((f) => f !== 'close-proposed');
+      applyKept(entry.ref);
       task.message = 'Kept open.';
     } catch (err) {
       task.message = writeError(err);
@@ -917,26 +1025,11 @@ modal.addEventListener('click', async (e) => {
     // The register's own Confirm and Reject (Brain DEV-61025.13), from the card.
     for (const b of modal.querySelectorAll('button')) b.disabled = true;
     try {
-      await write(`/${act}`, { id: entry.ref, flag: 'unconfirmed' });
-      if (act === 'reject') {
-        if (clock && clock.ref === entry.ref) await stopClock();
-        dropFromView(entry.ref);
-        task.ref = null;
-      } else {
-        // Confirming drops the `P-`; this page's copy follows until Brain regenerates the view.
-        const landed = entry.ref.replace(/^P-/, '');
-        for (const slot of Object.values(home.view.lenses)) {
-          slot.hot = slot.hot.map((r) => (r === entry.ref ? landed : r));
-          if (slot.focal && slot.focal.ref === entry.ref) slot.focal.ref = landed;
-          slot.quiet.unconfirmed = slot.quiet.unconfirmed.filter((r) => r !== entry.ref);
-          slot.quiet.close_proposed = slot.quiet.close_proposed.map((r) => (r === entry.ref ? landed : r));
-        }
-        entry.flags = (entry.flags || []).filter((f) => f !== 'unconfirmed');
-        if (clock && clock.ref === entry.ref) clock.ref = landed;
-        entry.ref = landed;
-        task.ref = landed;
-        task.message = `Confirmed as ${landed}.`;
-      }
+      if (act === 'reject' && clock && clock.ref === entry.ref) await stopClock();
+      const ref = entry.ref;
+      await write(`/${act}`, { id: ref, flag: 'unconfirmed' });
+      if (act === 'reject') applyGone(ref);
+      else task.message = `Confirmed as ${applyConfirmed(ref)}.`;
     } catch (err) {
       task.message = writeError(err);
     }
@@ -956,7 +1049,105 @@ modal.addEventListener('click', async (e) => {
   }
 });
 
+const lineBody = (row) => ({ project: projectOf(row), line: row.raw || row.text });
+const dropLine = (row) => { home.view.inbox = (home.view.inbox || []).filter((r) => !(r.kind === 'line' && (r.raw || r.text) === (row.raw || row.text) && r.home === row.home)); };
+
+modal.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-wk]');
+  const w = task.walk;
+  if (!btn || !w) return;
+  const act = btn.dataset.wk;
+  const go = (step) => { w.history.push(w.step); w.step = step; w.asking = null; task.message = ''; renderTask(); modal.querySelector('input:not([type=radio]):not([type=checkbox])')?.focus(); };
+  if (act === 'hide') return hideTask();
+  if (act === 'back') { w.step = w.history.pop() || 'actionable'; w.asking = null; task.message = ''; return renderTask(); }
+  if (act === 'cancel') { w.asking = null; return renderTask(); }
+  if (act === 'yes') return go('action');
+  if (act === 'trash-ask') { w.asking = 'trash'; return renderTask(); }
+  if (act === 'two-yes') { w.startedMs = Date.now(); return go('doing'); }
+  if (act === 'two-no' || act === 'carry-on') return go('delegate');
+  if (act === 'deleg-none') { w.a.owner = 'leon'; w.a.ai = ''; w.a.handover = false; return go('details'); }
+  if (act === 'deleg-claude') { w.a.owner = 'leon'; w.a.ai = 'prepare'; w.a.handover = false; return go('details'); }
+  if (act === 'deleg-person') { w.asking = 'person'; renderTask(); modal.querySelector('#wk-owner')?.focus(); return; }
+  if (act === 'someday' || act === 'reference' || act === 'trash') {
+    for (const b of modal.querySelectorAll('button')) b.disabled = true;
+    try {
+      await write(`/${act}`, lineBody(w.row));
+      if (act === 'reference') { const row = (home.view.inbox || []).find((r) => r.kind === 'line' && (r.raw || r.text) === (w.row.raw || w.row.text) && r.home === w.row.home); if (row) row.details = { reference: perthDay().today }; }
+      else dropLine(w.row);
+      home.dirty = true;
+      hideTask();
+      note(act === 'someday' ? 'Parked in Someday.' : act === 'reference' ? 'Kept as reference; the next groom files it.' : 'Trashed.');
+    } catch (err) {
+      task.message = writeError(err);
+      renderTask();
+    }
+  }
+});
+
+// "Several" reveals the Outcome field.
+modal.addEventListener('change', (e) => {
+  const w = task.walk;
+  if (w && e.target.matches('input[name="kind"]')) {
+    w.a.next = modal.querySelector('#wk-next')?.value ?? w.a.next;
+    w.a.outcome = modal.querySelector('#wk-outcome')?.value ?? w.a.outcome;
+    w.a.kind = e.target.value;
+    renderTask();
+    if (w.a.kind === 'project') modal.querySelector('#wk-outcome')?.focus();
+  }
+});
+
 modal.addEventListener('submit', async (e) => {
+  const wform = e.target.closest('[data-wk-form]');
+  const w = task.walk;
+  if (wform && w) {
+    e.preventDefault();
+    const f = wform.elements;
+    const go = (step) => { w.history.push(w.step); w.step = step; w.asking = null; task.message = ''; renderTask(); };
+    if (wform.dataset.wkForm === 'action') {
+      w.a.next = f.next.value.trim();
+      w.a.kind = f.kind.value;
+      w.a.outcome = f.outcome.value.trim();
+      const check = actionCheck(w.a.next);
+      if (!check.ok) { task.message = ''; renderTask(); modal.querySelector('#wk-next')?.focus(); return; } // the form shows the note
+      if (w.a.kind === 'project' && !w.a.outcome) { task.message = 'Not yet: a project needs an outcome.'; return renderTask(); }
+      return go('two');
+    }
+    if (wform.dataset.wkForm === 'person') {
+      w.a.owner = f.owner.value.trim().toLowerCase() || 'leon';
+      w.a.due = f.due.value;
+      w.a.handover = f.handover.checked;
+      w.a.ai = '';
+      return go('details');
+    }
+    for (const el of f) el.disabled = true;
+    if (wform.dataset.wkForm === 'done') {
+      // Under two minutes and done: the time is recorded and the line leaves the inbox.
+      const minutes = Math.max(15, Math.round(Number(f.minutes.value) / 15) * 15);
+      try {
+        const lens = w.row.lens || (home.lens === 'all' ? 'work' : home.lens);
+        await api('/hours', { minutes, lens, note: `${w.a.next || w.row.text} (${w.row.text})`.slice(0, 120) });
+        loadTime();
+        return handled(w.row, minutes);
+      } catch (err) {
+        task.message = writeError(err);
+        return renderTask();
+      }
+    }
+    // details: save for the groom
+    Object.assign(w.a, { family: f.family.value, priority: f.priority.value, minutes: f.minutes.value, due: f.due.value });
+    const details = walkDetails(w, w.row.text);
+    try {
+      await write('/categorise', { ...lineBody(w.row), details });
+      const row = (home.view.inbox || []).find((r) => r.kind === 'line' && (r.raw || r.text) === (w.row.raw || w.row.text) && r.home === w.row.home);
+      if (row) Object.assign(row, { details: { ...details, categorised: perthDay().today } });
+      hideTask();
+      note('Saved. It becomes a card at the next groom.');
+    } catch (err) {
+      task.message = writeError(err);
+      renderTask();
+    }
+    return;
+  }
   const form = e.target.closest('[data-tk-form]');
   if (!form) return;
   e.preventDefault();
@@ -1055,26 +1246,25 @@ async function added(form, body) {
     date: perthDay().today, path: `projects/${body.project}/QUEUE.md`, ref: null, lens: kin?.lens || (home.lens === 'all' ? 'work' : home.lens) };
   home.view.inbox = [row, ...(home.view.inbox || [])];
   if (homeTab()) renderHome(homeTab()); else stashView();
-  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: null, back: null, added: row, doing: false });
-  refreshAll();
+  openWalk(row);
   return commit;
 }
 
-// Do it now, then handled: the line leaves the inbox and the reward shows.
-async function handled(row) {
+// Done inside two minutes: the line leaves the inbox and the reward shows.
+async function handled(row, minutes = 0) {
   for (const b of modal.querySelectorAll('button')) b.disabled = true;
   try {
-    await api('/handled', { project: projectOf(row), line: row.raw || row.text });
+    await write('/handled', lineBody(row));
   } catch (err) {
     task.message = writeError(err);
     return renderTask();
   }
-  home.view.inbox = (home.view.inbox || []).filter((r) => !(r.kind === 'line' && (r.raw || r.text) === (row.raw || row.text) && r.home === row.home));
+  dropLine(row);
   home.dirty = true;
   if (homeTab()) renderHome(homeTab()); else stashView();
   const slot = home.view.lenses[home.lens] || home.view.lenses.all;
   const next = slot.focal ? entryFor(slot.focal.ref) : null;
-  Object.assign(task, { added: null, doing: false, message: '', reward: { title: row.text, ref: `Inbox · ${row.home}`, minutes: 0, today: doneTodayCount(), next } });
+  Object.assign(task, { walk: null, message: '', reward: { title: row.text, ref: `Inbox · ${row.home}`, minutes, today: doneTodayCount(), next } });
   refreshAll();
 }
 

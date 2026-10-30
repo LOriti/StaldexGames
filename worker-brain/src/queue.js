@@ -1,8 +1,9 @@
-// Pure QUEUE.md transforms for the Brain viewer's two write actions. No I/O.
+// Pure QUEUE.md transforms for the Brain viewer's queue writes. No I/O.
 //
 // Format (Brain's context/schema.md): frontmatter with `updated:`, groomed `### Title`
-// cards above `## Inbox`, raw `- ` bullets under `## Inbox`, and an optional `## Done`
-// section after the Inbox holding finished cards.
+// cards above `## Inbox`, raw `- ` bullets under `## Inbox`, an optional `## Someday`
+// section of bullets Leon parked (Brain D-104 C), and an optional `## Done` section
+// holding finished cards.
 //
 // Every edit works on lines with their original terminators, so CRLF, LF and anything
 // else outside the lines being changed come back byte for byte. New lines use the
@@ -216,11 +217,61 @@ export function categoriseLine(text, raw, details, attrs, today) {
   return q.lines.join('');
 }
 
-// Removes an Inbox line Leon dealt with on the spot (Brain D-110 A); the commit keeps it.
+// Removes an Inbox line Leon dealt with on the spot (Brain D-110 A) or trashed in the
+// Inbox tab's first question (DEV-61026.33); the commit keeps it.
 export function handledLine(text, raw, today) {
   const q = parse(text);
   const { start, end } = findLine(q, raw);
   q.lines.splice(start, end - start);
+  bumpUpdated(q, today);
+  return q.lines.join('');
+}
+
+// Someday/Maybe (Brain D-104 C): the line leaves the Inbox for the queue's `## Someday`
+// section, kept well apart from next actions, as `- <text> \`someday: <date>\``. The
+// section follows the Inbox and comes before `## Done`.
+export function somedayLine(text, raw, today) {
+  const q = parse(text);
+  const { start, end, plain } = findLine(q, raw);
+  const line = `- ${plain} \`someday: ${today}\`${q.eol}`;
+  q.lines.splice(start, end - start);
+  let removed = end - start;
+  // A line taken out from between two blank lines leaves a double gap: close it.
+  if (start > 0 && start < q.lines.length && isBlank(q.lines[start - 1]) && isBlank(q.lines[start])) {
+    q.lines.splice(start, 1);
+    removed += 1;
+  }
+  q.headings = q.headings.map((h) => ({ ...h, index: h.index > start ? h.index - removed : h.index }));
+  q.inbox = q.headings.find((h) => h.level === 2 && h.title === 'Inbox');
+  bumpUpdated(q, today);
+  const someday = q.headings.find((h) => h.level === 2 && h.title === 'Someday' && h.index > q.inbox.index);
+  if (someday) {
+    const at = lastContent(q, someday.index, sectionEnd(q, someday));
+    const hasList = q.lines.slice(someday.index + 1, at).some((l) => /^[-*] /.test(content(l)));
+    if (hasList && /^([-*] |\s+\S)/.test(content(q.lines[at - 1]))) {
+      q.lines[at - 1] = terminated(q.lines[at - 1], q.eol);
+      q.lines.splice(at, 0, line);
+    } else {
+      insertAfterBlank(q, at, [line]);
+    }
+  } else {
+    const end = sectionEnd(q, q.inbox);
+    const at = lastContent(q, q.inbox.index, end);
+    q.lines.splice(at, end - at); // the blank lines that trailed the Inbox
+    const block = [`## Someday${q.eol}`, q.eol, line];
+    if (at < q.lines.length) block.push(q.eol); // one blank line before what follows (## Done)
+    insertAfterBlank(q, at, block);
+  }
+  return q.lines.join('');
+}
+
+// Reference (Brain D-104 C): the line stays in the Inbox tagged for the scheduled groom
+// to file into a project document, its earlier details dropped.
+export function referenceLine(text, raw, today) {
+  const q = parse(text);
+  const { start, end: stop, plain } = findLine(q, raw);
+  const ending = q.lines[stop - 1].slice(content(q.lines[stop - 1]).length) || q.eol;
+  q.lines.splice(start, stop - start, `- ${plain} \`reference: ${today}\`${ending}`);
   bumpUpdated(q, today);
   return q.lines.join('');
 }
