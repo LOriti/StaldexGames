@@ -254,6 +254,13 @@ test('the Inbox tab\'s first question: Someday, Reference and Trash on a raw lin
   const ref = queue.referenceLine(QUEUE.replace('- Idea', '- Idea `categorised: 2030-01-01` `family: DEV`'), 'Idea', '2030-02-01');
   assert.match(ref, /## Inbox\n\n- Idea `reference: 2030-02-01`\n$/);
   assert.throws(() => queue.somedayLine(QUEUE, 'Gone', '2030-02-01'), { code: 'unknown-id' });
+  // Promote brings a Someday line back to the Inbox (DEV-61026.35).
+  const back = queue.promoteLine(two, 'Another idea `someday: 2030-02-02`', '2030-02-03');
+  assert.match(back, /## Inbox\n\n- Another idea\n\n## Someday\n\n- Idea `someday: 2030-02-01`\n$/);
+  assert.match(back, /^updated: 2030-02-03$/m);
+  assert.throws(() => queue.promoteLine(two, 'Nope', '2030-02-03'), { code: 'unknown-id' });
+  assert.throws(() => queue.promoteLine(QUEUE, 'Idea', '2030-02-03'), /no Someday section/);
+  assert.throws(() => queue.promoteLine(queue.addInbox(two, 'Idea', '2030-02-03'), 'Idea', '2030-02-03'), { code: 'duplicate-id' });
   for (const [route, message, pattern] of [
     ['/api/brain/someday', 'web: someday inbox demo', /## Someday\n\n- Idea `someday: \d{4}-\d{2}-\d{2}`/],
     ['/api/brain/reference', 'web: reference inbox demo', /- Idea `reference: \d{4}-\d{2}-\d{2}`/],
@@ -265,6 +272,12 @@ test('the Inbox tab\'s first question: Someday, Reference and Trash on a raw lin
     assert.match(written('projects/demo/QUEUE.md'), pattern, route);
   }
   assert.equal((await post('/api/brain/someday', { project: 'demo', line: 42 })).status, 400);
+  files['projects/demo/QUEUE.md'].text = queue.somedayLine(QUEUE, 'Idea', '2030-02-01');
+  const promoted = await post('/api/brain/promote', { project: 'demo', line: 'Idea' });
+  assert.equal(promoted.status, 200);
+  assert.equal(files['projects/demo/QUEUE.md'].puts.at(-1).message, 'web: promote someday demo');
+  assert.match(written('projects/demo/QUEUE.md'), /## Inbox\n\n- Idea\n/);
+  files['projects/demo/QUEUE.md'].text = QUEUE;
 });
 
 test('Confirm all and Close all are one commit each, refused with the ids that changed (Brain D-112 A)', async () => {

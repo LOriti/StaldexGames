@@ -204,6 +204,9 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
   (`time: <date> place <kind> <n>`, Brain D-109 A): the note is the position, `out` or `keep`.
   Both screens read the day's `today` rows (fresh each morning) and the latest `next-week`
   row per item; `/time` now reaches back 42 days so a Next week run's first day is in view.
+- `POST /api/brain/promote` `{ project, line }` → a `## Someday` line comes back under `## Inbox`
+  for clarifying (`web: promote someday <slug>`, Brain DEV-61026.35); refused if the Inbox
+  already has it.
 - `POST /api/brain/someday`, `/reference` and `/trash` `{ project, line }` → the Inbox tab's
   first question (Brain D-104 C): the line moves to the queue's `## Someday` section with a
   `someday:` date, is tagged `reference:` for Brain's groom to file, or is removed
