@@ -199,6 +199,11 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
   or `web: close all <n>`, Brain D-112 A); if any id is no longer flagged the whole batch is
   refused with **409 `{ error, ids }`** naming them, so nothing is half applied. A close on
   an item still `unconfirmed` lands it and closes it in the one edit, as `/close` now does.
+- `POST /api/brain/place` `{ kind: today | next-week, items: [{ ref, note[, kind] }], lens }` → one
+  `today` or `next-week` row per item on the daily log, a whole list per commit
+  (`time: <date> place <kind> <n>`, Brain D-109 A): the note is the position, `out` or `keep`.
+  Both screens read the day's `today` rows (fresh each morning) and the latest `next-week`
+  row per item; `/time` now reaches back 42 days so a Next week run's first day is in view.
 - `POST /api/brain/someday`, `/reference` and `/trash` `{ project, line }` → the Inbox tab's
   first question (Brain D-104 C): the line moves to the queue's `## Someday` section with a
   `someday:` date, is tagged `reference:` for Brain's groom to file, or is removed

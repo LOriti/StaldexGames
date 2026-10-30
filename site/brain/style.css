@@ -455,6 +455,18 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .cc-next, .cc-ev { display: block; margin-top: 3px; font-size: 12.5px; color: var(--muted); }
 .cc-next b, .cc-ev b { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
 .cc-batch-row { margin: -4px 0 8px; }
+.cc-lens { position: relative; }
+.cc-lens-chip { border: 1px solid var(--line); background: var(--sheet); border-radius: 9px; padding: 7px 12px; font: 600 13px/1 var(--sans); color: var(--ink); cursor: pointer; }
+.cc-lens-chip[aria-expanded="true"] { border-color: var(--accent); }
+.cc-chooser { position: absolute; top: calc(100% + 6px); left: 0; z-index: 6; box-shadow: 0 6px 20px rgba(0, 0, 0, .12); }
+.cc-subs { display: flex; gap: 6px; flex-wrap: wrap; margin: 0 0 10px; }
+.cc-subs button { border: 1px solid var(--line); background: var(--sheet); border-radius: 99px; padding: 6px 12px; font: 600 13px/1 var(--sans); color: var(--muted); cursor: pointer; }
+.cc-subs button em { font-style: normal; font-weight: 500; color: var(--faint); margin-left: 4px; }
+.cc-subs button[aria-pressed="true"] { background: var(--accent-soft); color: var(--accent); border-color: var(--accent-soft); }
+.cc-subs button[aria-pressed="true"] em { color: var(--accent); }
+.cc-item[draggable="true"] { cursor: grab; }
+.cc-item.drag-over { box-shadow: inset 0 2px 0 var(--accent); }
+.cc-place .mini-btn { padding-inline: 8px; }
 .cb-t.bad { color: var(--bad); }
 .tk-radio label { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--ink); }
 .wk-outcome { margin-top: 2px; }

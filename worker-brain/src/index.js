@@ -37,6 +37,7 @@
 //   POST /api/brain/clock   { action, ref, start[, date], title, area, lens } → on daily-log
 //   POST /api/brain/hours   { minutes, area | lens | ref, note } → on daily-log
 //   POST /api/brain/focal   { ref | '', lens } → a `focal` row on daily-log (the one thing today)
+//   POST /api/brain/place   { kind: today | next-week, items: [{ ref, note }], lens } → placement rows, one commit
 //   POST /api/brain/categorise { project, line, details } | { id, details } → an Inbox line or an open item
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
@@ -44,7 +45,7 @@ import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
 import { QueueError, addInbox, cardProgress, categoriseLine, handledLine, markDone, perthDate, referenceLine, somedayLine } from './queue.js';
 import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, itemProgress, rejectFlag, settleAll } from './register.js';
 import { cleanDetails, lineAttrs } from './categorise.js';
-import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock } from './timelog.js';
+import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock, placeRows } from './timelog.js';
 
 const TREE_TTL_MS = 30 * 1000;
 const BLOB_CACHE_MAX = 200;
@@ -60,7 +61,8 @@ export const isCardId = (id, project) =>
   typeof id === 'string' && (DATED_ID.test(id) || (CARD_ID.test(id) && id.startsWith(`${project}-`)));
 const COMMIT_SHA = /^[0-9a-f]{40}$/;
 const COMMIT_CACHE_MAX = 20;
-const TIME_DAYS_MAX = 14;
+// Six weeks, so a Next week placement's first row is still in reach (Brain D-109 A).
+const TIME_DAYS_MAX = 42;
 
 // Only readable text formats, never dotfile config, and never the machine-local paths file
 // even though Brain's .gitignore should already keep it out of the repo.
@@ -289,6 +291,15 @@ const WRITES = {
     valid: (body) => body.ref === '' || body.ref === null || typeof body.ref === 'string',
     apply: (text, body, today, clock) => appendTime(text, clock.date, clock.hhmm, focalRow(body, clock)),
     message: (body) => `time: ${perthClock().date} focal ${body.ref || 'cleared'}`,
+  },
+  // Next up today and Next week placements (Brain D-109 A), a whole list per commit.
+  '/api/brain/place': {
+    branch: LOG_BRANCH,
+    create: true,
+    path: todaysLog,
+    valid: (body) => typeof body.kind === 'string' && Array.isArray(body.items),
+    apply: (text, body, today, clock) => appendTime(text, clock.date, clock.hhmm, placeRows(body, clock)),
+    message: (body) => `time: ${perthClock().date} place ${body.kind} ${body.items.length}`,
   },
 };
 

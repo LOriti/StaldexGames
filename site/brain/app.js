@@ -6,8 +6,8 @@ import {
   VIEW_PATH, LENSES, openingLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
-  TWO_MINUTES_MS, fmtCountdown,
-} from './home.js?v=20261030b';
+  TWO_MINUTES_MS, fmtCountdown, placements, SUBS,
+} from './home.js?v=20261030c';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -30,11 +30,14 @@ const state = {
 // The command centre home (Brain brain-032): what the page opens on unless a file is asked for.
 // `focal` is Leon's pick of the one thing today from the daily log (Brain D-113 A); `dirty`
 // says this page's copy of the view carries writes Brain has not rendered yet.
-const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false, focal: null, dirty: false };
+// `places` are the Next actions placements from the daily log (D-109 A), `sub` the sub-tab
+// shown, `lensOpen` whether the lens chooser is open.
+const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false, focal: null, dirty: false, places: null, sub: 'today', lensOpen: false };
 
 function homeTab() {
-  const match = /^#(?:\/)?(focus|inbox|priority|clarify|allocation)?$/.exec(location.hash || '#');
-  return match ? (match[1] === 'clarify' ? 'inbox' : match[1] || 'focus') : null;
+  const match = /^#(?:\/)?(focus|inbox|next|priority|clarify|allocation)?$/.exec(location.hash || '#');
+  if (!match) return null;
+  return { clarify: 'inbox', priority: 'next' }[match[1]] || match[1] || 'focus';
 }
 
 // The lens last used, kept across days (Brain D-116 A); working hours still open on Work.
@@ -375,15 +378,23 @@ function renderHome(tab = homeTab() || 'focus') {
   const asOf = `${home.view.date}${when ? `, last change ${when}` : ''}`;
   els.doc.innerHTML = homeHtml(home.view, {
     lens: home.lens, tab, filter: home.filter, asOf, time: home.time, clock, projects: projectSlugs(), inboxAll: home.inboxAll,
-    today: perthDay().today, focal: home.focal,
+    today: perthDay().today, focal: home.focal, places: home.places, sub: home.sub, lensOpen: home.lensOpen,
   });
   stashView();
+}
+
+// Six weeks of daily-log rows: this week's actuals, today's clock, pick and Today list, and
+// Next week placements that carry forward (D-109 A).
+function timeFrom() {
+  const d = new Date(`${perthDay().monday}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() - 35);
+  return d.toISOString().slice(0, 10);
 }
 
 // The item in the focal slot for the current lens, and whether it is Leon's own pick.
 function currentFocal() {
   if (!home.view || !home.view.lenses[home.lens]) return null;
-  const choice = focalChoice(home.view, home.lens, home.focal);
+  const choice = focalChoice(home.view, home.lens, home.focal, home.places);
   return choice ? { ref: choice.entry.ref, mine: choice.mine } : null;
 }
 
@@ -401,15 +412,116 @@ els.doc.addEventListener('click', (e) => {
     }
     return;
   }
-  const el = e.target.closest('[data-cc-lens], [data-cc-context], [data-cc-area], [data-cc-clear], [data-cc-inbox-all]');
+  const el = e.target.closest('[data-cc-lens], [data-cc-lens-open], [data-cc-sub], [data-cc-context], [data-cc-area], [data-cc-clear], [data-cc-inbox-all]');
   if (!el || !home.view) return;
   const d = el.dataset;
   if (d.ccInboxAll) { home.inboxAll = true; return renderHome(); }
-  if (d.ccLens) { home.lens = d.ccLens; home.filter = null; storeLens(d.ccLens); return renderHome(); }
+  if (d.ccLensOpen) { home.lensOpen = !home.lensOpen; return renderHome(); }
+  if (d.ccLens) { home.lens = d.ccLens; home.filter = null; home.lensOpen = false; storeLens(d.ccLens); return renderHome(); }
+  if (d.ccSub) { home.sub = SUBS.includes(d.ccSub) ? d.ccSub : 'today'; return renderHome(); }
   if (d.ccClear) { home.filter = null; return renderHome(); }
   home.filter = d.ccContext ? { type: 'context', value: d.ccContext } : { type: 'area', value: d.ccArea };
-  if (location.hash === '#priority') renderHome('priority');
-  else location.hash = '#priority';
+  home.sub = 'week';
+  if (homeTab() === 'next') renderHome('next');
+  else location.hash = '#next';
+});
+
+// ---- Next actions placements (Brain D-107, D-109 A) -----------------------------------------
+// Today and Next week are rows on the daily log, one commit per move or reorder; this
+// page's rows follow at once and the lists are recomputed from them.
+
+function placeAll(kind, items) {
+  const { today, hhmm } = perthDay();
+  const rows = items.map((it) => ({ date: today, kind: it.kind || kind, start: hhmm, end: '', minutes: 0, ref: it.ref, area: '', lens: '', note: String(it.note) }));
+  if (home.time) home.time.rows.push(...rows);
+  home.places = placements(home.time ? home.time.rows : rows, today);
+}
+
+async function placeWrite(kind, items, lens) {
+  await api('/place', { kind, items, lens: lens || '' });
+  placeAll(kind, items);
+  home.dirty = true;
+  refreshAll();
+}
+
+const inLensRefs = (refs) => refs.filter((r) => { const e = entryFor(r); return e && (home.lens === 'all' || e.lens === home.lens); });
+
+async function placeAct(act, ref, btn) {
+  const entry = entryFor(ref);
+  if (!entry || !home.places) return;
+  const lens = entry.lens || '';
+  const today = inLensRefs(home.places.today);
+  const later = inLensRefs(home.places.week.map((w) => w.ref));
+  const inToday = today.includes(ref); const inLater = later.includes(ref);
+  const positions = (list, kind) => list.map((r, i) => ({ kind, ref: r, note: i + 1 }));
+  let kind = 'today'; let items = [];
+  if (act === 'today') {
+    items = [{ kind: 'today', ref, note: today.length + 1 }, ...(inLater ? [{ kind: 'next-week', ref, note: 'out' }] : [])];
+  } else if (act === 'next-week') {
+    kind = 'next-week';
+    items = [{ kind: 'next-week', ref, note: 0 }, ...(inToday ? [{ kind: 'today', ref, note: 'out' }] : [])];
+  } else if (act === 'week') {
+    kind = inLater ? 'next-week' : 'today';
+    items = [...(inToday ? [{ kind: 'today', ref, note: 'out' }] : []), ...(inLater ? [{ kind: 'next-week', ref, note: 'out' }] : [])];
+    if (!items.length) return;
+  } else if (act === 'keep') {
+    kind = 'next-week';
+    items = [{ kind: 'next-week', ref, note: 'keep' }];
+  } else if (act === 'up' || act === 'down') {
+    const list = inToday ? today : later;
+    kind = inToday ? 'today' : 'next-week';
+    const i = list.indexOf(ref); const j = act === 'up' ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= list.length) return;
+    [list[i], list[j]] = [list[j], list[i]];
+    items = positions(list, kind);
+  } else return;
+  if (btn) btn.disabled = true;
+  try {
+    await placeWrite(kind, items, lens);
+    note(act === 'today' ? `${ref} is next up today.` : act === 'next-week' ? `${ref} waits for next week.` : act === 'week' ? `${ref} is back in This week.` : act === 'keep' ? `Kept ${ref} for next week.` : 'Reordered.');
+  } catch (err) {
+    note(writeError(err), true);
+    refreshAll();
+  }
+}
+
+// A dragged row lands before the row it is dropped on; the whole list's positions are written.
+let dragging = null;
+els.doc.addEventListener('dragstart', (e) => {
+  const item = e.target.closest('[data-cc-drag]');
+  if (!item) return;
+  dragging = item.dataset.ccDrag;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', dragging);
+});
+els.doc.addEventListener('dragover', (e) => {
+  const item = e.target.closest('[data-cc-drag]');
+  if (!item || !dragging || item.dataset.ccDrag === dragging) return;
+  e.preventDefault();
+  for (const el of els.doc.querySelectorAll('.cc-item.drag-over')) el.classList.remove('drag-over');
+  item.classList.add('drag-over');
+});
+els.doc.addEventListener('dragend', () => { for (const el of els.doc.querySelectorAll('.cc-item.drag-over')) el.classList.remove('drag-over'); });
+els.doc.addEventListener('drop', async (e) => {
+  const item = e.target.closest('[data-cc-drag]');
+  if (!item || !dragging || !home.places) return;
+  e.preventDefault();
+  const target = item.dataset.ccDrag; const moved = dragging; dragging = null;
+  const today = inLensRefs(home.places.today);
+  const inToday = today.includes(moved);
+  const list = inToday ? today : inLensRefs(home.places.week.map((w) => w.ref));
+  if (!list.includes(target) || moved === target) return;
+  list.splice(list.indexOf(moved), 1);
+  list.splice(list.indexOf(target), 0, moved);
+  const kind = inToday ? 'today' : 'next-week';
+  try { await placeWrite(kind, list.map((r, i) => ({ kind, ref: r, note: i + 1 })), entryFor(moved)?.lens || ''); note('Reordered.'); } catch (err) { note(writeError(err), true); refreshAll(); }
+});
+
+els.doc.addEventListener('click', (e) => {
+  const btn = e.target.closest('[data-cc-place]');
+  if (!btn || !home.view) return;
+  e.preventDefault();
+  placeAct(btn.dataset.ccPlace, btn.dataset.ref, btn);
 });
 
 function currentPath() {
@@ -795,12 +907,14 @@ async function setFocal(entry, clear = false) {
 // This week's time rows from the daily log: actuals for the Allocation tab, and a clock
 // started on another screen.
 async function loadTime() {
-  const { monday } = perthDay();
+  const { monday, today } = perthDay();
   try {
-    const body = await api(`/time?from=${monday}`);
+    const body = await api(`/time?from=${timeFrom()}`);
     home.time = { rows: body.rows, monday };
-    home.focal = latestFocal(body.rows, perthDay().today);
-    const open = openClock(body.rows);
+    home.focal = latestFocal(body.rows, today);
+    home.places = placements(body.rows, today);
+    // A clock from a bygone day is not still running: only recent rows decide.
+    const open = openClock(body.rows.filter((r) => r.date >= monday));
     if (open && !(clock && clock.ref === open.ref && clock.start === open.start) && (!clock || clock.written)) {
       clock = { ref: open.ref, title: open.note, area: open.area, lens: open.lens, date: open.date, start: open.start,
         startMs: Date.parse(`${open.date}T${open.start}:00+08:00`), written: true };

@@ -106,6 +106,11 @@ function answer(url, method = 'GET', body = null) {
       const b = JSON.parse(body || '{}');
       TIME.push({ date: today, kind: 'focal', start: '12:00', end: '', minutes: 0, ref: b.ref || '', area: '', lens: b.lens || '', note: '' });
     }
+    if (u.pathname === '/api/brain/place') {
+      const b = JSON.parse(body || '{}');
+      const hhmm = `12:${String(writes.length % 60).padStart(2, '0')}`;
+      for (const it of b.items || []) TIME.push({ date: today, kind: it.kind || b.kind, start: hhmm, end: '', minutes: 0, ref: it.ref, area: '', lens: b.lens || '', note: String(it.note) });
+    }
     return { path: 'synthetic', sha: 'x', commit: null };
   }
   if (u.pathname === '/api/brain/time') return { from: u.searchParams.get('from'), to: today, rows: TIME };
@@ -156,23 +161,62 @@ async function shot(name) {
   shots.push(file);
 }
 const settle = () => page.waitForTimeout(400);
+// One chip names the lens and opens the chooser (Brain DEV-61026.34).
+async function pickLens(lens) {
+  if (!(await page.locator(`[data-cc-lens="${lens}"]`).count())) await page.locator('[data-cc-lens-open]').click();
+  await page.locator(`[data-cc-lens="${lens}"]`).click();
+  await settle();
+}
 
 const response = await page.goto(`${base}/brain/#focus`, { waitUntil: 'networkidle' });
 console.log(`Opened ${base}/brain/ (${response?.status()}), app ${await page.evaluate(() =>
   document.querySelector('script[type=module]')?.getAttribute('src') || 'no module script')}`);
 await page.waitForSelector('.cc', { timeout: 10_000 }).catch(() => problems.push('the command centre home never rendered'));
-for (const lens of ['work', 'brain', 'all']) {
-  const button = page.locator(`[data-cc-lens="${lens}"]`);
-  if (await button.count()) { await button.click(); await settle(); await shot(`focus-${lens}`); }
-  else problems.push(`no ${lens} lens button`);
-}
+if (!(await page.locator('.cc-lens-chip').count())) problems.push('no lens chip');
+await page.locator('[data-cc-lens-open]').click(); await settle(); await shot('lens-chooser');
+if (!(await page.locator('.cc-chooser [data-cc-lens="work"]').count())) problems.push('the lens chip opened no chooser');
+for (const lens of ['work', 'brain', 'all']) { await pickLens(lens); await shot(`focus-${lens}`); }
 // Each item once, with its flag (Brain D-115 A): the hot close-proposed item is not repeated
 // in the inbox panel, its row says "close proposed", and the Inbox count means captures.
-await page.locator('[data-cc-lens="work"]').click(); await settle();
+await pickLens('work');
 if ((await page.locator('a[data-cc-ref="WORK-SYS-60101.10"], a.cc-in[href*="WORK-SYS-60101.10"]').count()) !== 1) problems.push('a hot flagged item shows more than once on Focus');
 if (!(await page.locator('a[data-cc-ref="WORK-SYS-60101.10"] .cc-chip.flag').count())) problems.push('the hot row carries no flag chip');
 if (!(await page.locator('.cc-flags').count())) problems.push('register flags have no line of their own under Inbox');
-await page.goto(`${base}/brain/#priority`); await settle(); await shot('priority');
+// Next actions (Brain DEV-61026.34): Today, This week and Next week; moves are rows on the log.
+await page.goto(`${base}/brain/#next`); await settle();
+if (!(await page.locator('.cc-subs [data-cc-sub="today"][aria-pressed="true"]').count())) problems.push('Next actions did not open on Today');
+await page.locator('[data-cc-sub="week"]').click(); await settle(); await shot('next-week-list');
+const places = () => writes.filter(([path]) => path === '/api/brain/place');
+const mover = page.locator('[data-cc-place="today"][data-ref="WORK-COMP-60101.02"]');
+if (await mover.count()) {
+  await mover.click(); await settle();
+  if (places().length !== 1) problems.push('→ Today wrote no placement');
+  await page.locator('[data-cc-place="today"][data-ref="WORK-LEAD-60101.08"]').click(); await settle();
+  await page.locator('[data-cc-sub="today"]').click(); await settle();
+  if ((await page.locator('[data-cc-drag]').count()) !== 2) problems.push('Today does not list the two placed items');
+  await page.locator('[data-cc-place="up"][data-ref="WORK-LEAD-60101.08"]').click(); await settle();
+  const firstDrag = await page.locator('[data-cc-drag]').first().getAttribute('data-cc-drag');
+  if (firstDrag !== 'WORK-LEAD-60101.08') problems.push('▲ did not reorder Today');
+  await shot('next-today');
+  await page.locator('[data-cc-place="next-week"][data-ref="WORK-COMP-60101.02"]').click(); await settle();
+  await page.locator('[data-cc-sub="later"]').click(); await settle();
+  if (!(await page.locator('[data-cc-place="keep"][data-ref="WORK-COMP-60101.02"]').count())) problems.push('→ Next week did not land the item in Next week');
+  await page.locator('[data-cc-place="keep"][data-ref="WORK-COMP-60101.02"]').click(); await settle();
+  await shot('next-next-week');
+  await page.locator('[data-cc-place="week"][data-ref="WORK-COMP-60101.02"]').click(); await settle();
+  if (await page.locator('[data-cc-place="keep"][data-ref="WORK-COMP-60101.02"]').count()) problems.push('Promote did not move the item back to This week');
+  if (places().length < 5) problems.push(`expected a placement write per move, got ${places().length}`);
+  await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('work');
+  if (!(await page.locator('a.cc-focal[data-cc-ref="WORK-LEAD-60101.08"]').count())) problems.push('Today\'s first item did not take the focal slot');
+  if (!(await page.locator('a.cc-focal', { hasText: 'first up today' }).count())) problems.push('the focal slot does not say first up today');
+  await shot('focus-first-up-today');
+  // Back out of Today so the rest of the run sees the brief's pick.
+  await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="today"]').click(); await settle();
+  await page.locator('[data-cc-place="week"][data-ref="WORK-LEAD-60101.08"]').click(); await settle();
+  await page.locator('[data-cc-place="week"][data-ref="WORK-COMP-60101.02"]').click().catch(() => {}); await settle();
+} else problems.push('This week offers no → Today on a work item');
+await page.goto(`${base}/brain/#priority`); await settle();
+if (!(await page.locator('.cc-tabs a[href="#next"][aria-current="page"]').count())) problems.push('#priority no longer lands on Next actions');
 // The Inbox tab (Brain DEV-61026.33): add box first, lines to clarify, then what the routines found.
 await page.goto(`${base}/brain/#inbox`); await settle(); await shot('inbox');
 if (!(await page.locator('.cc-inbox').count())) problems.push('the Inbox tab is empty');
@@ -181,7 +225,7 @@ if (await page.locator('.cc-tabs a[href="#clarify"]').count()) problems.push('th
 await page.goto(`${base}/brain/#clarify`); await settle();
 if (!(await page.locator('.cc-tabs a[href="#inbox"][aria-current="page"]').count())) problems.push('#clarify no longer lands on the Inbox tab');
 // A raw line walks the GTD questions: actionable, the next action, two minutes, delegate, details.
-await page.locator('[data-cc-lens="all"]').click(); await settle();
+await pickLens('all');
 const line = page.locator('a[data-cc-line]').first();
 if (!(await line.count())) problems.push('no raw line to clarify on the Inbox tab');
 else {
@@ -212,7 +256,7 @@ else {
 }
 // Adding a line opens the walk at once (Brain D-110 A folded in); Someday parks it.
 await page.goto(`${base}/brain/#focus`); await settle();
-await page.locator('[data-cc-lens="all"]').click(); await settle();
+await pickLens('all');
 const addBox = page.locator('.cc-inbox-add input[name="text"]');
 if (await addBox.count()) {
   await addBox.fill('Synthetic capture from the phone');
@@ -239,7 +283,7 @@ if (await addBox.count()) {
   await page.locator('.tk button[data-tk="hide"]').first().click(); await settle();
 }
 // A register decision closes with Leon's outcome (Brain D-111 A).
-await page.goto(`${base}/brain/#priority`); await settle();
+await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="week"]').click(); await settle();
 const choice = page.locator('a[data-cc-ref="WORK-LEAD-60101.08"]');
 if (await choice.count()) {
   await choice.click(); await settle();
@@ -253,8 +297,8 @@ if (await choice.count()) {
   await page.locator('.tk button[data-tk="hide"]').first().click(); await settle();
 } else problems.push('the register decision is not on Priority');
 // A close-proposed decision: the proposed close first, Decided as the alternative (Brain D-117 B).
-await page.goto(`${base}/brain/#priority`); await settle();
-await page.locator('[data-cc-lens="work"]').click(); await settle();
+await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="week"]').click(); await settle();
+await pickLens('work');
 const venue = page.locator('a[data-cc-ref="WORK-LEAD-60101.09"]');
 if (await venue.count()) {
   await venue.click(); await settle();
@@ -268,13 +312,13 @@ if (await venue.count()) {
 await page.goto(`${base}/brain/#focus`); await settle();
 if (await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count()) problems.push('a handled line came back before the reload');
 await page.reload({ waitUntil: 'networkidle' }); await settle();
-await page.locator('[data-cc-lens="work"]').click(); await settle();
+await pickLens('work');
 if (!(await page.locator('.cc').count())) problems.push('the home did not render after a reload');
 if (await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count()) problems.push('a handled line came back after a reload');
 // Reject asks first, from the task card and on the register; nothing is written until Yes.
 const rejects = () => writes.filter(([path]) => path === '/api/brain/reject').length;
-await page.goto(`${base}/brain/#priority`); await settle();
-await page.locator('[data-cc-lens="work"]').click(); await settle();
+await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="week"]').click(); await settle();
+await pickLens('work');
 const fresh = page.locator('a[data-cc-ref="P-WORK-COMP-60101.07"]');
 if (await fresh.count()) {
   await fresh.click(); await settle();
@@ -297,9 +341,9 @@ if (rejects() !== 1) problems.push('Yes on the register did not reject');
 await page.goto(`${base}/brain/#allocation`); await settle(); await page.waitForTimeout(600); await shot('allocation');
 if (!(await page.locator('.cc-meter').count())) problems.push('the Allocation tab shows no actuals');
 await page.goto(`${base}/brain/#focus`); await settle();
-await page.locator('[data-cc-lens="all"]').click(); await settle();
+await pickLens('all');
 if (!(await page.locator('.cc-inbox .cc-row').count())) problems.push('no inbox rows on the home');
-await page.locator('[data-cc-lens="work"]').click(); await settle();
+await pickLens('work');
 if (!(await page.locator('.cc-inbox .cc-flags').count())) problems.push('no flags line under the inbox (D-115 C)');
 const focal = page.locator('a.cc-focal');
 if (await focal.count()) {
@@ -366,12 +410,12 @@ if (!(await page.locator('.cc-lane', { hasText: 'not recorded' }).count())) prob
 if (await page.locator('.cc-lane', { hasText: /\b0 min of/ }).count()) problems.push('Allocation shows a false zero');
 // The pick made above is read back from the daily log after a reload (Brain D-113 A).
 await page.goto(`${base}/brain/#focus`); await page.reload({ waitUntil: 'networkidle' }); await settle(); await page.waitForTimeout(600);
-await page.locator('[data-cc-lens="work"]').click(); await settle();
+await pickLens('work');
 if (!(await page.locator('a.cc-focal[data-cc-ref="WORK-SYS-60101.10"]').count())) problems.push('the pick did not survive a reload');
 // What the routines found is settled from the row (Brain D-112 A): Reject asks first, Confirm is
 // one tap and the row leaves the group; Close all is one commit.
 await page.goto(`${base}/brain/#inbox`); await settle();
-await page.locator('[data-cc-lens="work"]').click(); await settle();
+await pickLens('work');
 const freshRow = page.locator('.cc-acts[data-cc-acts="P-WORK-COMP-60101.07"]');
 if (await freshRow.count()) {
   if (!(await page.locator('.cc-batch[data-cc-batch="close-proposed"]').count())) problems.push('no Close all button for the proposed closes');
