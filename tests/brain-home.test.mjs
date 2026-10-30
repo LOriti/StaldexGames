@@ -364,6 +364,39 @@ test('contexts and areas filter This week on Next actions, not Focus (Brain D-10
   assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', tab: 'next', sub: 'today' }), /class="cc-doors"/);
 });
 
+test('Hand to Claude from the card, and the lane\'s two states on the phone (Brain D-119 A)', () => {
+  const plain = entry('A-20', { source: 'card', home: 'project:alpha' });
+  assert.match(home.taskHtml(plain), /data-tk="hand">Hand to Claude/);
+  const handed = entry('A-21', { ai: 'prepare', claude: 'ready' });
+  const card = home.taskHtml(handed);
+  assert.doesNotMatch(card, /data-tk="hand"/);
+  assert.match(card, /In the Claude lane: the next morning brief prepares it/);
+  assert.match(card, /<span class="cc-chip clock">ready for Claude<\/span>/);
+  const back = entry('A-22', { ai: 'prepare', claude: 'back', prepared: '2030-01-07, Gmail draft and notes in projects/alpha/notes.md' });
+  const html = home.taskHtml(back, { paths: new Set(['projects/alpha/notes.md']) });
+  assert.match(html, /<span class="cc-chip ok">back for review<\/span>/);
+  assert.match(html, /<p class="tk-prepared"><b>Back for review<\/b> 2030-01-07, Gmail draft and notes in <a href="#\/projects\/alpha\/notes\.md">projects\/alpha\/notes\.md<\/a><\/p>/);
+  assert.match(home.preparedHtml({ prepared: 'see https://example.com/x?y=1 now' }), /<a href="https:\/\/example\.com\/x\?y=1" target="_blank" rel="noopener noreferrer">/);
+  assert.doesNotMatch(home.preparedHtml({ prepared: 'in other/file.md' }, new Set(['a.md'])), /<a /, 'an unknown path is plain text');
+  assert.equal(home.laneChip(entry('A-23', { claude: 'running' })), '', 'running is the desk\'s only');
+  assert.doesNotMatch(home.taskHtml(entry('D-4')), /data-tk="hand"/);
+  assert.doesNotMatch(home.taskHtml(entry('A-24', { section: 'blocked' })), /data-tk="hand"/);
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, handed, back] }));
+  view.lenses.work.claude = ['A-21', 'A-22']; view.lenses.work.claude_total = 2;
+  const focus = home.homeHtml(view, { lens: 'work' });
+  assert.match(focus, /Claude can help <em>2<\/em>[\s\S]*data-cc-ref="A-21"[\s\S]*ready for Claude[\s\S]*data-cc-ref="A-22"[\s\S]*back for review/);
+});
+
+test('the reward offers the way back to an interrupted item, and Next and Back start the clock (Brain DEV-61030.15)', () => {
+  const html = home.rewardHtml({ title: 'Urgent call', ref: 'A-9', minutes: 5, today: 1, next: { ref: 'A-3', title: 'Next one' }, back: { ref: 'A-1', title: 'The report' } }, () => 0);
+  assert.match(html, /<button type="button" class="mini-btn primary" data-tk="back-to" data-ref="A-1">Back to The report<\/button><button type="button" class="mini-btn" data-tk="next" data-ref="A-3">Next: Next one<\/button>/);
+  assert.match(html, /Next and Back start that item’s clock/);
+  const same = home.rewardHtml({ title: 'x', ref: 'A-9', minutes: 0, today: 1, next: { ref: 'A-1', title: 'The report' }, back: { ref: 'A-1', title: 'The report' } }, () => 0);
+  assert.doesNotMatch(same, /data-tk="back-to"/, 'one button when the way back is the next item');
+  assert.match(same, /class="mini-btn primary" data-tk="next"/);
+  assert.doesNotMatch(home.rewardHtml({ title: 'x', ref: 'A-9', minutes: 0, today: 1, next: null, back: null }, () => 0), /start that item/);
+});
+
 test('Someday has its own entry, grouped by family, with family pages and a way back to the Inbox (Brain D-104 C, DEV-61026.35)', () => {
   const someday = [
     { text: 'Learn the ukulele', raw: 'Learn the ukulele `someday: 2030-01-01`', date: '2030-01-01', family: 'PA-HOME', home: 'project:alpha', path: 'projects/alpha/QUEUE.md', lens: 'personal' },

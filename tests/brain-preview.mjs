@@ -49,9 +49,10 @@ const VIEW = {
     entry('WORK-LEAD-60101.08', { area: '1', kind: 'decision', title: 'Pick which of two clashing meetings moves', due: '2026-01-03' }),
     entry('WORK-LEAD-60101.09', { area: '1', kind: 'decision', title: 'Which venue for the planning day', flags: ['close-proposed'], evidence: 'Leon chose the cafe in his reply of 2 Jan.' }),
     entry('WORK-SYS-60101.10', { area: '1', section: 'hot', hot: ['due today'], title: 'Chase the signed variation', flags: ['close-proposed'], evidence: 'Reply sent 1 Jan 16:02.' }),
+    entry('WORK-SYS-60101.11', { area: '1', title: 'Draft the board paper', ai: 'prepare', claude: 'back', prepared: '2026-01-02, draft in projects/alpha/QUEUE.md' }),
   ],
   lenses: {
-    work: slot({ focal: { ref: 'WORK-SYS-60101.01', reason: 'chosen by the morning brief' }, hot: ['WORK-SYS-60101.10'], hot_total: 2,
+    work: slot({ focal: { ref: 'WORK-SYS-60101.01', reason: 'chosen by the morning brief' }, hot: ['WORK-SYS-60101.10'], hot_total: 2, claude: ['WORK-SYS-60101.11'], claude_total: 1,
       areas: { 1: { name: 'Systems', hours: 16, count: 1, hot: true }, 2: { name: 'Compliance', hours: 8, count: 1, hot: false } } }),
     ventures: slot({ focal: { ref: 'PROJ-TT-60101.03', reason: 'hottest by rule' }, hot_total: 1 }),
     personal: slot(),
@@ -396,6 +397,51 @@ if (await focal.count()) {
   await page.locator('[data-cb="open"]').click(); await settle();
   await page.locator('[data-tk="progress-ask"]').click(); await settle(); await shot('task-progress');
   await page.locator('[data-tk="cancel"]').click();
+  // Hand to Claude (Brain D-119 A): one write; the lane shows it ready at once.
+  await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+  await page.locator('a.cc-row[data-cc-ref="WORK-COMP-60101.02"]').first().click().catch(() => {}); await settle();
+  if (!(await page.locator('.tk-wrap:not([hidden]) [data-tk="hand"]').count())) {
+    await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="week"]').click(); await settle();
+    await page.locator('a.cc-row[data-cc-ref="WORK-COMP-60101.02"]').first().click(); await settle();
+  }
+  if (!(await page.locator('.tk-wrap:not([hidden]) [data-tk="hand"]').count())) problems.push('the task card offers no Hand to Claude');
+  else {
+    await page.locator('[data-tk="hand"]').click(); await settle();
+    if (!writes.some(([path]) => path === '/api/brain/hand')) problems.push('Hand to Claude wrote nothing');
+    if (!(await page.locator('.tk-wrap:not([hidden]) .cc-chip.clock', { hasText: 'ready for Claude' }).count())) problems.push('a handed item does not read ready for Claude');
+    await shot('task-handed');
+    await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+    await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('work');
+    if (!(await page.locator('a.cc-row[data-cc-ref="WORK-COMP-60101.02"] .cc-chip.clock').count())) problems.push('the Claude lane does not show the handed item as ready');
+    if (!(await page.locator('a.cc-row[data-cc-ref="WORK-SYS-60101.11"] .cc-chip.ok', { hasText: 'back for review' }).count())) problems.push('the lane does not show back for review');
+    await page.locator('a.cc-row[data-cc-ref="WORK-SYS-60101.11"]').click(); await settle();
+    if (!(await page.locator('.tk-prepared a[href="#/projects/alpha/QUEUE.md"]').count())) problems.push('the Prepared pointer does not open from the card');
+    await shot('task-back-for-review');
+    await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+  }
+  // The interruption (Brain DEV-61030.15): Switch remembers the clock's item; done offers the way back.
+  await page.locator('[data-cb="open"]').click(); await settle();
+  await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+  await page.goto(`${base}/brain/#next`); await settle(); await pickLens('all'); await page.locator('[data-cc-sub="week"]').click(); await settle();
+  await page.locator('a.cc-row[data-cc-ref="PROJ-TT-60101.03"]').click(); await settle();
+  if (!(await page.locator('.tk-wrap:not([hidden]) [data-tk="switch"]').count())) problems.push('no Switch on a card while another clock runs');
+  else {
+    await page.locator('[data-tk="switch"]').click(); await settle();
+    await page.locator('[data-tk="done-ask"]').click(); await settle();
+    await page.locator('.tk-panel [data-tk="done"]').click(); await page.waitForTimeout(1000);
+    // The way back is one button: Back to, or Next when the interrupted item is also next up.
+    const wayBack = page.locator('.tk-reward [data-tk="back-to"][data-ref="WORK-SYS-60101.01"], .tk-reward [data-tk="next"][data-ref="WORK-SYS-60101.01"]');
+    if (!(await wayBack.count())) problems.push('the reward after an interruption offers no way back');
+    await shot('reward-back-to');
+    const clocksBefore = writes.filter(([path]) => path === '/api/brain/clock').length;
+    await wayBack.first().click(); await settle();
+    if (!(await page.locator('.tk-wrap:not([hidden]) .tk-time').count())) problems.push('Back to did not start the clock');
+    await page.clock.fastForward(61_000); await settle();
+    if (writes.filter(([path]) => path === '/api/brain/clock').length <= clocksBefore) problems.push('Back to wrote no clock start');
+    await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+  }
+  await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('work');
+  await page.locator('[data-cb="open"]').click(); await settle();
   // Categorise from the task's card, then Back returns to the card rather than closing it.
   if (await page.locator('[data-tk="categorise"]').count()) {
     await page.locator('[data-tk="categorise"]').click(); await settle(); await shot('categorise-from-task');

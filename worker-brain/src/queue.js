@@ -119,6 +119,21 @@ export function cardProgress(text, id, raw, today) {
   return q.lines.join('');
 }
 
+// Hand to Claude (Brain D-119 A): `ai: prepare` on the card's attribute line, so the morning
+// brief prepares it and the Claude lane shows it ready; `complete` stays a session's call.
+export function handCard(text, id, today) {
+  const q = parse(text);
+  const token = ID_TOKEN(id);
+  const { start, end } = findCard(q, id);
+  const at = q.lines.findIndex((l, i) => i > start && i < end && token.test(content(l)));
+  const line = content(q.lines[at]);
+  if (/`ai:\s*(prepare|complete)`/.test(line)) throw new QueueError('closed', `${id} is already in the Claude lane`);
+  const next = /`ai:[^`]*`/.test(line) ? line.replace(/`ai:[^`]*`/, '`ai: prepare`') : `${line} \`ai: prepare\``;
+  q.lines[at] = next + q.lines[at].slice(line.length);
+  bumpUpdated(q, today);
+  return q.lines.join('');
+}
+
 // Moves the groomed card with this id under `## Done` with a `done:` stamp.
 export function markDone(text, id, today) {
   const q = parse(text);

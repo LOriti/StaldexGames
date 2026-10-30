@@ -271,6 +271,14 @@ export function decideItem(text, id, raw, today) {
   });
 }
 
+// Hand to Claude (Brain D-119 A): `ai: prepare` on an open item's attribute line.
+export function handItem(text, id, today) {
+  return edit(text, id, today, ({ item, line }) => {
+    if (['prepare', 'complete'].includes(item.attrs.ai)) throw new QueueError('closed', `${id} is already in the Claude lane`);
+    line((l) => setOrAddAttr(l, 'ai', 'prepare'));
+  });
+}
+
 const NOTE_MAX = 500;
 function cleanNote(raw) {
   if (typeof raw !== 'string') throw new QueueError('invalid-text', 'text is required');
