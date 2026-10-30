@@ -190,7 +190,11 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
   `POST /api/brain/hours` `{ minutes, area | lens | ref, note }` → append a `## HH:MM Time` row to
   `logs/daily/<Perth date>.md` on Brain's `daily-log` branch (created if missing), as a
   `time: …` commit. Stop rows count minutes since the start, capped at 12 h; hours are
-  quarter hours up to 12 h.
+  quarter hours up to 12 h. The page holds a clock's start row back for its first minute,
+  so a clock stopped under a minute leaves no row (Brain D-114 A).
+- `POST /api/brain/focal` `{ ref | '', lens }` → appends a `focal` row the same way: Leon's
+  pick of the one thing for today, an empty `ref` going back to the brief's pick (Brain
+  D-113 A). Both screens read the day's latest one.
 - `POST /api/brain/categorise` `{ project, line, details }` or `{ id, details }` → Leon's details
   (`title`, `next`, `family`, `priority`, `minutes`, `due`, `owner`) kept on an Inbox line as
   code spans for Brain's scheduled groom, or set on an open register item, which is confirmed

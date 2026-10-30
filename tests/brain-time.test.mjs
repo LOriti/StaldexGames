@@ -176,6 +176,29 @@ test('the clock creates today\'s log on daily-log, then appends to it', async ()
   assert.equal(files['projects/demo/QUEUE.md'].puts.every((p) => p.branch === 'main'), true);
 });
 
+test('the one thing for today is a focal row on the daily log (Brain D-113 A)', async () => {
+  const path = `logs/daily/${TODAY}.md`;
+  files[path].text = written(path);
+  const clock = timelog.perthClock(Date.parse('2030-01-02T10:30:00+08:00'));
+  assert.deepEqual(timelog.focalRow({ ref: 'DEV-01010.01', lens: 'brain' }, clock), { kind: 'focal', start: '10:30', end: '', minutes: 0, ref: 'DEV-01010.01', area: '', lens: 'brain', note: '' });
+  assert.equal(timelog.focalRow({ ref: '', lens: 'work' }, clock).ref, '', 'an empty item clears the pick');
+  assert.throws(() => timelog.focalRow({ ref: 'rm -rf' }, clock), /id/);
+  assert.throws(() => timelog.focalRow({ ref: 'DEV-01010.01', lens: 'nope' }, clock), /lens/);
+  const set = await post('/api/brain/focal', { ref: 'DEV-01010.01', lens: 'brain' });
+  assert.equal(set.status, 200);
+  assert.match(files[path].puts.at(-1).message, /^time: \d{4}-\d{2}-\d{2} focal DEV-01010\.01$/);
+  assert.equal(files[path].puts.at(-1).branch, 'daily-log');
+  assert.match(written(path), /\| focal \| \d{2}:\d{2} \|  \| 0 \| DEV-01010\.01 \|  \| brain \|  \|\n$/);
+  const rows = timelog.parseTime(written(path), TODAY);
+  assert.equal(rows.at(-1).kind, 'focal');
+  const clear = await post('/api/brain/focal', { ref: '', lens: 'brain' });
+  assert.equal(clear.status, 200);
+  assert.match(files[path].puts.at(-1).message, /focal cleared$/);
+  assert.match(written(path), /\| focal \| \d{2}:\d{2} \|  \| 0 \|  \|  \| brain \|  \|\n$/);
+  assert.equal((await post('/api/brain/focal', { ref: 42 })).status, 400);
+  assert.equal((await post('/api/brain/focal', { ref: 'x y' })).status, 400);
+});
+
 test('time returns parsed rows from the daily-log branch only', async () => {
   worker._resetCaches();
   const res = await worker.default.fetch(new Request(`https://staldex.com/api/brain/time?from=${TODAY}`, {

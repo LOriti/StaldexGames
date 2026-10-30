@@ -7,7 +7,11 @@
 //   started   a task clock began (Brain D-97 A: one clock shared by every screen)
 //   tracked   a task clock stopped; minutes are the time it ran
 //   entered   hours Leon typed in on the Allocation tab (Brain D-96 C)
+//   focal     Leon's pick of the one thing for today, or an empty item to go back to the
+//             brief's pick (Brain D-113 A); no time, both screens read the latest one
 // The desk also writes planned, unplanned and distraction rows; all are read back here.
+// A clock stopped under a minute is never written (Brain D-114 A): the page holds the
+// `started` row back for the first minute, so an accidental open leaves no row at all.
 
 import { QueueError } from './queue.js';
 
@@ -107,6 +111,14 @@ export function hoursRow(body) {
     throw new QueueError('invalid-text', 'minutes must be a positive multiple of 15, at most 720');
   }
   return { kind: 'entered', start: '', end: '', minutes, ref, area, lens, note: cleanCell(body.note) || 'entered on the viewer' };
+}
+
+// The one thing for today (Brain D-113 A): `| focal | HH:MM | | 0 | <id> | | <lens> | |`,
+// the item empty to clear Leon's pick.
+export function focalRow(body, clock) {
+  const ref = body.ref ? cleanRef(body.ref) : '';
+  const { lens } = cleanPlace('', body.lens);
+  return { kind: 'focal', start: clock.hhmm, end: '', minutes: 0, ref, area: '', lens, note: '' };
 }
 
 // Every row of every `## HH:MM Time` table in one day's log.

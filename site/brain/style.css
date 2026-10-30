@@ -446,6 +446,10 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .tk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
 .tk-grid span { display: grid; gap: 4px; }
 .cc-chip.ok { background: var(--accent-soft); color: var(--accent); }
+.cc-chip.flag { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+.cc-flags { display: block; margin: -4px 2px 8px; font-size: 12.5px; color: var(--warn); text-decoration: none; }
+.cc-focal-note { margin: 0 0 8px; color: var(--accent); }
+.tk-proposed q { quotes: "“" "”"; }
 .tk-head .tk-back { margin-right: 4px; }
 .tk-choices { display: grid; gap: 8px; }
 .tk-choice { display: grid; gap: 2px; text-align: left; font: inherit; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; cursor: pointer; }

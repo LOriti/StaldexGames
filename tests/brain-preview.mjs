@@ -47,9 +47,11 @@ const VIEW = {
     entry('D-1', { home: 'project:beta', lens: 'brain', kind: 'decision' }),
     entry('P-WORK-COMP-60101.07', { area: '2', flags: ['unconfirmed'], title: 'A new item the brief found' }),
     entry('WORK-LEAD-60101.08', { area: '1', kind: 'decision', title: 'Pick which of two clashing meetings moves', due: '2026-01-03' }),
+    entry('WORK-LEAD-60101.09', { area: '1', kind: 'decision', title: 'Which venue for the planning day', flags: ['close-proposed'], evidence: 'Leon chose the cafe in his reply of 2 Jan.' }),
+    entry('WORK-SYS-60101.10', { area: '1', section: 'hot', hot: ['due today'], title: 'Chase the signed variation', flags: ['close-proposed'], evidence: 'Reply sent 1 Jan 16:02.' }),
   ],
   lenses: {
-    work: slot({ focal: { ref: 'WORK-SYS-60101.01', reason: 'chosen by the morning brief' }, hot_total: 1,
+    work: slot({ focal: { ref: 'WORK-SYS-60101.01', reason: 'chosen by the morning brief' }, hot: ['WORK-SYS-60101.10'], hot_total: 2,
       areas: { 1: { name: 'Systems', hours: 16, count: 1, hot: true }, 2: { name: 'Compliance', hours: 8, count: 1, hot: false } } }),
     ventures: slot({ focal: { ref: 'PROJ-TT-60101.03', reason: 'hottest by rule' }, hot_total: 1 }),
     personal: slot(),
@@ -62,6 +64,8 @@ const VIEW = {
     { kind: 'line', raw: 'A raw idea typed on the phone', details: {}, family: 'PROJ-TT', text: 'A raw idea typed on the phone', home: 'project:alpha', date: new Date().toISOString().slice(0, 10), path: 'projects/alpha/QUEUE.md', ref: null, lens: 'ventures' },
     { kind: 'unconfirmed', text: 'A new item the brief found', home: 'project:alpha', date: '2026-01-02', path: 'register/open-items.md', ref: 'P-WORK-COMP-60101.07', lens: 'work' },
     { kind: 'close', text: 'An item the debrief thinks is done', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-SYS-60101.01', lens: 'work' },
+    { kind: 'close', text: 'Chase the signed variation', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-SYS-60101.10', lens: 'work' },
+    { kind: 'close', text: 'Which venue for the planning day', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-LEAD-60101.09', lens: 'work' },
   ],
   gaps: ['Synthetic preview data.'],
 };
@@ -88,14 +92,22 @@ const TREE = {
 const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
 const TIME = [
   { date: today, kind: 'tracked', start: '08:30', end: '10:00', minutes: 90, ref: 'WORK-SYS-60101.01', area: '1', lens: 'work', note: 'Synthetic' },
-  { date: today, kind: 'entered', start: '', end: '', minutes: 120, ref: '', area: '2', lens: 'work', note: 'entered on the viewer' },
+  { date: today, kind: 'entered', start: '', end: '', minutes: 120, ref: '', area: 'vol', lens: 'work', note: 'entered on the viewer' },
   { date: today, kind: 'tracked', start: '19:00', end: '20:00', minutes: 60, ref: 'DEV-60101.06', area: '', lens: 'brain', note: 'Synthetic' },
 ];
 const writes = [];
 
 function answer(url, method = 'GET', body = null) {
   const u = new URL(url);
-  if (method === 'POST') { writes.push([u.pathname, body]); return { path: 'synthetic', sha: 'x', commit: null }; }
+  if (method === 'POST') {
+    writes.push([u.pathname, body]);
+    // The daily log keeps a focal row, so a reload reads the pick back (Brain D-113 A).
+    if (u.pathname === '/api/brain/focal') {
+      const b = JSON.parse(body || '{}');
+      TIME.push({ date: today, kind: 'focal', start: '12:00', end: '', minutes: 0, ref: b.ref || '', area: '', lens: b.lens || '', note: '' });
+    }
+    return { path: 'synthetic', sha: 'x', commit: null };
+  }
   if (u.pathname === '/api/brain/time') return { from: u.searchParams.get('from'), to: today, rows: TIME };
   if (u.pathname === '/api/brain/tree') return TREE;
   const path = u.searchParams.get('path');
@@ -126,6 +138,8 @@ await mkdir(OUT, { recursive: true });
 const browser = await chromium.launch();
 const wide = args.includes('--wide');
 const page = await browser.newPage(wide ? { viewport: { width: 1400, height: 900 } } : { viewport: { width: 390, height: 844 }, deviceScaleFactor: 2 });
+// Fake timers, so the clock's first minute (Brain D-114 A) can be skipped rather than waited.
+await page.clock.install({ time: Date.now() });
 const problems = [];
 page.on('pageerror', (e) => problems.push(`page error: ${e.message}`));
 page.on('console', (m) => { if (m.type() === 'error') problems.push(`console: ${m.text()}`); });
@@ -152,6 +166,12 @@ for (const lens of ['work', 'brain', 'all']) {
   if (await button.count()) { await button.click(); await settle(); await shot(`focus-${lens}`); }
   else problems.push(`no ${lens} lens button`);
 }
+// Each item once, with its flag (Brain D-115 A): the hot close-proposed item is not repeated
+// in the inbox panel, its row says "close proposed", and the Inbox count means captures.
+await page.locator('[data-cc-lens="work"]').click(); await settle();
+if ((await page.locator('a[data-cc-ref="WORK-SYS-60101.10"], a.cc-in[href*="WORK-SYS-60101.10"]').count()) !== 1) problems.push('a hot flagged item shows more than once on Focus');
+if (!(await page.locator('a[data-cc-ref="WORK-SYS-60101.10"] .cc-chip.flag').count())) problems.push('the hot row carries no flag chip');
+if (!(await page.locator('.cc-flags').count())) problems.push('register flags have no line of their own under Inbox');
 await page.goto(`${base}/brain/#priority`); await settle(); await shot('priority');
 await page.goto(`${base}/brain/#clarify`); await settle(); await shot('clarify');
 if (!(await page.locator('.cc-inbox').count())) problems.push('the Clarify tab is empty');
@@ -168,6 +188,7 @@ if (await line.count()) {
 }
 // Adding to the inbox opens its card at once (Brain D-110 A): sort it, do it or leave it.
 await page.goto(`${base}/brain/#focus`); await settle();
+await page.locator('[data-cc-lens="all"]').click(); await settle();
 const addBox = page.locator('.cc-inbox-add input[name="text"]');
 if (await addBox.count()) {
   await addBox.fill('Synthetic capture from the phone');
@@ -200,6 +221,25 @@ if (await choice.count()) {
   if (!(await page.locator('.tk-reward').count())) problems.push('deciding showed no reward');
   await page.locator('.tk button[data-tk="hide"]').first().click(); await settle();
 } else problems.push('the register decision is not on Priority');
+// A close-proposed decision: the proposed close first, Decided as the alternative (Brain D-117 B).
+await page.goto(`${base}/brain/#priority`); await settle();
+await page.locator('[data-cc-lens="work"]').click(); await settle();
+const venue = page.locator('a[data-cc-ref="WORK-LEAD-60101.09"]');
+if (await venue.count()) {
+  await venue.click(); await settle();
+  const order = await page.evaluate(() => { const h = document.querySelector('.tk').innerHTML; return [h.indexOf('confirm-close'), h.indexOf('done-ask')]; });
+  if (!(order[0] > -1 && order[0] < order[1])) problems.push('the decision does not put the proposed close first');
+  if (!(await page.locator('.tk-proposed q').count())) problems.push('the proposed close hides the routine’s evidence');
+  await shot('decision-close-proposed');
+  await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+} else problems.push('the close-proposed decision is not on Priority');
+// What Leon just did survives a reload until Brain renders a new view (Brain DEV-61030.12).
+await page.goto(`${base}/brain/#focus`); await settle();
+if (await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count()) problems.push('a handled line came back before the reload');
+await page.reload({ waitUntil: 'networkidle' }); await settle();
+await page.locator('[data-cc-lens="work"]').click(); await settle();
+if (!(await page.locator('.cc').count())) problems.push('the home did not render after a reload');
+if (await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count()) problems.push('a handled line came back after a reload');
 // Reject asks first, from the task card and on the register; nothing is written until Yes.
 const rejects = () => writes.filter(([path]) => path === '/api/brain/reject').length;
 await page.goto(`${base}/brain/#priority`); await settle();
@@ -233,9 +273,34 @@ if (await focal.count()) {
   await focal.click(); await settle();
   if (await page.locator('.tk-wrap:not([hidden]) [data-tk="start"]').count()) await shot('task-card');
   else problems.push('tapping the focal item did not open its card, clock not started');
+  // A clock stopped inside its first minute writes nothing (Brain D-114 A).
+  const clocks = () => writes.filter(([path]) => path === '/api/brain/clock').length;
   await page.locator('[data-tk="start"]').click(); await settle();
   if (!(await page.locator('.tk-wrap:not([hidden]) .tk-time').count())) problems.push('Start did not start the clock');
+  await page.locator('[data-tk="stop"]').click(); await settle();
+  if (clocks()) problems.push('a clock stopped under a minute still wrote a row');
+  if (!(await page.locator('.tk-wrap:not([hidden]) .write-msg', { hasText: 'Under a minute' }).count())) problems.push('an under-a-minute stop did not say nothing was recorded');
+  await shot('task-under-a-minute');
+  await page.locator('[data-tk="start"]').click(); await settle();
+  await page.clock.fastForward(61_000); await settle();
+  if (clocks() !== 1) problems.push('the start row was not written once the first minute passed');
   await shot('task-clock');
+  // The one thing can be set from the card (Brain D-113 A): Also hot's item takes the slot.
+  await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+  const alsoHot = page.locator('a.cc-row[data-cc-ref="WORK-SYS-60101.10"]');
+  if (await alsoHot.count()) {
+    await alsoHot.click(); await settle();
+    if (!(await page.locator('[data-tk="focal-set"]').count())) problems.push('the task card offers no Make this the one thing');
+    await page.locator('[data-tk="focal-set"]').click(); await settle();
+    if (!writes.some(([path]) => path === '/api/brain/focal')) problems.push('Make this the one thing wrote no focal row');
+    if (!(await page.locator('[data-tk="focal-clear"]').count())) problems.push('the new pick offers no way back to the brief’s pick');
+    await shot('task-one-thing');
+    await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+    if (!(await page.locator('a.cc-focal[data-cc-ref="WORK-SYS-60101.10"]').count())) problems.push('the pick did not take the focal slot');
+    if (!(await page.locator('a.cc-focal', { hasText: 'your pick for today' }).count())) problems.push('the focal slot does not say it is Leon’s pick');
+    await shot('focus-one-thing');
+  } else problems.push('no Also hot row to make the one thing');
+  await page.locator('[data-cb="open"]').click(); await settle();
   await page.locator('[data-tk="progress-ask"]').click(); await settle(); await shot('task-progress');
   await page.locator('[data-tk="cancel"]').click();
   // Categorise from the task's card, then Back returns to the card rather than closing it.
@@ -261,6 +326,14 @@ if (await focal.count()) {
   if (await page.locator('.clock-bar:not([hidden])').count()) problems.push('finishing the task left its clock running');
   if (!writes.some(([path]) => path === '/api/brain/clock') || !writes.some(([path]) => path === '/api/brain/close')) problems.push('expected clock and close writes');
 }
+// Allocation: an area with no rows reads "not recorded", never 0 (Brain D-114 A).
+await page.goto(`${base}/brain/#allocation`); await settle(); await page.waitForTimeout(600);
+if (!(await page.locator('.cc-lane', { hasText: 'not recorded' }).count())) problems.push('an area with no rows does not read not recorded');
+if (await page.locator('.cc-lane', { hasText: /\b0 min of/ }).count()) problems.push('Allocation shows a false zero');
+// The pick made above is read back from the daily log after a reload (Brain D-113 A).
+await page.goto(`${base}/brain/#focus`); await page.reload({ waitUntil: 'networkidle' }); await settle(); await page.waitForTimeout(600);
+await page.locator('[data-cc-lens="work"]').click(); await settle();
+if (!(await page.locator('a.cc-focal[data-cc-ref="WORK-SYS-60101.10"]').count())) problems.push('the pick did not survive a reload');
 
 await browser.close();
 server?.close();

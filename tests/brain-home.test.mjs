@@ -45,6 +45,16 @@ test('the lens follows Perth working hours, whatever the phone clock says', () =
   assert.equal(home.defaultLens(hours, new Date('2026-10-25T02:00:00Z')), 'personal'); // Sun 10:00 Perth
 });
 
+test('outside working hours the page opens on the lens last used (Brain D-116 A)', () => {
+  const hours = VIEW.work_hours;
+  const work = new Date('2026-10-26T02:00:00Z'); const evening = new Date('2026-10-26T11:00:00Z'); const sunday = new Date('2026-10-25T02:00:00Z');
+  assert.equal(home.openingLens(hours, 'brain', work), 'work', 'working hours still open on Work');
+  assert.equal(home.openingLens(hours, 'brain', evening), 'brain');
+  assert.equal(home.openingLens(hours, 'ventures', sunday), 'ventures');
+  assert.equal(home.openingLens(hours, null, evening), 'personal');
+  assert.equal(home.openingLens(hours, 'nope', evening), 'personal');
+});
+
 test('tapping an entry opens where it lives', () => {
   assert.equal(home.sourcePath(entry('alpha-001', { source: 'card' })), 'projects/alpha/QUEUE.md');
   assert.equal(home.sourcePath(entry('D-9')), 'register/decisions.md');
@@ -157,8 +167,139 @@ test('actuals count time spent, not plans or running clocks', () => {
   assert.equal(a.days, 2);
   const tab = home.homeHtml(VIEW, { lens: 'work', tab: 'allocation', time: { rows, monday: '2030-01-06' } });
   assert.match(tab, /2 h 30 min of 16 h a week/);
+  assert.match(tab, /Recorded on 2 days this week/);
   assert.match(tab, /<form class="cc-hours">/);
   assert.match(home.homeHtml(VIEW, { lens: 'work', tab: 'allocation', time: { rows: [], monday: '2030-01-06' } }), /Nothing recorded this week yet/);
+});
+
+test('no false zero on Allocation (Brain D-114 A): one minute is not a recorded week, and an area with no rows is not 0', () => {
+  const view = { ...VIEW, allocation: { areas: { 1: { name: 'Systems', hours: 16 }, 2: { name: 'Compliance', hours: 8 } }, float: 6, total: 40 } };
+  // The 26 October case: a single 1-minute clock test.
+  const minute = [{ date: '2030-01-06', kind: 'tracked', minutes: 1, area: '', lens: 'work' }];
+  assert.equal(home.weekActuals(minute, '2030-01-06').days, 0);
+  const tab1 = home.homeHtml(view, { lens: 'work', tab: 'allocation', time: { rows: minute, monday: '2030-01-06' } });
+  assert.match(tab1, /Nothing recorded this week yet/);
+  assert.doesNotMatch(tab1, /0 min of/);
+  // An empty week.
+  assert.doesNotMatch(home.homeHtml(view, { lens: 'work', tab: 'allocation', time: { rows: [], monday: '2030-01-06' } }), /0 min|not recorded ·/);
+  // A week with one area recorded: the other reads "not recorded", lenses with no rows too.
+  const one = [{ date: '2030-01-06', kind: 'entered', minutes: 120, area: '1', lens: 'work' }, { date: '2030-01-07', kind: 'tracked', minutes: 10, area: '1', lens: 'work' }];
+  const a = home.weekActuals(one, '2030-01-06');
+  assert.equal(a.days, 1, 'a day with under 15 minutes is not a recorded day');
+  const tab = home.homeHtml(view, { lens: 'work', tab: 'allocation', time: { rows: one, monday: '2030-01-06' } });
+  assert.match(tab, /2 h 10 min of 16 h a week/);
+  assert.match(tab, /2 Compliance<small>not recorded · 8 h a week/);
+  assert.match(tab, /Volunteering not recorded · Ventures not recorded · Personal not recorded · Brain not recorded/);
+  assert.doesNotMatch(tab, /\b0 min/);
+  assert.equal((tab.match(/class="cc-meter/g) || []).length, 1, 'a meter only where time is known');
+  // The clock's first minute is a grace period: stopped inside it, nothing is written.
+  const clock = { startMs: Date.parse('2030-01-06T09:00:00+08:00') };
+  assert.equal(home.clockRecords(clock, clock.startMs + 29_000), false);
+  assert.equal(home.clockRecords(clock, clock.startMs + home.CLOCK_GRACE_MS), true);
+  // Focal rows carry no time.
+  assert.equal(home.weekActuals([{ date: '2030-01-06', kind: 'focal', minutes: 0, ref: 'A-1', lens: 'work' }], '2030-01-06').days, 0);
+});
+
+test('the one thing can be Leon\'s pick from the daily log, ahead of the brief\'s (Brain D-113 A)', () => {
+  const rows = [
+    { date: '2030-01-06', kind: 'focal', start: '08:00', minutes: 0, ref: 'A-2', lens: 'work' },
+    { date: '2030-01-07', kind: 'focal', start: '08:00', minutes: 0, ref: 'A-1', lens: 'work' },
+    { date: '2030-01-07', kind: 'focal', start: '09:00', minutes: 0, ref: 'A-2', lens: 'work' },
+  ];
+  assert.deepEqual(home.latestFocal(rows, '2030-01-07'), { ref: 'A-2' });
+  assert.deepEqual(home.latestFocal(rows, '2030-01-06'), { ref: 'A-2' });
+  assert.equal(home.latestFocal(rows, '2030-01-08'), null, 'yesterday\'s pick does not carry over');
+  assert.deepEqual(home.latestFocal([...rows, { date: '2030-01-07', kind: 'focal', start: '10:00', minutes: 0, ref: '', lens: 'work' }], '2030-01-07'), { ref: '' }, 'an empty item clears the pick');
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, entry('A-3', { section: 'hot', hot: ['due today'] })] }));
+  view.lenses.work.hot = ['A-3'];
+  view.lenses.work.hot_total = 2;
+  // The brief's pick stands until Leon picks.
+  assert.equal(home.focalChoice(view, 'work', null).entry.ref, 'A-1');
+  assert.equal(home.focalChoice(view, 'work', { ref: '' }).entry.ref, 'A-1');
+  assert.equal(home.focalChoice(view, 'work', { ref: '' }).mine, false);
+  // Leon's pick wins, with its reason; the displaced hot item goes back to Also hot.
+  const pick = home.focalChoice(view, 'work', { ref: 'A-2' });
+  assert.deepEqual([pick.entry.ref, pick.reason, pick.mine], ['A-2', 'your pick for today', true]);
+  const html = home.homeHtml(view, { lens: 'work', focal: { ref: 'A-2' } });
+  assert.match(html, /class="cc-focal" href="#\/register\/open-items\.md\?item=A-2"[\s\S]*your pick for today/);
+  assert.match(html, /Also hot[\s\S]*data-cc-ref="A-1"[\s\S]*data-cc-ref="A-3"/);
+  // A pick outside the lens, or not actionable, falls back to the view's.
+  assert.equal(home.focalChoice(view, 'work', { ref: 'alpha-001' }).entry.ref, 'A-1');
+  assert.equal(home.focalChoice(view, 'ventures', { ref: 'alpha-001' }).entry.ref, 'alpha-001');
+  assert.equal(home.focalChoice(view, 'personal', { ref: 'A-9' }), null);
+  // The card: any hot or next item offers the slot; the current pick offers the way back.
+  assert.match(home.taskHtml(entry('A-2'), { focal: { ref: 'A-1', mine: false } }), /data-tk="focal-set">Make this the one thing/);
+  const own = home.taskHtml(entry('A-2'), { focal: { ref: 'A-2', mine: true } });
+  assert.match(own, /This is the one thing today, your pick/);
+  assert.match(own, /data-tk="focal-clear">Back to the brief’s pick/);
+  assert.doesNotMatch(own, /focal-set/);
+  const theirs = home.taskHtml(entry('A-1'), { focal: { ref: 'A-1', mine: false } });
+  assert.match(theirs, /This is the one thing today\./);
+  assert.doesNotMatch(theirs, /focal-clear|focal-set/);
+  assert.doesNotMatch(home.taskHtml(entry('A-5', { section: 'waiting' }), { focal: { ref: 'A-1', mine: false } }), /focal-set/);
+});
+
+test('every row carries its flag, nothing repeats on Focus, and the inbox count means captures (Brain D-115 A)', () => {
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries,
+    entry('P-A-6', { section: 'hot', hot: ['due today'], flags: ['unconfirmed'] }),
+    entry('A-7', { flags: ['close-proposed'], evidence: 'a sent reply' })] }));
+  view.lenses.work.hot = ['P-A-6'];
+  view.lenses.work.hot_total = 2;
+  view.inbox = [
+    { kind: 'unconfirmed', text: 'Task P-A-6', home: 'project:alpha', date: '2030-01-02', path: 'register/open-items.md', ref: 'P-A-6', lens: 'work' },
+    { kind: 'close', text: 'Task A-7', home: 'project:alpha', date: '2030-01-02', path: 'register/open-items.md', ref: 'A-7', lens: 'work' },
+    { kind: 'close', text: 'Task A-1', home: 'project:alpha', date: '2030-01-01', path: 'register/open-items.md', ref: 'A-1', lens: 'work' },
+    { kind: 'line', text: 'Buy milk', raw: 'Buy milk', details: {}, family: '?', home: 'project:alpha', date: '2030-01-01', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'work' },
+  ];
+  const focus = home.homeHtml(view, { lens: 'work' });
+  assert.match(focus, /Also hot[\s\S]*data-cc-ref="P-A-6"[\s\S]*<span class="cc-chip flag">new, confirm\?<\/span>/);
+  assert.equal((focus.match(/item=P-A-6"/g) || []).length, 1, 'the hot new item is not repeated in the inbox panel');
+  assert.equal((focus.match(/item=A-1"/g) || []).length, 1, 'the focal item\'s proposed close is not repeated');
+  assert.match(focus, /item=A-7" data-cc-ref="A-7"[\s\S]*close proposed/, 'a flagged item not on the screen still lists');
+  assert.match(focus, /<h2 class="cc-gh">Inbox <em>1<\/em><\/h2><a class="cc-flags" href="#clarify">1 to confirm, 2 closes proposed →<\/a>/);
+  const priority = home.homeHtml(view, { lens: 'work', tab: 'priority' });
+  assert.match(priority, /data-cc-ref="A-7"[\s\S]*?<span class="cc-chip flag">close proposed<\/span>/);
+  const clarify = home.homeHtml(view, { lens: 'work', tab: 'clarify' });
+  assert.match(clarify, /Inbox to sort <em>1<\/em>/);
+  assert.match(home.taskHtml(view.entries.find((e) => e.ref === 'A-7')), /A routine thinks this is done: <q>a sent reply<\/q>/);
+  assert.deepEqual(home.flagChips(entry('X', { flags: ['unconfirmed', 'close-proposed', 'other'] })).length, 2);
+});
+
+test('a close-proposed decision shows one close first, Decided as the alternative (Brain D-117 B)', () => {
+  const choice = entry('X-1.06', { kind: 'decision', flags: ['close-proposed'], evidence: 'Leon chose Friday in the thread.' });
+  const html = home.taskHtml(choice);
+  assert.ok(html.indexOf('data-tk="confirm-close"') < html.indexOf('data-tk="done-ask"'), 'the proposed close comes first');
+  assert.match(html, /<button type="button" class="mini-btn primary" data-tk="confirm-close">Yes, it’s done/);
+  assert.match(html, /<button type="button" class="mini-btn" data-tk="done-ask">Decided otherwise…/);
+  assert.match(html, /Confirm it to record that as the outcome/);
+  assert.equal((html.match(/class="mini-btn primary"/g) || []).length, 2, 'the clock\'s Start and the proposed close');
+  const action = home.taskHtml(entry('X-1.07', { flags: ['close-proposed'] }));
+  assert.match(action, /class="mini-btn" data-tk="done-ask">Done…/);
+});
+
+test('due chips are recomputed against today\'s Perth date when the view is from an earlier day', () => {
+  assert.equal(home.dueChip('2030-01-05', '2030-01-07'), 'overdue 2 d');
+  assert.equal(home.dueChip('2030-01-07', '2030-01-07'), 'due today');
+  assert.equal(home.dueChip('2030-01-08', '2030-01-07'), 'due tomorrow');
+  assert.equal(home.dueChip('2030-01-09', '2030-01-07'), 'due Wed 09 Jan');
+  assert.equal(home.dueChip('2030-01-10', '2030-01-07'), null);
+  assert.equal(home.dueChip('unknown', '2030-01-07'), null);
+  const view = JSON.parse(JSON.stringify({ ...VIEW, date: '2030-01-06', entries: [
+    entry('A-1', { section: 'hot', hot: ['due tomorrow', 'flagged hot'], due: '2030-01-07' }),
+    entry('A-2', { due: '2030-01-07' }),
+    entry('A-3', { due: '2030-02-07' }),
+  ] }));
+  view.lenses.work.hot = []; view.lenses.work.hot_total = 1; view.lenses.all.hot_total = 1;
+  home.refreshDue(view, '2030-01-07');
+  const by = Object.fromEntries(view.entries.map((e) => [e.ref, e]));
+  assert.deepEqual(by['A-1'].hot, ['due today', 'flagged hot']);
+  assert.deepEqual([by['A-2'].section, by['A-2'].hot], ['hot', ['due today']]);
+  assert.deepEqual(view.lenses.work.hot, ['A-2']);
+  assert.equal(view.lenses.work.hot_total, 2);
+  assert.deepEqual([by['A-3'].section, by['A-3'].hot], ['next', []]);
+  const same = JSON.parse(JSON.stringify(view));
+  home.refreshDue(same, '2030-01-07');
+  assert.deepEqual(same, view, 'a view from today is left alone');
 });
 
 test('the task card: estimate, clock and what closing means', () => {
