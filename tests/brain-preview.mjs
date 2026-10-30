@@ -181,8 +181,10 @@ if (await page.locator('.cc-tabs a[href="#clarify"]').count()) problems.push('th
 await page.goto(`${base}/brain/#clarify`); await settle();
 if (!(await page.locator('.cc-tabs a[href="#inbox"][aria-current="page"]').count())) problems.push('#clarify no longer lands on the Inbox tab');
 // A raw line walks the GTD questions: actionable, the next action, two minutes, delegate, details.
+await page.locator('[data-cc-lens="all"]').click(); await settle();
 const line = page.locator('a[data-cc-line]').first();
-if (await line.count()) {
+if (!(await line.count())) problems.push('no raw line to clarify on the Inbox tab');
+else {
   await line.click(); await settle();
   if (!(await page.locator('[data-wk="yes"]').count())) problems.push('an inbox line did not open the question walk');
   await shot('walk-actionable');
