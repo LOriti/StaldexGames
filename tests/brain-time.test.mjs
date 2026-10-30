@@ -202,6 +202,31 @@ test('the one thing for today is a focal row on the daily log (Brain D-113 A)', 
   assert.equal((await post('/api/brain/focal', { ref: 'x y' })).status, 400);
 });
 
+test('Next up today and Next week placements are rows on the daily log, a list per commit (Brain D-109 A)', async () => {
+  const path = `logs/daily/${TODAY}.md`;
+  files[path].text = written(path);
+  const clock = timelog.perthClock(Date.parse('2030-01-02T10:30:00+08:00'));
+  const rows = timelog.placeRows({ kind: 'today', lens: 'brain', items: [{ ref: 'DEV-01010.01', note: 1 }, { ref: 'DEV-01010.02', note: 'out' }] }, clock);
+  assert.deepEqual(rows.map((r) => [r.kind, r.start, r.minutes, r.ref, r.lens, r.note]), [['today', '10:30', 0, 'DEV-01010.01', 'brain', '1'], ['today', '10:30', 0, 'DEV-01010.02', 'brain', 'out']]);
+  assert.equal(timelog.placeRows({ kind: 'next-week', items: [{ ref: 'DEV-01010.01', note: 'keep' }] }, clock)[0].note, 'keep');
+  assert.deepEqual(timelog.placeRows({ kind: 'today', items: [{ ref: 'DEV-01010.01', note: 1 }, { kind: 'next-week', ref: 'DEV-01010.01', note: 'out' }] }, clock).map((r) => r.kind), ['today', 'next-week'], 'one commit moves an item between the lists');
+  assert.throws(() => timelog.placeRows({ kind: 'today', items: [{ kind: 'later', ref: 'DEV-01010.01', note: 1 }] }, clock), /kind/);
+  assert.throws(() => timelog.placeRows({ kind: 'today', items: [{ ref: 'DEV-01010.01', note: 'keep' }] }, clock), /keep is for next week/);
+  assert.throws(() => timelog.placeRows({ kind: 'later', items: [{ ref: 'DEV-01010.01', note: 1 }] }, clock), /kind/);
+  assert.throws(() => timelog.placeRows({ kind: 'today', items: [] }, clock), /items/);
+  assert.throws(() => timelog.placeRows({ kind: 'today', items: [{ ref: 'rm -rf', note: 1 }] }, clock), /id/);
+  assert.throws(() => timelog.placeRows({ kind: 'today', items: [{ ref: 'DEV-01010.01', note: 'first' }] }, clock), /position/);
+  const section = timelog.appendTime('', '2030-01-02', '10:30', rows);
+  assert.match(section, /\| today \| 10:30 \|  \| 0 \| DEV-01010\.01 \|  \| brain \| 1 \|\n\| today \| 10:30 \|  \| 0 \| DEV-01010\.02 \|  \| brain \| out \|\n$/);
+  assert.deepEqual(timelog.parseTime(section, '2030-01-02').map((r) => [r.kind, r.ref, r.note]), [['today', 'DEV-01010.01', '1'], ['today', 'DEV-01010.02', 'out']]);
+  const res = await post('/api/brain/place', { kind: 'next-week', lens: 'brain', items: [{ ref: 'DEV-01010.01', note: 2 }] });
+  assert.equal(res.status, 200);
+  assert.match(files[path].puts.at(-1).message, /^time: \d{4}-\d{2}-\d{2} place next-week 1$/);
+  assert.match(written(path), /\| next-week \| \d{2}:\d{2} \|  \| 0 \| DEV-01010\.01 \|  \| brain \| 2 \|\n$/);
+  assert.equal((await post('/api/brain/place', { kind: 'today', items: 'x' })).status, 400);
+  assert.equal((await post('/api/brain/place', { kind: 'today', items: [{ ref: 'DEV-01010.01', note: 'nope' }] })).status, 400);
+});
+
 test('time returns parsed rows from the daily-log branch only', async () => {
   worker._resetCaches();
   const res = await worker.default.fetch(new Request(`https://staldex.com/api/brain/time?from=${TODAY}`, {

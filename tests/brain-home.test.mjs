@@ -78,11 +78,11 @@ test('a lens with nothing hot is calm and points to a door', () => {
 });
 
 test('priority filters by lens and door, and escapes Brain text', () => {
-  const work = home.homeHtml(VIEW, { lens: 'work', tab: 'priority' });
+  const work = home.homeHtml(VIEW, { lens: 'work', tab: 'next', sub: 'week' });
   assert.doesNotMatch(work, /alpha-001/);
   assert.doesNotMatch(work, /<img/);
   assert.match(work, /&lt;img src=x/);
-  const ventures = home.homeHtml(VIEW, { lens: 'ventures', tab: 'priority', filter: { type: 'context', value: 'computer' } });
+  const ventures = home.homeHtml(VIEW, { lens: 'ventures', tab: 'priority', sub: 'week', filter: { type: 'context', value: 'computer' } });
   assert.match(ventures, /alpha-001/);
   assert.doesNotMatch(ventures, /D-9/);
 });
@@ -116,14 +116,16 @@ test('a view from an earlier Perth day says so', () => {
 });
 
 test('Brain has its own lens, and an older view without it falls back to All', () => {
-  const brain = home.homeHtml(VIEW, { lens: 'brain', tab: 'priority' });
+  const brain = home.homeHtml(VIEW, { lens: 'brain', tab: 'next', sub: 'week', lensOpen: true });
+  assert.match(brain, /class="cc-lens-chip" data-cc-lens-open="1" aria-expanded="true"[^>]*>Brain /);
   assert.match(brain, /data-cc-lens="brain" aria-pressed="true">Brain</);
   assert.match(brain, /beta-001/);
   assert.doesNotMatch(brain, /alpha-001/);
   const { brain: _drop, ...older } = VIEW.lenses;
-  const html = home.homeHtml({ ...VIEW, lenses: older }, { lens: 'brain', tab: 'focus' });
+  const html = home.homeHtml({ ...VIEW, lenses: older }, { lens: 'brain', tab: 'focus', lensOpen: true });
   assert.doesNotMatch(html, /data-cc-lens="brain"/);
   assert.match(html, /data-cc-lens="all" aria-pressed="true"/);
+  assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work' }), /data-cc-lens="/, 'the chooser is closed until the chip is tapped');
 });
 
 test('the inbox sits under Also hot, filtered by lens, capped, with an add box', () => {
@@ -260,7 +262,7 @@ test('every row carries its flag, nothing repeats on Focus, and the inbox count 
   assert.equal((focus.match(/item=A-1"/g) || []).length, 1, 'the focal item\'s proposed close is not repeated');
   assert.doesNotMatch(focus, /item=A-7"/, 'register flags left the Focus panel for the Inbox tab (D-115 C)');
   assert.match(focus, /<h2 class="cc-gh">Inbox <em>1<\/em><\/h2><a class="cc-flags" href="#inbox">1 to confirm, 2 closes proposed →<\/a>/);
-  const priority = home.homeHtml(view, { lens: 'work', tab: 'priority' });
+  const priority = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week' });
   assert.match(priority, /data-cc-ref="A-7"[\s\S]*?<span class="cc-chip flag">close proposed<\/span>/);
   const inbox = home.homeHtml(view, { lens: 'work', tab: 'inbox' });
   assert.match(inbox, /To clarify <em>1<\/em>/);
@@ -356,9 +358,58 @@ test('finishing a task rewards it and moves the next hot item into focus', () =>
   assert.match(html, /data-tk="next" data-ref="A-3">Next: Next one/);
 });
 
-test('contexts and areas filter Priority, not Focus (Brain D-101 B)', () => {
+test('contexts and areas filter This week on Next actions, not Focus (Brain D-101 B)', () => {
   assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', tab: 'focus' }), /class="cc-doors"/);
-  assert.match(home.homeHtml(VIEW, { lens: 'work', tab: 'priority' }), /class="cc-doors"><span class="cc-lbl">Contexts/);
+  assert.match(home.homeHtml(VIEW, { lens: 'work', tab: 'next', sub: 'week' }), /class="cc-doors"><span class="cc-lbl">Contexts/);
+  assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', tab: 'next', sub: 'today' }), /class="cc-doors"/);
+});
+
+test('Next actions: Today, This week and Next week from the daily log (Brain D-107, D-109 A, D-113)', () => {
+  const rows = [
+    { date: '2030-01-06', kind: 'today', start: '08:00', minutes: 0, ref: 'A-2', note: '1' },
+    { date: '2030-01-07', kind: 'today', start: '08:00', minutes: 0, ref: 'A-2', note: '2' },
+    { date: '2030-01-07', kind: 'today', start: '08:01', minutes: 0, ref: 'A-1', note: '1' },
+    { date: '2030-01-07', kind: 'today', start: '08:02', minutes: 0, ref: 'A-3', note: '3' },
+    { date: '2030-01-07', kind: 'today', start: '08:03', minutes: 0, ref: 'A-3', note: 'out' },
+    { date: '2029-12-20', kind: 'next-week', start: '09:00', minutes: 0, ref: 'A-4', note: '0' },
+    { date: '2029-12-27', kind: 'next-week', start: '09:00', minutes: 0, ref: 'A-4', note: 'keep' },
+    { date: '2030-01-02', kind: 'next-week', start: '09:00', minutes: 0, ref: 'A-5', note: '0' },
+    { date: '2030-01-03', kind: 'next-week', start: '09:00', minutes: 0, ref: 'A-5', note: 'out' },
+    { date: '2030-01-04', kind: 'next-week', start: '09:00', minutes: 0, ref: 'A-5', note: '0' },
+    { date: '2030-01-05', kind: 'next-week', start: '09:00', minutes: 0, ref: 'beta-001', note: '0' },
+  ];
+  const p = home.placements(rows, '2030-01-07');
+  assert.deepEqual(p.today, ['A-1', 'A-2'], 'today: latest row per item, out removed, by position; yesterday does not carry over');
+  assert.deepEqual(p.week.map((w) => w.ref).sort(), ['A-4', 'A-5', 'beta-001'], 'next week carries forward until an out');
+  assert.equal(p.week.find((w) => w.ref === 'A-5').since, '2030-01-04', 'an out ends the run; the next placement starts a new one');
+  assert.equal(p.week.find((w) => w.ref === 'A-4').kept, '2029-12-27');
+  assert.equal(home.raisedDate('WORK-SYS-61016.05'), '2026-10-16');
+  assert.equal(home.raisedDate('D-12'), null);
+  assert.equal(home.daysBetween('2030-01-01', '2030-01-07'), 6);
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, home.entry ? null : { ...VIEW.entries[0], ref: 'A-3', title: 'Task A-3' }, { ...VIEW.entries[0], ref: 'A-4', title: 'Task A-4', hot: [], section: 'next' }, { ...VIEW.entries[0], ref: 'A-5', title: 'Task WORK-SYS-61016.05', hot: [], section: 'next' }].filter(Boolean) }));
+  // Today's first item takes the focal slot, ahead of Leon's pick and the brief's (D-113).
+  const choice = home.focalChoice(view, 'work', { ref: 'A-2' }, p);
+  assert.deepEqual([choice.entry.ref, choice.reason, choice.mine], ['A-1', 'first up today', false]);
+  assert.equal(home.focalChoice(view, 'work', { ref: 'A-2' }, { today: [], week: [] }).entry.ref, 'A-2');
+  const counts = home.nextCounts(view, 'work', p);
+  assert.deepEqual(counts, { today: 2, week: view.entries.filter((e) => e.lens === 'work').length - 4, later: 2 });
+  const today = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'today', places: p, today: '2030-01-07' });
+  assert.match(today, /<nav class="cc-subs"[^>]*><button type="button" data-cc-sub="today" aria-pressed="true">Today <em>2<\/em><\/button><button type="button" data-cc-sub="week" aria-pressed="false">This week <em>\d+<\/em><\/button><button type="button" data-cc-sub="later" aria-pressed="false">Next week <em>2<\/em>/);
+  assert.match(today, /<div class="cc-item" draggable="true" data-cc-drag="A-1"><a class="cc-row"[^>]*data-cc-ref="A-1">[\s\S]*?<div class="cc-acts cc-place" data-cc-place-for="A-1"><button type="button" class="mini-btn" data-cc-place="down" data-ref="A-1">▼<\/button><button type="button" class="mini-btn" data-cc-place="week" data-ref="A-1">→ This week<\/button><button type="button" class="mini-btn" data-cc-place="next-week" data-ref="A-1">→ Next week<\/button><\/div>/);
+  assert.match(today, /data-cc-drag="A-2">[\s\S]*?data-cc-place="up" data-ref="A-2">▲/);
+  assert.ok(today.indexOf('data-cc-drag="A-1"') < today.indexOf('data-cc-drag="A-2"'), 'Today keeps Leon\'s order');
+  const week = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week', places: p });
+  assert.doesNotMatch(week, /data-cc-ref="A-1"|data-cc-ref="A-4"/, 'placed items leave This week');
+  assert.match(week, /data-cc-ref="A-3"[\s\S]*?data-cc-place="today" data-ref="A-3">→ Today<\/button><button type="button" class="mini-btn" data-cc-place="next-week" data-ref="A-3">→ Next week/);
+  const later = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'later', places: p, today: '2030-01-07' });
+  assert.match(later, /data-cc-ref="A-5"[\s\S]*?<span class="cc-next"><b>Next week<\/b> waited 3 d<\/span>/);
+  assert.match(later, /data-cc-ref="A-4"[\s\S]*?waited 18 d · kept 2029-12-27/);
+  assert.match(later, /data-cc-place="week" data-ref="A-4">Promote<\/button><button type="button" class="mini-btn" data-cc-place="keep" data-ref="A-4">Keep<\/button><button type="button" class="mini-btn" data-cc-place="today" data-ref="A-4">→ Today/);
+  assert.doesNotMatch(later, /data-cc-ref="beta-001"/, 'another lens\'s placement is not shown');
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'today', places: { today: [], week: [] } }), /Nothing placed for today yet/);
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'focus', places: p }), /class="cc-focal"[^>]*data-cc-ref="A-1"[\s\S]*first up today/);
+  assert.match(home.homeHtml(VIEW, { lens: 'work' }), /href="#next"[^>]*>Next actions</);
+  assert.match(home.homeHtml(VIEW, { lens: 'work', tab: 'priority' }), /href="#next" aria-current="page"/, '#priority lands on Next actions');
 });
 
 test('inbox lines and new items open the categorisation card', () => {

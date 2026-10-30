@@ -9,6 +9,10 @@
 //   entered   hours Leon typed in on the Allocation tab (Brain D-96 C)
 //   focal     Leon's pick of the one thing for today, or an empty item to go back to the
 //             brief's pick (Brain D-113 A); no time, both screens read the latest one
+//   today     a placement in Next up today (Brain D-109 A): the note is the position, or
+//             `out`; only today's rows count, so Today starts fresh each morning
+//   next-week a placement in Next week (D-109 A): the note is the position, `keep` (the
+//             weekly review kept it) or `out`; the latest row per item carries forward
 // The desk also writes planned, unplanned and distraction rows; all are read back here.
 // A clock stopped under a minute is never written (Brain D-114 A): the page holds the
 // `started` row back for the first minute, so an accidental open leaves no row at all.
@@ -65,12 +69,14 @@ export function cleanPlace(area, lens) {
 export const timeRow = (r) =>
   `| ${r.kind} | ${r.start || ''} | ${r.end || ''} | ${r.minutes} | ${r.ref || ''} | ${r.area || ''} | ${r.lens || ''} | ${r.note || ''} |`;
 
-// Appends one `## HH:MM Time` section with one row, as brain.py's log_append does: the
-// earlier text is kept byte for byte; a missing day file starts with the usual header.
-export function appendTime(text, date, hhmm, row) {
+// Appends one `## HH:MM Time` section with one row (or several, one placement batch), as
+// brain.py's log_append does: the earlier text is kept byte for byte; a missing day file
+// starts with the usual header.
+export function appendTime(text, date, hhmm, rows) {
   const base = typeof text === 'string' && text.trim() ? text : HEADER(date);
+  const list = Array.isArray(rows) ? rows : [rows];
   const section = [`## ${hhmm} Time`, '', 'From the viewer.', '',
-    '| Kind | Start | End | Minutes | Item | Area | Lens | Note |', '|---|---|---|---:|---|---|---|---|', timeRow(row)].join('\n');
+    '| Kind | Start | End | Minutes | Item | Area | Lens | Note |', '|---|---|---|---:|---|---|---|---|', ...list.map(timeRow)].join('\n');
   return `${base.replace(/\n+$/, '')}\n\n${section}\n`;
 }
 
@@ -119,6 +125,28 @@ export function focalRow(body, clock) {
   const ref = body.ref ? cleanRef(body.ref) : '';
   const { lens } = cleanPlace('', body.lens);
   return { kind: 'focal', start: clock.hhmm, end: '', minutes: 0, ref, area: '', lens, note: '' };
+}
+
+// Placements for the Next actions tab (Brain D-109 A): one row per item in the batch,
+// `| today | HH:MM | | 0 | <id> | | <lens> | <position|out> |` or the same with
+// `next-week` and `keep`. A drag reorders by writing the whole list's positions at once.
+export const PLACE_KINDS = ['today', 'next-week'];
+const PLACE_NOTE = /^(?:\d{1,3}|out|keep)$/;
+export const PLACE_MAX = 100;
+export function placeRows(body, clock) {
+  if (!PLACE_KINDS.includes(body.kind)) throw new QueueError('invalid-text', 'kind must be today or next-week');
+  if (!Array.isArray(body.items) || !body.items.length || body.items.length > PLACE_MAX) throw new QueueError('invalid-text', `1 to ${PLACE_MAX} items`);
+  const { lens } = cleanPlace('', body.lens);
+  return body.items.map((item) => {
+    const ref = cleanRef(item && item.ref);
+    const note = String(item.note ?? '');
+    // An item may name its own kind, so one commit moves it from one list to the other.
+    const kind = item.kind ? String(item.kind) : body.kind;
+    if (!PLACE_KINDS.includes(kind)) throw new QueueError('invalid-text', 'kind must be today or next-week');
+    if (!PLACE_NOTE.test(note)) throw new QueueError('invalid-text', 'a placement is a position, out or keep');
+    if (kind === 'today' && note === 'keep') throw new QueueError('invalid-text', 'keep is for next week');
+    return { kind, start: clock.hhmm, end: '', minutes: 0, ref, area: '', lens, note };
+  });
 }
 
 // Every row of every `## HH:MM Time` table in one day's log.

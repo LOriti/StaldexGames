@@ -7,8 +7,12 @@
 
 export const VIEW_PATH = 'views/command-centre.json';
 export const LENSES = ['work', 'ventures', 'personal', 'brain', 'all'];
-// The Inbox tab holds everything not yet clarified (Brain DEV-61026.33); Clarify folded into it.
-export const TABS = ['focus', 'inbox', 'priority', 'allocation'];
+// The Inbox tab holds everything not yet clarified (Brain DEV-61026.33); Clarify folded into
+// it. Next actions replaced Priority (DEV-61026.34): Today, This week and Next week.
+export const TABS = ['focus', 'inbox', 'next', 'allocation'];
+export const TAB_NAMES = { focus: 'Focus', inbox: 'Inbox', next: 'Next actions', allocation: 'Allocation' };
+export const SUBS = ['today', 'week', 'later'];
+const SUB_NAMES = { today: 'Today', week: 'This week', later: 'Next week' };
 const LENS_NAMES = { work: 'Work', ventures: 'Ventures', personal: 'Personal', brain: 'Brain', all: 'All' };
 const CONTEXT_NAMES = {
   emails: 'Emails', calls: 'Calls', computer: 'Computer', errands: 'Errands',
@@ -96,6 +100,43 @@ export function weekActuals(rows, monday) {
   }
   const days = Object.values(byDay).filter((m) => m >= RECORDED_DAY_MINUTES).length;
   return { byArea, byLens, days, sources: [...sources] };
+}
+
+// The Next actions tab's placements from the daily log (Brain D-109 A). Today: today's
+// `today` rows, the latest per item, `out` removed, by position; it starts fresh each
+// morning. Next week: the latest `next-week` row per item across the days read, carrying
+// forward until an `out`; `since` is the first day of the current run, `kept` the last
+// weekly review that kept it.
+export function placements(rows, today) {
+  const byTime = (a, b) => `${a.date} ${a.start}`.localeCompare(`${b.date} ${b.start}`);
+  const latest = new Map();
+  for (const r of (rows || []).filter((r) => r.kind === 'today' && r.date === today).sort(byTime)) latest.set(r.ref, r);
+  const todayList = [...latest.values()].filter((r) => r.note !== 'out')
+    .sort((a, b) => (Number(a.note) - Number(b.note)) || a.start.localeCompare(b.start)).map((r) => r.ref);
+  const runs = new Map();
+  for (const r of (rows || []).filter((r) => r.kind === 'next-week').sort(byTime)) {
+    const cur = runs.get(r.ref);
+    if (r.note === 'out') { runs.delete(r.ref); continue; }
+    runs.set(r.ref, {
+      ref: r.ref, since: cur ? cur.since : r.date,
+      position: r.note === 'keep' ? (cur ? cur.position : 0) : Number(r.note),
+      kept: r.note === 'keep' ? r.date : (cur ? cur.kept : null),
+    });
+  }
+  const week = [...runs.values()].filter((w) => !todayList.includes(w.ref))
+    .sort((a, b) => (a.position - b.position) || ((raisedDate(b.ref) || '').localeCompare(raisedDate(a.ref) || '')));
+  return { today: todayList, week };
+}
+
+// The day an item was raised, from its date-based id (Brain brain-021): `WORK-SYS-61016.05`
+// is 2026-10-16. Null for a D-n or an older slug id.
+export function raisedDate(ref) {
+  const m = /-(\d)(\d\d)(\d\d)\.\d{2,3}$/.exec(ref || '');
+  return m ? `202${m[1]}-${m[2]}-${m[3]}` : null;
+}
+
+export function daysBetween(from, to) {
+  return Math.round((Date.parse(`${to}T00:00:00Z`) - Date.parse(`${from}T00:00:00Z`)) / 86400000);
 }
 
 // Leon's pick of the one thing for today (Brain D-113 A): today's latest `focal` row, its
@@ -425,20 +466,24 @@ export function clockBarHtml(clock, entry, now = Date.now()) {
     `<button type="button" class="mini-btn" data-cb="open">Open</button><button type="button" class="mini-btn" data-cb="stop">Stop</button>`;
 }
 
-// The focal slot's rule order (Brain D-113 A): Leon's `focal` row today, then the view's
-// pick (the brief's `Focal:` or the hottest by rule). Returns { entry, reason, mine }.
-export function focalChoice(view, lens, pick) {
+// The focal slot's rule order (Brain D-113): Today's first item (DEV-61026.34), then Leon's
+// `focal` row today, then the view's pick (the brief's `Focal:` or the hottest by rule).
+// Returns { entry, reason, mine }.
+export function focalChoice(view, lens, pick, places = null) {
   const slot = view.lenses[lens];
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
+  const fits = (e) => e && ['hot', 'next'].includes(e.section) && (lens === 'all' || e.lens === lens);
+  const first = places ? places.today.map((r) => byRef.get(r)).find(fits) : null;
+  if (first) return { entry: first, reason: 'first up today', mine: false };
   const own = pick && pick.ref ? byRef.get(pick.ref) : null;
-  if (own && ['hot', 'next'].includes(own.section) && (lens === 'all' || own.lens === lens)) return { entry: own, reason: 'your pick for today', mine: true };
+  if (fits(own)) return { entry: own, reason: 'your pick for today', mine: true };
   const theirs = slot.focal && byRef.get(slot.focal.ref);
   return theirs ? { entry: theirs, reason: slot.focal.reason, mine: false } : null;
 }
 
 function focusTab(view, lens, byRef, opts = {}) {
   const slot = view.lenses[lens];
-  const choice = focalChoice(view, lens, opts.focal);
+  const choice = focalChoice(view, lens, opts.focal, opts.places);
   const focal = choice && choice.entry;
   const clock = opts.clock || null;
   let html = '';
@@ -480,21 +525,81 @@ function doorsHtml(slot) {
   return html;
 }
 
-function priorityTab(view, lens, filter, clock = null) {
-  const rows = lensEntries(view, lens).filter((e) => !filter
-    || (filter.type === 'context' ? e.context === filter.value : (e.area || 'untagged') === filter.value));
-  let html = doorsHtml(view.lenses[lens]);
+// Placement buttons on a Next actions row (Brain D-107, D-109 A): where it can move, and
+// up and down within Today and Next week (a drag does the same).
+export function placeActs(e, sub, { index = 0, count = 1 } = {}) {
+  const ref = esc(e.ref);
+  const b = (act, label, cls = '') => `<button type="button" class="mini-btn${cls}" data-cc-place="${act}" data-ref="${ref}">${label}</button>`;
+  let inner = '';
+  if (sub === 'today') {
+    inner = (index > 0 ? b('up', '▲') : '') + (index < count - 1 ? b('down', '▼') : '') + b('week', '→ This week') + b('next-week', '→ Next week');
+  } else if (sub === 'later') {
+    inner = b('week', 'Promote', ' primary') + b('keep', 'Keep') + b('today', '→ Today') + (index > 0 ? b('up', '▲') : '') + (index < count - 1 ? b('down', '▼') : '');
+  } else {
+    inner = b('today', '→ Today') + b('next-week', '→ Next week');
+  }
+  return `<div class="cc-acts cc-place" data-cc-place-for="${ref}">${inner}</div>`;
+}
+
+function placedRow(e, sub, clock, pos, extra = '') {
+  const stripe = e.section === 'hot' ? 'hot' : e.claude === 'back' ? 'ok' : '';
+  const est = estimateText(e);
+  const ticking = clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : '';
+  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(e.ref)} · ${esc(e.home)}${e.area ? ` · area ${esc(e.area)}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
+    `<span class="cc-t">${esc(e.title)}</span>${chips(e) || ticking ? `<span class="cc-why">${ticking}${chips(e)}</span>` : ''}${extra}${flagDetail(e)}</span>`;
+  const drag = sub === 'today' || sub === 'later' ? ` draggable="true" data-cc-drag="${esc(e.ref)}"` : '';
+  return `<div class="cc-item"${drag}><a class="cc-row" href="${entryHref(e)}" data-cc-ref="${esc(e.ref)}">${body}</a>${rowActs(e)}${placeActs(e, sub, pos)}</div>`;
+}
+
+// The counts of the three sub-tabs for a lens.
+export function nextCounts(view, lens, places) {
+  const byRef = new Map(view.entries.map((e) => [e.ref, e]));
+  const inLens = (ref) => { const e = byRef.get(ref); return e && (lens === 'all' || e.lens === lens); };
+  const today = (places ? places.today : []).filter(inLens);
+  const later = (places ? places.week : []).map((w) => w.ref).filter(inLens);
+  const placed = new Set([...today, ...later]);
+  const week = lensEntries(view, lens).filter((e) => !placed.has(e.ref) && ['hot', 'next', 'waiting', 'review', 'parked', 'blocked'].includes(e.section)).length;
+  return { today: today.length, week, later: later.length };
+}
+
+function nextTab(view, lens, { sub = 'today', filter = null, clock = null, places = null, today = '' } = {}) {
+  const byRef = new Map(view.entries.map((e) => [e.ref, e]));
+  const inLens = (e) => e && (lens === 'all' || e.lens === lens);
+  const todayRefs = (places ? places.today : []).filter((r) => inLens(byRef.get(r)));
+  const later = (places ? places.week : []).filter((w) => inLens(byRef.get(w.ref)));
+  const placed = new Set([...todayRefs, ...later.map((w) => w.ref)]);
+  const counts = nextCounts(view, lens, places);
+  let html = `<nav class="cc-subs" aria-label="Next actions">${SUBS.map((k) => `<button type="button" data-cc-sub="${k}" aria-pressed="${k === sub}">${SUB_NAMES[k]} <em>${counts[k]}</em></button>`).join('')}</nav>`;
+  if (sub === 'today') {
+    html += '<p class="cc-note">Next up today, in your order; Focus takes the first. Today starts fresh each morning.</p><div class="cc-box">';
+    html += todayRefs.map((r, i) => placedRow(byRef.get(r), 'today', clock, { index: i, count: todayRefs.length })).join('')
+      || '<p class="cc-empty">Nothing placed for today yet. Pull items up from This week.</p>';
+    return `${html}</div>`;
+  }
+  if (sub === 'later') {
+    html += '<p class="cc-note">Pushed back to next week, latest raised first. At week end, promote each or keep it; it waits until you move it.</p><div class="cc-box">';
+    html += later.map((w, i) => {
+      const e = byRef.get(w.ref);
+      const raised = raisedDate(w.ref);
+      const bits = [raised ? `raised ${raised}` : '', w.since && today ? `waited ${daysBetween(w.since, today)} d` : '', w.kept ? `kept ${w.kept}` : ''].filter(Boolean).join(' · ');
+      return placedRow(e, 'later', clock, { index: i, count: later.length }, bits ? `<span class="cc-next"><b>Next week</b> ${esc(bits)}</span>` : '');
+    }).join('') || '<p class="cc-empty">Nothing pushed back to next week.</p>';
+    return `${html}</div>`;
+  }
+  const rows = lensEntries(view, lens).filter((e) => !placed.has(e.ref) && (!filter
+    || (filter.type === 'context' ? e.context === filter.value : (e.area || 'untagged') === filter.value)));
+  html += doorsHtml(view.lenses[lens]);
   html += filter
     ? `<p class="cc-note">Showing ${esc(filter.type === 'context' ? CONTEXT_NAMES[filter.value] || filter.value : (view.lenses[lens].areas[filter.value] || {}).name || filter.value)} · <button type="button" class="text-btn" data-cc-clear="1">Show everything</button></p>`
-    : '<p class="cc-note">Everything for this lens, ranked: hot first, then in the order <code>brain.py next</code> gives. Tap an item to open it.</p>';
+    : '<p class="cc-note">Every other clarified action for this lens, by priority and due date: hot first, then the order <code>brain.py next</code> gives. Move one up to Today or back to Next week.</p>';
   let section = null;
   html += '<div class="cc-box">';
   for (const e of rows) {
     if (e.section !== section) { section = e.section; html += `<h2 class="cc-sec">${SECTION_NAMES[section] || esc(section)}</h2>`; }
-    html += row(e, true, clock);
+    html += ['hot', 'next'].includes(e.section) ? placedRow(e, 'week', clock, {}) : row(e, true, clock);
   }
   if (!rows.length) html += '<p class="cc-empty">Nothing here.</p>';
-  return html + '</div>';
+  return `${html}</div>`;
 }
 
 // ---- clarify: what is not prioritised yet (Leon's morning sort) ------------------------
@@ -593,23 +698,30 @@ function allocationTab(view, lens, time) {
   return html + (lens === 'work' || lens === 'all' ? '' : '<p class="cc-note">The allocation covers Work; Ventures, Personal and Brain have no budgets.</p>');
 }
 
-export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '', focal = null } = {}) {
+// One chip names the lens and opens the chooser (DEV-61026.34); the one-tap override stays.
+export function lensChipHtml(lens, shown, open = false) {
+  return `<div class="cc-lens"><button type="button" class="cc-lens-chip" data-cc-lens-open="1" aria-expanded="${open}" aria-haspopup="true">${LENS_NAMES[lens]} <span aria-hidden="true">▾</span></button>` +
+    (open ? `<div class="cc-seg cc-chooser" role="group" aria-label="Lens">${shown.map((l) => `<button type="button" data-cc-lens="${l}" aria-pressed="${l === lens}">${LENS_NAMES[l]}</button>`).join('')}</div>` : '') + '</div>';
+}
+
+export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '', focal = null, places = null, sub = 'today', lensOpen = false } = {}) {
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
   // Only the lenses this view carries, so an older view without Brain's own lens still renders.
   const shown = LENSES.filter((l) => view.lenses[l]);
   if (!view.lenses[lens]) lens = 'all';
-  const seg = shown.map((l) => `<button type="button" data-cc-lens="${l}" aria-pressed="${l === lens}">${LENS_NAMES[l]}</button>`).join('');
+  const seg = lensChipHtml(lens, shown, lensOpen);
   const count = clarifyCount(view, lens);
-  if (tab === 'clarify') tab = 'inbox'; // the old tab's links still land
-  const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${t[0].toUpperCase()}${t.slice(1)}${t === 'inbox' && count ? ` <span class="cc-n">${count}</span>` : ''}</a>`).join('');
-  const body = tab === 'priority' ? priorityTab(view, lens, filter, clock)
+  if (tab === 'clarify') tab = 'inbox'; // the old tabs' links still land
+  if (tab === 'priority') tab = 'next';
+  const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${TAB_NAMES[t]}${t === 'inbox' && count ? ` <span class="cc-n">${count}</span>` : ''}</a>`).join('');
+  const body = tab === 'next' ? nextTab(view, lens, { sub, filter, clock, places, today })
     : tab === 'allocation' ? allocationTab(view, lens, time)
       : tab === 'inbox' ? inboxTab(view, lens, { clock, projects })
-        : focusTab(view, lens, byRef, { clock, projects, inboxAll, focal });
+        : focusTab(view, lens, byRef, { clock, projects, inboxAll, focal, places });
   // A view made on an earlier Perth day has yesterday's "overdue" and "due soon".
   const stale = today && view.date && view.date < today
     ? `<p class="cc-stale" role="status">This view was made for ${esc(view.date)}; today’s refresh has not run yet, so overdue and due-soon may be a day behind. Refresh in a few minutes.</p>` : '';
-  return `<div class="cc"><div class="cc-head"><div class="cc-seg" role="group" aria-label="Lens">${seg}</div>` +
+  return `<div class="cc"><div class="cc-head">${seg}` +
     `<nav class="cc-tabs" aria-label="Command centre">${tabs}</nav>` +
     '<a class="cc-files" href="#/INDEX.md">Browse files</a></div>' + stale + body +
     `<p class="cc-note">${esc(view.gaps.join(' '))}${asOf ? ` As of ${esc(asOf)}.` : ''}</p></div>`;
