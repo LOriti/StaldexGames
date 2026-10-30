@@ -698,13 +698,59 @@ function allocationTab(view, lens, time) {
   return html + (lens === 'work' || lens === 'all' ? '' : '<p class="cc-note">The allocation covers Work; Ventures, Personal and Brain have no budgets.</p>');
 }
 
+// ---- Someday, by family, and the family pages (Brain D-104 C, DEV-61026.35) -------------------
+// Someday lines never mix into Focus or Next actions: they have their own entry, grouped by
+// family, each promotable back into the Inbox; a family page (#family/<CODE>) lists
+// everything in that family.
+
+export const familyOf = (ref) => (/^(?:P-)?([A-Z]+(?:-[A-Z]+)?|\?)-\d{5}\.\d{2,3}$/.exec(ref || '') || [])[1] || null;
+export const familyHref = (code) => `#family/${encodeURIComponent(code)}`;
+
+export function somedayRows(view, lens) {
+  return (view.someday || []).filter((r) => lens === 'all' || r.lens === lens);
+}
+
+function somedayRow(r) {
+  const project = projectOf(r) || '';
+  return `<div class="cc-item"><div class="cc-row cc-in"><span class="cc-stripe"></span><span class="cc-m"><span class="cc-id"><span class="cc-kind">Someday</span> · ${esc(r.home)}${r.date ? ` · since ${esc(r.date)}` : ''}</span>` +
+    `<span class="cc-t">${esc(r.text)}</span></span></div><div class="cc-acts"><button type="button" class="mini-btn" data-cc-promote="1" data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(project)}">Promote to Inbox</button></div></div>`;
+}
+
+export function somedayHtml(view, lens) {
+  const rows = somedayRows(view, lens);
+  let html = '<p class="cc-note">Someday / Maybe: parked on purpose, kept well apart from next actions. Browse by family; promote one into the Inbox when its time has come.</p>';
+  const families = [...new Set(rows.map((r) => r.family || '?'))].sort();
+  for (const code of families) {
+    const mine = rows.filter((r) => (r.family || '?') === code);
+    html += `<section class="cc-inbox"><h2 class="cc-gh"><a href="${familyHref(code)}">${esc(code)}</a> <em>${mine.length}</em></h2><div class="cc-box">${mine.map(somedayRow).join('')}</div></section>`;
+  }
+  if (!rows.length) html += `<p class="cc-empty">Nothing parked in Someday${lens === 'all' ? '' : ' in this lens'}.</p>`;
+  return html;
+}
+
+// Everything in one family: next actions, waiting and parked items, then its Someday lines.
+export function familyHtml(view, code, { clock = null } = {}) {
+  const mine = view.entries.filter((e) => familyOf(e.ref) === code);
+  const groups = [['Next actions', mine.filter((e) => ['hot', 'next'].includes(e.section))], ['Waiting for', mine.filter((e) => e.section === 'waiting')],
+    ['Parked, under review or blocked', mine.filter((e) => ['parked', 'review', 'blocked'].includes(e.section))]];
+  const parked = (view.someday || []).filter((r) => (r.family || '?') === code);
+  let html = `<p class="cc-note">Family <b>${esc(code)}</b>: everything that carries it, across lenses. <a href="#someday">Back to Someday</a> · <a href="#next">Next actions</a></p>`;
+  for (const [title, rows] of groups) {
+    if (!rows.length) continue;
+    html += `<section class="cc-inbox"><h2 class="cc-gh">${title} <em>${rows.length}</em></h2><div class="cc-box">${rows.map((e) => row(e, true, clock)).join('')}</div></section>`;
+  }
+  if (parked.length) html += `<section class="cc-inbox"><h2 class="cc-gh">Someday <em>${parked.length}</em></h2><div class="cc-box">${parked.map(somedayRow).join('')}</div></section>`;
+  if (!mine.length && !parked.length) html += '<p class="cc-empty">Nothing carries this family yet.</p>';
+  return html;
+}
+
 // One chip names the lens and opens the chooser (DEV-61026.34); the one-tap override stays.
 export function lensChipHtml(lens, shown, open = false) {
   return `<div class="cc-lens"><button type="button" class="cc-lens-chip" data-cc-lens-open="1" aria-expanded="${open}" aria-haspopup="true">${LENS_NAMES[lens]} <span aria-hidden="true">▾</span></button>` +
     (open ? `<div class="cc-seg cc-chooser" role="group" aria-label="Lens">${shown.map((l) => `<button type="button" data-cc-lens="${l}" aria-pressed="${l === lens}">${LENS_NAMES[l]}</button>`).join('')}</div>` : '') + '</div>';
 }
 
-export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '', focal = null, places = null, sub = 'today', lensOpen = false } = {}) {
+export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '', focal = null, places = null, sub = 'today', lensOpen = false, family = null } = {}) {
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
   // Only the lenses this view carries, so an older view without Brain's own lens still renders.
   const shown = LENSES.filter((l) => view.lenses[l]);
@@ -714,7 +760,10 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', 
   if (tab === 'clarify') tab = 'inbox'; // the old tabs' links still land
   if (tab === 'priority') tab = 'next';
   const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${TAB_NAMES[t]}${t === 'inbox' && count ? ` <span class="cc-n">${count}</span>` : ''}</a>`).join('');
-  const body = tab === 'next' ? nextTab(view, lens, { sub, filter, clock, places, today })
+  const parked = somedayRows(view, lens).length;
+  const body = tab === 'family' ? familyHtml(view, family || '?', { clock })
+    : tab === 'someday' ? somedayHtml(view, lens)
+    : tab === 'next' ? nextTab(view, lens, { sub, filter, clock, places, today })
     : tab === 'allocation' ? allocationTab(view, lens, time)
       : tab === 'inbox' ? inboxTab(view, lens, { clock, projects })
         : focusTab(view, lens, byRef, { clock, projects, inboxAll, focal, places });
@@ -723,7 +772,7 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', 
     ? `<p class="cc-stale" role="status">This view was made for ${esc(view.date)}; today’s refresh has not run yet, so overdue and due-soon may be a day behind. Refresh in a few minutes.</p>` : '';
   return `<div class="cc"><div class="cc-head">${seg}` +
     `<nav class="cc-tabs" aria-label="Command centre">${tabs}</nav>` +
-    '<a class="cc-files" href="#/INDEX.md">Browse files</a></div>' + stale + body +
+    `<span class="cc-side"><a class="cc-files cc-someday" href="#someday"${tab === 'someday' ? ' aria-current="page"' : ''}>Someday <em>${parked}</em></a><a class="cc-files" href="#/INDEX.md">Browse files</a></span></div>` + stale + body +
     `<p class="cc-note">${esc(view.gaps.join(' '))}${asOf ? ` As of ${esc(asOf)}.` : ''}</p></div>`;
 }
 

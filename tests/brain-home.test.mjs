@@ -364,6 +364,38 @@ test('contexts and areas filter This week on Next actions, not Focus (Brain D-10
   assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', tab: 'next', sub: 'today' }), /class="cc-doors"/);
 });
 
+test('Someday has its own entry, grouped by family, with family pages and a way back to the Inbox (Brain D-104 C, DEV-61026.35)', () => {
+  const someday = [
+    { text: 'Learn the ukulele', raw: 'Learn the ukulele `someday: 2030-01-01`', date: '2030-01-01', family: 'PA-HOME', home: 'project:alpha', path: 'projects/alpha/QUEUE.md', lens: 'personal' },
+    { text: 'Rebrand <everything>', raw: 'Rebrand <everything> `someday: 2030-01-02`', date: '2030-01-02', family: 'WORK-PIPE', home: 'project:alpha', path: 'projects/alpha/QUEUE.md', lens: 'work' },
+    { text: 'Second pipe idea', raw: 'Second pipe idea `someday: 2030-01-03`', date: '2030-01-03', family: 'WORK-PIPE', home: 'project:alpha', path: 'projects/alpha/QUEUE.md', lens: 'work' },
+  ];
+  const view = { ...VIEW, someday, entries: [...VIEW.entries, entry('WORK-PIPE-61016.03', { title: 'Chase the tender' }), entry('P-WORK-PIPE-61020.01', { section: 'waiting', title: 'Waiting on the client' })] };
+  const home_ = home.homeHtml(view, { lens: 'all' });
+  assert.match(home_, /<a class="cc-files cc-someday" href="#someday">Someday <em>3<\/em><\/a>/, 'its own entry, with the count');
+  assert.doesNotMatch(home.homeHtml(view, { lens: 'all', tab: 'next', sub: 'week' }), /ukulele/, 'never mixed into Next actions');
+  assert.doesNotMatch(home_, /ukulele/, 'never mixed into Focus');
+  const page = home.homeHtml(view, { lens: 'all', tab: 'someday' });
+  assert.match(page, /<h2 class="cc-gh"><a href="#family\/PA-HOME">PA-HOME<\/a> <em>1<\/em><\/h2>/);
+  assert.match(page, /<h2 class="cc-gh"><a href="#family\/WORK-PIPE">WORK-PIPE<\/a> <em>2<\/em><\/h2>/);
+  assert.ok(page.indexOf('PA-HOME') < page.indexOf('WORK-PIPE'), 'families in order');
+  assert.match(page, /Rebrand &lt;everything&gt;/);
+  assert.match(page, /data-cc-promote="1" data-cc-line="Rebrand &lt;everything&gt; `someday: 2030-01-02`" data-cc-project="alpha">Promote to Inbox/);
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'someday' }), /WORK-PIPE/);
+  assert.doesNotMatch(home.homeHtml(view, { lens: 'work', tab: 'someday' }), /PA-HOME/, 'the lens filters');
+  assert.match(home.homeHtml({ ...view, someday: [] }, { lens: 'work', tab: 'someday' }), /Nothing parked in Someday in this lens/);
+  assert.equal(home.familyOf('P-WORK-PIPE-61020.01'), 'WORK-PIPE');
+  assert.equal(home.familyOf('D-12'), null);
+  assert.equal(home.familyOf('?-60828.08'), '?');
+  const fam = home.homeHtml(view, { lens: 'work', tab: 'family', family: 'WORK-PIPE' });
+  assert.match(fam, /Family <b>WORK-PIPE<\/b>/);
+  assert.match(fam, /Next actions <em>1<\/em>[\s\S]*data-cc-ref="WORK-PIPE-61016.03"/);
+  assert.match(fam, /Waiting for <em>1<\/em>[\s\S]*data-cc-ref="P-WORK-PIPE-61020.01"/);
+  assert.match(fam, /Someday <em>2<\/em>[\s\S]*Second pipe idea/);
+  assert.doesNotMatch(fam, /ukulele|data-cc-ref="A-1"/);
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'family', family: 'PROJ-WCP' }), /Nothing carries this family yet/);
+});
+
 test('Next actions: Today, This week and Next week from the daily log (Brain D-107, D-109 A, D-113)', () => {
   const rows = [
     { date: '2030-01-06', kind: 'today', start: '08:00', minutes: 0, ref: 'A-2', note: '1' },

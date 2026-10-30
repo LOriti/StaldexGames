@@ -7,7 +7,7 @@ import {
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS,
-} from './home.js?v=20261030c';
+} from './home.js?v=20261030d';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -35,12 +35,20 @@ const state = {
 const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false, focal: null, dirty: false, places: null, sub: 'today', lensOpen: false };
 
 function homeTab() {
-  const match = /^#(?:\/)?(focus|inbox|next|priority|clarify|allocation)?$/.exec(location.hash || '#');
+  if (familyCode()) return 'family';
+  const match = /^#(?:\/)?(focus|inbox|next|priority|clarify|allocation|someday)?$/.exec(location.hash || '#');
   if (!match) return null;
   return { clarify: 'inbox', priority: 'next' }[match[1]] || match[1] || 'focus';
 }
 
 // The lens last used, kept across days (Brain D-116 A); working hours still open on Work.
+// `#family/<CODE>`: one family's page (Brain DEV-61026.35).
+function familyCode() {
+  const m = /^#family\/([A-Za-z%3F?-]+)$/.exec(location.hash || '');
+  if (!m) return null;
+  try { return decodeURIComponent(m[1]).toUpperCase(); } catch { return null; }
+}
+
 function storedLens() {
   try {
     const saved = JSON.parse(localStorage.getItem('brain.lens') || 'null');
@@ -378,7 +386,7 @@ function renderHome(tab = homeTab() || 'focus') {
   const asOf = `${home.view.date}${when ? `, last change ${when}` : ''}`;
   els.doc.innerHTML = homeHtml(home.view, {
     lens: home.lens, tab, filter: home.filter, asOf, time: home.time, clock, projects: projectSlugs(), inboxAll: home.inboxAll,
-    today: perthDay().today, focal: home.focal, places: home.places, sub: home.sub, lensOpen: home.lensOpen,
+    today: perthDay().today, focal: home.focal, places: home.places, sub: home.sub, lensOpen: home.lensOpen, family: familyCode(),
   });
   stashView();
 }
@@ -522,6 +530,26 @@ els.doc.addEventListener('click', (e) => {
   if (!btn || !home.view) return;
   e.preventDefault();
   placeAct(btn.dataset.ccPlace, btn.dataset.ref, btn);
+});
+
+// A Someday line promoted back into the Inbox for clarifying (Brain DEV-61026.35).
+els.doc.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-cc-promote]');
+  if (!btn || !home.view) return;
+  e.preventDefault();
+  const { ccLine: line, ccProject: project } = btn.dataset;
+  const row = (home.view.someday || []).find((r) => (r.raw || r.text) === line && r.home === `project:${project}`);
+  if (!row) return;
+  btn.disabled = true;
+  try {
+    await write('/promote', { project, line });
+    home.view.someday = home.view.someday.filter((r) => r !== row);
+    home.view.inbox = [{ kind: 'line', text: row.text, raw: row.text, details: {}, family: row.family, home: row.home, date: perthDay().today, path: row.path, ref: null, lens: row.lens }, ...(home.view.inbox || [])];
+    note(`${row.text} is back in the Inbox to clarify.`);
+  } catch (err) {
+    note(writeError(err), true);
+  }
+  refreshAll();
 });
 
 function currentPath() {

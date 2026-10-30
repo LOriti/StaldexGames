@@ -186,25 +186,39 @@ function plainBullet(t) {
   return t.replace(/^[-*] (\[[ x]\] )?/, '').replace(/\s*`[^`]*`/g, '').replace(/\s+/g, ' ').trim();
 }
 
-// The bullets of `## Inbox`, each with its wrapped continuation lines.
-function inboxBullets(q) {
-  const end = sectionEnd(q, q.inbox);
+// The bullets of a section (`## Inbox`, or `## Someday`), each with its wrapped continuation lines.
+function sectionBullets(q, heading) {
+  const end = sectionEnd(q, heading);
   const bullets = [];
-  for (let i = q.inbox.index + 1; i < end; i++) {
+  for (let i = heading.index + 1; i < end; i++) {
     if (/^[-*] /.test(content(q.lines[i]))) bullets.push({ start: i, end: i + 1 });
     else if (bullets.length && /^\s+\S/.test(content(q.lines[i])) && bullets.at(-1).end === i) bullets.at(-1).end = i + 1;
   }
   for (const b of bullets) b.plain = plainBullet(q.lines.slice(b.start, b.end).map(content).join(' '));
   return bullets;
 }
+const inboxBullets = (q) => sectionBullets(q, q.inbox);
 
-function findLine(q, raw) {
+function findLine(q, raw, heading = q.inbox) {
   if (typeof raw !== 'string' || !raw.trim()) throw new QueueError('unknown-id', 'no inbox line given');
   const want = plainBullet(raw);
-  const matches = inboxBullets(q).filter((b) => b.plain === want);
-  if (!matches.length) throw new QueueError('unknown-id', 'that inbox line is no longer there');
-  if (matches.length > 1) throw new QueueError('duplicate-id', 'more than one inbox line reads the same');
+  const matches = sectionBullets(q, heading).filter((b) => b.plain === want);
+  if (!matches.length) throw new QueueError('unknown-id', `that ${heading.title.toLowerCase()} line is no longer there`);
+  if (matches.length > 1) throw new QueueError('duplicate-id', `more than one ${heading.title.toLowerCase()} line reads the same`);
   return matches[0];
+}
+
+// A Someday line comes back to the Inbox for clarifying (Brain D-104 C, DEV-61026.35): it
+// leaves `## Someday` and is added as a plain line, refused if the Inbox already has it.
+export function promoteLine(text, raw, today) {
+  const q = parse(text);
+  const someday = q.headings.find((h) => h.level === 2 && h.title === 'Someday' && h.index > q.inbox.index);
+  if (!someday) throw new QueueError('unknown-id', 'the queue has no Someday section');
+  const { start, end, plain } = findLine(q, raw, someday);
+  if (inboxBullets(q).some((b) => b.plain === plain)) throw new QueueError('duplicate-id', 'that line is already in the inbox');
+  q.lines.splice(start, end - start);
+  if (start > 0 && start < q.lines.length && isBlank(q.lines[start - 1]) && isBlank(q.lines[start])) q.lines.splice(start, 1);
+  return addInbox(q.lines.join(''), plain, today);
 }
 
 export function categoriseLine(text, raw, details, attrs, today) {

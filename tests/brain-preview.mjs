@@ -67,6 +67,10 @@ const VIEW = {
     { kind: 'close', text: 'Chase the signed variation', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-SYS-60101.10', lens: 'work' },
     { kind: 'close', text: 'Which venue for the planning day', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-LEAD-60101.09', lens: 'work' },
   ],
+  someday: [
+    { text: 'Learn the ukulele', raw: 'Learn the ukulele `someday: 2026-01-01`', date: '2026-01-01', family: 'PA-HOME', home: 'project:alpha', path: 'projects/alpha/QUEUE.md', lens: 'personal' },
+    { text: 'Rebrand the tender templates', raw: 'Rebrand the tender templates `someday: 2026-01-02`', date: '2026-01-02', family: 'WORK-PIPE', home: 'project:alpha', path: 'projects/alpha/QUEUE.md', lens: 'work' },
+  ],
   gaps: ['Synthetic preview data.'],
 };
 const filler = (n) => Array.from({ length: n }, (_, i) => `Filler paragraph ${i + 1} so the jump has somewhere to scroll.`).join('\n\n');
@@ -217,6 +221,18 @@ if (await mover.count()) {
 } else problems.push('This week offers no → Today on a work item');
 await page.goto(`${base}/brain/#priority`); await settle();
 if (!(await page.locator('.cc-tabs a[href="#next"][aria-current="page"]').count())) problems.push('#priority no longer lands on Next actions');
+// Someday by family (Brain DEV-61026.35): its own entry, family pages, and a way back to the Inbox.
+if (!(await page.locator('a.cc-someday[href="#someday"]').count())) problems.push('no Someday entry');
+await page.goto(`${base}/brain/#someday`); await settle(); await pickLens('all'); await shot('someday');
+if (!(await page.locator('.cc-gh a[href="#family/WORK-PIPE"]').count())) problems.push('Someday is not grouped by family');
+await page.locator('.cc-gh a[href="#family/WORK-PIPE"]').click(); await settle(); await shot('family-page');
+if (!(await page.locator('text=Family').count()) || !(await page.locator('[data-cc-promote]').count())) problems.push('the family page did not open from Someday');
+await page.goto(`${base}/brain/#someday`); await settle();
+await page.locator('[data-cc-promote][data-cc-line="Learn the ukulele `someday: 2026-01-01`"]').click(); await settle();
+if (!writes.some(([path]) => path === '/api/brain/promote')) problems.push('Promote to Inbox wrote nothing');
+if (await page.locator('[data-cc-promote][data-cc-line="Learn the ukulele `someday: 2026-01-01`"]').count()) problems.push('a promoted line stayed in Someday');
+await page.goto(`${base}/brain/#inbox`); await settle();
+if (!(await page.locator('a[data-cc-line="Learn the ukulele"]').count())) problems.push('a promoted line did not reach the Inbox');
 // The Inbox tab (Brain DEV-61026.33): add box first, lines to clarify, then what the routines found.
 await page.goto(`${base}/brain/#inbox`); await settle(); await shot('inbox');
 if (!(await page.locator('.cc-inbox').count())) problems.push('the Inbox tab is empty');

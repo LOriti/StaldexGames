@@ -456,6 +456,10 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .cc-next b, .cc-ev b { font-size: 10.5px; font-weight: 600; letter-spacing: .06em; text-transform: uppercase; color: var(--faint); margin-right: 4px; }
 .cc-batch-row { margin: -4px 0 8px; }
 .cc-lens { position: relative; }
+.cc-side { display: inline-flex; gap: 10px; align-items: center; }
+.cc-someday em { font-style: normal; color: var(--faint); margin-left: 3px; }
+.cc-someday[aria-current="page"] { color: var(--accent); }
+.cc-gh a { color: inherit; text-decoration: none; border-bottom: 1px dotted var(--faint); }
 .cc-lens-chip { border: 1px solid var(--line); background: var(--sheet); border-radius: 9px; padding: 7px 12px; font: 600 13px/1 var(--sans); color: var(--ink); cursor: pointer; }
 .cc-lens-chip[aria-expanded="true"] { border-color: var(--accent); }
 .cc-chooser { position: absolute; top: calc(100% + 6px); left: 0; z-index: 6; box-shadow: 0 6px 20px rgba(0, 0, 0, .12); }

@@ -31,6 +31,7 @@
 //   POST /api/brain/someday { project, line } → { path, sha, commit }   the line moves to ## Someday
 //   POST /api/brain/reference { project, line } → { path, sha, commit } tagged for the groom to file
 //   POST /api/brain/trash   { project, line } → { path, sha, commit }   the line is removed
+//   POST /api/brain/promote { project, line } → { path, sha, commit }   a Someday line back to the Inbox
 //   POST /api/brain/progress { id, text[, project] } → { path, sha, commit }   project: a card's
 //   POST /api/brain/close   { id, text }    → { path, sha, commit }   register items only
 //   POST /api/brain/decide  { id, text }    → { path, sha, commit }   register decisions only
@@ -42,7 +43,7 @@
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
-import { QueueError, addInbox, cardProgress, categoriseLine, handledLine, markDone, perthDate, referenceLine, somedayLine } from './queue.js';
+import { QueueError, addInbox, cardProgress, categoriseLine, handledLine, markDone, perthDate, promoteLine, referenceLine, somedayLine } from './queue.js';
 import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, itemProgress, rejectFlag, settleAll } from './register.js';
 import { cleanDetails, lineAttrs } from './categorise.js';
 import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock, placeRows } from './timelog.js';
@@ -209,6 +210,13 @@ const WRITES = {
     valid: (body) => typeof body.line === 'string',
     apply: (text, body, today) => handledLine(text, body.line, today),
     message: (body) => `web: trash inbox ${body.project}`,
+  },
+  // A Someday line promoted back into the Inbox for clarifying (Brain DEV-61026.35).
+  '/api/brain/promote': {
+    path: queuePath,
+    valid: (body) => typeof body.line === 'string',
+    apply: (text, body, today) => promoteLine(text, body.line, today),
+    message: (body) => `web: promote someday ${body.project}`,
   },
   '/api/brain/confirm': {
     path: () => REGISTER_PATH,
