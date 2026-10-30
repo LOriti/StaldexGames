@@ -226,10 +226,30 @@ export function flagChips(e) {
   return (e.flags || []).filter((f) => FLAG_CHIPS[f]).map((f) => `<span class="cc-chip flag">${FLAG_CHIPS[f]}</span>`);
 }
 
+// The Claude lane's two states on the phone (Brain D-119 A, P6): ready to hand over, and
+// back for review once the brief wrote `Prepared:`; "running" is the desk's own.
+export function laneChip(e) {
+  if (e.claude === 'back' || (e.prepared && ['prepare', 'complete'].includes(e.ai))) return '<span class="cc-chip ok">back for review</span>';
+  if (e.claude === 'ready' || ['prepare', 'complete'].includes(e.ai)) return '<span class="cc-chip clock">ready for Claude</span>';
+  return '';
+}
+
 function chips(e) {
   const out = [...flagChips(e), ...(e.hot || []).map((h) => `<span class="cc-chip hot">${esc(h)}</span>`)];
   if (e.no_owner) out.push('<span class="cc-chip warn">no owner: yours?</span>');
+  const lane = laneChip(e);
+  if (lane) out.push(lane);
   return out.join(' ');
+}
+
+// What the brief prepared, as a link when it points at a page or a Brain file.
+export function preparedHtml(e, paths = null) {
+  const text = String(e.prepared || '');
+  if (!text) return '';
+  const m = /(https?:\/\/\S+|[A-Za-z0-9_./-]+\.md)/.exec(text);
+  const target = m && (/^https?:/.test(m[1]) ? m[1] : (!paths || paths.has(m[1].replace(/^\.\//, ''))) ? m[1] : null);
+  const link = target ? (/^https?:/.test(target) ? `<a href="${esc(target)}" target="_blank" rel="noopener noreferrer">${esc(target)}</a>` : `<a href="#/${encodeURI(target)}">${esc(target)}</a>`) : '';
+  return `<p class="tk-prepared"><b>Back for review</b> ${link ? esc(text).replace(esc(target), link) : esc(text)}</p>`;
 }
 
 // What a routine flagged can be settled from the row itself (Brain D-112 A): Confirm is one
@@ -375,7 +395,7 @@ export function closeKind(entry) {
 export const isUnconfirmed = (entry) => /^P-/.test(entry.ref) || (entry.flags || []).includes('unconfirmed');
 
 // `focal` is { ref, mine } for the item in the focal slot: `mine` when it is Leon's pick.
-export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', message = '', focal = null } = {}) {
+export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', message = '', focal = null, paths = null } = {}) {
   const mine = clock && clock.ref === entry.ref;
   const other = clock && !mine;
   const est = estimateText(entry);
@@ -417,7 +437,13 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
       '<button type="button" class="mini-btn" data-tk="reject-close">No, keep it open</button></span></div>';
   }
   if (isFocal) html += `<p class="cc-note cc-focal-note">This is the one thing today${focal.mine ? ', your pick' : ''}.</p>`;
-  html += `<div class="tk-acts">${closeBtn}${progressBtn}${focalBtn}${sortBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
+  // Hand to Claude (Brain D-119 A): one tap sets `ai: prepare`; the brief prepares it and
+  // writes `Prepared:`, which the card shows as the way to what came back.
+  const inLane = ['prepare', 'complete'].includes(entry.ai);
+  const handBtn = kind !== 'decision' && kind !== 'none' && !inLane && ['hot', 'next', 'waiting'].includes(entry.section)
+    ? '<button type="button" class="mini-btn" data-tk="hand">Hand to Claude</button>' : '';
+  if (inLane) html += entry.prepared ? preparedHtml(entry, paths) : '<p class="cc-note cc-lane-note">In the Claude lane: the next morning brief prepares it and brings it back here.</p>';
+  html += `<div class="tk-acts">${closeBtn}${progressBtn}${focalBtn}${handBtn}${sortBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
   if (kind === 'decision') html += '<p class="cc-note">A decision is settled by replying to it in a session; it is not closed here.</p>';
   if (isUnconfirmed(entry)) {
     html += `<div class="tk-panel"><p>A routine found this new item. Confirm it to keep it${proposed ? '' : ', close it with Done'}, or reject it.</p>` +
@@ -783,7 +809,9 @@ const CHEERS = [
   'Nice work. Breathe, then pick the next one.', 'Off the list for good.', 'That one won’t nag you again.',
 ];
 
-// `done` is { title, ref, minutes, today, next } where `next` is the item now in focus.
+// `done` is { title, ref, minutes, today, next, back } where `next` is the item now in focus
+// and `back` the item whose clock this one interrupted (Brain DEV-61030.15): both start
+// their clock when tapped.
 export function rewardHtml(done, pick = Math.random) {
   const cheer = CHEERS[Math.floor(pick() * CHEERS.length) % CHEERS.length];
   const bits = Array.from({ length: 18 }, (_, i) => `<i style="--a:${i * 20}deg;--d:${(i % 3) * 60}ms"></i>`).join('');
@@ -791,8 +819,10 @@ export function rewardHtml(done, pick = Math.random) {
   return `<div class="tk-reward"><div class="rw-burst" aria-hidden="true">${bits}</div><div class="rw-tick" aria-hidden="true">✓</div>` +
     `<p class="rw-k">Task completed</p><h2 class="tk-ttl" id="tk-title">${esc(done.title)}</h2><p class="rw-cheer">${esc(cheer)}</p>` +
     `<p class="cc-note">${esc(done.ref)} · ${esc(stats)}</p><div class="tk-acts">` +
-    (done.next ? `<button type="button" class="mini-btn primary" data-tk="next" data-ref="${esc(done.next.ref)}">Next: ${esc(done.next.title)}</button>` : '') +
-    '<button type="button" class="mini-btn" data-tk="hide">Back to the home</button></div></div>';
+    (done.back && (!done.next || done.back.ref !== done.next.ref) ? `<button type="button" class="mini-btn primary" data-tk="back-to" data-ref="${esc(done.back.ref)}">Back to ${esc(done.back.title)}</button>` : '') +
+    (done.next ? `<button type="button" class="mini-btn${done.back && done.back.ref !== done.next.ref ? '' : ' primary'}" data-tk="next" data-ref="${esc(done.next.ref)}">Next: ${esc(done.next.title)}</button>` : '') +
+    '<button type="button" class="mini-btn" data-tk="hide">Back to the home</button></div>' +
+    (done.next || done.back ? '<p class="cc-note">Next and Back start that item’s clock.</p>' : '') + '</div>';
 }
 
 // After a task leaves, the next hot item moves into focus and the hot list refills from the

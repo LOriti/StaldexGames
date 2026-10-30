@@ -204,6 +204,9 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
   (`time: <date> place <kind> <n>`, Brain D-109 A): the note is the position, `out` or `keep`.
   Both screens read the day's `today` rows (fresh each morning) and the latest `next-week`
   row per item; `/time` now reaches back 42 days so a Next week run's first day is in view.
+- `POST /api/brain/hand` `{ id[, project] }` → `ai: prepare` on a card (with `project`) or an open
+  register item (`web: hand <id>`, Brain D-119 A): Hand to Claude from the task card. Brain's
+  morning brief prepares it and writes `Prepared:`, which the card shows as back for review.
 - `POST /api/brain/promote` `{ project, line }` → a `## Someday` line comes back under `## Inbox`
   for clarifying (`web: promote someday <slug>`, Brain DEV-61026.35); refused if the Inbox
   already has it.

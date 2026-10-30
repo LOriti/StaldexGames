@@ -227,6 +227,25 @@ test('Next up today and Next week placements are rows on the daily log, a list p
   assert.equal((await post('/api/brain/place', { kind: 'today', items: [{ ref: 'DEV-01010.01', note: 'nope' }] })).status, 400);
 });
 
+test('Hand to Claude sets ai: prepare on a card or an item (Brain D-119 A)', async () => {
+  const card = queue.handCard(QUEUE, 'DEV-01010.01', '2030-02-01');
+  assert.match(card, /`id: DEV-01010\.01` `priority: P1` `ai: prepare`\n/);
+  assert.match(card, /^updated: 2030-02-01$/m);
+  assert.throws(() => queue.handCard(card, 'DEV-01010.01', '2030-02-01'), { code: 'closed' });
+  assert.match(queue.handCard(QUEUE.replace('`priority: P2`', '`priority: P2` `ai: no`'), 'DEV-01010.02', '2030-02-01'), /`priority: P2` `ai: prepare`/);
+  const item = register.handItem(REGISTER, 'DEV-01012.02', '2030-02-01');
+  assert.match(item, /`id: DEV-01012\.02` `kind: action` `state: open` `close-proposed: 2030-01-14` `ai: prepare`\n/);
+  assert.throws(() => register.handItem(item, 'DEV-01012.02', '2030-02-01'), { code: 'closed' });
+  const res = await post('/api/brain/hand', { project: 'demo', id: 'DEV-01010.01' });
+  assert.equal(res.status, 200);
+  assert.equal(files['projects/demo/QUEUE.md'].puts.at(-1).message, 'web: hand DEV-01010.01');
+  const reg = await post('/api/brain/hand', { id: 'DEV-01012.03' });
+  assert.equal(reg.status, 200);
+  assert.equal(files['register/open-items.md'].puts.at(-1).message, 'web: hand DEV-01012.03');
+  assert.equal((await post('/api/brain/hand', { id: 'D-12' })).status, 400);
+  assert.equal((await post('/api/brain/hand', { project: 'demo', id: 'DEV-09999.01' })).status, 404);
+});
+
 test('time returns parsed rows from the daily-log branch only', async () => {
   worker._resetCaches();
   const res = await worker.default.fetch(new Request(`https://staldex.com/api/brain/time?from=${TODAY}`, {

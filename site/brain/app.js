@@ -7,7 +7,7 @@ import {
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS,
-} from './home.js?v=20261030d';
+} from './home.js?v=20261030e';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -399,6 +399,8 @@ function timeFrom() {
   return d.toISOString().slice(0, 10);
 }
 
+const view_lens = (slot) => Object.keys(home.view.lenses).find((k) => home.view.lenses[k] === slot);
+
 // The item in the focal slot for the current lens, and whether it is Leon's own pick.
 function currentFocal() {
   if (!home.view || !home.view.lenses[home.lens]) return null;
@@ -774,6 +776,9 @@ els.doc.addEventListener('submit', async (e) => {
 // clock runs at a time. Finishing a task shows the reward and moves the next hot item up.
 
 let clock = null; // { ref, title, area, lens, date, start, startMs, written, pending }
+// The item whose clock a Switch interrupted, for this visit (Brain DEV-61030.15): the reward
+// after the interruption offers the way back.
+let interrupted = null; // { ref, title }
 // `walk` is the Inbox tab's question walk over a raw line (Brain DEV-61026.33), which an
 // added line opens at once (D-110 A folded in).
 const task = { ref: null, panel: '', message: '', reward: null, sort: null, back: null, walk: null };
@@ -814,7 +819,7 @@ function renderTask() {
   const entry = task.ref && entryFor(task.ref);
   if (!entry) { modal.hidden = true; task.ref = null; return; }
   const panel = task.panel ? taskPanel(task.panel, entry) : '';
-  modal.querySelector('.tk').innerHTML = taskHtml(entry, { clock, panel, message: task.message, focal: currentFocal() });
+  modal.querySelector('.tk').innerHTML = taskHtml(entry, { clock, panel, message: task.message, focal: currentFocal(), paths: state.paths });
   modal.hidden = false;
 }
 
@@ -981,9 +986,20 @@ function celebrate(entry, clockedNow) {
   dropFromView(entry.ref);
   const slot = home.view.lenses[home.lens] || home.view.lenses.all;
   const next = slot.focal ? entryFor(slot.focal.ref) : null;
-  task.reward = { title: entry.title, ref: entry.ref, minutes, today: doneTodayCount(), next };
+  // The way back to what this interrupted (DEV-61030.15), if it is still open.
+  const back = interrupted && interrupted.ref !== entry.ref && entryFor(interrupted.ref) ? { ref: interrupted.ref, title: interrupted.title } : null;
+  if (interrupted && interrupted.ref === entry.ref) interrupted = null;
+  task.reward = { title: entry.title, ref: entry.ref, minutes, today: doneTodayCount(), next, back };
   task.ref = null;
   refreshAll();
+}
+
+// Next and Back to on the reward open the item and start its clock (DEV-61030.15).
+function openAndStart(ref) {
+  if (ref === interrupted?.ref) interrupted = null;
+  openTask(ref);
+  const entry = entryFor(ref);
+  if (entry && !(clock && clock.ref === ref)) startClock(entry);
 }
 
 // Stops this task's clock if it is the one running; returns the minutes it ran, or null
@@ -1125,7 +1141,7 @@ modal.addEventListener('click', async (e) => {
   if (!btn) return;
   const entry = entryFor(task.ref);
   const act = btn.dataset.tk;
-  if (act === 'next') return openTask(btn.dataset.ref);
+  if (act === 'next' || act === 'back-to') return openAndStart(btn.dataset.ref);
   if (act === 'categorise' && entry) return openSort({ kind: 'item', entry }, entry.ref);
   if (act === 'back') {
     const from = task.back;
@@ -1136,7 +1152,28 @@ modal.addEventListener('click', async (e) => {
   if (act === 'hide' || !entry) return hideTask();
   if (act === 'stop') { await stopClock(); return; }
   if (act === 'start') { startClock(entry); return; }
-  if (act === 'switch') { if (await stopClock()) startClock(entry); return; }
+  if (act === 'switch') {
+    const was = clock ? { ref: clock.ref, title: clock.title } : null;
+    if (await stopClock()) { interrupted = was; startClock(entry); }
+    return;
+  }
+  if (act === 'hand') {
+    // Hand to Claude (Brain D-119 A): one commit; the lane shows it ready at once.
+    for (const b of modal.querySelectorAll('button')) b.disabled = true;
+    try {
+      const card = closeKind(entry) === 'card';
+      await write('/hand', { id: entry.ref, ...(card ? { project: projectOf(entry) } : {}) });
+      entry.ai = 'prepare'; entry.claude = entry.prepared ? 'back' : 'ready'; entry.context = 'claude';
+      for (const slot of Object.values(home.view.lenses)) {
+        const inLens = view_lens(slot) === 'all' || entry.lens === view_lens(slot);
+        if (inLens && !slot.claude.includes(entry.ref)) { slot.claude.push(entry.ref); slot.claude_total += 1; }
+      }
+      task.message = 'Handed to Claude. The next morning brief prepares it.';
+    } catch (err) {
+      task.message = writeError(err);
+    }
+    return refreshAll();
+  }
   if (act === 'focal-set' || act === 'focal-clear') { await setFocal(entry, act === 'focal-clear'); return; }
   if (act === 'cancel') { task.panel = ''; return renderTask(); }
   if (act === 'confirm-close' || act === 'reject-close') {
@@ -1267,7 +1304,7 @@ modal.addEventListener('submit', async (e) => {
       const minutes = Math.max(15, Math.round(Number(f.minutes.value) / 15) * 15);
       try {
         const lens = w.row.lens || (home.lens === 'all' ? 'work' : home.lens);
-        await api('/hours', { minutes, lens, note: `${w.a.next || w.row.text} (${w.row.text})`.slice(0, 120) });
+        await api('/hours', { minutes, lens, note: `${w.row.text} (${w.row.home})`.slice(0, 120) });
         loadTime();
         return handled(w.row, minutes);
       } catch (err) {

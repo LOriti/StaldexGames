@@ -477,6 +477,9 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .tk-sort label:has(input[type=checkbox]) { display: flex; gap: 6px; align-items: center; color: var(--ink); font-size: 13.5px; }
 .cc-flags { display: block; margin: -4px 2px 8px; font-size: 12.5px; color: var(--warn); text-decoration: none; }
 .cc-focal-note { margin: 0 0 8px; color: var(--accent); }
+.tk-prepared { margin: 0 0 8px; font-size: 13.5px; }
+.tk-prepared b { display: block; font-size: 10.5px; letter-spacing: .06em; text-transform: uppercase; color: var(--accent); margin-bottom: 2px; }
+.cc-lane-note { margin: 0 0 8px; }
 .tk-proposed q { quotes: "“" "”"; }
 .tk-head .tk-back { margin-right: 4px; }
 .tk-choices { display: grid; gap: 8px; }
