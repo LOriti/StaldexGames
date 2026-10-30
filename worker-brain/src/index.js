@@ -32,6 +32,7 @@
 //   POST /api/brain/decide  { id, text }    → { path, sha, commit }   register decisions only
 //   POST /api/brain/clock   { action, ref, start[, date], title, area, lens } → on daily-log
 //   POST /api/brain/hours   { minutes, area | lens | ref, note } → on daily-log
+//   POST /api/brain/focal   { ref | '', lens } → a `focal` row on daily-log (the one thing today)
 //   POST /api/brain/categorise { project, line, details } | { id, details } → an Inbox line or an open item
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
@@ -39,7 +40,7 @@ import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
 import { QueueError, addInbox, cardProgress, categoriseLine, handledLine, markDone, perthDate } from './queue.js';
 import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, itemProgress, rejectFlag } from './register.js';
 import { cleanDetails, lineAttrs } from './categorise.js';
-import { DATE, LOG_BRANCH, appendTime, clockRow, hoursRow, logPath, parseTime, perthClock } from './timelog.js';
+import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock } from './timelog.js';
 
 const TREE_TTL_MS = 30 * 1000;
 const BLOB_CACHE_MAX = 200;
@@ -243,6 +244,16 @@ const WRITES = {
     valid: (body) => Number.isInteger(body.minutes),
     apply: (text, body, today, clock) => appendTime(text, clock.date, clock.hhmm, hoursRow(body)),
     message: (body) => `time: ${perthClock().date} hours ${body.ref || body.area || body.lens}`,
+  },
+  // Leon's one thing for today (Brain D-113 A), read live by the viewer and the desk; an
+  // empty ref goes back to the brief's pick.
+  '/api/brain/focal': {
+    branch: LOG_BRANCH,
+    create: true,
+    path: todaysLog,
+    valid: (body) => body.ref === '' || body.ref === null || typeof body.ref === 'string',
+    apply: (text, body, today, clock) => appendTime(text, clock.date, clock.hhmm, focalRow(body, clock)),
+    message: (body) => `time: ${perthClock().date} focal ${body.ref || 'cleared'}`,
   },
 };
 

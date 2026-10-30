@@ -74,28 +74,93 @@ export function clockMinutes(clock, now = Date.now()) {
   return Math.max(0, Math.floor((now - Date.parse(`${clock.date}T${clock.start}:00+08:00`)) / 60000));
 }
 
-// This week's recorded time: every kind but plans and still-running clocks.
+// This week's recorded time: every kind but plans, still-running clocks and focal picks.
+// An area or lens with no rows is absent, never 0 (Brain D-114 A), and a day counts as
+// recorded only with at least RECORDED_DAY_MINUTES on it.
+export const RECORDED_DAY_MINUTES = 15;
+// A clock stopped inside its first minute records nothing (Brain D-114 A): its start row
+// is held back this long, so an accidental open leaves no row at all.
+export const CLOCK_GRACE_MS = 60 * 1000;
+export const clockRecords = (clock, now = Date.now()) => now - clock.startMs >= CLOCK_GRACE_MS;
+
 export function weekActuals(rows, monday) {
-  const byArea = {}; const byLens = {}; const days = new Set(); const sources = new Set();
+  const byArea = {}; const byLens = {}; const byDay = {}; const sources = new Set();
   for (const r of rows || []) {
-    if (r.date < monday || r.kind === 'planned' || r.kind === 'started' || !(r.minutes > 0)) continue;
-    days.add(r.date);
+    if (r.date < monday || r.kind === 'planned' || r.kind === 'started' || r.kind === 'focal' || !(r.minutes > 0)) continue;
+    byDay[r.date] = (byDay[r.date] || 0) + r.minutes;
     sources.add(r.kind === 'entered' ? 'entered' : 'timed');
     const lens = r.lens || 'unknown';
     byLens[lens] = (byLens[lens] || 0) + r.minutes;
     if (lens === 'work') byArea[r.area || 'unassigned'] = (byArea[r.area || 'unassigned'] || 0) + r.minutes;
   }
-  return { byArea, byLens, days: days.size, sources: [...sources] };
+  const days = Object.values(byDay).filter((m) => m >= RECORDED_DAY_MINUTES).length;
+  return { byArea, byLens, days, sources: [...sources] };
+}
+
+// Leon's pick of the one thing for today (Brain D-113 A): today's latest `focal` row, its
+// `ref` empty when he went back to the brief's pick; null when he picked nothing today.
+export function latestFocal(rows, today) {
+  const picks = (rows || []).filter((r) => r.kind === 'focal' && r.date === today);
+  return picks.length ? { ref: picks[picks.length - 1].ref || '' } : null;
 }
 
 // Working hours open on Work, the rest on Personal (Brain D-53 A).
 export function defaultLens(hours, date = new Date()) {
+  return workingHours(hours, date) ? 'work' : 'personal';
+}
+
+export function workingHours(hours, date = new Date()) {
   const { weekday, minutes } = perthParts(date);
   const toMin = (t) => { const [h, m] = String(t).split(':').map(Number); return h * 60 + m; };
   const days = hours?.work_days ?? [0, 1, 2, 3, 4];
-  const working = days.includes(weekday) && minutes >= toMin(hours?.work_start ?? '08:00') && minutes < toMin(hours?.work_end ?? '17:00');
-  return working ? 'work' : 'personal';
+  return days.includes(weekday) && minutes >= toMin(hours?.work_start ?? '08:00') && minutes < toMin(hours?.work_end ?? '17:00');
 }
+
+// Which lens the page opens on (Brain D-116 A): Work in working hours, otherwise the lens
+// Leon last used, remembered across days; the one-tap override stays.
+export function openingLens(hours, stored, date = new Date()) {
+  if (workingHours(hours, date)) return 'work';
+  return LENSES.includes(stored) ? stored : 'personal';
+}
+
+// "overdue", "due today" and "due tomorrow" against today's Perth date (Brain D-61 A), so a
+// view made on an earlier day still reads right; an item whose date has now arrived joins
+// the hot lists. Dates only come closer, so nothing leaves hot here.
+const DATE_CHIP = /^(overdue \d+ d|due today|due tomorrow|due \w{3} \d{2} \w{3})$/;
+const HOT_DAYS = 2;
+export function dueChip(due, today) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(due || '') || !today) return null;
+  const days = Math.round((Date.parse(`${due}T00:00:00Z`) - Date.parse(`${today}T00:00:00Z`)) / 86400000);
+  if (days < 0) return `overdue ${-days} d`;
+  if (days > HOT_DAYS) return null;
+  if (days < 2) return days === 0 ? 'due today' : 'due tomorrow';
+  const d = new Date(`${due}T00:00:00Z`);
+  const name = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][d.getUTCDay()];
+  const month = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][d.getUTCMonth()];
+  return `due ${name} ${String(d.getUTCDate()).padStart(2, '0')} ${month}`;
+}
+
+export function refreshDue(view, today) {
+  if (!today || !view.date || view.date >= today) return view;
+  for (const e of view.entries) {
+    if (!['hot', 'next'].includes(e.section)) continue;
+    const kept = (e.hot || []).filter((h) => !DATE_CHIP.test(h));
+    const chip = dueChip(e.due, today);
+    e.hot = chip ? [chip, ...kept] : kept;
+    if (e.hot.length && e.section === 'next') {
+      e.section = 'hot';
+      for (const slot of Object.values(view.lenses)) {
+        if (slot.hot.includes(e.ref) || (slot.focal && slot.focal.ref === e.ref)) continue;
+        if (view.entries.some((o) => o.ref === e.ref && (o.lens === lensKey(slot, view) || lensKey(slot, view) === 'all'))) {
+          slot.hot_total += 1;
+          if (slot.hot.length < 3) slot.hot.push(e.ref);
+        }
+      }
+    }
+  }
+  return view;
+}
+const lensKey = (slot, view) => Object.keys(view.lenses).find((k) => view.lenses[k] === slot);
 
 // Where tapping an entry goes: its card's queue, or the register file it lives in.
 export function sourcePath(entry) {
@@ -113,8 +178,14 @@ export function lensEntries(view, lens) {
   return view.entries.filter((e) => lens === 'all' || e.lens === lens);
 }
 
+// Every row says what state its item is in (Brain D-115 A).
+export const FLAG_CHIPS = { unconfirmed: 'new, confirm?', 'close-proposed': 'close proposed' };
+export function flagChips(e) {
+  return (e.flags || []).filter((f) => FLAG_CHIPS[f]).map((f) => `<span class="cc-chip flag">${FLAG_CHIPS[f]}</span>`);
+}
+
 function chips(e) {
-  const out = (e.hot || []).map((h) => `<span class="cc-chip hot">${esc(h)}</span>`);
+  const out = [...flagChips(e), ...(e.hot || []).map((h) => `<span class="cc-chip hot">${esc(h)}</span>`)];
   if (e.no_owner) out.push('<span class="cc-chip warn">no owner: yours?</span>');
   return out.join(' ');
 }
@@ -144,10 +215,19 @@ function defaultProject(view, lens, projects) {
   return homes.find((slug) => projects.includes(slug)) || projects[0];
 }
 
-export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inbox' } = {}) {
-  const rows = (view.inbox || []).filter((r) => lens === 'all' || r.lens === lens);
+// `shown` holds refs already on the screen (focal, Also hot, the Claude lane): a flagged
+// item is not repeated here. The heading counts lines and captures only; register flags
+// get their own line (Brain D-115 A).
+export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inbox', shownRefs = null } = {}) {
+  const inLens = (view.inbox || []).filter((r) => lens === 'all' || r.lens === lens);
+  const captures = inLens.filter((r) => r.kind === 'line' || r.kind === 'capture').length;
+  const flagged = { unconfirmed: 0, close: 0 };
+  for (const r of inLens) if (r.kind in flagged) flagged[r.kind] += 1;
+  const rows = inLens.filter((r) => !(shownRefs && r.ref && shownRefs.has(r.ref)));
   const shown = all ? rows : rows.slice(0, INBOX_SHOWN);
-  let html = `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${rows.length}</em></h2><div class="cc-box">`;
+  const flagLine = flagged.unconfirmed || flagged.close
+    ? `<a class="cc-flags" href="#clarify">${[flagged.unconfirmed ? `${flagged.unconfirmed} to confirm` : '', flagged.close ? `${flagged.close} close${flagged.close === 1 ? '' : 's'} proposed` : ''].filter(Boolean).join(', ')} →</a>` : '';
+  let html = `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${captures}</em></h2>${flagLine}<div class="cc-box">`;
   // A flagged register item opens its card (Confirm, Reject, close); a raw line or capture
   // opens its file until its own card lands (Brain DEV-61026.27, D-100).
   const known = new Set(view.entries.map((e) => e.ref));
@@ -155,11 +235,12 @@ export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inb
   // card, which categorises and confirms it.
   const open = (r) => (r.kind === 'line' ? ` data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(projectOf(r) || '')}"`
     : r.ref && known.has(r.ref) ? ` data-cc-${r.kind === 'unconfirmed' ? 'sort' : 'ref'}="${esc(r.ref)}"` : '');
-  const sorted = (r) => (r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · becomes a card at the next groom</span>' : '');
+  const flagOf = (r) => (r.kind === 'unconfirmed' ? ` <span class="cc-chip flag">${FLAG_CHIPS.unconfirmed}</span>` : r.kind === 'close' ? ` <span class="cc-chip flag">${FLAG_CHIPS['close-proposed']}</span>` : '');
+  const sorted = (r) => (r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · becomes a card at the next groom</span>' : flagOf(r));
   html += shown.map((r) => `<a class="cc-row cc-in" href="${inboxHref(r)}"${open(r)}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
     `<span class="cc-m"><span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(r.home)}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span>` +
     `<span class="cc-t">${esc(r.text)}${sorted(r)}</span></span></a>`).join('');
-  if (!rows.length) html += `<p class="cc-empty">Inbox empty${lens === 'all' ? '' : ' in this lens'}. Nothing waits to be clarified.</p>`;
+  if (!rows.length) html += `<p class="cc-empty">${inLens.length ? 'Everything here is already on this screen.' : `Inbox empty${lens === 'all' ? '' : ' in this lens'}. Nothing waits to be clarified.`}</p>`;
   if (rows.length > shown.length) html += `<button type="button" class="text-btn cc-more" data-cc-inbox-all="1">Show all ${rows.length}</button>`;
   if (projects.length) {
     html += '<form class="cc-inbox-add"><label class="visually-hidden" for="cc-inbox-project">Project</label>' +
@@ -209,7 +290,8 @@ export function closeKind(entry) {
   return 'item';
 }
 
-export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', message = '' } = {}) {
+// `focal` is { ref, mine } for the item in the focal slot: `mine` when it is Leon's pick.
+export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', message = '', focal = null } = {}) {
   const mine = clock && clock.ref === entry.ref;
   const other = clock && !mine;
   const est = estimateText(entry);
@@ -233,17 +315,26 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
       '<button type="button" class="mini-btn primary" data-tk="start">Start clock</button><button type="button" class="mini-btn" data-tk="time-ask">Add time…</button></div>';
   }
   const kind = closeKind(entry);
+  const proposed = (entry.flags || []).includes('close-proposed') && kind !== 'unconfirmed';
+  // A proposed close comes first; on a decision, Decided is the alternative (Brain D-117 B).
   const closeBtn = kind === 'card' || kind === 'item' || kind === 'decide'
-    ? `<button type="button" class="mini-btn primary" data-tk="done-ask">${kind === 'decide' ? 'Decided…' : 'Done…'}</button>` : '';
+    ? `<button type="button" class="mini-btn${proposed ? '' : ' primary'}" data-tk="done-ask">${kind === 'decide' ? (proposed ? 'Decided otherwise…' : 'Decided…') : 'Done…'}</button>` : '';
   const progressBtn = kind !== 'decision' && kind !== 'none' ? '<button type="button" class="mini-btn" data-tk="progress-ask">Add progress…</button>' : '';
   const sortBtn = entry.source === 'item' && kind !== 'decision' ? '<button type="button" class="mini-btn" data-tk="categorise">Categorise…</button>' : '';
-  html += `<div class="tk-acts">${closeBtn}${progressBtn}${sortBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
-  if (kind === 'decision') html += '<p class="cc-note">A decision is settled by replying to it in a session; it is not closed here.</p>';
-  if ((entry.flags || []).includes('close-proposed') && kind !== 'unconfirmed') {
-    html += '<div class="tk-panel"><p>A routine thinks this is done (its evidence is on the item in the register). Close it, or keep it open.</p>' +
+  // The one thing for today (Brain D-113 A): any hot or next item can take the slot; the
+  // current pick says so and offers the way back to the brief's.
+  const isFocal = focal && focal.ref === entry.ref;
+  const focalBtn = isFocal
+    ? (focal.mine ? '<button type="button" class="mini-btn" data-tk="focal-clear">Back to the brief’s pick</button>' : '')
+    : ['hot', 'next'].includes(entry.section) ? '<button type="button" class="mini-btn" data-tk="focal-set">Make this the one thing</button>' : '';
+  if (proposed) {
+    html += `<div class="tk-panel tk-proposed"><p>A routine thinks this is done${entry.evidence ? `: <q>${esc(entry.evidence.replace(/\.$/, ''))}</q>` : ' (its evidence is on the item in the register)'}. ${kind === 'decide' ? 'Confirm it to record that as the outcome, or keep it open.' : 'Close it, or keep it open.'}</p>` +
       '<span class="tk-acts"><button type="button" class="mini-btn primary" data-tk="confirm-close">Yes, it’s done</button>' +
       '<button type="button" class="mini-btn" data-tk="reject-close">No, keep it open</button></span></div>';
   }
+  if (isFocal) html += `<p class="cc-note cc-focal-note">This is the one thing today${focal.mine ? ', your pick' : ''}.</p>`;
+  html += `<div class="tk-acts">${closeBtn}${progressBtn}${focalBtn}${sortBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
+  if (kind === 'decision') html += '<p class="cc-note">A decision is settled by replying to it in a session; it is not closed here.</p>';
   if (kind === 'unconfirmed') {
     html += '<div class="tk-panel"><p>A routine found this new item. Confirm it to keep it (then it can be closed here), or reject it.</p>' +
       '<span class="tk-acts"><button type="button" class="mini-btn primary" data-tk="confirm">Confirm</button>' +
@@ -291,29 +382,46 @@ export function clockBarHtml(clock, entry, now = Date.now()) {
     `<button type="button" class="mini-btn" data-cb="open">Open</button><button type="button" class="mini-btn" data-cb="stop">Stop</button>`;
 }
 
+// The focal slot's rule order (Brain D-113 A): Leon's `focal` row today, then the view's
+// pick (the brief's `Focal:` or the hottest by rule). Returns { entry, reason, mine }.
+export function focalChoice(view, lens, pick) {
+  const slot = view.lenses[lens];
+  const byRef = new Map(view.entries.map((e) => [e.ref, e]));
+  const own = pick && pick.ref ? byRef.get(pick.ref) : null;
+  if (own && ['hot', 'next'].includes(own.section) && (lens === 'all' || own.lens === lens)) return { entry: own, reason: 'your pick for today', mine: true };
+  const theirs = slot.focal && byRef.get(slot.focal.ref);
+  return theirs ? { entry: theirs, reason: slot.focal.reason, mine: false } : null;
+}
+
 function focusTab(view, lens, byRef, opts = {}) {
   const slot = view.lenses[lens];
-  const focal = slot.focal && byRef.get(slot.focal.ref);
+  const choice = focalChoice(view, lens, opts.focal);
+  const focal = choice && choice.entry;
   const clock = opts.clock || null;
   let html = '';
   if (focal) {
     const est = estimateText(focal);
     html += `<a class="cc-focal" href="${entryHref(focal)}" data-cc-ref="${esc(focal.ref)}"><span class="cc-k">The one thing${clock && clock.ref === focal.ref ? ' · clock running' : ''}</span>` +
       `<span class="cc-ttl">${esc(focal.title)}</span><span class="cc-why">${chips(focal)}</span>` +
-      `<span class="cc-id">${esc(focal.ref)} · ${esc(focal.home)}${est ? ` · ${esc(est)}` : ''} · ${esc(slot.focal.reason)}</span></a>`;
+      `<span class="cc-id">${esc(focal.ref)} · ${esc(focal.home)}${est ? ` · ${esc(est)}` : ''} · ${esc(choice.reason)}</span></a>`;
   } else {
     const best = Object.entries(slot.contexts).filter(([, c]) => c.count).sort((a, b) => b[1].count - a[1].count)[0];
     html += '<div class="cc-focal calm"><span class="cc-k">Nothing hot</span><span class="cc-ttl">Nothing needs you right now' +
       `${lens === 'all' ? '' : ' in this lens'}.</span>${best ? `<span class="cc-why">Pick from a door: <button type="button" class="cc-door" data-cc-context="${best[0]}">${CONTEXT_NAMES[best[0]]} <span class="c">${best[1].count}</span></button></span>` : ''}</div>`;
   }
-  const hot = slot.hot.map((ref) => byRef.get(ref)).filter(Boolean);
+  // Leon's pick displaces the view's focal item, which goes back to Also hot when it is hot.
+  let hot = slot.hot.map((ref) => byRef.get(ref)).filter(Boolean);
+  const displaced = choice && choice.mine && slot.focal && slot.focal.ref !== focal.ref ? byRef.get(slot.focal.ref) : null;
+  if (displaced && displaced.section === 'hot') hot = [displaced, ...hot];
+  hot = hot.filter((e) => e.ref !== focal?.ref).slice(0, 3);
   const lane = slot.claude.map((ref) => byRef.get(ref)).filter(Boolean);
   const moreHot = Math.max(0, slot.hot_total - (focal && focal.section === 'hot' ? 1 : 0));
   html += `<div class="cc-two"><section><h2 class="cc-gh">Also hot <em>${moreHot}</em></h2><div class="cc-box">` +
     (hot.map((e) => row(e, true, clock)).join('') || '<p class="cc-empty">Nothing else is hot.</p>') + '</div></section>' +
     `<section><h2 class="cc-gh">Claude can help <em>${slot.claude_total}</em></h2><div class="cc-box">` +
     (lane.map((e) => row(e, true, clock)).join('') || '<p class="cc-empty">Nothing is marked for Claude yet.</p>') + '</div></section></div>';
-  html += inboxHtml(view, lens, { projects: opts.projects || [], all: opts.inboxAll });
+  const shownRefs = new Set([focal, ...hot, ...lane].filter(Boolean).map((e) => e.ref));
+  html += inboxHtml(view, lens, { projects: opts.projects || [], all: opts.inboxAll, shownRefs });
   const waiting = clarifyCount(view, lens);
   if (waiting) html += `<p class="cc-quiet"><a href="#clarify">${waiting} to clarify: confirm, estimate, date or hand over →</a></p>`;
   return html;
@@ -393,27 +501,31 @@ function allocationTab(view, lens, time) {
   const entries = lensEntries(view, 'work');
   const actual = time ? weekActuals(time.rows, time.monday) : null;
   const recorded = actual && actual.days > 0;
+  // An area or lens with no rows reads "not recorded", never 0 (Brain D-114 A).
+  const spentIn = (map, key) => (actual && Object.hasOwn(map, key) ? map[key] : null);
   let html = `<p class="cc-note">${esc(a.total)} h a week across five areas, plus ${esc(a.float)} h undeclared float. ` +
     (!time ? 'Loading this week’s recorded time…' : time.error ? `This week’s time could not be read (${esc(time.error)}).`
-      : recorded ? `Recorded this week, from ${esc(time.monday)}: task clocks and hours entered here or at the desk, on ${actual.days} day${actual.days === 1 ? '' : 's'}. Unrecorded time is not counted as zero; the debrief covers it.`
+      : recorded ? `Recorded on ${actual.days} day${actual.days === 1 ? '' : 's'} this week, from ${esc(time.monday)}: task clocks and hours entered here or at the desk (a day counts with ${RECORDED_DAY_MINUTES} minutes or more). Unrecorded time is not counted as zero; the debrief covers it.`
         : 'Nothing recorded this week yet: start a task’s clock or enter hours below.') + '</p><div class="cc-lanes">';
   const name = (ref) => (a.areas[ref] ? a.areas[ref].name : ref === 'vol' ? 'Volunteering' : `Area ${ref}`);
   for (const [ref, area] of Object.entries(a.areas)) {
     const door = areas[ref] || { count: 0, hot: false };
     const items = entries.filter((e) => e.area === ref && ['hot', 'next', 'parked'].includes(e.section)).slice(0, 4);
-    const spent = actual ? actual.byArea[ref] || 0 : 0;
-    const pct = Math.min(100, Math.round((spent / (Number(area.hours) * 60 || 1)) * 100));
-    const over = spent > Number(area.hours) * 60;
-    html += `<div class="cc-lane"><span class="cc-nm">${esc(ref)} ${esc(area.name)}<small>${recorded ? `${esc(fmtMinutes(spent))} of ` : ''}${esc(area.hours)} h a week · ${door.count} open${door.hot ? ' · something hot' : ''}</small></span>` +
-      (recorded ? `<span class="cc-meter${over ? ' over' : ''}" role="img" aria-label="${esc(fmtMinutes(spent))} of ${esc(area.hours)} hours"><span style="width:${pct}%"></span></span>` : '') +
-      `<span class="cc-why">${items.map((e) => `<span class="cc-chip ${e.section === 'hot' ? 'hot' : ''}">${esc(e.ref)} ${esc(e.title.slice(0, 40))}</span>`).join(' ') || '<span class="cc-chip">nothing open</span>'}</span></div>`;
+    const spent = spentIn(actual ? actual.byArea : {}, ref);
+    const known = recorded && spent !== null;
+    const pct = Math.min(100, Math.round(((spent || 0) / (Number(area.hours) * 60 || 1)) * 100));
+    const over = (spent || 0) > Number(area.hours) * 60;
+    const chip = (e) => `<span class="cc-chip ${e.section === 'hot' ? 'hot' : ''}">${esc(e.ref)} ${esc(e.title.slice(0, 40))}${(e.flags || []).length ? ` · ${(e.flags || []).map((f) => FLAG_CHIPS[f]).filter(Boolean).join(', ')}` : ''}</span>`;
+    html += `<div class="cc-lane"><span class="cc-nm">${esc(ref)} ${esc(area.name)}<small>${known ? `${esc(fmtMinutes(spent))} of ` : recorded ? 'not recorded · ' : ''}${esc(area.hours)} h a week · ${door.count} open${door.hot ? ' · something hot' : ''}</small></span>` +
+      (known ? `<span class="cc-meter${over ? ' over' : ''}" role="img" aria-label="${esc(fmtMinutes(spent))} of ${esc(area.hours)} hours"><span style="width:${pct}%"></span></span>` : '') +
+      `<span class="cc-why">${items.map(chip).join(' ') || '<span class="cc-chip">nothing open</span>'}</span></div>`;
   }
   const untagged = (areas.untagged || {}).count || 0;
-  const floatSpent = actual ? (actual.byArea.unassigned || 0) : 0;
+  const floatSpent = spentIn(actual ? actual.byArea : {}, 'unassigned');
   html += `<div class="cc-lane float"><span class="cc-nm">Float<small>${esc(a.float)} h, undeclared · not a target${recorded && floatSpent ? ` · ${esc(fmtMinutes(floatSpent))} of work time with no area` : ''}</small></span><span class="cc-why">${untagged ? `<span class="cc-chip warn">${untagged} work item${untagged === 1 ? '' : 's'} with no area yet</span>` : ''}</span></div></div>`;
   if (recorded) {
-    const other = ['vol', 'ventures', 'personal', 'brain'].map((k) => [k, k === 'vol' ? actual.byArea.vol || 0 : actual.byLens[k] || 0]);
-    html += `<p class="cc-note">No budget, recorded this week: ${other.map(([k, m]) => `${k === 'vol' ? 'Volunteering' : LENS_NAMES[k]} ${esc(fmtMinutes(m))}`).join(' · ')}.</p>`;
+    const other = ['vol', 'ventures', 'personal', 'brain'].map((k) => [k, k === 'vol' ? spentIn(actual.byArea, 'vol') : spentIn(actual.byLens, k)]);
+    html += `<p class="cc-note">No budget, this week: ${other.map(([k, m]) => `${k === 'vol' ? 'Volunteering' : LENS_NAMES[k]} ${m === null ? 'not recorded' : esc(fmtMinutes(m))}`).join(' · ')}.</p>`;
   }
   html += '<form class="cc-hours"><span class="cc-lbl">Enter hours</span><label class="visually-hidden" for="cc-hours-where">Where</label>' +
     `<select id="cc-hours-where" name="where">${HOURS_TARGETS.map(([area, l]) => `<option value="${area}|${l}">${esc(area ? `${area === 'vol' ? '' : `${area} `}${name(area)}` : LENS_NAMES[l])}</option>`).join('')}</select>` +
@@ -423,7 +535,7 @@ function allocationTab(view, lens, time) {
   return html + (lens === 'work' || lens === 'all' ? '' : '<p class="cc-note">The allocation covers Work; Ventures, Personal and Brain have no budgets.</p>');
 }
 
-export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '' } = {}) {
+export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '', focal = null } = {}) {
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
   // Only the lenses this view carries, so an older view without Brain's own lens still renders.
   const shown = LENSES.filter((l) => view.lenses[l]);
@@ -434,7 +546,7 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', 
   const body = tab === 'priority' ? priorityTab(view, lens, filter, clock)
     : tab === 'allocation' ? allocationTab(view, lens, time)
       : tab === 'clarify' ? clarifyTab(view, lens, { clock, projects })
-        : focusTab(view, lens, byRef, { clock, projects, inboxAll });
+        : focusTab(view, lens, byRef, { clock, projects, inboxAll, focal });
   // A view made on an earlier Perth day has yesterday's "overdue" and "due soon".
   const stale = today && view.date && view.date < today
     ? `<p class="cc-stale" role="status">This view was made for ${esc(view.date)}; today’s refresh has not run yet, so overdue and due-soon may be a day behind. Refresh in a few minutes.</p>` : '';

@@ -10,7 +10,9 @@
 //   confirm unconfirmed      remove the flag and the id's `P-`
 //   reject unconfirmed       `state: rejected`, remove the flag (and any close proposal),
 //                            add a Correction; the `P-` stays, as the item never landed
-//   confirm close-proposed   `state: done`, remove the flag, keep the Evidence
+//   confirm close-proposed   `state: done`, remove the flag, keep the Evidence; on a
+//                            `kind: decision` item also `Correction: Decided <date>: <the
+//                            Evidence> (confirmed in the viewer).` (Brain D-117 B)
 //   reject close-proposed    remove the flag and its Evidence, add a Correction
 //
 // As in queue.js, lines keep their own terminators, so everything outside the item and
@@ -99,10 +101,19 @@ function dropField(block, attr, label) {
   return values.join(' ');
 }
 
+// The text of a labelled line, or '' when the item has none.
+function fieldText(block, attr, label) {
+  const at = fieldIndex(block, attr, label);
+  return at === -1 ? '' : content(block[at]).slice(label.length + 1).trim();
+}
+
 // One Correction per item ("latest correction and its date"): the new note goes first and
 // any earlier correction is kept after it rather than dropped.
 function addCorrection(block, attr, note, today, eol) {
-  const text = `${today}: ${note}`;
+  leadCorrection(block, attr, `${today}: ${note}`, eol);
+}
+
+function leadCorrection(block, attr, text, eol) {
   const at = fieldIndex(block, attr, 'Correction');
   if (at !== -1) {
     const earlier = content(block[at]).slice('Correction:'.length).trim();
@@ -133,7 +144,7 @@ function settle(text, id, flag, today, edit) {
 }
 
 export function confirmFlag(text, id, flag, today) {
-  return settle(text, id, flag, today, ({ line, item, r }) => {
+  return settle(text, id, flag, today, ({ block, attr, line, item, r }) => {
     if (flag === 'unconfirmed') {
       let landed = id;
       if (id.startsWith('P-')) {
@@ -147,6 +158,12 @@ export function confirmFlag(text, id, flag, today) {
       // Done with the flag still on would leave an unconfirmed item closed.
       if (Object.hasOwn(item.attrs, 'unconfirmed')) throw new QueueError('order', `confirm ${id} itself first`);
       line((l) => setAttr(dropAttr(l, 'close-proposed'), 'state', 'done'));
+      // A decision records its outcome (Brain D-117 B): the routine's Evidence becomes the
+      // Correction the schema requires, and the Evidence line stays.
+      if (item.attrs.kind === 'decision') {
+        const evidence = fieldText(block, attr, 'Evidence').replace(/\.$/, '');
+        leadCorrection(block, attr, `Decided ${today}: ${evidence || 'as the routine proposed'} (confirmed in the viewer).`, r.eol);
+      }
     }
   });
 }

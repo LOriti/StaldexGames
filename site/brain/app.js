@@ -3,9 +3,10 @@
 
 import { escapeHtml, parseFrontmatter, renderMarkdown, resolvePath } from './markdown.js?v=20261026b';
 import {
-  VIEW_PATH, LENSES, defaultLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
+  VIEW_PATH, LENSES, openingLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, addedHtml, categoriseHtml, parseFamilies,
-} from './home.js?v=20261028a';
+  latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue,
+} from './home.js?v=20261030a';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -26,22 +27,42 @@ const state = {
 };
 
 // The command centre home (Brain brain-032): what the page opens on unless a file is asked for.
-const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false };
+// `focal` is Leon's pick of the one thing today from the daily log (Brain D-113 A); `dirty`
+// says this page's copy of the view carries writes Brain has not rendered yet.
+const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false, focal: null, dirty: false };
 
 function homeTab() {
   const match = /^#(?:\/)?(focus|priority|clarify|allocation)?$/.exec(location.hash || '#');
   return match ? (match[1] || 'focus') : null;
 }
 
+// The lens last used, kept across days (Brain D-116 A); working hours still open on Work.
 function storedLens() {
   try {
     const saved = JSON.parse(localStorage.getItem('brain.lens') || 'null');
-    return saved && saved.day === new Date().toDateString() && LENSES.includes(saved.lens) ? saved.lens : null;
+    return saved && LENSES.includes(saved.lens) ? saved.lens : null;
   } catch { return null; }
 }
 
 function storeLens(lens) {
-  try { localStorage.setItem('brain.lens', JSON.stringify({ lens, day: new Date().toDateString() })); } catch { /* private mode */ }
+  try { localStorage.setItem('brain.lens', JSON.stringify({ lens })); } catch { /* private mode */ }
+}
+
+// This page's patched copy of the view outlives a reload until Brain renders a new view
+// (Brain DEV-61030.12): keyed by the view's sha, so a newer view always wins.
+const STASH = 'brain.view';
+function stashView() {
+  if (!home.dirty || !home.sha) return;
+  try { sessionStorage.setItem(STASH, JSON.stringify({ sha: home.sha, view: home.view })); } catch { /* storage full or off */ }
+}
+
+function stashedView(sha) {
+  try {
+    const saved = JSON.parse(sessionStorage.getItem(STASH) || 'null');
+    if (saved && saved.sha === sha && saved.view && Array.isArray(saved.view.entries)) return saved.view;
+    if (saved && saved.sha !== sha) sessionStorage.removeItem(STASH);
+  } catch { /* fall through to a plain load */ }
+  return null;
 }
 
 class ApiError extends Error {
@@ -329,10 +350,12 @@ async function showHome(tab) {
   els.doc.classList.add('loading');
   try {
     if (home.sha !== entry.sha) {
-      home.view = JSON.parse(await fileText(VIEW_PATH));
+      const stashed = stashedView(entry.sha);
+      home.view = stashed || refreshDue(JSON.parse(await fileText(VIEW_PATH)), perthDay().today);
       home.sha = entry.sha;
+      home.dirty = Boolean(stashed);
     }
-    home.lens = home.lens || storedLens() || defaultLens(home.view.work_hours);
+    home.lens = home.lens || openingLens(home.view.work_hours, storedLens());
     renderHome(tab);
     document.title = 'Brain — Staldex';
     window.scrollTo(0, 0);
@@ -350,8 +373,16 @@ function renderHome(tab = homeTab() || 'focus') {
   const asOf = `${home.view.date}${when ? `, last change ${when}` : ''}`;
   els.doc.innerHTML = homeHtml(home.view, {
     lens: home.lens, tab, filter: home.filter, asOf, time: home.time, clock, projects: projectSlugs(), inboxAll: home.inboxAll,
-    today: perthDay().today,
+    today: perthDay().today, focal: home.focal,
   });
+  stashView();
+}
+
+// The item in the focal slot for the current lens, and whether it is Leon's own pick.
+function currentFocal() {
+  if (!home.view || !home.view.lenses[home.lens]) return null;
+  const choice = focalChoice(home.view, home.lens, home.focal);
+  return choice ? { ref: choice.entry.ref, mine: choice.mine } : null;
 }
 
 els.doc.addEventListener('click', (e) => {
@@ -507,11 +538,32 @@ function writeError(err) {
   return err?.status === 409 ? `Not saved: ${err.kind}.` : `Not saved: ${err?.kind || 'error'}.`;
 }
 
+// A write refreshes the tree pinned to the commit just made (GitHub can briefly serve the
+// branch head from before it) without a full reload: the home keeps this page's patched
+// copy of the view until Brain renders a new one, and a file page re-shows its new text.
 async function write(route, body) {
   const { commit } = await api(route, body);
-  // Reload pinned to the commit just made: GitHub can briefly serve the branch head from
-  // before it, which would hide the change.
-  await load(commit);
+  home.dirty = true;
+  await refreshTree(commit);
+  return commit;
+}
+
+async function refreshTree(commit) {
+  try {
+    state.tree = await api(commit ? `/tree?commit=${encodeURIComponent(commit)}` : '/tree');
+  } catch (err) {
+    if (err?.kind === 'signin') showError(err);
+    return; // the page's own copy stays; the next load catches up
+  }
+  state.paths = new Set(state.tree.files.map((f) => f.path));
+  renderFoot();
+  if (homeTab()) {
+    const entry = state.tree.files.find((f) => f.path === VIEW_PATH);
+    if (entry && entry.sha !== home.sha) await showHome(homeTab()); // Brain rendered a new view
+    else renderHome();
+  } else {
+    await show(currentPath());
+  }
 }
 
 els.doc.addEventListener('click', async (e) => {
@@ -562,8 +614,10 @@ els.doc.addEventListener('submit', async (e) => {
   if (!text) { setMessage(msg, 'Type something first.'); return; }
   for (const el of form.elements) el.disabled = true;
   setMessage(msg, 'Saving…', false);
+  // The same card as the home's add box (Brain D-110 A), then the page shows the new line.
   try {
-    await write('/inbox', { project: form.dataset.project, text });
+    const commit = await added(form, { project: form.dataset.project, text });
+    await refreshTree(commit);
   } catch (err) {
     for (const el of form.elements) el.disabled = false;
     setMessage(msg, writeError(err));
@@ -577,7 +631,7 @@ els.doc.addEventListener('submit', async (e) => {
 // running, shown in a bar; any screen reading the daily log sees the same clock. One
 // clock runs at a time. Finishing a task shows the reward and moves the next hot item up.
 
-let clock = null; // { ref, title, area, lens, date, start, startMs, written }
+let clock = null; // { ref, title, area, lens, date, start, startMs, written, pending }
 // `added` is an Inbox line just saved from the home (Brain D-110 A); `doing` its Do it now step.
 const task = { ref: null, panel: '', message: '', reward: null, sort: null, back: null, added: null, doing: false };
 let families = [];
@@ -617,7 +671,7 @@ function renderTask() {
   const entry = task.ref && entryFor(task.ref);
   if (!entry) { modal.hidden = true; task.ref = null; return; }
   const panel = task.panel ? taskPanel(task.panel, entry) : '';
-  modal.querySelector('.tk').innerHTML = taskHtml(entry, { clock, panel, message: task.message });
+  modal.querySelector('.tk').innerHTML = taskHtml(entry, { clock, panel, message: task.message, focal: currentFocal() });
   modal.hidden = false;
 }
 
@@ -658,19 +712,24 @@ async function openSort(target, from = null) {
 
 const placeOf = (entry) => ({ area: entry.lens === 'work' ? entry.area || '' : '', lens: entry.lens || '' });
 
-// Starting is deliberate, so the start row is written at once.
-async function startClock(entry) {
+// Starting is deliberate, but the start row waits out the first minute (Brain D-114 A):
+// a clock stopped before then records nothing, so an accidental open leaves no row.
+function startClock(entry) {
   const { today, hhmm } = perthDay();
-  const next = { ref: entry.ref, title: entry.title, ...placeOf(entry), date: today, start: hhmm, startMs: Date.now(), written: false };
-  try {
-    await api('/clock', { action: 'start', ref: next.ref, title: next.title, area: next.area, lens: next.lens, start: next.start });
-    next.written = true;
-    clock = next;
-    task.message = '';
-  } catch (err) {
-    task.message = `Clock not saved: ${writeError(err)}`;
-  }
+  const next = { ref: entry.ref, title: entry.title, ...placeOf(entry), date: today, start: hhmm, startMs: Date.now(), written: false, pending: null };
+  next.pending = setTimeout(() => { if (clock === next) commitStart(next); }, CLOCK_GRACE_MS);
+  clock = next;
+  task.message = '';
   refreshAll();
+}
+
+async function commitStart(c) {
+  c.pending = null;
+  c.writing = api('/clock', { action: 'start', ref: c.ref, title: c.title, area: c.area, lens: c.lens, start: c.start })
+    .then(() => { c.written = true; })
+    .catch((err) => { if (clock === c) { task.message = `Clock not saved: ${writeError(err)}`; refreshAll(); } })
+    .finally(() => { c.writing = null; });
+  await c.writing;
 }
 
 // Stops the running clock; false when it could not be saved (it then keeps running).
@@ -678,6 +737,8 @@ async function stopClock() {
   const c = clock;
   if (!c) return true;
   clock = null;
+  if (c.pending) clearTimeout(c.pending);
+  if (c.writing) await c.writing;
   if (c.written) {
     try {
       await api('/clock', { action: 'stop', ref: c.ref, title: c.title, area: c.area, lens: c.lens, start: c.start, date: c.date });
@@ -690,10 +751,28 @@ async function stopClock() {
       return false;
     }
   } else {
-    task.message = 'Under a minute, so nothing was recorded.';
+    task.message = clockRecords(c) ? 'Clock not saved, so nothing was recorded.' : 'Under a minute, so nothing was recorded.';
   }
   refreshAll();
   return true;
+}
+
+// Leon's one thing for today (Brain D-113 A): one `focal` row on the daily log, read live
+// by every screen. An empty ref goes back to the brief's pick.
+async function setFocal(entry, clear = false) {
+  for (const b of modal.querySelectorAll('button')) b.disabled = true;
+  const ref = clear ? '' : entry.ref;
+  const lens = entry.lens || '';
+  try {
+    await api('/focal', { ref, lens });
+    const { today, hhmm } = perthDay();
+    home.focal = { ref };
+    if (home.time) home.time.rows.push({ date: today, kind: 'focal', start: hhmm, end: '', minutes: 0, ref, area: '', lens, note: '' });
+    task.message = clear ? 'Back to the brief’s pick.' : 'Saved as your pick for today.';
+  } catch (err) {
+    task.message = writeError(err);
+  }
+  refreshAll();
 }
 
 // This week's time rows from the daily log: actuals for the Allocation tab, and a clock
@@ -703,6 +782,7 @@ async function loadTime() {
   try {
     const body = await api(`/time?from=${monday}`);
     home.time = { rows: body.rows, monday };
+    home.focal = latestFocal(body.rows, perthDay().today);
     const open = openClock(body.rows);
     if (open && !(clock && clock.ref === open.ref && clock.start === open.start) && (!clock || clock.written)) {
       clock = { ref: open.ref, title: open.note, area: open.area, lens: open.lens, date: open.date, start: open.start,
@@ -804,8 +884,9 @@ modal.addEventListener('click', async (e) => {
   if (act === 'file') { task.ref = null; modal.hidden = true; renderClock(); return; }
   if (act === 'hide' || !entry) return hideTask();
   if (act === 'stop') { await stopClock(); return; }
-  if (act === 'start') { await startClock(entry); return; }
-  if (act === 'switch') { if (await stopClock()) await startClock(entry); return; }
+  if (act === 'start') { startClock(entry); return; }
+  if (act === 'switch') { if (await stopClock()) startClock(entry); return; }
+  if (act === 'focal-set' || act === 'focal-clear') { await setFocal(entry, act === 'focal-clear'); return; }
   if (act === 'cancel') { task.panel = ''; return renderTask(); }
   if (act === 'confirm-close' || act === 'reject-close') {
     for (const b of modal.querySelectorAll('button')) b.disabled = true;
@@ -959,15 +1040,24 @@ document.addEventListener('keydown', (e) => {
 // A line added on the home shows at once and its card opens (Brain D-110 A), with no
 // reload: the view lists it once Brain regenerates, within a minute or two.
 async function added(form, body) {
-  await api('/inbox', body);
+  const { commit } = await api('/inbox', body);
+  home.dirty = true;
+  if (!home.view) { // added from a queue page before the home was opened
+    const entry = state.tree.files.find((f) => f.path === VIEW_PATH);
+    if (!entry) throw new ApiError('no view');
+    home.view = stashedView(entry.sha) || refreshDue(JSON.parse(await fileText(VIEW_PATH)), perthDay().today);
+    home.sha = entry.sha;
+    home.lens = home.lens || openingLens(home.view.work_hours, storedLens());
+  }
   const home_ = `project:${body.project}`;
   const kin = [...(home.view.inbox || []), ...home.view.entries].find((r) => r.home === home_);
   const row = { kind: 'line', text: body.text, raw: body.text, details: {}, family: kin?.family || '?', home: home_,
     date: perthDay().today, path: `projects/${body.project}/QUEUE.md`, ref: null, lens: kin?.lens || (home.lens === 'all' ? 'work' : home.lens) };
   home.view.inbox = [row, ...(home.view.inbox || [])];
-  renderHome(homeTab() || 'focus');
+  if (homeTab()) renderHome(homeTab()); else stashView();
   Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: null, back: null, added: row, doing: false });
   refreshAll();
+  return commit;
 }
 
 // Do it now, then handled: the line leaves the inbox and the reward shows.
@@ -980,7 +1070,8 @@ async function handled(row) {
     return renderTask();
   }
   home.view.inbox = (home.view.inbox || []).filter((r) => !(r.kind === 'line' && (r.raw || r.text) === (row.raw || row.text) && r.home === row.home));
-  renderHome(homeTab() || 'focus');
+  home.dirty = true;
+  if (homeTab()) renderHome(homeTab()); else stashView();
   const slot = home.view.lenses[home.lens] || home.view.lenses.all;
   const next = slot.focal ? entryFor(slot.focal.ref) : null;
   Object.assign(task, { added: null, doing: false, message: '', reward: { title: row.text, ref: `Inbox · ${row.home}`, minutes: 0, today: doneTodayCount(), next } });

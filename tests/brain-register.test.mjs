@@ -49,6 +49,22 @@ test('confirm a proposed close: done, flag gone, Evidence kept', () => {
   assert.equal(outside(out, 'Probably done'), outside(REGISTER, 'Probably done'));
 });
 
+test('confirming a decision\'s proposed close records the outcome from its Evidence (Brain D-117 B)', () => {
+  const text = REGISTER + '\n### Which venue\n`id: WORK-LEAD-01012.05` `home: project:demo` `kind: decision` `state: open` `owner: leon` `due: unknown` `review: unknown` `close-proposed: 2030-01-14`\n\n' +
+    'Source: synthetic, 2030-01-12\nNext: pick one.\nCorrection: 2030-01-13 asked again.\nEvidence: Leon chose the cafe in his reply of 14 Jan.\n';
+  const out = confirmFlag(text, 'WORK-LEAD-01012.05', 'close-proposed', TODAY);
+  const got = item(out, 'Which venue');
+  assert.match(got, /`kind: decision` `state: done` `owner: leon` `due: unknown` `review: unknown`\n/);
+  assert.doesNotMatch(got, /close-proposed/);
+  assert.match(got, /\nCorrection: Decided 2030-01-15: Leon chose the cafe in his reply of 14 Jan \(confirmed in the viewer\)\. Earlier: 2030-01-13 asked again\.\nEvidence: Leon chose the cafe in his reply of 14 Jan\.\n$/);
+  assert.equal(outside(out, 'Which venue'), outside(text, 'Which venue'));
+  // An action keeps only its Evidence, as before.
+  assert.doesNotMatch(item(confirmFlag(REGISTER, 'PA-HOME-01012.03', 'close-proposed', TODAY), 'Probably done'), /Decided/);
+  // A decision with no Evidence line still gets a Correction.
+  const bare = confirmFlag(text.replace('Evidence: Leon chose the cafe in his reply of 14 Jan.\n', ''), 'WORK-LEAD-01012.05', 'close-proposed', TODAY);
+  assert.match(item(bare, 'Which venue'), /Correction: Decided 2030-01-15: as the routine proposed \(confirmed in the viewer\)\./);
+});
+
 test('reject a proposed close: flag and Evidence go, Correction leads and keeps the earlier one', () => {
   const out = rejectFlag(REGISTER, 'PA-HOME-01012.03', 'close-proposed', TODAY);
   const got = item(out, 'Probably done');
