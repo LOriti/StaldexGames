@@ -212,6 +212,9 @@ test('Next up today and Next week placements are rows on the daily log, a list p
   assert.deepEqual(timelog.placeRows({ kind: 'today', items: [{ ref: 'DEV-01010.01', note: 1 }, { kind: 'next-week', ref: 'DEV-01010.01', note: 'out' }] }, clock).map((r) => r.kind), ['today', 'next-week'], 'one commit moves an item between the lists');
   assert.throws(() => timelog.placeRows({ kind: 'today', items: [{ kind: 'later', ref: 'DEV-01010.01', note: 1 }] }, clock), /kind/);
   assert.throws(() => timelog.placeRows({ kind: 'today', items: [{ ref: 'DEV-01010.01', note: 'keep' }] }, clock), /keep is for next week/);
+  // Next is a list of its own (Brain D-120 A); a line's `L-` id can be placed (D-122 A).
+  assert.deepEqual(timelog.placeRows({ kind: 'next', items: [{ ref: 'L-5805b50a', note: 1 }, { kind: 'today', ref: 'L-5805b50a', note: 'out' }] }, clock).map((r) => [r.kind, r.ref, r.note]), [['next', 'L-5805b50a', '1'], ['today', 'L-5805b50a', 'out']]);
+  assert.throws(() => timelog.placeRows({ kind: 'next', items: [{ ref: 'DEV-01010.01', note: 'keep' }] }, clock), /keep is for next week/);
   assert.throws(() => timelog.placeRows({ kind: 'later', items: [{ ref: 'DEV-01010.01', note: 1 }] }, clock), /kind/);
   assert.throws(() => timelog.placeRows({ kind: 'today', items: [] }, clock), /items/);
   assert.throws(() => timelog.placeRows({ kind: 'today', items: [{ ref: 'rm -rf', note: 1 }] }, clock), /id/);

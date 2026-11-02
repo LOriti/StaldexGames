@@ -63,6 +63,7 @@ const VIEW = {
   allocation: { areas: { 1: { name: 'Systems', hours: 16 }, 2: { name: 'Compliance', hours: 8 } }, float: 6, total: 40 },
   inbox: [
     { kind: 'line', raw: 'A raw idea typed on the phone', details: {}, family: 'PROJ-TT', text: 'A raw idea typed on the phone', home: 'project:alpha', date: new Date().toISOString().slice(0, 10), path: 'projects/alpha/QUEUE.md', ref: null, lens: 'ventures' },
+    { kind: 'line', raw: 'Book the crane inspection `categorised: 2026-01-02` `family: WORK-COMP` `priority: P1`', details: { categorised: '2026-01-02', family: 'WORK-COMP', priority: 'P1' }, family: 'WORK-COMP', text: 'Book the crane inspection', home: 'project:alpha', date: '2026-01-02', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'work' },
     { kind: 'unconfirmed', text: 'A new item the brief found', home: 'project:alpha', date: '2026-01-02', path: 'register/open-items.md', ref: 'P-WORK-COMP-60101.07', lens: 'work' },
     { kind: 'close', text: 'An item the debrief thinks is done', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-SYS-60101.01', lens: 'work' },
     { kind: 'close', text: 'Chase the signed variation', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-SYS-60101.10', lens: 'work' },
@@ -95,7 +96,10 @@ const TREE = {
 };
 
 const today = new Date(Date.now() + 8 * 3600e3).toISOString().slice(0, 10);
+const yesterday = new Date(Date.now() + 8 * 3600e3 - 86400e3).toISOString().slice(0, 10);
 const TIME = [
+  // Left in Today yesterday: it sits at the top of Next this morning (Brain D-121 B).
+  { date: yesterday, kind: 'today', start: '08:00', end: '', minutes: 0, ref: 'WORK-LEAD-60101.09', area: '', lens: 'work', note: '1' },
   { date: today, kind: 'tracked', start: '08:30', end: '10:00', minutes: 90, ref: 'WORK-SYS-60101.01', area: '1', lens: 'work', note: 'Synthetic' },
   { date: today, kind: 'entered', start: '', end: '', minutes: 120, ref: '', area: 'vol', lens: 'work', note: 'entered on the viewer' },
   { date: today, kind: 'tracked', start: '19:00', end: '20:00', minutes: 60, ref: 'DEV-60101.06', area: '', lens: 'brain', note: 'Synthetic' },
@@ -186,10 +190,15 @@ for (const lens of ['work', 'brain', 'all']) { await pickLens(lens); await shot(
 await pickLens('work');
 if ((await page.locator('a[data-cc-ref="WORK-SYS-60101.10"], a.cc-in[href*="WORK-SYS-60101.10"]').count()) !== 1) problems.push('a hot flagged item shows more than once on Focus');
 if (!(await page.locator('a[data-cc-ref="WORK-SYS-60101.10"] .cc-chip.flag').count())) problems.push('the hot row carries no flag chip');
-if (!(await page.locator('.cc-flags').count())) problems.push('register flags have no line of their own under Inbox');
-// Next actions (Brain DEV-61026.34): Today, This week and Next week; moves are rows on the log.
+if (await page.locator('.cc-inbox').count()) problems.push('Focus still carries the Inbox panel (Brain D-120 A)');
+if (!(await page.locator('.cc-today-list').count())) problems.push('Focus has no Next actions · Today list');
+if (await page.locator('text=Also hot').count()) problems.push('Focus still shows Also hot');
+// Next actions (Brain D-120 A, D-123 A): All, Today, Next, Floating and Next week; moves are rows on the log.
 await page.goto(`${base}/brain/#next`); await settle();
-if (!(await page.locator('.cc-subs [data-cc-sub="today"][aria-pressed="true"]').count())) problems.push('Next actions did not open on Today');
+if (!(await page.locator('.cc-subs [data-cc-sub="all"][aria-pressed="true"]').count())) problems.push('Next actions did not open on All');
+await shot('next-all');
+if (!(await page.locator('[data-cc-list="next"][data-cc-drag="WORK-LEAD-60101.09"]').count())) problems.push('yesterday\'s Today item is not at the top of Next');
+if (!(await page.locator('a[data-cc-line^="Book the crane inspection"]').count())) problems.push('a categorised Inbox line is not in Floating');
 await page.locator('[data-cc-sub="week"]').click(); await settle(); await shot('next-week-list');
 const places = () => writes.filter(([path]) => path === '/api/brain/place');
 const mover = page.locator('[data-cc-place="today"][data-ref="WORK-COMP-60101.02"]');
@@ -209,17 +218,30 @@ if (await mover.count()) {
   await page.locator('[data-cc-place="keep"][data-ref="WORK-COMP-60101.02"]').click(); await settle();
   await shot('next-next-week');
   await page.locator('[data-cc-place="week"][data-ref="WORK-COMP-60101.02"]').click(); await settle();
-  if (await page.locator('[data-cc-place="keep"][data-ref="WORK-COMP-60101.02"]').count()) problems.push('Promote did not move the item back to This week');
+  if (await page.locator('[data-cc-place="keep"][data-ref="WORK-COMP-60101.02"]').count()) problems.push('Promote did not move the item back to Floating');
   if (places().length < 5) problems.push(`expected a placement write per move, got ${places().length}`);
   await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('work');
   if (!(await page.locator('a.cc-focal[data-cc-ref="WORK-LEAD-60101.08"]').count())) problems.push('Today\'s first item did not take the focal slot');
   if (!(await page.locator('a.cc-focal', { hasText: 'first up today' }).count())) problems.push('the focal slot does not say first up today');
   await shot('focus-first-up-today');
+  // Promote from Next actions · Today into the top 3 (Brain D-120 A), and a categorised line into Today.
+  const hotRow = page.locator('.cc-today-list [data-cc-place="top"][data-ref="WORK-SYS-60101.10"]');
+  if (await hotRow.count()) {
+    await hotRow.click(); await settle();
+    if (!(await page.locator('[data-cc-slot="top"] [data-cc-drag="WORK-SYS-60101.10"]').count())) problems.push('↑ Top 3 did not move the item into the top 3');
+  } else problems.push('the hot item is not in Next actions · Today with ↑ Top 3');
+  await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="all"]').click(); await settle();
+  const line = page.locator('[data-cc-list="week"] [data-cc-place="today"][data-ref^="L-"]');
+  if (await line.count()) { await line.first().click(); await settle(); } else problems.push('a categorised line offers no → Today');
+  await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('work');
+  if (!(await page.locator('[data-cc-slot="top"] a[data-cc-line^="Book the crane inspection"], .cc-today-list a[data-cc-line^="Book the crane inspection"]').count())) problems.push('the line placed in Today is not on Focus');
+  await shot('focus-top3');
   // Back out of Today so the rest of the run sees the brief's pick.
   await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="today"]').click(); await settle();
-  await page.locator('[data-cc-place="week"][data-ref="WORK-LEAD-60101.08"]').click(); await settle();
-  await page.locator('[data-cc-place="week"][data-ref="WORK-COMP-60101.02"]').click().catch(() => {}); await settle();
-} else problems.push('This week offers no → Today on a work item');
+  for (let n = 0; n < 6 && (await page.locator('[data-cc-list="today"] [data-cc-place="week"]').count()); n += 1) {
+    await page.locator('[data-cc-list="today"] [data-cc-place="week"]').first().click(); await settle();
+  }
+} else problems.push('Floating offers no → Today on a work item');
 await page.goto(`${base}/brain/#priority`); await settle();
 if (!(await page.locator('.cc-tabs a[href="#next"][aria-current="page"]').count())) problems.push('#priority no longer lands on Next actions');
 // Someday by family (Brain DEV-61026.35): its own entry, family pages, and a way back to the Inbox.
@@ -314,7 +336,8 @@ if (await choice.count()) {
   await page.locator('.tk button[data-tk="hide"]').first().click(); await settle();
 } else problems.push('the register decision is not on Priority');
 // A close-proposed decision: the proposed close first, Decided as the alternative (Brain D-117 B).
-await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="week"]').click(); await settle();
+// It was left in Today yesterday, so it sits in Next; All shows every list.
+await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="all"]').click(); await settle();
 await pickLens('work');
 const venue = page.locator('a[data-cc-ref="WORK-LEAD-60101.09"]');
 if (await venue.count()) {
@@ -357,11 +380,11 @@ if (rejects() !== 1) problems.push('Yes on the register did not reject');
 
 await page.goto(`${base}/brain/#allocation`); await settle(); await page.waitForTimeout(600); await shot('allocation');
 if (!(await page.locator('.cc-meter').count())) problems.push('the Allocation tab shows no actuals');
-await page.goto(`${base}/brain/#focus`); await settle();
+await page.goto(`${base}/brain/#inbox`); await settle();
 await pickLens('all');
-if (!(await page.locator('.cc-inbox .cc-row').count())) problems.push('no inbox rows on the home');
+if (!(await page.locator('.cc-inbox .cc-row').count())) problems.push('no inbox rows on the Inbox tab');
+await page.goto(`${base}/brain/#focus`); await settle();
 await pickLens('work');
-if (!(await page.locator('.cc-inbox .cc-flags').count())) problems.push('no flags line under the inbox (D-115 C)');
 const focal = page.locator('a.cc-focal');
 if (await focal.count()) {
   await focal.click(); await settle();

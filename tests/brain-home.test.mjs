@@ -128,12 +128,14 @@ test('Brain has its own lens, and an older view without it falls back to All', (
   assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work' }), /data-cc-lens="/, 'the chooser is closed until the chip is tapped');
 });
 
-test('the inbox sits under Also hot, filtered by lens, capped, with an add box', () => {
+test('Focus has no Inbox panel any more; the panel on the Inbox tab is filtered by lens, capped, with an add box (Brain D-120 A)', () => {
   const inbox = Array.from({ length: 10 }, (_, i) => ({ kind: i ? 'line' : 'unconfirmed', text: `Idea ${i}`, home: 'project:alpha',
     date: '2030-01-01', path: i ? 'projects/alpha/QUEUE.md' : 'register/open-items.md', ref: i ? null : 'P-X-1.01', lens: 'work' }));
   const view = { ...VIEW, inbox: [...inbox, { kind: 'capture', text: '<b>x</b>', home: 'area:y', date: '2030-01-02', path: 'inbox/a.md', ref: null, lens: 'personal' }] };
-  const html = home.homeHtml(view, { lens: 'work', projects: ['alpha'] });
-  assert.ok(html.indexOf('cc-inbox') > html.indexOf('Also hot'), 'inbox sits under Also hot');
+  const focus = home.homeHtml(view, { lens: 'work', projects: ['alpha'] });
+  assert.doesNotMatch(focus, /cc-inbox/, 'Next actions · Today took the Inbox panel\'s place');
+  assert.ok(focus.indexOf('Next actions · Today') > focus.indexOf('Top 3'), 'Today sits under the top 3');
+  const html = home.inboxHtml(view, 'work', { projects: ['alpha'] });
   assert.equal((html.match(/class="cc-row cc-in"/g) || []).length, 8);
   assert.match(html, /Show all 9/);
   // Register flags are not in Focus's panel any more (Brain D-115 C): the flags line opens the Inbox tab.
@@ -141,8 +143,8 @@ test('the inbox sits under Also hot, filtered by lens, capped, with an add box',
   assert.match(html, /<a class="cc-flags" href="#inbox">1 to confirm →<\/a>/);
   assert.match(html, /<form class="cc-inbox-add">[\s\S]*<option value="alpha"( selected)?>/);
   assert.doesNotMatch(html, /&lt;b&gt;x/, 'personal capture hidden in Work');
-  assert.match(home.homeHtml(view, { lens: 'all', inboxAll: true }), /&lt;b&gt;x&lt;\/b&gt;/);
-  assert.match(home.homeHtml({ ...VIEW, inbox: [] }, { lens: 'work' }), /Inbox empty in this lens/);
+  assert.match(home.inboxHtml(view, 'all', { all: true }), /&lt;b&gt;x&lt;\/b&gt;/);
+  assert.match(home.inboxHtml({ ...VIEW, inbox: [] }, 'work'), /Inbox empty in this lens/);
 });
 
 test('one clock across screens: the latest start with no matching stop', () => {
@@ -222,12 +224,12 @@ test('the one thing can be Leon\'s pick from the daily log, ahead of the brief\'
   assert.equal(home.focalChoice(view, 'work', null).entry.ref, 'A-1');
   assert.equal(home.focalChoice(view, 'work', { ref: '' }).entry.ref, 'A-1');
   assert.equal(home.focalChoice(view, 'work', { ref: '' }).mine, false);
-  // Leon's pick wins, with its reason; the displaced hot item goes back to Also hot.
+  // Leon's pick wins, with its reason; the displaced hot items join Next actions · Today, marked hot (D-124 A).
   const pick = home.focalChoice(view, 'work', { ref: 'A-2' });
   assert.deepEqual([pick.entry.ref, pick.reason, pick.mine], ['A-2', 'your pick for today', true]);
   const html = home.homeHtml(view, { lens: 'work', focal: { ref: 'A-2' } });
   assert.match(html, /class="cc-focal" href="#\/register\/open-items\.md\?item=A-2"[\s\S]*your pick for today/);
-  assert.match(html, /Also hot[\s\S]*data-cc-ref="A-1"[\s\S]*data-cc-ref="A-3"/);
+  assert.match(html, /Next actions · Today[\s\S]*data-cc-ref="A-1"[\s\S]*<span class="cc-chip hot">overdue 3 d[\s\S]*data-cc-ref="A-3"/);
   // A pick outside the lens, or not actionable, falls back to the view's.
   assert.equal(home.focalChoice(view, 'work', { ref: 'alpha-001' }).entry.ref, 'A-1');
   assert.equal(home.focalChoice(view, 'ventures', { ref: 'alpha-001' }).entry.ref, 'alpha-001');
@@ -257,11 +259,11 @@ test('every row carries its flag, nothing repeats on Focus, and the inbox count 
     { kind: 'line', text: 'Buy milk', raw: 'Buy milk', details: {}, family: '?', home: 'project:alpha', date: '2030-01-01', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'work' },
   ];
   const focus = home.homeHtml(view, { lens: 'work' });
-  assert.match(focus, /Also hot[\s\S]*data-cc-ref="P-A-6"[\s\S]*<span class="cc-chip flag">new, confirm\?<\/span>/);
-  assert.equal((focus.match(/item=P-A-6"/g) || []).length, 1, 'the hot new item is not repeated in the inbox panel');
+  assert.match(focus, /Next actions · Today[\s\S]*data-cc-ref="P-A-6"[\s\S]*<span class="cc-chip flag">new, confirm\?<\/span>/);
+  assert.equal((focus.match(/item=P-A-6"/g) || []).length, 1, 'the hot new item shows once');
   assert.equal((focus.match(/item=A-1"/g) || []).length, 1, 'the focal item\'s proposed close is not repeated');
   assert.doesNotMatch(focus, /item=A-7"/, 'register flags left the Focus panel for the Inbox tab (D-115 C)');
-  assert.match(focus, /<h2 class="cc-gh">Inbox <em>1<\/em><\/h2><a class="cc-flags" href="#inbox">1 to confirm, 2 closes proposed →<\/a>/);
+  assert.match(home.inboxHtml(view, 'work'), /<h2 class="cc-gh">Inbox <em>1<\/em><\/h2><a class="cc-flags" href="#inbox">1 to confirm, 2 closes proposed →<\/a>/);
   const priority = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week' });
   assert.match(priority, /data-cc-ref="A-7"[\s\S]*?<span class="cc-chip flag">close proposed<\/span>/);
   const inbox = home.homeHtml(view, { lens: 'work', tab: 'inbox' });
@@ -326,7 +328,7 @@ test('the task card: estimate, clock and what closing means', () => {
   assert.match(home.taskHtml(entry('P-X-1.01')), /data-tk="confirm"[\s\S]*data-tk="reject-ask"/);
   assert.doesNotMatch(home.taskHtml(entry('P-X-1.01')), /data-tk="reject"/, 'Reject asks first');
   assert.match(home.taskPanel('reject', entry('P-X-1.01')), /Reject P-X-1\.01\?[\s\S]*data-tk="reject">Yes, reject[\s\S]*data-tk="cancel"/);
-  assert.match(home.homeHtml({ ...VIEW, inbox: [] }, { lens: 'ventures', projects: ['aaa', 'alpha'] }), /<option value="alpha" selected>/);
+  assert.match(home.inboxHtml({ ...VIEW, inbox: [] }, 'ventures', { projects: ['aaa', 'alpha'] }), /<option value="alpha" selected>/);
   assert.match(home.taskPanel('done', entry('X-1.01')), /data-tk-form="close"/);
   assert.match(home.homeHtml(VIEW, { lens: 'work' }), /data-cc-ref="A-1"/);
 });
@@ -429,7 +431,7 @@ test('Someday has its own entry, grouped by family, with family pages and a way 
   assert.match(home.homeHtml(view, { lens: 'work', tab: 'family', family: 'PROJ-WCP' }), /Nothing carries this family yet/);
 });
 
-test('Next actions: Today, This week and Next week from the daily log (Brain D-107, D-109 A, D-113)', () => {
+test('Next actions: Today, Next, Floating and Next week from the daily log (Brain D-107, D-109 A, D-113, D-120 A, D-121 B, D-123 A)', () => {
   const rows = [
     { date: '2030-01-06', kind: 'today', start: '08:00', minutes: 0, ref: 'A-2', note: '1' },
     { date: '2030-01-07', kind: 'today', start: '08:00', minutes: 0, ref: 'A-2', note: '2' },
@@ -444,37 +446,105 @@ test('Next actions: Today, This week and Next week from the daily log (Brain D-1
     { date: '2030-01-05', kind: 'next-week', start: '09:00', minutes: 0, ref: 'beta-001', note: '0' },
   ];
   const p = home.placements(rows, '2030-01-07');
-  assert.deepEqual(p.today, ['A-1', 'A-2'], 'today: latest row per item, out removed, by position; yesterday does not carry over');
+  assert.deepEqual(p.today, ['A-1', 'A-2'], 'today: latest row per item, out removed, by position');
+  assert.deepEqual(p.next, [], 'an item placed again today is not also left over');
   assert.deepEqual(p.week.map((w) => w.ref).sort(), ['A-4', 'A-5', 'beta-001'], 'next week carries forward until an out');
   assert.equal(p.week.find((w) => w.ref === 'A-5').since, '2030-01-04', 'an out ends the run; the next placement starts a new one');
   assert.equal(p.week.find((w) => w.ref === 'A-4').kept, '2029-12-27');
+  // The next morning Today starts empty and what was left in it sits at the top of Next (D-121 B).
+  const nextDay = home.placements([...rows,
+    { date: '2030-01-07', kind: 'next', start: '10:00', minutes: 0, ref: 'A-6', note: '1' },
+    { date: '2030-01-08', kind: 'today', start: '07:00', minutes: 0, ref: 'A-7', note: '1' }], '2030-01-08');
+  assert.deepEqual(nextDay.today, ['A-7']);
+  assert.deepEqual(nextDay.next.map((n) => [n.ref, n.carried]), [['A-1', true], ['A-2', true], ['A-6', false]]);
+  assert.equal(nextDay.next[0].since, '2030-01-07');
+  // One batch moves an item between lists: an out clears only the list it names.
+  const moved = home.placements([...rows,
+    { date: '2030-01-07', kind: 'next', start: '11:00', minutes: 0, ref: 'A-1', note: '1' },
+    { date: '2030-01-07', kind: 'today', start: '11:00', minutes: 0, ref: 'A-1', note: 'out' },
+    { date: '2030-01-07', kind: 'today', start: '11:01', minutes: 0, ref: 'A-4', note: '2' },
+    { date: '2030-01-07', kind: 'next-week', start: '11:01', minutes: 0, ref: 'A-4', note: 'out' }], '2030-01-07');
+  assert.deepEqual([moved.today, moved.next.map((n) => n.ref), moved.week.map((w) => w.ref).sort()], [['A-2', 'A-4'], ['A-1'], ['A-5', 'beta-001']]);
+  const left = home.placements([...rows, { date: '2030-01-08', kind: 'next', start: '09:00', minutes: 0, ref: 'A-2', note: 'out' }], '2030-01-08');
+  assert.deepEqual(left.next.map((n) => n.ref), ['A-1'], 'a leftover moved to Floating stays out');
   assert.equal(home.raisedDate('WORK-SYS-61016.05'), '2026-10-16');
   assert.equal(home.raisedDate('D-12'), null);
   assert.equal(home.daysBetween('2030-01-01', '2030-01-07'), 6);
-  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, home.entry ? null : { ...VIEW.entries[0], ref: 'A-3', title: 'Task A-3' }, { ...VIEW.entries[0], ref: 'A-4', title: 'Task A-4', hot: [], section: 'next' }, { ...VIEW.entries[0], ref: 'A-5', title: 'Task WORK-SYS-61016.05', hot: [], section: 'next' }].filter(Boolean) }));
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, { ...VIEW.entries[0], ref: 'A-3', title: 'Task A-3' }, { ...VIEW.entries[0], ref: 'A-4', title: 'Task A-4', hot: [], section: 'next' }, { ...VIEW.entries[0], ref: 'A-5', title: 'Task WORK-SYS-61016.05', hot: [], section: 'next' }, { ...VIEW.entries[0], ref: 'A-6', title: 'Task A-6', hot: [], section: 'next' }] }));
   // Today's first item takes the focal slot, ahead of Leon's pick and the brief's (D-113).
   const choice = home.focalChoice(view, 'work', { ref: 'A-2' }, p);
   assert.deepEqual([choice.entry.ref, choice.reason, choice.mine], ['A-1', 'first up today', false]);
-  assert.equal(home.focalChoice(view, 'work', { ref: 'A-2' }, { today: [], week: [] }).entry.ref, 'A-2');
-  const counts = home.nextCounts(view, 'work', p);
-  assert.deepEqual(counts, { today: 2, week: view.entries.filter((e) => e.lens === 'work').length - 4, later: 2 });
+  assert.equal(home.focalChoice(view, 'work', { ref: 'A-2' }, { today: [], next: [], week: [] }).entry.ref, 'A-2');
+  const placed = { ...p, next: [{ ref: 'A-6', since: '2030-01-07', carried: false }] };
+  const counts = home.nextCounts(view, 'work', placed);
+  const floating = view.entries.filter((e) => e.lens === 'work').length - 5;
+  assert.deepEqual(counts, { all: 2 + 1 + floating + 2, today: 2, next: 1, week: floating, later: 2 });
+  // It opens on All: every list on one page, so it is never blank (D-123 A).
+  const all = home.homeHtml(view, { lens: 'work', tab: 'next', places: placed, today: '2030-01-07' });
+  assert.match(all, /<nav class="cc-subs"[^>]*><button type="button" data-cc-sub="all" aria-pressed="true">All <em>\d+<\/em><\/button><button type="button" data-cc-sub="today" aria-pressed="false">Today <em>2<\/em><\/button><button type="button" data-cc-sub="next" aria-pressed="false">Next <em>1<\/em><\/button><button type="button" data-cc-sub="week" aria-pressed="false">Floating <em>\d+<\/em><\/button><button type="button" data-cc-sub="later" aria-pressed="false">Next week <em>2<\/em>/);
+  assert.ok(['Today <em>2', 'Next <em>1', 'Floating <em>', 'Next week <em>2'].every((h) => all.includes(`<h2 class="cc-gh">${h}`)), 'All shows the four lists');
   const today = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'today', places: p, today: '2030-01-07' });
-  assert.match(today, /<nav class="cc-subs"[^>]*><button type="button" data-cc-sub="today" aria-pressed="true">Today <em>2<\/em><\/button><button type="button" data-cc-sub="week" aria-pressed="false">This week <em>\d+<\/em><\/button><button type="button" data-cc-sub="later" aria-pressed="false">Next week <em>2<\/em>/);
-  assert.match(today, /<div class="cc-item" draggable="true" data-cc-drag="A-1"><a class="cc-row"[^>]*data-cc-ref="A-1">[\s\S]*?<div class="cc-acts cc-place" data-cc-place-for="A-1"><button type="button" class="mini-btn" data-cc-place="down" data-ref="A-1">▼<\/button><button type="button" class="mini-btn" data-cc-place="week" data-ref="A-1">→ This week<\/button><button type="button" class="mini-btn" data-cc-place="next-week" data-ref="A-1">→ Next week<\/button><\/div>/);
-  assert.match(today, /data-cc-drag="A-2">[\s\S]*?data-cc-place="up" data-ref="A-2">▲/);
+  assert.match(today, /<div class="cc-item" draggable="true" data-cc-drag="A-1" data-cc-list="today"><a class="cc-row"[^>]*data-cc-ref="A-1">[\s\S]*?<div class="cc-acts cc-place" data-cc-place-for="A-1"><button type="button" class="mini-btn" data-cc-place="down" data-ref="A-1">▼<\/button><button type="button" class="mini-btn" data-cc-place="next" data-ref="A-1">→ Next<\/button><button type="button" class="mini-btn" data-cc-place="week" data-ref="A-1">→ Floating<\/button><button type="button" class="mini-btn" data-cc-place="next-week" data-ref="A-1">→ Next week<\/button><\/div>/);
+  assert.match(today, /data-cc-drag="A-2"[^>]*>[\s\S]*?data-cc-place="up" data-ref="A-2">▲/);
   assert.ok(today.indexOf('data-cc-drag="A-1"') < today.indexOf('data-cc-drag="A-2"'), 'Today keeps Leon\'s order');
+  const next = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'next', places: nextDay, today: '2030-01-08' });
+  assert.match(next, /data-cc-ref="A-1"[\s\S]*?<span class="cc-next"><b>Left in Today<\/b> 2030-01-07<\/span>[\s\S]*?data-cc-place="today" data-ref="A-1">→ Today/);
   const week = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week', places: p });
-  assert.doesNotMatch(week, /data-cc-ref="A-1"|data-cc-ref="A-4"/, 'placed items leave This week');
-  assert.match(week, /data-cc-ref="A-3"[\s\S]*?data-cc-place="today" data-ref="A-3">→ Today<\/button><button type="button" class="mini-btn" data-cc-place="next-week" data-ref="A-3">→ Next week/);
+  assert.doesNotMatch(week, /data-cc-ref="A-1"|data-cc-ref="A-4"/, 'placed items leave Floating');
+  assert.match(week, /data-cc-ref="A-3"[\s\S]*?data-cc-place="today" data-ref="A-3">→ Today<\/button><button type="button" class="mini-btn" data-cc-place="next" data-ref="A-3">→ Next<\/button><button type="button" class="mini-btn" data-cc-place="next-week" data-ref="A-3">→ Next week/);
   const later = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'later', places: p, today: '2030-01-07' });
   assert.match(later, /data-cc-ref="A-5"[\s\S]*?<span class="cc-next"><b>Next week<\/b> waited 3 d<\/span>/);
   assert.match(later, /data-cc-ref="A-4"[\s\S]*?waited 18 d · kept 2029-12-27/);
   assert.match(later, /data-cc-place="week" data-ref="A-4">Promote<\/button><button type="button" class="mini-btn" data-cc-place="keep" data-ref="A-4">Keep<\/button><button type="button" class="mini-btn" data-cc-place="today" data-ref="A-4">→ Today/);
   assert.doesNotMatch(later, /data-cc-ref="beta-001"/, 'another lens\'s placement is not shown');
-  assert.match(home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'today', places: { today: [], week: [] } }), /Nothing placed for today yet/);
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'today', places: { today: [], next: [], week: [] } }), /Nothing in Today yet/);
   assert.match(home.homeHtml(view, { lens: 'work', tab: 'focus', places: p }), /class="cc-focal"[^>]*data-cc-ref="A-1"[\s\S]*first up today/);
   assert.match(home.homeHtml(VIEW, { lens: 'work' }), /href="#next"[^>]*>Next actions</);
   assert.match(home.homeHtml(VIEW, { lens: 'work', tab: 'priority' }), /href="#next" aria-current="page"/, '#priority lands on Next actions');
+});
+
+test('Focus: the one thing, the top 3 and Next actions · Today are one Today order (Brain D-120 A, D-124 A)', () => {
+  const extra = ['B-1', 'B-2', 'B-3', 'B-4', 'B-5'].map((r) => entry(r));
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, ...extra, entry('H-1', { section: 'hot', hot: ['due today'] })] }));
+  const places = { today: ['B-1', 'B-2', 'B-3', 'B-4', 'B-5', 'alpha-001'], next: [], week: [] };
+  const lists = home.focusLists(view, 'work', places, 'B-1');
+  assert.deepEqual([lists.top, lists.list, lists.firstIsFocal], [['B-2', 'B-3', 'B-4'], ['B-5'], true], 'another lens\'s item is not shown');
+  assert.deepEqual(lists.hot, ['A-1', 'H-1'], 'hot items not placed join the list');
+  const html = home.homeHtml(view, { lens: 'work', places });
+  assert.match(html, /class="cc-focal"[^>]*data-cc-ref="B-1" data-cc-slot="one"/);
+  assert.match(html, /Top 3 <em>3<\/em><\/h2><div class="cc-box" data-cc-slot="top"><div class="cc-item" draggable="true" data-cc-drag="B-2" data-cc-zone="top">/);
+  assert.match(html, /data-cc-drag="B-2"[\s\S]*?data-cc-place="one" data-ref="B-2">↑ One thing<\/button><button type="button" class="mini-btn" data-cc-place="tolist" data-ref="B-2">↓ To list/);
+  assert.doesNotMatch(html, /cc-open/, 'a full top 3 has no open slot');
+  const below = html.slice(html.indexOf('Next actions · Today'));
+  assert.ok(below.indexOf('data-cc-drag="A-1"') < below.indexOf('data-cc-drag="H-1"') && below.indexOf('data-cc-drag="H-1"') < below.indexOf('data-cc-drag="B-5"'), 'hot first, then the rest of Today');
+  assert.match(below, /data-cc-drag="B-5" data-cc-zone="list">[\s\S]*?data-cc-place="top" data-ref="B-5">↑ Top 3/);
+  assert.doesNotMatch(html, /Also hot/);
+  assert.match(home.homeHtml(view, { lens: 'work', places: { today: ['B-1'], next: [], week: [] } }), /Nothing in your top 3 yet\. Drag a row up or tap ↑ Top 3\./);
+});
+
+test('a categorised Inbox line is a next action at once, and its place follows it to its card (Brain D-122 A)', () => {
+  assert.equal(home.lineRef('project:alpha', 'Buy milk'), home.lineRef('project:alpha', 'Buy milk'));
+  assert.match(home.lineRef('project:alpha', 'Buy milk'), /^L-[0-9a-f]{8}$/);
+  assert.notEqual(home.lineRef('project:alpha', 'Buy milk'), home.lineRef('project:beta', 'Buy milk'));
+  assert.equal(home.lineRef('project:brain', 'x'), 'L-5805b50a', 'the same hash as brain.py line-ref');
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, entry('C-3', { priority: 'P3' })], inbox: [
+    { kind: 'line', text: 'Buy milk', raw: 'Buy milk', details: {}, home: 'project:alpha', lens: 'work' },
+    { kind: 'line', text: 'Call the bank', raw: 'Call the bank `categorised: 2030-01-01` `priority: P1`', details: { categorised: '2030-01-01', priority: 'P1' }, home: 'project:alpha', lens: 'work' },
+    { kind: 'line', text: 'A manual', raw: 'A manual `reference: 2030-01-01`', details: { reference: '2030-01-01' }, home: 'project:alpha', lens: 'work' },
+  ] }));
+  home.withLines(view);
+  home.withLines(view);
+  const lines = view.entries.filter((e) => e.source === 'line');
+  assert.equal(lines.length, 1, 'only categorised lines, once');
+  const ref = home.lineRef('project:alpha', 'Call the bank');
+  assert.equal(lines[0].ref, ref);
+  assert.ok(view.entries.findIndex((e) => e.ref === ref) < view.entries.findIndex((e) => e.ref === 'C-3'), 'sorted in by priority');
+  const floating = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week', places: { today: [], next: [], week: [] } });
+  assert.match(floating, /data-cc-line="Call the bank `categorised: 2030-01-01` `priority: P1`" data-cc-project="alpha">[\s\S]*?Inbox line · project:alpha[\s\S]*?card at the next groom[\s\S]*?data-cc-place="today" data-ref="L-/);
+  // Placed in Today as a line, then groomed: the card carries the line's id as an alias.
+  const groomed = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, entry('ALPHA-60101.01', { source: 'card', aliases: [ref] })], inbox: [] }));
+  home.withLines(groomed);
+  assert.deepEqual(home.resolvePlaces({ today: [ref], next: [], week: [] }, groomed).today, ['ALPHA-60101.01']);
 });
 
 test('inbox lines and new items open the categorisation card', () => {
@@ -483,7 +553,7 @@ test('inbox lines and new items open the categorisation card', () => {
     { kind: 'line', text: 'Done one', raw: 'Done one `categorised: 2030-01-01`', details: { categorised: '2030-01-01' }, family: 'DEV', home: 'project:alpha', date: '2030-01-01', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'work' },
     { kind: 'unconfirmed', text: 'New', home: 'project:alpha', date: '2030-01-01', path: 'register/open-items.md', ref: 'A-2', lens: 'work' },
   ] };
-  const html = home.homeHtml(view, { lens: 'work' });
+  const html = home.inboxHtml(view, 'work');
   assert.match(html, /data-cc-line="Buy milk" data-cc-project="alpha"/);
   assert.doesNotMatch(html, /data-cc-sort="A-2"/, 'a new item is settled from its row on the Inbox tab, not a form');
   assert.match(html, /categorised · becomes a card/);
@@ -548,8 +618,8 @@ test('every flagged row carries one-tap Confirm and Reject, with Next and Eviden
   const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, fresh, closing, both] }));
   view.lenses.work.hot = ['P-A-8'];
   view.lenses.work.quiet = { needs_review_date: [], no_owner: [], unconfirmed: ['P-A-8', 'P-A-10'], close_proposed: ['A-9', 'P-A-10'] };
-  const focus = home.homeHtml(view, { lens: 'work' });
-  assert.match(focus, /<div class="cc-item"><a class="cc-row" href="[^"]+" data-cc-ref="P-A-8">[\s\S]*<span class="cc-next"><b>Next<\/b> Answer it\.<\/span>[\s\S]*<\/a><div class="cc-acts" data-cc-acts="P-A-8">/);
+  const floating = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week' });
+  assert.match(floating, /<div class="cc-item"[^>]*><a class="cc-row" href="[^"]+" data-cc-ref="P-A-8">[\s\S]*<span class="cc-next"><b>Next<\/b> Answer it\.<\/span>[\s\S]*<\/a><div class="cc-acts" data-cc-acts="P-A-8">/);
   const inbox = home.homeHtml(view, { lens: 'work', tab: 'inbox' });
   assert.match(inbox, /New items to confirm <em>2<\/em><\/h2><p class="cc-batch-row"><button type="button" class="mini-btn primary cc-batch" data-cc-batch="unconfirmed" data-ids="P-A-8,P-A-10">Confirm all 2<\/button>/);
   assert.match(inbox, /Proposed closes <em>2<\/em><\/h2><p class="cc-batch-row"><button[^>]*data-cc-batch="close-proposed" data-ids="A-9,P-A-10">Close all 2<\/button>/);
