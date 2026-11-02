@@ -328,6 +328,14 @@ test('the mode of a card or an item is set from its task card (Brain D-127 A)', 
   assert.equal(res.status, 200);
   assert.equal(files['projects/demo/QUEUE.md'].puts.at(-1).message, 'web: via DEV-01010.01 call');
   assert.equal((await post('/api/brain/via', { project: 'demo', id: 'DEV-01010.01', via: 'fax' })).status, 400);
+  // Another mode on a handed-over item can take it back from Claude (Brain D-128 A).
+  const handed = queue.handCard(QUEUE, 'DEV-01010.01', '2030-02-01');
+  assert.match(queue.viaCard(handed, 'DEV-01010.01', 'call', '2030-02-01', true), /`id: DEV-01010\.01` `priority: P1` `via: call`\n/);
+  assert.match(queue.viaCard(handed, 'DEV-01010.01', 'call', '2030-02-01'), /`ai: prepare` `via: call`\n/, 'kept unless asked');
+  assert.doesNotMatch(register.viaItem(register.handItem(REGISTER, 'DEV-01012.02', '2030-02-01'), 'DEV-01012.02', 'call', '2030-02-01', true), /`id: DEV-01012\.02`[^\n]*`ai:/);
+  const back = await post('/api/brain/via', { project: 'demo', id: 'DEV-01010.01', via: 'email', unhand: true });
+  assert.equal(back.status, 200);
+  assert.equal(files['projects/demo/QUEUE.md'].puts.at(-1).message, 'web: via DEV-01010.01 email, back from Claude');
 });
 
 test('categorise: details are checked, then land on an Inbox line or a register item', async () => {

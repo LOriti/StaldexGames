@@ -279,9 +279,13 @@ export function handItem(text, id, today) {
   });
 }
 
-// Sets an open item's mode, `via:` (Brain D-127 A).
-export function viaItem(text, id, via, today) {
-  return edit(text, id, today, ({ line }) => line((l) => setOrAddAttr(l, 'via', via)));
+// Sets an open item's mode, `via:` (Brain D-127 A); `unhand` also takes it out of the
+// Claude lane, dropping its `ai:` (D-128 A).
+export function viaItem(text, id, via, today, unhand = false) {
+  return edit(text, id, today, ({ line }) => line((l) => {
+    const set = setOrAddAttr(l, 'via', via);
+    return unhand ? set.replace(/ ?`ai:[^`]*`/, '') : set;
+  }));
 }
 
 const NOTE_MAX = 500;

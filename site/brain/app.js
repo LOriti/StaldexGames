@@ -7,7 +7,7 @@ import {
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists, MODES, contextOfVia,
-} from './home.js?v=20261103a';
+} from './home.js?v=20261103b';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -870,6 +870,8 @@ function renderTask() {
   if (!entry) { modal.hidden = true; task.ref = null; return; }
   const panel = task.panel ? taskPanel(task.panel, entry) : '';
   modal.querySelector('.tk').innerHTML = taskHtml(entry, { clock, panel, message: task.message, focal: currentFocal(), paths: state.paths });
+  // While the card asks about the Claude lane (D-128 A), the picker shows the pending mode.
+  if (task.via && modal.querySelector('[data-tk-mode]')) modal.querySelector('[data-tk-mode]').value = task.via;
   modal.hidden = false;
 }
 
@@ -1225,7 +1227,8 @@ modal.addEventListener('click', async (e) => {
     return refreshAll();
   }
   if (act === 'focal-set' || act === 'focal-clear') { await setFocal(entry, act === 'focal-clear'); return; }
-  if (act === 'cancel') { task.panel = ''; return renderTask(); }
+  if (act === 'cancel') { task.panel = ''; task.via = null; return renderTask(); }
+  if ((act === 'via-unhand' || act === 'via-keep') && task.via) return setMode(entry, task.via, act === 'via-unhand');
   if (act === 'confirm-close' || act === 'reject-close') {
     for (const b of modal.querySelectorAll('button')) b.disabled = true;
     try {
@@ -1314,23 +1317,40 @@ modal.addEventListener('click', async (e) => {
 });
 
 // "Several" reveals the Outcome field.
+// The mode on a task card (Brain D-127 A): one `web: via` commit; the doors follow at once.
+// On an item handed to Claude, another mode asks whether to take it back too (D-128 A).
+async function setMode(entry, via, unhand) {
+  for (const b of modal.querySelectorAll('button, select')) b.disabled = true;
+  try {
+    const card = closeKind(entry) === 'card';
+    await write('/via', { id: entry.ref, via, ...(card ? { project: projectOf(entry) } : {}), ...(unhand ? { unhand: true } : {}) });
+    entry.context = contextOfVia(via);
+    if (unhand) {
+      entry.ai = null; entry.claude = null;
+      for (const slot of Object.values(home.view.lenses)) {
+        if (slot.claude.includes(entry.ref)) { slot.claude = slot.claude.filter((r) => r !== entry.ref); slot.claude_total = Math.max(0, slot.claude_total - 1); }
+      }
+    }
+    const name = (MODES.find((m) => m[0] === via) || [])[1] || via;
+    task.message = unhand ? `Mode set to ${name}; it left the Claude lane.` : `Mode set to ${name}.`;
+  } catch (err) {
+    task.message = writeError(err);
+  }
+  task.panel = ''; task.via = null;
+  renderTask();
+  refreshAll();
+}
+
 modal.addEventListener('change', async (e) => {
-  // The mode on a task card (Brain D-127 A): one `web: via` commit; the doors follow at once.
   const mode = e.target.closest('[data-tk-mode]');
   const entry = mode && task.ref && !task.walk ? entryFor(task.ref) : null;
   if (!entry) return;
   const via = mode.value;
-  mode.disabled = true;
-  try {
-    const card = closeKind(entry) === 'card';
-    await write('/via', { id: entry.ref, via, ...(card ? { project: projectOf(entry) } : {}) });
-    entry.context = contextOfVia(via);
-    task.message = `Mode set to ${(MODES.find((m) => m[0] === via) || [])[1] || via}.`;
-  } catch (err) {
-    task.message = writeError(err);
+  if (['prepare', 'complete'].includes(entry.ai) && via !== 'ai') {
+    task.via = via; task.panel = 'via-ask'; task.message = '';
+    return renderTask();
   }
-  renderTask();
-  refreshAll();
+  return setMode(entry, via, false);
 });
 
 modal.addEventListener('submit', async (e) => {

@@ -33,7 +33,7 @@
 //   POST /api/brain/trash   { project, line } → { path, sha, commit }   the line is removed
 //   POST /api/brain/promote { project, line } → { path, sha, commit }   a Someday line back to the Inbox
 //   POST /api/brain/hand    { id[, project] } → { path, sha, commit }   `ai: prepare` on a card or item (Hand to Claude)
-//   POST /api/brain/via     { id, via[, project] } → { path, sha, commit }   `via:` (the mode) on a card or item (Brain D-127 A)
+//   POST /api/brain/via     { id, via[, project, unhand] } → { path, sha, commit }   `via:` (the mode) on a card or item (Brain D-127 A)
 //   POST /api/brain/progress { id, text[, project] } → { path, sha, commit }   project: a card's
 //   POST /api/brain/close   { id, text }    → { path, sha, commit }   register items only
 //   POST /api/brain/decide  { id, text }    → { path, sha, commit }   register decisions only
@@ -262,8 +262,8 @@ const WRITES = {
   '/api/brain/via': {
     path: (body) => (body.project !== undefined ? queuePath(body) : REGISTER_PATH),
     valid: (body) => VIAS.includes(body.via) && (body.project !== undefined ? isCardId(body.id, body.project) : isRegisterItem(body)),
-    apply: (text, body, today) => (body.project !== undefined ? viaCard : viaItem)(text, body.id, body.via, today),
-    message: (body) => `web: via ${body.id} ${body.via}`,
+    apply: (text, body, today) => (body.project !== undefined ? viaCard : viaItem)(text, body.id, body.via, today, body.unhand === true),
+    message: (body) => `web: via ${body.id} ${body.via}${body.unhand === true ? ', back from Claude' : ''}`,
   },
   // Close an open item with Leon's Evidence; a card closes through /done.
   '/api/brain/close': {

@@ -535,6 +535,18 @@ if (await freshRow.count()) {
   await shot('inbox-after-close-all');
 } else problems.push('the new item has no row acts on the Inbox tab');
 
+// On an item with Claude, another mode asks first (Brain D-128 A).
+await page.goto(`${base}/brain/#next`); await settle(); await pickLens('work'); await page.locator('[data-cc-sub="all"]').click(); await settle();
+const laneItem = page.locator('a[data-cc-ref="WORK-SYS-60101.11"]').first();
+if (await laneItem.count()) {
+  await laneItem.click(); await settle();
+  await page.locator('[data-tk-mode]').selectOption('call'); await settle();
+  if (!(await page.locator('[data-tk="via-unhand"]').count())) problems.push('another mode on a Claude item did not ask to take it back');
+  await shot('task-mode-ask');
+  await page.locator('[data-tk="via-unhand"]').click(); await settle();
+  if (!writes.some(([path, body]) => path === '/api/brain/via' && /"unhand":true/.test(body))) problems.push('taking it back from Claude wrote no unhand');
+  await page.locator('.tk button[data-tk="hide"]').first().click().catch(() => {}); await settle();
+} else problems.push('no Claude item to try the mode ask on');
 await browser.close();
 server?.close();
 console.log(shots.map((s) => `  ${s}`).join('\n'));

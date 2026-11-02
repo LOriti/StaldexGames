@@ -212,6 +212,7 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
 - `POST /api/brain/via` `{ id, via[, project] }` → the mode, `via:` (one of `call`, `email`,
   `computer`, `errand`, `agenda`, `ai`), on a card (with `project`) or an open register item
   (`web: via <id> <via>`, Brain D-127 A), from the task card when Brain's guess is wrong.
+  `unhand: true` also drops its `ai:`, taking it out of the Claude lane (D-128 A).
 - `POST /api/brain/promote` `{ project, line }` → a `## Someday` line comes back under `## Inbox`
   for clarifying (`web: promote someday <slug>`, Brain DEV-61026.35); refused if the Inbox
   already has it.
