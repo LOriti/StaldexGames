@@ -470,6 +470,11 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .cc-subs button[aria-pressed="true"] em { color: var(--accent); }
 .cc-item[draggable="true"] { cursor: grab; }
 .cc-item.drag-over { box-shadow: inset 0 2px 0 var(--accent); }
+.cc-focal.drag-over, [data-cc-slot].drag-over, [data-cc-list-box].drag-over { outline: 2px dashed var(--accent); outline-offset: 2px; }
+.cc-gh .cc-more { margin-left: auto; padding-left: 10px; text-transform: none; letter-spacing: 0; font-weight: 500; }
+.cc-gh em + .cc-more { margin-left: auto; }
+.cc-open { border-top: 1px dashed var(--line); }
+.cc-today-list { margin-top: 2px; }
 .cc-place .mini-btn { padding-inline: 8px; }
 .cb-t.bad { color: var(--bad); }
 .tk-radio label { display: flex; gap: 6px; align-items: center; font-size: 14px; color: var(--ink); }

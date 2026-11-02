@@ -39,7 +39,7 @@
 //   POST /api/brain/clock   { action, ref, start[, date], title, area, lens } → on daily-log
 //   POST /api/brain/hours   { minutes, area | lens | ref, note } → on daily-log
 //   POST /api/brain/focal   { ref | '', lens } → a `focal` row on daily-log (the one thing today)
-//   POST /api/brain/place   { kind: today | next-week, items: [{ ref, note }], lens } → placement rows, one commit
+//   POST /api/brain/place   { kind: today | next | next-week, items: [{ kind?, ref, note }], lens } → placement rows, one commit
 //   POST /api/brain/categorise { project, line, details } | { id, details } → an Inbox line or an open item
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
@@ -309,7 +309,7 @@ const WRITES = {
     apply: (text, body, today, clock) => appendTime(text, clock.date, clock.hhmm, focalRow(body, clock)),
     message: (body) => `time: ${perthClock().date} focal ${body.ref || 'cleared'}`,
   },
-  // Next up today and Next week placements (Brain D-109 A), a whole list per commit.
+  // Today, Next and Next week placements (Brain D-109 A, D-120 A), a whole list per commit.
   '/api/brain/place': {
     branch: LOG_BRANCH,
     create: true,

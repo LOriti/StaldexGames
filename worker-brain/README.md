@@ -199,11 +199,13 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
   or `web: close all <n>`, Brain D-112 A); if any id is no longer flagged the whole batch is
   refused with **409 `{ error, ids }`** naming them, so nothing is half applied. A close on
   an item still `unconfirmed` lands it and closes it in the one edit, as `/close` now does.
-- `POST /api/brain/place` `{ kind: today | next-week, items: [{ ref, note[, kind] }], lens }` → one
-  `today` or `next-week` row per item on the daily log, a whole list per commit
-  (`time: <date> place <kind> <n>`, Brain D-109 A): the note is the position, `out` or `keep`.
-  Both screens read the day's `today` rows (fresh each morning) and the latest `next-week`
-  row per item; `/time` now reaches back 42 days so a Next week run's first day is in view.
+- `POST /api/brain/place` `{ kind: today | next | next-week, items: [{ ref, note[, kind] }], lens }` → one
+  `today`, `next` or `next-week` row per item on the daily log, a whole list per commit
+  (`time: <date> place <kind> <n>`, Brain D-109 A, D-120 A): the note is the position, `out`,
+  or `keep` (Next week only). Both screens read the day's `today` rows (fresh each morning;
+  an item left in an earlier day's Today sits at the top of Next, D-121 B) and the latest
+  `next` and `next-week` row per item; `/time` reaches back 42 days so a run's first day is in
+  view. An Inbox line not yet groomed is placed by its `L-` id (D-122 A).
 - `POST /api/brain/hand` `{ id[, project] }` → `ai: prepare` on a card (with `project`) or an open
   register item (`web: hand <id>`, Brain D-119 A): Hand to Claude from the task card. Brain's
   morning brief prepares it and writes `Prepared:`, which the card shows as back for review.

@@ -9,8 +9,11 @@
 //   entered   hours Leon typed in on the Allocation tab (Brain D-96 C)
 //   focal     Leon's pick of the one thing for today, or an empty item to go back to the
 //             brief's pick (Brain D-113 A); no time, both screens read the latest one
-//   today     a placement in Next up today (Brain D-109 A): the note is the position, or
-//             `out`; only today's rows count, so Today starts fresh each morning
+//   today     a placement in Today (Brain D-109 A): the note is the position, or `out`;
+//             only today's rows make Today, so it starts fresh each morning, and an item
+//             left in it sits at the top of Next (D-121 B)
+//   next      a placement in Next (D-120 A): the note is the position or `out`; the
+//             latest row per item carries forward
 //   next-week a placement in Next week (D-109 A): the note is the position, `keep` (the
 //             weekly review kept it) or `out`; the latest row per item carries forward
 // The desk also writes planned, unplanned and distraction rows; all are read back here.
@@ -27,7 +30,8 @@ export const DATE = /^\d{4}-\d{2}-\d{2}$/;
 export const HHMM = /^([01]\d|2[0-3]):[0-5]\d$/;
 // Card and item ids: date-based (Brain brain-021), `P-` until landed, decisions, and the
 // older `<slug>-NNN` cards.
-const REF = /^(?:(?:P-)?(?:\?|[A-Z]+(?:-[A-Z]+)?)-\d{5}\.\d{2,3}|D-\d+|[a-z0-9]+(?:-[a-z0-9]+)*-\d{3})$/;
+// An Inbox line not yet groomed is `L-` and eight hex digits (Brain D-122 A).
+const REF = /^(?:(?:P-)?(?:\?|[A-Z]+(?:-[A-Z]+)?)-\d{5}\.\d{2,3}|D-\d+|L-[0-9a-f]{8}|[a-z0-9]+(?:-[a-z0-9]+)*-\d{3})$/;
 const MAX_MINUTES = 12 * 60;
 const HEADER = (date) => `# Daily log ${date}\n\nAppend-only record of the daily brief, debrief and changes (D-30). Times are Perth.\n`;
 
@@ -127,14 +131,14 @@ export function focalRow(body, clock) {
   return { kind: 'focal', start: clock.hhmm, end: '', minutes: 0, ref, area: '', lens, note: '' };
 }
 
-// Placements for the Next actions tab (Brain D-109 A): one row per item in the batch,
-// `| today | HH:MM | | 0 | <id> | | <lens> | <position|out> |` or the same with
-// `next-week` and `keep`. A drag reorders by writing the whole list's positions at once.
-export const PLACE_KINDS = ['today', 'next-week'];
+// Placements for the Next actions tab (Brain D-109 A, D-120 A): one row per item in the
+// batch, `| today | HH:MM | | 0 | <id> | | <lens> | <position|out> |` or the same with
+// `next`, or `next-week` and `keep`. A drag reorders by writing the whole list's positions.
+export const PLACE_KINDS = ['today', 'next', 'next-week'];
 const PLACE_NOTE = /^(?:\d{1,3}|out|keep)$/;
 export const PLACE_MAX = 100;
 export function placeRows(body, clock) {
-  if (!PLACE_KINDS.includes(body.kind)) throw new QueueError('invalid-text', 'kind must be today or next-week');
+  if (!PLACE_KINDS.includes(body.kind)) throw new QueueError('invalid-text', 'kind must be today, next or next-week');
   if (!Array.isArray(body.items) || !body.items.length || body.items.length > PLACE_MAX) throw new QueueError('invalid-text', `1 to ${PLACE_MAX} items`);
   const { lens } = cleanPlace('', body.lens);
   return body.items.map((item) => {
@@ -142,9 +146,9 @@ export function placeRows(body, clock) {
     const note = String(item.note ?? '');
     // An item may name its own kind, so one commit moves it from one list to the other.
     const kind = item.kind ? String(item.kind) : body.kind;
-    if (!PLACE_KINDS.includes(kind)) throw new QueueError('invalid-text', 'kind must be today or next-week');
+    if (!PLACE_KINDS.includes(kind)) throw new QueueError('invalid-text', 'kind must be today, next or next-week');
     if (!PLACE_NOTE.test(note)) throw new QueueError('invalid-text', 'a placement is a position, out or keep');
-    if (kind === 'today' && note === 'keep') throw new QueueError('invalid-text', 'keep is for next week');
+    if (kind !== 'next-week' && note === 'keep') throw new QueueError('invalid-text', 'keep is for next week');
     return { kind, start: clock.hhmm, end: '', minutes: 0, ref, area: '', lens, note };
   });
 }

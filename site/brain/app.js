@@ -6,8 +6,8 @@ import {
   VIEW_PATH, LENSES, openingLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
-  TWO_MINUTES_MS, fmtCountdown, placements, SUBS,
-} from './home.js?v=20261030e';
+  TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists,
+} from './home.js?v=20261102a';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -32,7 +32,15 @@ const state = {
 // says this page's copy of the view carries writes Brain has not rendered yet.
 // `places` are the Next actions placements from the daily log (D-109 A), `sub` the sub-tab
 // shown, `lensOpen` whether the lens chooser is open.
-const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false, focal: null, dirty: false, places: null, sub: 'today', lensOpen: false };
+const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false, focal: null, dirty: false, places: null, sub: 'all', lensOpen: false };
+
+// The placements as this page shows them: categorised Inbox lines joined to the entries, and
+// a groomed card's `L-` alias mapped to its id (Brain D-122 A).
+function placesNow() {
+  if (!home.view) return home.places;
+  withLines(home.view);
+  return resolvePlaces(home.places, home.view);
+}
 
 function homeTab() {
   if (familyCode()) return 'family';
@@ -384,9 +392,10 @@ function renderHome(tab = homeTab() || 'focus') {
     timeZone: 'Australia/Perth', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit',
   }) : '';
   const asOf = `${home.view.date}${when ? `, last change ${when}` : ''}`;
+  const places = placesNow();
   els.doc.innerHTML = homeHtml(home.view, {
     lens: home.lens, tab, filter: home.filter, asOf, time: home.time, clock, projects: projectSlugs(), inboxAll: home.inboxAll,
-    today: perthDay().today, focal: home.focal, places: home.places, sub: home.sub, lensOpen: home.lensOpen, family: familyCode(),
+    today: perthDay().today, focal: home.focal, places, sub: home.sub, lensOpen: home.lensOpen, family: familyCode(),
   });
   stashView();
 }
@@ -404,7 +413,7 @@ const view_lens = (slot) => Object.keys(home.view.lenses).find((k) => home.view.
 // The item in the focal slot for the current lens, and whether it is Leon's own pick.
 function currentFocal() {
   if (!home.view || !home.view.lenses[home.lens]) return null;
-  const choice = focalChoice(home.view, home.lens, home.focal, home.places);
+  const choice = focalChoice(home.view, home.lens, home.focal, placesNow());
   return choice ? { ref: choice.entry.ref, mine: choice.mine } : null;
 }
 
@@ -428,7 +437,7 @@ els.doc.addEventListener('click', (e) => {
   if (d.ccInboxAll) { home.inboxAll = true; return renderHome(); }
   if (d.ccLensOpen) { home.lensOpen = !home.lensOpen; return renderHome(); }
   if (d.ccLens) { home.lens = d.ccLens; home.filter = null; home.lensOpen = false; storeLens(d.ccLens); return renderHome(); }
-  if (d.ccSub) { home.sub = SUBS.includes(d.ccSub) ? d.ccSub : 'today'; return renderHome(); }
+  if (d.ccSub) { home.sub = SUBS.includes(d.ccSub) ? d.ccSub : 'all'; return renderHome(); }
   if (d.ccClear) { home.filter = null; return renderHome(); }
   home.filter = d.ccContext ? { type: 'context', value: d.ccContext } : { type: 'area', value: d.ccArea };
   home.sub = 'week';
@@ -456,46 +465,80 @@ async function placeWrite(kind, items, lens) {
 
 const inLensRefs = (refs) => refs.filter((r) => { const e = entryFor(r); return e && (home.lens === 'all' || e.lens === home.lens); });
 
-async function placeAct(act, ref, btn) {
-  const entry = entryFor(ref);
-  if (!entry || !home.places) return;
-  const lens = entry.lens || '';
-  const today = inLensRefs(home.places.today);
-  const later = inLensRefs(home.places.week.map((w) => w.ref));
-  const inToday = today.includes(ref); const inLater = later.includes(ref);
-  const positions = (list, kind) => list.map((r, i) => ({ kind, ref: r, note: i + 1 }));
-  let kind = 'today'; let items = [];
-  if (act === 'today') {
-    items = [{ kind: 'today', ref, note: today.length + 1 }, ...(inLater ? [{ kind: 'next-week', ref, note: 'out' }] : [])];
-  } else if (act === 'next-week') {
-    kind = 'next-week';
-    items = [{ kind: 'next-week', ref, note: 0 }, ...(inToday ? [{ kind: 'today', ref, note: 'out' }] : [])];
-  } else if (act === 'week') {
-    kind = inLater ? 'next-week' : 'today';
-    items = [...(inToday ? [{ kind: 'today', ref, note: 'out' }] : []), ...(inLater ? [{ kind: 'next-week', ref, note: 'out' }] : [])];
-    if (!items.length) return;
-  } else if (act === 'keep') {
-    kind = 'next-week';
-    items = [{ kind: 'next-week', ref, note: 'keep' }];
-  } else if (act === 'up' || act === 'down') {
-    const list = inToday ? today : later;
-    kind = inToday ? 'today' : 'next-week';
-    const i = list.indexOf(ref); const j = act === 'up' ? i - 1 : i + 1;
-    if (i < 0 || j < 0 || j >= list.length) return;
-    [list[i], list[j]] = [list[j], list[i]];
-    items = positions(list, kind);
-  } else return;
+// Where an item sits now, as the lists this page shows for the lens.
+function placedLists() {
+  const p = placesNow();
+  return { today: inLensRefs(p.today), next: inLensRefs(p.next.map((n) => n.ref)), later: inLensRefs(p.week.map((w) => w.ref)) };
+}
+const ROW_KIND = { today: 'today', next: 'next', later: 'next-week' };
+
+// The rows that move one item into a list at a position (Brain D-109 A, D-120 A): the whole
+// target list's positions, then an `out` for the list it leaves. `week` is Floating: only outs.
+function moveRows(ref, to, index) {
+  const lists = placedLists();
+  const from = ['today', 'next', 'later'].find((k) => lists[k].includes(ref)) || 'week';
+  const rows = [];
+  if (to !== 'week') {
+    const list = lists[to].filter((r) => r !== ref);
+    list.splice(Math.max(0, Math.min(index ?? list.length, list.length)), 0, ref);
+    rows.push(...list.map((r, i) => ({ kind: ROW_KIND[to], ref: r, note: i + 1 })));
+  }
+  if (from !== 'week' && from !== to) rows.push({ kind: ROW_KIND[from], ref, note: 'out' });
+  return { rows, from };
+}
+
+async function moveTo(ref, to, index, message, btn) {
+  const { rows, from } = moveRows(ref, to, index);
+  if (!rows.length) return;
   if (btn) btn.disabled = true;
   try {
-    await placeWrite(kind, items, lens);
-    note(act === 'today' ? `${ref} is next up today.` : act === 'next-week' ? `${ref} waits for next week.` : act === 'week' ? `${ref} is back in This week.` : act === 'keep' ? `Kept ${ref} for next week.` : 'Reordered.');
+    await placeWrite(rows[0].kind, rows, entryFor(ref)?.lens || '');
+    note(message || (from === to ? 'Reordered.' : `${ref.startsWith('L-') ? 'That line' : ref} is in ${{ today: 'Today', next: 'Next', later: 'Next week', week: 'Floating' }[to]}.`));
   } catch (err) {
     note(writeError(err), true);
     refreshAll();
   }
 }
 
-// A dragged row lands before the row it is dropped on; the whole list's positions are written.
+// Focus is a view of the Today order (D-120 A): the one thing is its first place, the top 3
+// the next three. Positions here are indexes into today's list for the lens.
+function focusIndex(where) {
+  const focal = currentFocal();
+  const lists = focusLists(home.view, home.lens, placesNow(), focal ? focal.ref : null);
+  const offset = lists.firstIsFocal ? 1 : 0;
+  if (where === 'one') return 0;
+  if (where === 'top') return offset + Math.min(lists.top.length, 2);
+  return offset + 3;
+}
+
+async function placeAct(act, ref, btn) {
+  const entry = entryFor(ref);
+  if (!entry || !home.places) return;
+  const lists = placedLists();
+  const inList = ['today', 'next', 'later'].find((k) => lists[k].includes(ref));
+  const name = ref.startsWith('L-') ? 'That line' : ref;
+  if (act === 'today') return moveTo(ref, 'today', undefined, `${name} is in Today.`, btn);
+  if (act === 'next') return moveTo(ref, 'next', inList === 'today' ? 0 : undefined, null, btn);
+  if (act === 'next-week') return moveTo(ref, 'later', 0, `${name} waits for next week.`, btn);
+  if (act === 'week') return moveTo(ref, 'week', 0, `${name} is back in Floating.`, btn);
+  if (act === 'one') return moveTo(ref, 'today', 0, 'That’s the one thing now.', btn);
+  if (act === 'top') return moveTo(ref, 'today', focusIndex('top'), 'In your top 3.', btn);
+  if (act === 'tolist') return moveTo(ref, 'today', focusIndex('list'), 'Back in the list.', btn);
+  if (act === 'up' || act === 'down') {
+    if (!inList) return;
+    const i = lists[inList].indexOf(ref);
+    const j = act === 'up' ? i - 1 : i + 1;
+    if (i < 0 || j < 0 || j >= lists[inList].length) return;
+    return moveTo(ref, inList, j, 'Reordered.', btn);
+  }
+  if (act === 'keep') {
+    if (btn) btn.disabled = true;
+    try { await placeWrite('next-week', [{ kind: 'next-week', ref, note: 'keep' }], entry.lens || ''); note(`Kept ${name} for next week.`); } catch (err) { note(writeError(err), true); refreshAll(); }
+  }
+}
+
+// A dragged row lands before the row it is dropped on, in that row's list; on Focus, dropping
+// on the one thing makes it first, on the top 3 adds it there (D-120 A).
 let dragging = null;
 els.doc.addEventListener('dragstart', (e) => {
   const item = e.target.closest('[data-cc-drag]');
@@ -504,27 +547,34 @@ els.doc.addEventListener('dragstart', (e) => {
   e.dataTransfer.effectAllowed = 'move';
   e.dataTransfer.setData('text/plain', dragging);
 });
+const dropTarget = (e) => e.target.closest('[data-cc-drag]') || e.target.closest('[data-cc-slot]') || e.target.closest('[data-cc-list-box]');
 els.doc.addEventListener('dragover', (e) => {
-  const item = e.target.closest('[data-cc-drag]');
-  if (!item || !dragging || item.dataset.ccDrag === dragging) return;
+  const el = dropTarget(e);
+  if (!el || !dragging || el.dataset.ccDrag === dragging) return;
   e.preventDefault();
-  for (const el of els.doc.querySelectorAll('.cc-item.drag-over')) el.classList.remove('drag-over');
-  item.classList.add('drag-over');
+  for (const x of els.doc.querySelectorAll('.drag-over')) x.classList.remove('drag-over');
+  el.classList.add('drag-over');
 });
-els.doc.addEventListener('dragend', () => { for (const el of els.doc.querySelectorAll('.cc-item.drag-over')) el.classList.remove('drag-over'); });
+els.doc.addEventListener('dragend', () => { for (const x of els.doc.querySelectorAll('.drag-over')) x.classList.remove('drag-over'); });
 els.doc.addEventListener('drop', async (e) => {
-  const item = e.target.closest('[data-cc-drag]');
-  if (!item || !dragging || !home.places) return;
+  const el = dropTarget(e);
+  if (!el || !dragging || !home.places) return;
   e.preventDefault();
-  const target = item.dataset.ccDrag; const moved = dragging; dragging = null;
-  const today = inLensRefs(home.places.today);
-  const inToday = today.includes(moved);
-  const list = inToday ? today : inLensRefs(home.places.week.map((w) => w.ref));
-  if (!list.includes(target) || moved === target) return;
-  list.splice(list.indexOf(moved), 1);
-  list.splice(list.indexOf(target), 0, moved);
-  const kind = inToday ? 'today' : 'next-week';
-  try { await placeWrite(kind, list.map((r, i) => ({ kind, ref: r, note: i + 1 })), entryFor(moved)?.lens || ''); note('Reordered.'); } catch (err) { note(writeError(err), true); refreshAll(); }
+  for (const x of els.doc.querySelectorAll('.drag-over')) x.classList.remove('drag-over');
+  const moved = dragging; dragging = null;
+  const d = el.dataset;
+  if (d.ccDrag === moved) return;
+  if (d.ccSlot) return moveTo(moved, 'today', focusIndex(d.ccSlot === 'one' ? 'one' : d.ccSlot === 'top' ? 'top' : 'list'));
+  if (d.ccZone) { // a Focus row: before it in the Today order, or after the list when it is not placed yet
+    const lists = placedLists();
+    const at = lists.today.filter((r) => r !== moved).indexOf(d.ccDrag);
+    return moveTo(moved, 'today', at < 0 ? undefined : at);
+  }
+  const to = d.ccList || d.ccListBox;
+  if (!to) return;
+  if (to === 'week') return moveTo(moved, 'week');
+  const at = d.ccDrag ? placedLists()[to].filter((r) => r !== moved).indexOf(d.ccDrag) : -1;
+  return moveTo(moved, to, at < 0 ? undefined : at);
 });
 
 els.doc.addEventListener('click', (e) => {
@@ -1119,7 +1169,7 @@ function afterSort(target, d) {
   if (target.kind === 'line') {
     const row = (home.view.inbox || []).find((r) => r === target || ((r.raw || r.text) === (target.raw || target.text) && r.home === target.home));
     if (row) Object.assign(row, { text: d.title || row.text, details: { ...d, categorised: today } });
-    return 'Saved. It becomes a card at the next groom.';
+    return 'Saved. It is in Next actions now; the groom makes its card.';
   }
   const e = target.entry;
   const number = e.ref.match(/-(\d{5}\.\d{2,3})$/)[1];
@@ -1320,7 +1370,7 @@ modal.addEventListener('submit', async (e) => {
       const row = (home.view.inbox || []).find((r) => r.kind === 'line' && (r.raw || r.text) === (w.row.raw || w.row.text) && r.home === w.row.home);
       if (row) Object.assign(row, { details: { ...details, categorised: perthDay().today } });
       hideTask();
-      note('Saved. It becomes a card at the next groom.');
+      note('Saved. It is in Next actions now; the groom makes its card.');
     } catch (err) {
       task.message = writeError(err);
       renderTask();
