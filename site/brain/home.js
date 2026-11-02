@@ -25,6 +25,31 @@ const SECTION_NAMES = {
   parked: 'Parked', blocked: 'Blocked',
 };
 
+// What each priority means (Brain D-125 A): a timeframe, so it lines up with Today, Next
+// and Next week.
+export const PRIORITIES = {
+  P0: ['Urgent', 'today'], P1: ['High', 'this week'], P2: ['Normal', 'when it fits'], P3: ['Low', 'if time allows'],
+};
+export const priorityText = (p, full = false) => (PRIORITIES[p] ? `${p} · ${PRIORITIES[p][0]}${full ? `, ${PRIORITIES[p][1]}` : ''}` : (p || ''));
+
+// The mode of the work (Brain D-127 A, D-55 C): `via` on a card or line, else Brain's guess
+// from the wording, with the same words as command_centre.py. Like work groups by it.
+export const MODES = [['call', 'Call', 'calls'], ['email', 'Email', 'emails'], ['computer', 'Computer', 'computer'],
+  ['errand', 'Errand', 'errands'], ['agenda', 'Agenda', 'agendas'], ['ai', 'Claude', 'claude']];
+const CALL_WORDS = /\b(call|calls|ring|phone|callback|yarn)\b/i;
+const EMAIL_WORDS = /\b(e-?mail|reply|respond|send|draft|chase|feedback|enquiry|rsvp|accept or decline)\b/i;
+const ERRAND_WORDS = /\b(buy|order|pick up|collect|drop off|errand)\b/i;
+export function guessVia(text) {
+  const t = String(text || '');
+  if (ERRAND_WORDS.test(t)) return 'errand';
+  if (CALL_WORDS.test(t)) return 'call';
+  if (EMAIL_WORDS.test(t)) return 'email';
+  if (/\b((at|in) the [^.;]{0,40}meeting|agenda|1:1|one-on-one|discuss|raise (it )?with|agree [^.;]{0,40} with)\b/i.test(t) || /\b[Aa]sk [A-Z][a-z]+\b/.test(t)) return 'agenda';
+  return 'computer';
+}
+export const viaOfContext = (context) => (MODES.find((m) => m[2] === context) || MODES[2])[0];
+export const contextOfVia = (via) => (MODES.find((m) => m[0] === via) || MODES[2])[2];
+
 export function esc(value) {
   return String(value ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 }
@@ -189,7 +214,8 @@ export function withLines(view) {
     if (known.has(ref)) continue;
     const owner = d.owner || 'leon';
     const line = {
-      ref, title: r.text, source: 'line', home: r.home, lens: r.lens || null, context: 'computer', area: d.area || null,
+      ref, title: r.text, source: 'line', home: r.home, lens: r.lens || null, area: d.area || null,
+      context: d.ai ? 'claude' : owner !== 'leon' ? 'waiting' : contextOfVia(d.via || guessVia(`${r.text} ${d.next || ''}`)),
       hot: [], section: owner === 'leon' ? 'next' : 'waiting', blocked_by: [], claude: null, no_owner: false,
       priority: d.priority || null, due: d.due || null, review: null, owner, state: null, kind: null,
       minutes: d.minutes || null, effort: null, ai: d.ai || null, next: d.next || '', evidence: '', prepared: '',
@@ -381,7 +407,7 @@ function row(e, open = true, clock = null) {
   const stripe = e.section === 'hot' ? 'hot' : e.claude === 'back' ? 'ok' : '';
   const est = estimateText(e);
   const ticking = clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : '';
-  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(idText(e))} · ${esc(e.home)}${e.area ? ` · area ${esc(e.area)}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
+  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(idText(e))} · ${esc(e.home)}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}${e.area ? ` · area ${esc(e.area)}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
     `<span class="cc-t">${esc(e.title)}</span>${chips(e) || ticking || lineChip(e) ? `<span class="cc-why">${ticking}${chips(e)}${lineChip(e)}</span>` : ''}${flagDetail(e)}</span>`;
   const link = open ? rowLink(e, body) : `<div class="cc-row">${body}</div>`;
   const acts = open ? rowActs(e) : '';
@@ -431,7 +457,7 @@ export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inb
   // card, which categorises and confirms it.
   const open = (r) => (r.kind === 'line' ? ` data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(projectOf(r) || '')}"`
     : r.ref && known.has(r.ref) ? ` data-cc-${r.kind === 'unconfirmed' ? 'sort' : 'ref'}="${esc(r.ref)}"` : '');
-  const sorted = (r) => (r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · becomes a card at the next groom</span>'
+  const sorted = (r) => (r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · in Next actions</span>'
     : r.details && r.details.reference ? ' <span class="cc-chip ok">reference · the groom files it</span>' : '');
   html += shown.map((r) => `<a class="cc-row cc-in" href="${inboxHref(r)}"${open(r)}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
     `<span class="cc-m"><span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(r.home)}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span>` +
@@ -483,17 +509,26 @@ export function closeKind(entry) {
 export const isUnconfirmed = (entry) => /^P-/.test(entry.ref) || (entry.flags || []).includes('unconfirmed');
 
 // `focal` is { ref, mine } for the item in the focal slot: `mine` when it is Leon's pick.
+// The mode on the task card (Brain D-127 A): Brain's guess or the card's `via`, changeable
+// on a card or an open item (one `web: via` commit); a decision is always an agenda.
+function modeFact(entry) {
+  const kind = closeKind(entry);
+  const current = viaOfContext(entry.context);
+  if (kind !== 'card' && kind !== 'item') return `<dt>Mode</dt><dd>${esc((MODES.find((m) => m[0] === current) || MODES[2])[1])}</dd>`;
+  return `<dt><label for="tk-mode">Mode</label></dt><dd><select id="tk-mode" class="tk-mode" data-tk-mode="1">${MODES.map(([v, label]) => opt(v, label, current)).join('')}</select></dd>`;
+}
+
 export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', message = '', focal = null, paths = null } = {}) {
   const mine = clock && clock.ref === entry.ref;
   const other = clock && !mine;
   const est = estimateText(entry);
   const spent = mine ? clockMinutes(clock, now) : 0;
   const facts = [['Next', entry.next], ['Due', entry.due && entry.due !== 'unknown' ? entry.due : ''], ['Owner', entry.owner],
-    ['Priority', entry.priority], ['Estimate', est], ['Area', entry.area]].filter(([, v]) => v);
+    ['Priority', priorityText(entry.priority, true)], ['Estimate', est], ['Area', entry.area]].filter(([, v]) => v);
   let html = `<div class="tk-head"><span class="cc-id">${esc(entry.ref)} · ${esc(entry.home)}</span>` +
     '<button type="button" class="icon-btn tk-x" data-tk="hide" aria-label="Close the card; the clock keeps running">✕</button></div>' +
     `<h2 class="tk-ttl" id="tk-title">${esc(entry.title)}</h2>${chips(entry) ? `<p class="cc-why">${chips(entry)}</p>` : ''}` +
-    `<dl class="tk-facts">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}</dl>`;
+    `<dl class="tk-facts">${facts.map(([k, v]) => `<dt>${k}</dt><dd>${esc(v)}</dd>`).join('')}${modeFact(entry)}</dl>`;
   if (mine) {
     const over = Number.parseInt(entry.minutes, 10) > 0 && spent > Number.parseInt(entry.minutes, 10);
     html += `<div class="tk-clock${over ? ' over' : ''}"><span class="tk-time" data-tk-time="1">${esc(fmtElapsed(clock, now))}</span>` +
@@ -614,7 +649,7 @@ function focusRow(e, zone, clock) {
   const est = estimateText(e);
   const ticking = clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : '';
   const why = `${ticking}${chips(e)}${lineChip(e)}`;
-  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(idText(e))} · ${esc(e.home)}${est ? ` · ${esc(est)}` : ''}</span>` +
+  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(idText(e))} · ${esc(e.home)}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
     `<span class="cc-t">${esc(e.title)}</span>${why ? `<span class="cc-why">${why}</span>` : ''}${flagDetail(e)}</span>`;
   const ref = esc(e.ref);
   const b = (act, label) => `<button type="button" class="mini-btn" data-cc-place="${act}" data-ref="${ref}">${label}</button>`;
@@ -685,7 +720,7 @@ function placedRow(e, sub, clock, pos, extra = '') {
   const est = estimateText(e);
   const ticking = clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : '';
   const why = `${ticking}${chips(e)}${lineChip(e)}`;
-  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(idText(e))} · ${esc(e.home)}${e.area ? ` · area ${esc(e.area)}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
+  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(idText(e))} · ${esc(e.home)}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}${e.area ? ` · area ${esc(e.area)}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
     `<span class="cc-t">${esc(e.title)}</span>${why ? `<span class="cc-why">${why}</span>` : ''}${extra}${flagDetail(e)}</span>`;
   return `<div class="cc-item" draggable="true" data-cc-drag="${esc(e.ref)}" data-cc-list="${sub}">${rowLink(e, body)}${rowActs(e)}${placeActs(e, sub, pos)}</div>`;
 }
@@ -1013,7 +1048,7 @@ export function categoriseHtml(target, { families = [], message = '', back = fal
     `<label for="cg-title">What it is</label><input id="cg-title" name="title" maxlength="200" value="${esc(v.title)}" required>` +
     `<label for="cg-next">Next step</label><input id="cg-next" name="next" maxlength="300" value="${esc(v.next)}" required placeholder="The very next physical action">` +
     `<div class="tk-grid"><span><label for="cg-family">Family</label><select id="cg-family" name="family">${fams.map((f) => opt(f.code, f.covers ? `${f.code} · ${f.covers.slice(0, 48)}` : f.code, v.family)).join('')}</select></span>` +
-    (line ? `<span><label for="cg-priority">Priority</label><select id="cg-priority" name="priority">${['P0', 'P1', 'P2', 'P3'].map((p) => opt(p, p, v.priority)).join('')}</select></span>` : '') +
+    (line ? `<span class="tk-wide"><label for="cg-priority">Priority</label><select id="cg-priority" name="priority">${Object.keys(PRIORITIES).map((p) => opt(p, priorityText(p, true), v.priority)).join('')}</select></span>` : '') +
     `<span><label for="cg-minutes">Estimate</label><select id="cg-minutes" name="minutes">${opt('', 'Not sure yet', v.minutes)}${ESTIMATES.map((m) => opt(m, fmtMinutes(m), v.minutes)).join('')}</select></span>` +
     `<span><label for="cg-due">Due</label><input id="cg-due" name="due" type="date" value="${esc(v.due)}"></span>` +
     `<span><label for="cg-owner">Owner</label><input id="cg-owner" name="owner" maxlength="40" value="${esc(v.owner)}"></span></div>` +
@@ -1066,16 +1101,23 @@ export function walkHtml(walk, { families = [], message = '', now = Date.now() }
         '<button type="button" class="mini-btn" data-wk="cancel">Cancel</button></div>';
     }
   } else if (walk.step === 'action') {
-    const check = a.next ? actionCheck(a.next) : null;
+    // Step 1 (Brain D-126 A): the line is offered as the next action; one tap when it is,
+    // or edit it; several actions make a project with an Outcome (D-108 A).
+    const next = a.next ?? r.text;
+    const check = next ? actionCheck(next) : null;
+    const project = a.kind === 'project';
     html = head('1 · The next physical action', true) +
-      '<form class="tk-panel tk-sort" data-wk-form="action"><label for="wk-next">What exactly will you do first?</label>' +
-      `<input id="wk-next" name="next" maxlength="300" required autocomplete="off" value="${esc(a.next || '')}" placeholder="Ring Sam about the quote">` +
+      `<form class="tk-panel tk-sort" data-wk-form="action"><label for="wk-next">${project ? 'The first action' : 'Is this the next physical action? Edit it if not.'}</label>` +
+      `<input id="wk-next" name="next" maxlength="300" required autocomplete="off" value="${esc(next)}" placeholder="Ring Sam about the quote">` +
       (check && !check.ok ? `<p class="write-msg bad">${esc(check.note)}</p>` : check && check.note ? `<p class="write-msg">${esc(check.note)}</p>` : '') +
-      '<p class="cc-note">One action or several? (D-108 A)</p><div class="tk-grid tk-radio">' +
-      `<label><input type="radio" name="kind" value="action"${a.kind !== 'project' ? ' checked' : ''}> One action</label>` +
-      `<label><input type="radio" name="kind" value="project"${a.kind === 'project' ? ' checked' : ''}> Several: it is a project</label></div>` +
-      `<label for="wk-outcome" class="wk-outcome"${a.kind === 'project' ? '' : ' hidden'}>Outcome, when it is done</label><input id="wk-outcome" name="outcome" maxlength="300" autocomplete="off" value="${esc(a.outcome || '')}" placeholder="The cover is renewed and filed"${a.kind === 'project' ? '' : ' hidden'}>` +
-      '<span class="tk-acts"><button type="submit" class="mini-btn primary">Next ›</button></span></form>';
+      (project
+        ? '<label for="wk-outcome">Outcome, when the project is done</label>' +
+          `<input id="wk-outcome" name="outcome" maxlength="300" required autocomplete="off" value="${esc(a.outcome || '')}" placeholder="The cover is renewed and filed">` +
+          '<span class="tk-acts"><button type="submit" class="mini-btn primary" name="kind" value="project">Next ›</button>' +
+          '<button type="submit" class="mini-btn" name="kind" value="action" formnovalidate>It’s one action</button></span>'
+        : '<span class="tk-acts"><button type="submit" class="mini-btn primary" name="kind" value="action">Yes, one action ›</button>' +
+          '<button type="submit" class="mini-btn" name="kind" value="several" formnovalidate>It’s several (a project)</button></span>') +
+      '</form>';
   } else if (walk.step === 'two') {
     html = head('2 · Can it be done in under two minutes?', true) + `<p class="cc-note">${esc(a.next || '')}</p><div class="tk-choices">` +
       choice('two-yes', 'Yes, do it now', 'A two-minute clock starts. Finishing records the time and closes the line.', true) +
@@ -1105,11 +1147,12 @@ export function walkHtml(walk, { families = [], message = '', now = Date.now() }
     html = head('4 · Priority, estimate and date', true) + `<p class="cc-note">${esc(a.next || '')}${a.owner && a.owner !== 'leon' ? ` · ${esc(a.owner)} owns it` : ''}${a.ai ? ' · Claude prepares it' : ''}</p>` +
       '<form class="tk-panel tk-sort" data-wk-form="details"><div class="tk-grid">' +
       `<span><label for="wk-family">Family</label><select id="wk-family" name="family">${fams.map((f) => opt(f.code, f.covers ? `${f.code} · ${f.covers.slice(0, 48)}` : f.code, a.family || r.family || '?')).join('')}</select></span>` +
-      `<span><label for="wk-priority">Priority</label><select id="wk-priority" name="priority">${['P0', 'P1', 'P2', 'P3'].map((p) => opt(p, p, a.priority || 'P2')).join('')}</select></span>` +
+      `<span class="tk-wide"><label for="wk-priority">Priority</label><select id="wk-priority" name="priority">${Object.keys(PRIORITIES).map((p) => opt(p, priorityText(p, true), a.priority || 'P2')).join('')}</select></span>` +
       `<span><label for="wk-minutes">Estimate</label><select id="wk-minutes" name="minutes">${opt('', 'Not sure yet', a.minutes || '')}${ESTIMATE_OPTIONS.map((m) => opt(m, fmtMinutes(m), a.minutes || '')).join('')}</select></span>` +
+      `<span><label for="wk-via">Mode</label><select id="wk-via" name="via">${MODES.filter(([v]) => v !== 'ai').map(([v, label]) => opt(v, label, a.via || guessVia(`${r.text} ${a.next || ''}`))).join('')}</select></span>` +
       `<span><label for="wk-due">Deadline, or leave it to float</label><input id="wk-due" name="due" type="date" value="${esc(a.due || '')}"></span></div>` +
       '<span class="tk-acts"><button type="submit" class="mini-btn primary">Save</button></span>' +
-      '<p class="cc-note">Saved lines become cards at the next scheduled groom (every 2 hours, 07:00 to 21:00).</p></form>';
+      '<p class="cc-note">It goes into Next actions at once; the groom makes its card (every 2 hours, 07:00 to 21:00).</p></form>';
   }
   if (message) html += `<p class="write-msg${/^Not /.test(message) ? ' bad' : ''}">${esc(message)}</p>`;
   return html;
@@ -1126,6 +1169,7 @@ export function walkDetails(walk, title) {
   const a = walk.a || {};
   return {
     title, next: a.next || '', family: a.family || walk.row.family || '?', priority: a.priority || 'P2',
+    via: a.ai ? '' : a.via || guessVia(`${title} ${a.next || ''}`),
     minutes: a.minutes ? Number(a.minutes) : null, due: a.due || '', owner: a.owner || 'leon',
     kind: a.kind === 'project' ? 'project' : 'action', outcome: a.kind === 'project' ? a.outcome || '' : '',
     ai: a.ai || '', handover: a.handover && a.owner && a.owner !== 'leon' ? `Hand ${a.next || 'it'} to ${a.owner}` : '',

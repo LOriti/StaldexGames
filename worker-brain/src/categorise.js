@@ -9,6 +9,8 @@ const FAMILY = /^(?:\?|[A-Z]+(?:-[A-Z]+)?)$/;
 const PRIORITY = /^P[0-3]$/;
 const DATE = /^\d{4}-\d{2}-\d{2}$/;
 const OWNER = /^(?:unknown|[a-z][a-z0-9-]{0,39})$/;
+// The mode of the work, Brain's `via` (D-55 C, D-127 A): how it gets done, so like work groups.
+export const VIAS = ['call', 'email', 'computer', 'errand', 'agenda', 'ai'];
 
 // One line of plain text for a code span or a labelled line: no backticks or pipes.
 function cleanText(raw, max, label, required = false) {
@@ -40,7 +42,9 @@ export function cleanDetails(raw) {
     outcome: cleanText(raw.outcome, 300, 'the outcome'),
     ai: String(raw.ai || ''),
     handover: cleanText(raw.handover, 200, 'the handover'),
+    via: String(raw.via || ''),
   };
+  if (d.via && !VIAS.includes(d.via)) throw new QueueError('invalid-text', `mode must be one of ${VIAS.join(', ')}`);
   if (!['action', 'project'].includes(d.kind)) throw new QueueError('invalid-text', 'kind must be action or project');
   if (d.kind === 'project' && !d.outcome) throw new QueueError('invalid-text', 'a project needs an outcome');
   if (d.ai && !['prepare', 'complete'].includes(d.ai)) throw new QueueError('invalid-text', 'ai must be prepare or complete');
@@ -59,6 +63,6 @@ export function lineAttrs(d, today) {
   return [`categorised: ${today}`, `family: ${d.family}`, d.priority && `priority: ${d.priority}`,
     d.minutes && `minutes: ${d.minutes}`, d.due && `due: ${d.due}`, `owner: ${d.owner}`,
     d.kind === 'project' && 'kind: project', d.outcome && `outcome: ${d.outcome}`, d.ai && `ai: ${d.ai}`,
-    d.handover && `handover: ${d.handover}`, `next: ${d.next}`]
+    d.handover && `handover: ${d.handover}`, d.via && `via: ${d.via}`, `next: ${d.next}`]
     .filter(Boolean).map((a) => `\`${a}\``).join(' ');
 }

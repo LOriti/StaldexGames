@@ -209,6 +209,9 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
 - `POST /api/brain/hand` `{ id[, project] }` → `ai: prepare` on a card (with `project`) or an open
   register item (`web: hand <id>`, Brain D-119 A): Hand to Claude from the task card. Brain's
   morning brief prepares it and writes `Prepared:`, which the card shows as back for review.
+- `POST /api/brain/via` `{ id, via[, project] }` → the mode, `via:` (one of `call`, `email`,
+  `computer`, `errand`, `agenda`, `ai`), on a card (with `project`) or an open register item
+  (`web: via <id> <via>`, Brain D-127 A), from the task card when Brain's guess is wrong.
 - `POST /api/brain/promote` `{ project, line }` → a `## Someday` line comes back under `## Inbox`
   for clarifying (`web: promote someday <slug>`, Brain DEV-61026.35); refused if the Inbox
   already has it.
@@ -217,7 +220,7 @@ hadn't happened. Commit trees never change, so they're cached per isolate (last 
   `someday:` date, is tagged `reference:` for Brain's groom to file, or is removed
   (`web: someday|reference|trash inbox <slug>`).
 - `POST /api/brain/categorise` `{ project, line, details }` or `{ id, details }` → Leon's details
-  (`title`, `next`, `family`, `priority`, `minutes`, `due`, `owner`) kept on an Inbox line as
+  (`title`, `next`, `family`, `priority`, `minutes`, `due`, `owner`, `via`) kept on an Inbox line as
   code spans for Brain's scheduled groom, or set on an open register item, which is confirmed
   if new (a family change keeps the old id as an alias).
 - `POST /api/brain/decide` `{ id, text }` → an open register item of `kind: decision` becomes
