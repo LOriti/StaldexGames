@@ -701,3 +701,8 @@ test('priorities say what they mean, and the mode is guessed, shown and changeab
   home.withLines(lines);
   assert.deepEqual(lines.entries.filter((e) => e.source === 'line').map((e) => e.context), ['calls', 'emails'], 'a line\'s via, else the guess');
 });
+
+test('another mode on an item with Claude asks whether to take it back (Brain D-128 A)', () => {
+  const panel = home.taskPanel('via-ask', entry('A-1', { ai: 'prepare' }));
+  assert.match(panel, /A-1 is with Claude\. Take it out of the Claude lane too\?[\s\S]*data-tk="via-unhand">Yes, I’ll do it[\s\S]*data-tk="via-keep">No, Claude still prepares it[\s\S]*data-tk="cancel"/);
+});

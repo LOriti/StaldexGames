@@ -586,6 +586,14 @@ export function fmtElapsed(clock, now = Date.now()) {
 }
 
 export function taskPanel(kind, entry) {
+  // Another mode on an item handed to Claude (Brain D-128 A): take it back too, or keep
+  // Claude preparing it.
+  if (kind === 'via-ask') {
+    return `<div class="tk-panel"><p>${esc(entry.ref)} is with Claude. Take it out of the Claude lane too?</p>` +
+      '<button type="button" class="mini-btn primary" data-tk="via-unhand">Yes, I’ll do it</button>' +
+      '<button type="button" class="mini-btn" data-tk="via-keep">No, Claude still prepares it</button>' +
+      '<button type="button" class="mini-btn" data-tk="cancel">Cancel</button></div>';
+  }
   if (kind === 'reject') {
     return `<div class="tk-panel"><p>Reject ${esc(entry.ref)}? It is marked rejected in the register and leaves your lists; only a session can bring it back.</p>` +
       '<button type="button" class="mini-btn primary" data-tk="reject">Yes, reject</button><button type="button" class="mini-btn" data-tk="cancel">Cancel</button></div>';
