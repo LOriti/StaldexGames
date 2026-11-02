@@ -272,12 +272,20 @@ else {
   if (!(await page.locator('[data-wk="yes"]').count())) problems.push('an inbox line did not open the question walk');
   await shot('walk-actionable');
   await page.locator('[data-wk="yes"]').click(); await settle();
+  // Step 1 offers the line as the action (Brain D-126 A); "It's several" asks for the outcome.
+  if (!(await page.locator('#wk-next').inputValue())) problems.push('step 1 does not offer the line as the next action');
+  await shot('walk-action-offered');
+  await page.locator('[data-wk-form="action"] button[value="several"]').click(); await settle();
+  if (!(await page.locator('#wk-outcome').count())) problems.push('"It\'s several" did not ask for the outcome');
+  await page.locator('[data-wk-form="action"] button[value="action"]').click(); await settle();
+  if (!(await page.locator('[data-wk="two-no"]').count())) problems.push('"It\'s one action" did not move on');
+  await page.locator('[data-wk="back"]').click(); await settle();
   await page.locator('#wk-next').fill('The report');
-  await page.locator('[data-wk-form="action"] button[type="submit"]').click(); await settle();
+  await page.locator('[data-wk-form="action"] button.primary').click(); await settle();
   if (!(await page.locator('.tk .write-msg.bad').count())) problems.push('an action without a verb was not flagged');
   await page.locator('#wk-next').fill('Write it up');
   await shot('walk-action');
-  await page.locator('[data-wk-form="action"] button[type="submit"]').click(); await settle();
+  await page.locator('[data-wk-form="action"] button.primary').click(); await settle();
   if (!(await page.locator('[data-wk="two-no"]').count())) problems.push('the walk did not reach the two-minute question');
   await page.locator('[data-wk="two-no"]').click(); await settle();
   await page.locator('[data-wk="deleg-person"]').click(); await settle();
@@ -287,11 +295,14 @@ else {
   await page.locator('[data-wk-form="person"] button[type="submit"]').click(); await settle();
   if (!(await page.locator('[data-wk-form="details"]').count())) problems.push('the walk did not reach priority, estimate and date');
   await page.locator('#wk-minutes').selectOption('60');
+  // What each priority means (D-125 A); the mode, pre-set to the guess (D-127 A).
+  if (!(await page.locator('#wk-priority option', { hasText: 'Urgent, today' }).count())) problems.push('priorities do not say what they mean');
+  await page.locator('#wk-via').selectOption('email');
   await shot('walk-details');
   await page.locator('[data-wk-form="details"] button[type="submit"]').click(); await settle();
   const saved = writes.find(([path]) => path === '/api/brain/categorise');
   if (!saved) problems.push('saving the walk wrote nothing');
-  else if (!/"owner":"sam"/.test(saved[1]) || !/"next":"Write it up"/.test(saved[1])) problems.push(`the walk saved the wrong details: ${saved[1]}`);
+  else if (!/"owner":"sam"/.test(saved[1]) || !/"next":"Write it up"/.test(saved[1]) || !/"via":"email"/.test(saved[1])) problems.push(`the walk saved the wrong details: ${saved[1]}`);
 }
 // Adding a line opens the walk at once (Brain D-110 A folded in); Someday parks it.
 await page.goto(`${base}/brain/#focus`); await settle();
@@ -311,7 +322,7 @@ if (await addBox.count()) {
   await page.locator('.cc-inbox-add button[type="submit"]').click(); await settle();
   await page.locator('[data-wk="yes"]').click(); await settle();
   await page.locator('#wk-next').fill('Ring the plumber back');
-  await page.locator('[data-wk-form="action"] button[type="submit"]').click(); await settle();
+  await page.locator('[data-wk-form="action"] button.primary').click(); await settle();
   await page.locator('[data-wk="two-yes"]').click(); await settle();
   if (!(await page.locator('[data-wk-count]').count())) problems.push('the two-minute clock did not start');
   await shot('walk-two-minutes');
@@ -390,6 +401,11 @@ if (await focal.count()) {
   await focal.click(); await settle();
   if (await page.locator('.tk-wrap:not([hidden]) [data-tk="start"]').count()) await shot('task-card');
   else problems.push('tapping the focal item did not open its card, clock not started');
+  // The mode on the card (Brain D-127 A): changing it writes `via:`.
+  if (await page.locator('[data-tk-mode]').count()) {
+    await page.locator('[data-tk-mode]').selectOption('call'); await settle();
+    if (!writes.some(([path, body]) => path === '/api/brain/via' && /"via":"call"/.test(body))) problems.push('changing the mode on a card wrote nothing');
+  } else problems.push('the task card shows no mode');
   // A clock stopped inside its first minute writes nothing (Brain D-114 A).
   const clocks = () => writes.filter(([path]) => path === '/api/brain/clock').length;
   await page.locator('[data-tk="start"]').click(); await settle();

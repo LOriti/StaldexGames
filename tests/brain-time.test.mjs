@@ -319,6 +319,17 @@ test('Confirm all and Close all are one commit each, refused with the ids that c
   }
 });
 
+test('the mode of a card or an item is set from its task card (Brain D-127 A)', async () => {
+  const card = queue.viaCard(QUEUE, 'DEV-01010.01', 'call', '2030-02-01');
+  assert.match(card, /`id: DEV-01010\.01` `priority: P1` `via: call`\n/);
+  assert.match(queue.viaCard(card, 'DEV-01010.01', 'email', '2030-02-01'), /`priority: P1` `via: email`\n/, 'replaces, never doubles');
+  assert.match(register.viaItem(REGISTER, 'DEV-01012.02', 'errand', '2030-02-01'), /`id: DEV-01012\.02` `kind: action` `state: open` `close-proposed: 2030-01-14` `via: errand`\n/);
+  const res = await post('/api/brain/via', { project: 'demo', id: 'DEV-01010.01', via: 'call' });
+  assert.equal(res.status, 200);
+  assert.equal(files['projects/demo/QUEUE.md'].puts.at(-1).message, 'web: via DEV-01010.01 call');
+  assert.equal((await post('/api/brain/via', { project: 'demo', id: 'DEV-01010.01', via: 'fax' })).status, 400);
+});
+
 test('categorise: details are checked, then land on an Inbox line or a register item', async () => {
   assert.throws(() => categorise.cleanDetails({ next: 'x', family: 'work' }), /family/);
   // The question walk's extra details (Brain D-105 C, D-108 A).
@@ -327,6 +338,9 @@ test('categorise: details are checked, then land on an Inbox line or a register 
   const project = categorise.cleanDetails({ next: 'Ring the broker', family: 'DEV', kind: 'project', outcome: 'Cover is renewed', ai: 'prepare', handover: 'Brief Sam on Monday', owner: 'sam' });
   assert.equal(categorise.lineAttrs(project, '2030-02-01'),
     '`categorised: 2030-02-01` `family: DEV` `owner: sam` `kind: project` `outcome: Cover is renewed` `ai: prepare` `handover: Brief Sam on Monday` `next: Ring the broker`');
+  // The mode (Brain D-127 A): one of Brain's `via` values, kept on the line for the groom.
+  assert.throws(() => categorise.cleanDetails({ next: 'x', family: 'DEV', via: 'fax' }), /mode/);
+  assert.match(categorise.lineAttrs(categorise.cleanDetails({ next: 'Ring Jo', family: 'DEV', via: 'call' }), '2030-02-01'), /`via: call` `next: Ring Jo`$/);
   assert.throws(() => categorise.cleanDetails({ next: 'x', family: 'WORK-SYS', minutes: 45 }), /half hours/);
   assert.throws(() => categorise.cleanDetails({ family: 'WORK-SYS' }), /next step/);
   const d = categorise.cleanDetails({ title: 'Ask `Bob`', next: 'Ring | him', family: 'DEV', priority: 'P2', minutes: '60', owner: 'Leon' });

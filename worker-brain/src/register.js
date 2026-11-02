@@ -279,6 +279,11 @@ export function handItem(text, id, today) {
   });
 }
 
+// Sets an open item's mode, `via:` (Brain D-127 A).
+export function viaItem(text, id, via, today) {
+  return edit(text, id, today, ({ line }) => line((l) => setOrAddAttr(l, 'via', via)));
+}
+
 const NOTE_MAX = 500;
 function cleanNote(raw) {
   if (typeof raw !== 'string') throw new QueueError('invalid-text', 'text is required');

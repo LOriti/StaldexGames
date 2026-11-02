@@ -556,7 +556,7 @@ test('inbox lines and new items open the categorisation card', () => {
   const html = home.inboxHtml(view, 'work');
   assert.match(html, /data-cc-line="Buy milk" data-cc-project="alpha"/);
   assert.doesNotMatch(html, /data-cc-sort="A-2"/, 'a new item is settled from its row on the Inbox tab, not a form');
-  assert.match(html, /categorised · becomes a card/);
+  assert.match(html, /categorised · in Next actions/);
   const fams = home.parseFamilies('| Family | Covers |\n|---|---|\n| WORK-SYS | Systems |\n| `?` | Awaiting |');
   assert.deepEqual(fams.map((f) => f.code), ['WORK-SYS', '?']);
   const card = home.categoriseHtml({ kind: 'line', text: 'Buy <milk>', details: {}, family: 'WORK-SYS', home: 'project:alpha' }, { families: fams });
@@ -646,7 +646,13 @@ test('the Inbox tab walks a raw line through the GTD questions (Brain DEV-61026.
   assert.match(home.actionCheck('Think about the quote').note, /“think about” is not an action/);
   const action = home.walkHtml({ ...walk, step: 'action', a: { next: 'Look into it' } });
   assert.match(action, /data-wk-form="action"[\s\S]*name="next"[\s\S]*“look into” is not an action/);
-  assert.match(action, /name="kind" value="project"/);
+  // Step 1 offers the line itself as the action: one tap when it is (Brain D-126 A).
+  const offered = home.walkHtml({ ...walk, step: 'action', a: {} });
+  assert.match(offered, /Is this the next physical action\?[\s\S]*name="next"[^>]*value="Insurance &lt;renewal&gt;"/);
+  assert.match(offered, /name="kind" value="action">Yes, one action ›<\/button><button type="submit" class="mini-btn" name="kind" value="several" formnovalidate>It’s several \(a project\)/);
+  assert.doesNotMatch(offered, /type="radio"|name="outcome"/, 'no radio grid; the outcome only for a project');
+  const project = home.walkHtml({ ...walk, step: 'action', a: { next: 'Ring Sam', kind: 'project' } });
+  assert.match(project, /The first action[\s\S]*name="outcome"[^>]*required[\s\S]*name="kind" value="project">Next ›[\s\S]*value="action" formnovalidate>It’s one action/);
   // (2) Two minutes: the countdown and the record.
   const now = Date.parse('2030-01-06T09:00:00+08:00');
   const doing = home.walkHtml({ ...walk, step: 'doing', a: { next: 'Ring Sam' }, startedMs: now - 30_000 }, { now });
@@ -662,10 +668,36 @@ test('the Inbox tab walks a raw line through the GTD questions (Brain DEV-61026.
   const details = home.walkHtml({ ...walk, step: 'details', a: { next: 'Ring Sam', owner: 'sam' } }, { families: [{ code: 'PA-FIN', covers: 'Finance' }] });
   assert.match(details, /sam owns it/);
   assert.match(details, /<option value="PA-FIN" selected>/);
-  assert.match(details, /name="priority"[\s\S]*name="minutes"[\s\S]*name="due" type="date"/);
+  assert.match(details, /name="priority"[\s\S]*name="minutes"[\s\S]*name="via"[\s\S]*name="due" type="date"/);
+  // What each priority means (D-125 A) and the mode, pre-set to Brain's guess (D-127 A).
+  assert.match(details, /<option value="P0">P0 · Urgent, today<\/option><option value="P1">P1 · High, this week<\/option><option value="P2" selected>P2 · Normal, when it fits<\/option><option value="P3">P3 · Low, if time allows<\/option>/);
+  assert.match(details, /<option value="call" selected>Call<\/option>/);
+  assert.doesNotMatch(details, /<option value="ai"/, 'Claude is the delegate step, not a mode to pick here');
   const saved = home.walkDetails({ row, a: { next: 'Ring Sam', kind: 'project', outcome: 'Cover renewed', owner: 'sam', due: '2030-02-01', handover: true, priority: 'P1', minutes: '60', family: 'PA-FIN' } }, row.text);
   assert.deepEqual(saved, { title: 'Insurance <renewal>', next: 'Ring Sam', family: 'PA-FIN', priority: 'P1', minutes: 60, due: '2030-02-01', owner: 'sam',
-    kind: 'project', outcome: 'Cover renewed', ai: '', handover: 'Hand Ring Sam to sam' });
+    kind: 'project', outcome: 'Cover renewed', ai: '', handover: 'Hand Ring Sam to sam', via: 'call' });
+  assert.equal(home.walkDetails({ row, a: { next: 'Ring Sam', via: 'email' } }, row.text).via, 'email', 'Leon\'s pick wins over the guess');
+  assert.equal(home.walkDetails({ row, a: { next: 'Ring Sam', ai: 'prepare' } }, row.text).via, '', 'a hand-over to Claude needs no mode');
   assert.equal(home.walkDetails({ row, a: { next: 'Ring Sam', ai: 'prepare' } }, row.text).ai, 'prepare');
   assert.equal(home.walkDetails({ row, a: { next: 'Ring Sam', kind: 'action', outcome: 'ignored' } }, row.text).outcome, '');
+});
+
+test('priorities say what they mean, and the mode is guessed, shown and changeable (Brain D-125 A, D-127 A)', () => {
+  assert.equal(home.priorityText('P1'), 'P1 · High');
+  assert.equal(home.priorityText('P3', true), 'P3 · Low, if time allows');
+  assert.equal(home.priorityText(''), '');
+  assert.deepEqual(['Call number', 'Reply to Jo', 'Buy milk', 'Ask Sam at the site meeting', 'Write the paper'].map(home.guessVia), ['call', 'email', 'errand', 'agenda', 'computer']);
+  const card = entry('ALPHA-60101.30', { source: 'card', context: 'emails', priority: 'P0' });
+  const html = home.taskHtml(card);
+  assert.match(html, /<dt>Priority<\/dt><dd>P0 · Urgent, today<\/dd>/);
+  assert.match(html, /<select id="tk-mode" class="tk-mode" data-tk-mode="1">[\s\S]*<option value="email" selected>Email<\/option>/);
+  assert.match(home.taskHtml(entry('D-4', { context: 'agendas' })), /<dt>Mode<\/dt><dd>Agenda<\/dd>/, 'a decision shows its mode, not a picker');
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, card] }));
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week' }), /ALPHA-60101\.30 · project:alpha · P0 · Urgent/);
+  const lines = JSON.parse(JSON.stringify({ ...VIEW, inbox: [
+    { kind: 'line', text: 'Book the inspection', raw: 'x', details: { categorised: '2030-01-01', via: 'call' }, home: 'project:alpha', lens: 'work' },
+    { kind: 'line', text: 'Reply to Jo', raw: 'y', details: { categorised: '2030-01-01' }, home: 'project:alpha', lens: 'work' },
+  ] }));
+  home.withLines(lines);
+  assert.deepEqual(lines.entries.filter((e) => e.source === 'line').map((e) => e.context), ['calls', 'emails'], 'a line\'s via, else the guess');
 });

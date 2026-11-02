@@ -6,8 +6,8 @@ import {
   VIEW_PATH, LENSES, openingLens, homeHtml, perthDay, openClock, taskHtml, taskPanel, clockBarHtml, projectOf,
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
-  TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists,
-} from './home.js?v=20261102a';
+  TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists, MODES, contextOfVia,
+} from './home.js?v=20261103a';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -1314,15 +1314,23 @@ modal.addEventListener('click', async (e) => {
 });
 
 // "Several" reveals the Outcome field.
-modal.addEventListener('change', (e) => {
-  const w = task.walk;
-  if (w && e.target.matches('input[name="kind"]')) {
-    w.a.next = modal.querySelector('#wk-next')?.value ?? w.a.next;
-    w.a.outcome = modal.querySelector('#wk-outcome')?.value ?? w.a.outcome;
-    w.a.kind = e.target.value;
-    renderTask();
-    if (w.a.kind === 'project') modal.querySelector('#wk-outcome')?.focus();
+modal.addEventListener('change', async (e) => {
+  // The mode on a task card (Brain D-127 A): one `web: via` commit; the doors follow at once.
+  const mode = e.target.closest('[data-tk-mode]');
+  const entry = mode && task.ref && !task.walk ? entryFor(task.ref) : null;
+  if (!entry) return;
+  const via = mode.value;
+  mode.disabled = true;
+  try {
+    const card = closeKind(entry) === 'card';
+    await write('/via', { id: entry.ref, via, ...(card ? { project: projectOf(entry) } : {}) });
+    entry.context = contextOfVia(via);
+    task.message = `Mode set to ${(MODES.find((m) => m[0] === via) || [])[1] || via}.`;
+  } catch (err) {
+    task.message = writeError(err);
   }
+  renderTask();
+  refreshAll();
 });
 
 modal.addEventListener('submit', async (e) => {
@@ -1333,9 +1341,13 @@ modal.addEventListener('submit', async (e) => {
     const f = wform.elements;
     const go = (step) => { w.history.push(w.step); w.step = step; w.asking = null; task.message = ''; renderTask(); };
     if (wform.dataset.wkForm === 'action') {
+      // Step 1 (Brain D-126 A): "Yes, one action", or "It's several" asks for the outcome.
+      const pick = e.submitter?.value || 'action';
       w.a.next = f.next.value.trim();
-      w.a.kind = f.kind.value;
-      w.a.outcome = f.outcome.value.trim();
+      w.a.outcome = f.outcome ? f.outcome.value.trim() : (w.a.outcome || '');
+      if (pick === 'several') { w.a.kind = 'project'; task.message = ''; renderTask(); modal.querySelector('#wk-outcome')?.focus(); return; }
+      w.a.kind = pick === 'project' ? 'project' : 'action';
+      if (w.a.kind === 'action') w.a.outcome = '';
       const check = actionCheck(w.a.next);
       if (!check.ok) { task.message = ''; renderTask(); modal.querySelector('#wk-next')?.focus(); return; } // the form shows the note
       if (w.a.kind === 'project' && !w.a.outcome) { task.message = 'Not yet: a project needs an outcome.'; return renderTask(); }
@@ -1363,7 +1375,7 @@ modal.addEventListener('submit', async (e) => {
       }
     }
     // details: save for the groom
-    Object.assign(w.a, { family: f.family.value, priority: f.priority.value, minutes: f.minutes.value, due: f.due.value });
+    Object.assign(w.a, { family: f.family.value, priority: f.priority.value, minutes: f.minutes.value, due: f.due.value, via: f.via ? f.via.value : '' });
     const details = walkDetails(w, w.row.text);
     try {
       await write('/categorise', { ...lineBody(w.row), details });

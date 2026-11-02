@@ -134,6 +134,19 @@ export function handCard(text, id, today) {
   return q.lines.join('');
 }
 
+// Sets a card's mode, `via:` (Brain D-127 A), replacing any it had.
+export function viaCard(text, id, via, today) {
+  const q = parse(text);
+  const token = ID_TOKEN(id);
+  const { start, end } = findCard(q, id);
+  const at = q.lines.findIndex((l, i) => i > start && i < end && token.test(content(l)));
+  const line = content(q.lines[at]);
+  const next = /`via:[^`]*`/.test(line) ? line.replace(/`via:[^`]*`/, `\`via: ${via}\``) : `${line} \`via: ${via}\``;
+  q.lines[at] = next + q.lines[at].slice(line.length);
+  bumpUpdated(q, today);
+  return q.lines.join('');
+}
+
 // Moves the groomed card with this id under `## Done` with a `done:` stamp.
 export function markDone(text, id, today) {
   const q = parse(text);

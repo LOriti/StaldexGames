@@ -33,6 +33,7 @@
 //   POST /api/brain/trash   { project, line } → { path, sha, commit }   the line is removed
 //   POST /api/brain/promote { project, line } → { path, sha, commit }   a Someday line back to the Inbox
 //   POST /api/brain/hand    { id[, project] } → { path, sha, commit }   `ai: prepare` on a card or item (Hand to Claude)
+//   POST /api/brain/via     { id, via[, project] } → { path, sha, commit }   `via:` (the mode) on a card or item (Brain D-127 A)
 //   POST /api/brain/progress { id, text[, project] } → { path, sha, commit }   project: a card's
 //   POST /api/brain/close   { id, text }    → { path, sha, commit }   register items only
 //   POST /api/brain/decide  { id, text }    → { path, sha, commit }   register decisions only
@@ -44,9 +45,9 @@
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
-import { QueueError, addInbox, cardProgress, categoriseLine, handCard, handledLine, markDone, perthDate, promoteLine, referenceLine, somedayLine } from './queue.js';
-import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, handItem, itemProgress, rejectFlag, settleAll } from './register.js';
-import { cleanDetails, lineAttrs } from './categorise.js';
+import { QueueError, addInbox, cardProgress, categoriseLine, handCard, handledLine, markDone, perthDate, promoteLine, referenceLine, somedayLine, viaCard } from './queue.js';
+import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, handItem, itemProgress, rejectFlag, settleAll, viaItem } from './register.js';
+import { VIAS, cleanDetails, lineAttrs } from './categorise.js';
 import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock, placeRows } from './timelog.js';
 
 const TREE_TTL_MS = 30 * 1000;
@@ -255,6 +256,14 @@ const WRITES = {
     valid: (body) => (body.project !== undefined ? isCardId(body.id, body.project) : isRegisterItem(body)),
     apply: (text, body, today) => (body.project !== undefined ? handCard : handItem)(text, body.id, today),
     message: (body) => `web: hand ${body.id}`,
+  },
+  // The mode of a card (with `project`) or an open item, `via:` (Brain D-127 A), set from
+  // its task card when Brain's guess from the wording is wrong.
+  '/api/brain/via': {
+    path: (body) => (body.project !== undefined ? queuePath(body) : REGISTER_PATH),
+    valid: (body) => VIAS.includes(body.via) && (body.project !== undefined ? isCardId(body.id, body.project) : isRegisterItem(body)),
+    apply: (text, body, today) => (body.project !== undefined ? viaCard : viaItem)(text, body.id, body.via, today),
+    message: (body) => `web: via ${body.id} ${body.via}`,
   },
   // Close an open item with Leon's Evidence; a card closes through /done.
   '/api/brain/close': {

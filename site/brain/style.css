@@ -445,6 +445,7 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .tk-sort input, .tk-sort select { font: inherit; font-size: 14px; color: var(--ink); background: var(--paper); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; min-width: 0; width: 100%; }
 .tk-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(130px, 1fr)); gap: 8px; }
 .tk-grid span { display: grid; gap: 4px; }
+.tk-grid .tk-wide { grid-column: 1 / -1; }
 .cc-chip.ok { background: var(--accent-soft); color: var(--accent); }
 .cc-chip.flag { background: var(--warn-soft); color: var(--warn); font-weight: 600; }
 .cc-item { border-top: 1px solid var(--line); }
@@ -494,3 +495,4 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .tk-choice span { font-size: 13px; color: var(--muted); }
 .tk-choice.primary { border-color: var(--accent); background: var(--accent-soft); }
 .tk-choice.primary b { color: var(--accent); }
+.tk-facts select.tk-mode { font: inherit; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--sheet); color: var(--ink); }
