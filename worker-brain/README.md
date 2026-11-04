@@ -104,6 +104,12 @@ Neither is a secret (they identify the Access app, they don't grant entry). Comm
      never go in this public file, and dashboard secrets survive Git deploys anyway.
    - The runtime list should then show `ACCESS_AUD`, `ACCESS_TEAM_DOMAIN`, `BRAIN_REF`,
      `BRAIN_REPO` (from `wrangler.toml`) and `GITHUB_TOKEN` (Secret).
+   - **Hand to Claude** also starts the item's Claude session: after its `web: hand` commit
+     the Worker POSTs the item id to the "Brain hand-over" scheduled task's API trigger.
+     Add two runtime **Secrets**: `BRAIN_HANDOVER_URL` (the task's Fire URL, an
+     `https://api.anthropic.com/v1/claude_code/routines/trig_…/fire` address; any other URL
+     is refused) and `BRAIN_HANDOVER_TOKEN` (its token). Without them the hand-over still
+     saves and the next brief prepares it. Rotate the token on the task's page, then here.
    - **Renewal:** on GitHub open the token → *Regenerate token* (same repo and
      permissions), then on the runtime `GITHUB_TOKEN` row → *Rotate* → paste.
 3. Optional second gate: add a plain variable `ALLOWED_EMAILS` (comma-separated). Keep it
