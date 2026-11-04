@@ -519,3 +519,18 @@ body:has(.tk-wrap:not([hidden])) .cc-fab { display: none; }
   background: var(--ink); color: var(--sheet); padding: 12px 16px; border-radius: 10px; font-size: 15px; line-height: 1.4;
   box-shadow: 0 6px 24px rgba(0, 0, 0, .18); }
 .toast a { color: var(--sheet); font-weight: 600; text-decoration: underline; margin-left: 6px; }
+
+/* Usability pass (Brain DEV-61105.03): title first, a quieter facts line, one head row, Search in the bar. */
+.cc-t { font-weight: 500; line-height: 1.35; }
+.cc-m .cc-id { font-size: 11px; }
+.shell.home-mode .bar a[href="#focus"] { display: none; }
+.cc-head { gap: 8px; }
+.cc-tabs { flex-wrap: wrap; }
+.cc-tidy { border: 1px dashed var(--line); border-radius: 10px; padding: 8px 12px; }
+.cc-tidy summary { cursor: pointer; font: 600 13px/1.4 var(--sans); color: var(--muted); }
+.cc-tidy summary em { font-style: normal; color: var(--faint); }
+.cc-tidy summary .cc-note { font-weight: 400; margin-left: 6px; }
+.cc-tidy[open] summary { margin-bottom: 10px; }
+.cc-tidy .cc-inbox { margin-top: 8px; }
+.cc-tabs a { padding: 7px 9px; font-size: 13.5px; }
+.cc-n { font-size: 11.5px; padding: 0 5px; }
