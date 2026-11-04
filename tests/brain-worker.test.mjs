@@ -407,3 +407,12 @@ test('Hand to Claude fires the hand-over task and returns the session link (Brai
   await post('/api/brain/progress', { id: 'P-DEV-01014.01', progress: 'moved' }, { token, env });
   assert.equal(fires.length, 0);
 });
+
+test('the session link is built from the id when the answer gives no app link', async () => {
+  const { sessionLink } = worker;
+  assert.equal(sessionLink({ claude_code_session_url: 'https://claude.ai/code/session_01A' }), 'https://claude.ai/code/session_01A');
+  assert.equal(sessionLink({ claude_code_session_id: 'cse_018Cnp2HcJUjv4MJUga4gorU' }), 'https://claude.ai/code/session_018Cnp2HcJUjv4MJUga4gorU');
+  assert.equal(sessionLink({ claude_code_session_url: 'https://claude.ai/code/cse_01B' }), 'https://claude.ai/code/session_01B');
+  assert.equal(sessionLink({ claude_code_session_url: 'https://evil.example/x', claude_code_session_id: 'nope' }), null);
+  assert.equal(sessionLink(null), null);
+});
