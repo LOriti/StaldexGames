@@ -249,6 +249,21 @@ export function latestFocal(rows, today) {
   return picks.length ? { ref: picks[picks.length - 1].ref || '' } : null;
 }
 
+// The Claude session each handed item got (Brain D-132 C): its latest `session` row's link.
+export function sessionsFrom(rows) {
+  const out = {};
+  for (const r of rows || []) if (r.kind === 'session' && /^https:\/\/claude\.ai\/code\/session_[A-Za-z0-9]+$/.test(r.note || '')) out[r.ref] = { link: r.note, date: r.date };
+  return out;
+}
+
+// Puts a session link from the log on a handed item whose `Prepared:` does not carry one yet.
+export function withSession(entry, sessions) {
+  const s = sessions && sessions[entry.ref];
+  if (!s || !['prepare', 'complete'].includes(entry.ai) || /\bsession https:/.test(entry.prepared || '')) return entry;
+  const runup = /\brun-up ([A-Za-z0-9_./-]+\.md)/.exec(entry.prepared || '');
+  return { ...entry, prepared: `${s.date}, session ${s.link}${runup ? `, run-up ${runup[1]}` : ''}`, claude: 'back' };
+}
+
 // Working hours open on Work, the rest on Personal (Brain D-53 A).
 export function defaultLens(hours, date = new Date()) {
   return workingHours(hours, date) ? 'work' : 'personal';

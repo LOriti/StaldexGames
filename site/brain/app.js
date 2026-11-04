@@ -7,7 +7,8 @@ import {
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists, MODES, contextOfVia,
-} from './home.js?v=20261105a';
+  sessionsFrom, withSession,
+} from './home.js?v=20261105b';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -885,6 +886,8 @@ function renderClock() {
 }
 
 function refreshAll() {
+  // Session links from the daily log (Brain D-132 C), live, ahead of Brain's re-render.
+  if (home.view && home.sessions) home.view.entries = home.view.entries.map((e) => withSession(e, home.sessions));
   renderTask();
   renderClock();
   if (home.view && homeTab()) renderHome();
@@ -1002,6 +1005,7 @@ async function loadTime() {
     home.time = { rows: body.rows, monday };
     home.focal = latestFocal(body.rows, today);
     home.places = placements(body.rows, today);
+    home.sessions = sessionsFrom(body.rows);
     // A clock from a bygone day is not still running: only recent rows decide.
     const open = openClock(body.rows.filter((r) => r.date >= monday));
     if (open && !(clock && clock.ref === open.ref && clock.start === open.start) && (!clock || clock.written)) {
@@ -1238,7 +1242,7 @@ modal.addEventListener('click', async (e) => {
       entry.ai = 'prepare'; entry.claude = entry.prepared ? 'back' : 'ready'; entry.context = 'claude';
       // The Worker started the item's own session (Brain D-132 C); it writes the same link
       // onto the item, so this local copy only bridges the gap until Brain re-renders.
-      if (fired.session) { entry.prepared = `${new Date().toISOString().slice(0, 10)}, session ${fired.session}`; entry.claude = 'back'; }
+      if (fired.session) home.sessions = { ...(home.sessions || {}), [entry.ref]: { link: fired.session, date: perthDay().today } };
       for (const slot of Object.values(home.view.lenses)) {
         const inLens = view_lens(slot) === 'all' || entry.lens === view_lens(slot);
         if (inLens && !slot.claude.includes(entry.ref)) { slot.claude.push(entry.ref); slot.claude_total += 1; }
