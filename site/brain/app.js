@@ -7,8 +7,8 @@ import {
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists, MODES, contextOfVia,
-  searchResultsHtml, captureHtml, defaultProject, sessionsFrom, withSession,
-} from './home.js?v=20261105d';
+  searchResultsHtml, captureHtml, defaultProject, sessionsFrom, withSession, openingSub, lineActsHtml, QUICK_EVIDENCE,
+} from './home.js?v=20261105e';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -33,7 +33,7 @@ const state = {
 // says this page's copy of the view carries writes Brain has not rendered yet.
 // `places` are the Next actions placements from the daily log (D-109 A), `sub` the sub-tab
 // shown, `lensOpen` whether the lens chooser is open, `q` the search (Brain DEV-61103.05).
-const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false, focal: null, dirty: false, places: null, sub: 'all', lensOpen: false, q: '' };
+const home = { view: null, sha: null, lens: null, filter: null, time: null, inboxAll: false, focal: null, dirty: false, places: null, sub: null, lensOpen: false, q: '', floatAll: false };
 
 // The placements as this page shows them: categorised Inbox lines joined to the entries, and
 // a groomed card's `L-` alias mapped to its id (Brain D-122 A).
@@ -45,9 +45,9 @@ function placesNow() {
 
 function homeTab() {
   if (familyCode()) return 'family';
-  const match = /^#(?:\/)?(focus|inbox|next|priority|clarify|allocation|someday|search)?$/.exec(location.hash || '#');
+  const match = /^#(?:\/)?(focus|inbox|next|priority|clarify|allocation|someday|search|capture)?(?:\?.*)?$/.exec(location.hash || '#');
   if (!match) return null;
-  return { clarify: 'inbox', priority: 'next' }[match[1]] || match[1] || 'focus';
+  return { clarify: 'inbox', priority: 'next', capture: 'focus' }[match[1]] || match[1] || 'focus';
 }
 
 // The lens last used, kept across days (Brain D-116 A); working hours still open on Work.
@@ -354,9 +354,11 @@ function showError(err) {
 
 // ---- routing & chrome --------------------------------------------------------
 
-function route() {
+async function route() {
+  const shared = sharedText(); // `#capture?text=…` or the share target's query (DEV-61105.04)
   const tab = homeTab();
-  return tab ? showHome(tab) : show(currentPath());
+  await (tab ? showHome(tab) : show(currentPath()));
+  if (shared !== null) openCapture(shared);
 }
 
 async function showHome(tab) {
@@ -394,9 +396,11 @@ function renderHome(tab = homeTab() || 'focus') {
   }) : '';
   const asOf = `${home.view.date}${when ? `, last change ${when}` : ''}`;
   const places = placesNow();
+  // Next actions opens on Today, else Next, else Floating (DEV-61105.04) until Leon picks a list.
+  if (tab === 'next' && !home.sub) home.sub = openingSub(home.view, home.lens, places);
   els.doc.innerHTML = homeHtml(home.view, {
     lens: home.lens, tab, filter: home.filter, asOf, time: home.time, clock, projects: projectSlugs(), inboxAll: home.inboxAll,
-    today: perthDay().today, focal: home.focal, places, sub: home.sub, lensOpen: home.lensOpen, family: familyCode(), q: home.q,
+    today: perthDay().today, focal: home.focal, places, sub: home.sub || 'all', lensOpen: home.lensOpen, family: familyCode(), q: home.q, floatAll: home.floatAll,
   });
   stashView();
   // The search page is for typing: the box takes focus, caret at the end of what was typed.
@@ -447,13 +451,14 @@ els.doc.addEventListener('click', (e) => {
     }
     return;
   }
-  const el = e.target.closest('[data-cc-lens], [data-cc-lens-open], [data-cc-sub], [data-cc-context], [data-cc-area], [data-cc-clear], [data-cc-inbox-all]');
+  const el = e.target.closest('[data-cc-lens], [data-cc-lens-open], [data-cc-sub], [data-cc-context], [data-cc-area], [data-cc-clear], [data-cc-inbox-all], [data-cc-float-all]');
   if (!el || !home.view) return;
   const d = el.dataset;
   if (d.ccInboxAll) { home.inboxAll = true; return renderHome(); }
   if (d.ccLensOpen) { home.lensOpen = !home.lensOpen; return renderHome(); }
-  if (d.ccLens) { home.lens = d.ccLens; home.filter = null; home.lensOpen = false; storeLens(d.ccLens); return renderHome(); }
+  if (d.ccLens) { home.lens = d.ccLens; home.filter = null; home.lensOpen = false; home.sub = null; storeLens(d.ccLens); return renderHome(); }
   if (d.ccSub) { home.sub = SUBS.includes(d.ccSub) ? d.ccSub : 'all'; return renderHome(); }
+  if (d.ccFloatAll) { home.floatAll = true; return renderHome(); }
   if (d.ccClear) { home.filter = null; return renderHome(); }
   home.filter = d.ccContext ? { type: 'context', value: d.ccContext } : { type: 'area', value: d.ccArea };
   home.sub = 'week';
@@ -593,11 +598,42 @@ els.doc.addEventListener('drop', async (e) => {
   return moveTo(moved, to, at < 0 ? undefined : at);
 });
 
-els.doc.addEventListener('click', (e) => {
+// Which list an item sits in now: today, next, later (Next week) or week (Floating).
+function whereOf(ref) {
+  if (!home.places) return null;
+  const lists = placedLists();
+  return ['today', 'next', 'later'].find((k) => lists[k].includes(ref)) || 'week';
+}
+
+// The moves are on the task card (DEV-61105.04); a categorised line keeps them on its row.
+function onPlaceClick(e) {
   const btn = e.target.closest('[data-cc-place]');
   if (!btn || !home.view) return;
   e.preventDefault();
   placeAct(btn.dataset.ccPlace, btn.dataset.ref, btn);
+}
+els.doc.addEventListener('click', onPlaceClick);
+
+// Someday and Trash on a stale Inbox row (DEV-61105.04): the same writes as the walk's.
+els.doc.addEventListener('click', async (e) => {
+  const btn = e.target.closest('[data-cc-line-act]');
+  if (!btn || !home.view) return;
+  e.preventDefault();
+  const { ccLineAct: act, ccLine: line, ccProject: project } = btn.dataset;
+  const box = btn.closest('[data-cc-line-acts]');
+  if (act === 'trash-ask' || act === 'cancel') { box.innerHTML = lineActsHtml(line, project, act === 'trash-ask' ? 'trash' : null); return; }
+  const row = (home.view.inbox || []).find((r) => r.kind === 'line' && (r.raw || r.text) === line && r.home === `project:${project}`);
+  if (!row) return;
+  for (const b of box.querySelectorAll('button')) b.disabled = true;
+  try {
+    await write(`/${act}`, lineBody(row));
+    dropLine(row);
+    home.dirty = true;
+    note(act === 'someday' ? 'Parked in Someday.' : 'Trashed.');
+  } catch (err) {
+    note(writeError(err), true);
+  }
+  refreshAll();
 });
 
 // A Someday line promoted back into the Inbox for clarifying (Brain DEV-61026.35).
@@ -873,12 +909,25 @@ fab.innerHTML = '<span aria-hidden="true">+</span> Capture';
 fab.hidden = true; // until Brain has loaded
 document.body.append(modal, bar, fab);
 
-function openCapture() {
+function openCapture(text = '') {
   if (!state.tree) return;
-  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: null, back: null, walk: null, capture: { message: '' } });
+  Object.assign(task, { ref: null, panel: '', message: '', reward: null, sort: null, back: null, walk: null, capture: { message: '', text } });
   refreshAll();
 }
-fab.addEventListener('click', openCapture);
+
+// Shared into Brain (DEV-61105.04): `#capture?text=…` from the home-screen shortcut, or the
+// share target's `?title=…&text=…&url=…`. The card opens prefilled; the address is cleaned.
+function sharedText() {
+  const hash = /^#capture(?:\?(.*))?$/.exec(location.hash || '');
+  const query = new URLSearchParams(hash ? hash[1] || '' : location.search);
+  if (!hash && !location.search) return null;
+  const text = [query.get('title'), query.get('text'), query.get('url')].filter(Boolean).join(' ').trim();
+  if (!hash && !text) return null;
+  history.replaceState(null, '', `${location.pathname}#focus`);
+  return text;
+}
+fab.addEventListener('click', () => openCapture());
+modal.addEventListener('click', onPlaceClick);
 
 function projectSlugs() {
   return state.tree ? state.tree.files.map((f) => f.path.match(QUEUE_PATH)?.[1]).filter(Boolean).sort() : [];
@@ -890,7 +939,7 @@ function renderTask() {
   if (task.capture) {
     const projects = projectSlugs();
     const picked = home.view ? defaultProject(home.view, home.lens || 'all', projects) : projects[0];
-    modal.querySelector('.tk').innerHTML = captureHtml(projects, picked, { message: task.capture.message });
+    modal.querySelector('.tk').innerHTML = captureHtml(projects, picked, { message: task.capture.message, text: task.capture.text || '' });
     modal.hidden = false;
     if (!task.capture.message) modal.querySelector('#tk-cap-text')?.focus();
     return;
@@ -913,7 +962,7 @@ function renderTask() {
   const entry = task.ref && entryFor(task.ref);
   if (!entry) { modal.hidden = true; task.ref = null; return; }
   const panel = task.panel ? taskPanel(task.panel, entry) : '';
-  modal.querySelector('.tk').innerHTML = taskHtml(entry, { clock, panel, message: task.message, focal: currentFocal(), paths: state.paths });
+  modal.querySelector('.tk').innerHTML = taskHtml(entry, { clock, panel, message: task.message, focal: currentFocal(), paths: state.paths, where: whereOf(entry.ref) });
   // While the card asks about the Claude lane (D-128 A), the picker shows the pending mode.
   if (task.via && modal.querySelector('[data-tk-mode]')) modal.querySelector('[data-tk-mode]').value = task.via;
   modal.hidden = false;
@@ -1298,6 +1347,18 @@ modal.addEventListener('click', async (e) => {
     return refreshAll();
   }
   if (act === 'focal-set' || act === 'focal-clear') { await setFocal(entry, act === 'focal-clear'); return; }
+  if (act === 'close-quick') { // Done in one tap, evidence "marked done on the phone" (Brain D-133 B)
+    for (const b of modal.querySelectorAll('button')) b.disabled = true;
+    const ran = await stopIfMine(entry);
+    if (ran === null) return;
+    try {
+      await write('/close', { id: entry.ref, text: QUICK_EVIDENCE });
+      return celebrate(entry, ran);
+    } catch (err) {
+      task.message = writeError(err);
+      return renderTask();
+    }
+  }
   if (act === 'cancel') { task.panel = ''; task.via = null; return renderTask(); }
   if ((act === 'via-unhand' || act === 'via-keep') && task.via) return setMode(entry, task.via, act === 'via-unhand');
   if (act === 'confirm-close' || act === 'reject-close') {
@@ -1650,8 +1711,32 @@ els.doc.addEventListener('submit', async (e) => {
 });
 
 // `commit` (after a write) loads that exact commit; otherwise the branch head.
+// The last tree and view are kept on the phone (DEV-61105.04), so the home draws at once on
+// the next open and the fetch replaces it a moment later. Nothing private leaves the device.
+const LAST = 'brain.last';
+function keepLast() {
+  if (!state.tree || !home.view || home.dirty) return;
+  try { localStorage.setItem(LAST, JSON.stringify({ tree: state.tree, sha: home.sha, view: home.view })); } catch { /* storage full or off */ }
+}
+function paintLast() {
+  if (!homeTab() || state.tree) return;
+  try {
+    const last = JSON.parse(localStorage.getItem(LAST) || 'null');
+    if (!last || !last.tree || !last.view) return;
+    state.tree = last.tree;
+    state.paths = new Set(state.tree.files.map((f) => f.path));
+    home.view = refreshDue(last.view, perthDay().today);
+    home.sha = last.sha;
+    home.lens = home.lens || openingLens(home.view.work_hours, storedLens());
+    els.shell.classList.add('home-mode');
+    renderHome();
+    els.doc.classList.add('loading');
+  } catch { /* a plain load follows */ }
+}
+
 async function load(commit = null) {
-  els.doc.innerHTML = '<p class="status">Loading Brain…</p>';
+  const painted = Boolean(state.tree);
+  if (!painted) els.doc.innerHTML = '<p class="status">Loading Brain…</p>';
   try {
     state.tree = await api(typeof commit === 'string' && commit ? `/tree?commit=${encodeURIComponent(commit)}` : '/tree');
   } catch (err) {
@@ -1667,6 +1752,7 @@ async function load(commit = null) {
     fileText(HOME).then((t) => { readStatuses(t); renderNav(); }).catch(() => {});
   }
   await route();
+  keepLast();
   if (!home.time) loadTime(); // the week's time rows and any clock running elsewhere
 }
 
@@ -1713,4 +1799,5 @@ document.addEventListener('keydown', (e) => {
 });
 
 els.doc.tabIndex = -1;
+paintLast();
 load();

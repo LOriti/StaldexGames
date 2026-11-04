@@ -64,6 +64,7 @@ const VIEW = {
   allocation: { areas: { 1: { name: 'Systems', hours: 16 }, 2: { name: 'Compliance', hours: 8 } }, float: 6, total: 40 },
   inbox: [
     { kind: 'line', raw: 'A raw idea typed on the phone', details: {}, family: 'PROJ-TT', text: 'A raw idea typed on the phone', home: 'project:alpha', date: new Date().toISOString().slice(0, 10), path: 'projects/alpha/QUEUE.md', ref: null, lens: 'ventures' },
+    { kind: 'line', raw: 'An old idea from January', details: {}, family: 'DEV', text: 'An old idea from January', home: 'project:beta', date: '2026-01-03', path: 'projects/beta/QUEUE.md', ref: null, lens: 'brain' },
     { kind: 'line', raw: 'Book the crane inspection `categorised: 2026-01-02` `family: WORK-COMP` `priority: P1`', details: { categorised: '2026-01-02', family: 'WORK-COMP', priority: 'P1' }, family: 'WORK-COMP', text: 'Book the crane inspection', home: 'project:alpha', date: '2026-01-02', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'work' },
     { kind: 'unconfirmed', text: 'A new item the brief found', home: 'project:alpha', date: '2026-01-02', path: 'register/open-items.md', ref: 'P-WORK-COMP-60101.07', lens: 'work' },
     { kind: 'close', text: 'An item the debrief thinks is done', home: 'project:alpha', date: '2026-01-01', path: 'register/open-items.md', ref: 'WORK-SYS-60101.01', lens: 'work' },
@@ -235,43 +236,56 @@ if (!(await page.locator('a[data-cc-ref="WORK-SYS-60101.10"] .cc-chip.flag').cou
 if (await page.locator('.cc-inbox').count()) problems.push('Focus still carries the Inbox panel (Brain D-120 A)');
 if (!(await page.locator('.cc-today-list').count())) problems.push('Focus has no Next actions · Today list');
 if (await page.locator('text=Also hot').count()) problems.push('Focus still shows Also hot');
-// Next actions (Brain D-120 A, D-123 A): All, Today, Next, Floating and Next week; moves are rows on the log.
+// Next actions (Brain D-120 A, D-123 A): All, Today, Next, Floating and Next week; moves are rows on the log,
+// made from the card a tap opens (DEV-61105.04); a categorised line keeps its moves on the row.
+async function moveVia(ref, act) {
+  await page.locator(`a.cc-row[data-cc-ref="${ref}"], a.cc-focal[data-cc-ref="${ref}"]`).first().click(); await settle();
+  const btn = page.locator(`.tk-wrap:not([hidden]) [data-cc-place="${act}"][data-ref="${ref}"]`);
+  if (!(await btn.count())) {
+    problems.push(`the card for ${ref} offers no ${act}`);
+    await page.locator('.tk-wrap:not([hidden]) [data-tk="hide"].tk-x').click().catch(() => {}); await settle();
+    return false;
+  }
+  await btn.click(); await settle();
+  await page.locator('.tk-wrap:not([hidden]) [data-tk="hide"].tk-x').click().catch(() => {}); await settle();
+  return true;
+}
 await page.goto(`${base}/brain/#next`); await settle();
-if (!(await page.locator('.cc-subs [data-cc-sub="all"][aria-pressed="true"]').count())) problems.push('Next actions did not open on All');
+if (!(await page.locator('.cc-subs [data-cc-sub="next"][aria-pressed="true"]').count())) problems.push('Next actions did not open on Next while Today is empty (DEV-61105.04)');
+await page.locator('[data-cc-sub="all"]').click(); await settle();
 await shot('next-all');
 if (!(await page.locator('[data-cc-list="next"][data-cc-drag="WORK-LEAD-60101.09"]').count())) problems.push('yesterday\'s Today item is not at the top of Next');
 if (!(await page.locator('a[data-cc-line^="Book the crane inspection"]').count())) problems.push('a categorised Inbox line is not in Floating');
+if (await page.locator('[data-cc-list="week"] [data-cc-place]:not([data-ref^="L-"])').count()) problems.push('Floating rows still carry move buttons');
 await page.locator('[data-cc-sub="week"]').click(); await settle(); await shot('next-week-list');
 const places = () => writes.filter(([path]) => path === '/api/brain/place');
-const mover = page.locator('[data-cc-place="today"][data-ref="WORK-COMP-60101.02"]');
-if (await mover.count()) {
-  await mover.click(); await settle();
+if (await moveVia('WORK-COMP-60101.02', 'today')) {
   if (places().length !== 1) problems.push('→ Today wrote no placement');
-  await page.locator('[data-cc-place="today"][data-ref="WORK-LEAD-60101.08"]').click(); await settle();
+  await moveVia('WORK-LEAD-60101.08', 'today');
   await page.locator('[data-cc-sub="today"]').click(); await settle();
   if ((await page.locator('[data-cc-drag]').count()) !== 2) problems.push('Today does not list the two placed items');
-  await page.locator('[data-cc-place="up"][data-ref="WORK-LEAD-60101.08"]').click(); await settle();
+  await moveVia('WORK-LEAD-60101.08', 'one');
   const firstDrag = await page.locator('[data-cc-drag]').first().getAttribute('data-cc-drag');
-  if (firstDrag !== 'WORK-LEAD-60101.08') problems.push('▲ did not reorder Today');
+  if (firstDrag !== 'WORK-LEAD-60101.08') problems.push('↑ One thing did not reorder Today');
   await shot('next-today');
-  await page.locator('[data-cc-place="next-week"][data-ref="WORK-COMP-60101.02"]').click(); await settle();
+  await moveVia('WORK-COMP-60101.02', 'next-week');
   await page.locator('[data-cc-sub="later"]').click(); await settle();
-  if (!(await page.locator('[data-cc-place="keep"][data-ref="WORK-COMP-60101.02"]').count())) problems.push('→ Next week did not land the item in Next week');
-  await page.locator('[data-cc-place="keep"][data-ref="WORK-COMP-60101.02"]').click(); await settle();
+  if (!(await page.locator('[data-cc-list="later"][data-cc-drag="WORK-COMP-60101.02"]').count())) problems.push('→ Next week did not land the item in Next week');
+  await moveVia('WORK-COMP-60101.02', 'keep');
   await shot('next-next-week');
-  await page.locator('[data-cc-place="week"][data-ref="WORK-COMP-60101.02"]').click(); await settle();
-  if (await page.locator('[data-cc-place="keep"][data-ref="WORK-COMP-60101.02"]').count()) problems.push('Promote did not move the item back to Floating');
+  await moveVia('WORK-COMP-60101.02', 'week');
+  if (await page.locator('[data-cc-list="later"][data-cc-drag="WORK-COMP-60101.02"]').count()) problems.push('Promote did not move the item back to Floating');
   if (places().length < 5) problems.push(`expected a placement write per move, got ${places().length}`);
   await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('work');
   if (!(await page.locator('a.cc-focal[data-cc-ref="WORK-LEAD-60101.08"]').count())) problems.push('Today\'s first item did not take the focal slot');
   if (!(await page.locator('a.cc-focal', { hasText: 'first up today' }).count())) problems.push('the focal slot does not say first up today');
   await shot('focus-first-up-today');
-  // Promote from Next actions · Today into the top 3 (Brain D-120 A), and a categorised line into Today.
-  const hotRow = page.locator('.cc-today-list [data-cc-place="top"][data-ref="WORK-SYS-60101.10"]');
-  if (await hotRow.count()) {
-    await hotRow.click(); await settle();
+  // Promote from Next actions · Today into the top 3 (Brain D-120 A) from the card, and a categorised line into Today from its row.
+  if (await page.locator('.cc-today-list a[data-cc-ref="WORK-SYS-60101.10"]').count()) {
+    await moveVia('WORK-SYS-60101.10', 'top');
     if (!(await page.locator('[data-cc-slot="top"] [data-cc-drag="WORK-SYS-60101.10"]').count())) problems.push('↑ Top 3 did not move the item into the top 3');
-  } else problems.push('the hot item is not in Next actions · Today with ↑ Top 3');
+  } else problems.push('the hot item is not in Next actions · Today');
+  if (await page.locator('.cc-today-list [data-cc-place]:not([data-ref^="L-"])').count()) problems.push('Focus rows still carry move buttons');
   await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="all"]').click(); await settle();
   const line = page.locator('[data-cc-list="week"] [data-cc-place="today"][data-ref^="L-"]');
   if (await line.count()) { await line.first().click(); await settle(); } else problems.push('a categorised line offers no → Today');
@@ -280,10 +294,17 @@ if (await mover.count()) {
   await shot('focus-top3');
   // Back out of Today so the rest of the run sees the brief's pick.
   await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="today"]').click(); await settle();
-  for (let n = 0; n < 6 && (await page.locator('[data-cc-list="today"] [data-cc-place="week"]').count()); n += 1) {
-    await page.locator('[data-cc-list="today"] [data-cc-place="week"]').first().click(); await settle();
+  for (let n = 0; n < 6 && (await page.locator('[data-cc-list="today"]').count()); n += 1) {
+    const ref = await page.locator('[data-cc-list="today"]').first().getAttribute('data-cc-drag');
+    if (ref.startsWith('L-')) { await page.locator(`[data-cc-list="today"] [data-cc-place="week"][data-ref="${ref}"]`).click(); await settle(); } else await moveVia(ref, 'week');
   }
 } else problems.push('Floating offers no → Today on a work item');
+// Confirm all and Close all on Focus (DEV-61105.04), and the share route opens the capture card prefilled.
+await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('work');
+if (!(await page.locator('.cc-quiet .cc-batch[data-cc-batch="close-proposed"]').count())) problems.push('Focus offers no Close all');
+await page.goto(`${base}/brain/#capture?text=Shared%20from%20another%20app`); await settle();
+if ((await page.locator('.tk-wrap:not([hidden]) #tk-cap-text').inputValue().catch(() => '')) !== 'Shared from another app') problems.push('#capture?text= did not open the capture card prefilled');
+if (location => true) await page.locator('.tk-wrap:not([hidden]) [data-tk="hide"].tk-x').click().catch(() => {}); await settle();
 await page.goto(`${base}/brain/#priority`); await settle();
 if (!(await page.locator('.cc-tabs a[href="#next"][aria-current="page"]').count())) problems.push('#priority no longer lands on Next actions');
 // Someday by family (Brain DEV-61026.35): its own entry, family pages, and a way back to the Inbox.
@@ -301,6 +322,15 @@ if (!(await page.locator('a[data-cc-line="Learn the ukulele"]').count())) proble
 // The Inbox tab (Brain DEV-61026.33): add box first, lines to clarify, then what the routines found.
 await page.goto(`${base}/brain/#inbox`); await settle(); await shot('inbox');
 if (!(await page.locator('.cc-inbox').count())) problems.push('the Inbox tab is empty');
+// A raw line a week old offers Someday and Trash on its row (DEV-61105.04); Trash asks first.
+const stale = page.locator('[data-cc-line-act="trash-ask"][data-cc-line="An old idea from January"]');
+if (await stale.count()) {
+  await stale.click(); await settle();
+  if (writes.some(([path, body]) => path === '/api/brain/trash' && /An old idea/.test(body))) problems.push('Trash on a stale row wrote before Yes');
+  await page.locator('[data-cc-line-act="trash"][data-cc-line="An old idea from January"]').click(); await settle();
+  if (!writes.some(([path, body]) => path === '/api/brain/trash' && /An old idea/.test(body))) problems.push('Yes, trash it wrote nothing');
+  if (await page.locator('a[data-cc-line="An old idea from January"]').count()) problems.push('a trashed stale line stayed on the Inbox tab');
+} else problems.push('a stale Inbox line offers no Trash on its row');
 if (!(await page.locator('.cc-inbox-add').count())) problems.push('the Inbox tab has no add box');
 if (await page.locator('.cc-tabs a[href="#clarify"]').count()) problems.push('the Clarify tab is still there');
 await page.goto(`${base}/brain/#clarify`); await settle();
@@ -410,8 +440,8 @@ if (!(await page.locator('.cc').count())) problems.push('the home did not render
 if (await page.locator('a[data-cc-line="Synthetic capture from the phone"]').count()) problems.push('a handled line came back after a reload');
 // Reject asks first, from the task card and on the register; nothing is written until Yes.
 const rejects = () => writes.filter(([path]) => path === '/api/brain/reject').length;
-await page.goto(`${base}/brain/#next`); await settle(); await page.locator('[data-cc-sub="week"]').click(); await settle();
-await pickLens('work');
+await page.goto(`${base}/brain/#next`); await settle(); await pickLens('work');
+await page.locator('[data-cc-sub="week"]').click(); await settle(); // a lens change re-applies the opening rule (DEV-61105.04)
 const fresh = page.locator('a[data-cc-ref="P-WORK-COMP-60101.07"]');
 if (await fresh.count()) {
   await fresh.click(); await settle();
