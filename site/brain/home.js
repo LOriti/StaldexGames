@@ -396,6 +396,17 @@ export function preparedHtml(e, paths = null) {
 // What a routine flagged can be settled from the row itself (Brain D-112 A): Confirm is one
 // tap, Reject and Keep open ask first; a new item with a close proposed closes in one tap.
 // `asking` is 'reject' or 'keep' while the question is open.
+// Someday and Trash on a stale Inbox row (DEV-61105.04); Trash asks first.
+export function lineActsHtml(line, project, asking = null) {
+  const l = esc(line); const p = esc(project);
+  if (asking === 'trash') {
+    return `<span class="cc-ask">Remove this line? Git keeps it.</span><button type="button" class="mini-btn primary" data-cc-line-act="trash" data-cc-line="${l}" data-cc-project="${p}">Yes, trash it</button>` +
+      `<button type="button" class="mini-btn" data-cc-line-act="cancel" data-cc-line="${l}" data-cc-project="${p}">Cancel</button>`;
+  }
+  return `<button type="button" class="mini-btn" data-cc-line-act="someday" data-cc-line="${l}" data-cc-project="${p}">Someday</button>` +
+    `<button type="button" class="mini-btn" data-cc-line-act="trash-ask" data-cc-line="${l}" data-cc-project="${p}">Trash…</button>`;
+}
+
 export function rowActs(e, asking = null) {
   const flags = e.flags || [];
   const fresh = flags.includes('unconfirmed');
@@ -480,7 +491,7 @@ export function defaultProject(view, lens, projects) {
 // The Inbox panel on Focus holds raw lines and captures only (Brain D-115 C): what the
 // routines flagged is settled on the Inbox tab, which the flags line opens. `addFirst`
 // puts the add box above the rows (the Inbox tab, flow review F9).
-export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inbox', addFirst = false, flagsLine = true } = {}) {
+export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inbox', addFirst = false, flagsLine = true, today = '' } = {}) {
   const inLens = (view.inbox || []).filter((r) => lens === 'all' || r.lens === lens);
   const rows = inLens.filter((r) => r.kind === 'line' || r.kind === 'capture');
   const captures = rows.length;
@@ -495,7 +506,7 @@ export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inb
     '<button type="submit" class="mini-btn primary">Add</button><span class="write-msg" hidden></span></form>' : '';
   let html = `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${captures}</em></h2>${flagLine}<div class="cc-box">${addFirst ? add : ''}`;
   const known = new Set(view.entries.map((e) => e.ref));
-  html += shown.map((r) => inboxRow(r, known)).join('');
+  html += shown.map((r) => inboxRow(r, known, today)).join('');
   if (!rows.length) html += `<p class="cc-empty">Inbox empty${lens === 'all' ? '' : ' in this lens'}. Nothing waits to be clarified.</p>`;
   if (rows.length > shown.length) html += `<button type="button" class="text-btn cc-more" data-cc-inbox-all="1">Show all ${rows.length}</button>`;
   if (!addFirst) html += add;
@@ -506,14 +517,20 @@ export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inb
 // line opens its categorisation card (Brain D-100 B); a new register item opens its card,
 // which categorises and confirms it; a capture opens its file until its own card lands
 // (Brain DEV-61026.27, D-100).
-export function inboxRow(r, known) {
+export const STALE_DAYS = 7;
+export function inboxRow(r, known, today = '') {
   const open = r.kind === 'line' ? ` data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(projectOf(r) || '')}"`
     : r.ref && known.has(r.ref) ? ` data-cc-${r.kind === 'unconfirmed' ? 'sort' : 'ref'}="${esc(r.ref)}"` : '';
   const sorted = r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · in Next actions</span>'
     : r.details && r.details.reference ? ' <span class="cc-chip ok">reference · the groom files it</span>' : '';
-  return `<a class="cc-row cc-in" href="${inboxHref(r)}"${open}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
-    `<span class="cc-m"><span class="cc-t">${esc(r.text)}${sorted}</span>` +
+  // A raw line a week old gets a nudge and one-tap ways out (DEV-61105.04).
+  const age = r.kind === 'line' && !r.details?.categorised && !r.details?.reference && today && r.date && /^\d{4}-\d{2}-\d{2}$/.test(r.date) ? daysBetween(r.date, today) : 0;
+  const stale = age >= STALE_DAYS ? ` <span class="cc-chip warn">${age} d, still here?</span>` : '';
+  const link = `<a class="cc-row cc-in" href="${inboxHref(r)}"${open}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
+    `<span class="cc-m"><span class="cc-t">${esc(r.text)}${sorted}${stale}</span>` +
     `<span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(homeName(r.home))}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span></span></a>`;
+  if (!stale) return link;
+  return `<div class="cc-item">${link}<div class="cc-acts" data-cc-line-acts="1">${lineActsHtml(r.raw || r.text, projectOf(r) || '')}</div></div>`;
 }
 
 // ---- search (Brain DEV-61103.05) ------------------------------------------------------------
@@ -601,12 +618,12 @@ export function searchHtml(view, q, { clock = null } = {}) {
 // ---- capture from anywhere (Brain DEV-61105.01) ---------------------------------------------
 // The card the fixed Capture button opens on every screen: one line into a project's Inbox,
 // the same write as the Inbox tab's box; the walk follows at once (D-110 A).
-export function captureHtml(projects, picked, { message = '' } = {}) {
+export function captureHtml(projects, picked, { message = '', text = '' } = {}) {
   const options = projects.map((p) => `<option value="${esc(p)}"${p === picked ? ' selected' : ''}>${esc(p)}</option>`).join('');
   return '<div class="tk-head"><span class="cc-id">Capture · to the inbox</span><button type="button" class="icon-btn tk-x" data-tk="hide" aria-label="Close">✕</button></div>' +
     '<h2 class="tk-ttl" id="tk-title">What’s on your mind?</h2>' +
     '<form class="tk-panel tk-sort" data-tk-form="capture"><label for="tk-cap-text">One line. Clarify it straight after, do it now, or leave it for the morning.</label>' +
-    '<input id="tk-cap-text" name="text" maxlength="500" required autocomplete="off" placeholder="Ring Sam about the quote">' +
+    `<input id="tk-cap-text" name="text" maxlength="500" required autocomplete="off" placeholder="Ring Sam about the quote" value="${esc(text)}">` +
     `<label for="tk-cap-project">Project</label><select id="tk-cap-project" name="project">${options}</select>` +
     '<span class="tk-acts"><button type="submit" class="mini-btn primary">Add to inbox</button></span>' +
     (message ? `<p class="write-msg${/^Not /.test(message) ? ' bad' : ''}">${esc(message)}</p>` : '') + '</form>';
@@ -636,6 +653,8 @@ export function addedHtml(row, { doing = false, message = '' } = {}) {
 
 // ---- the task card (Brain D-97 A, D-98 A) -----------------------------------------------
 
+export const QUICK_EVIDENCE = 'Marked done on the phone';
+
 export function projectOf(entry) {
   return /^project:([a-z0-9]+(?:-[a-z0-9]+)*)$/.exec(entry?.home || '')?.[1] || null;
 }
@@ -662,7 +681,7 @@ function modeFact(entry) {
   return `<dt><label for="tk-mode">Mode</label></dt><dd><select id="tk-mode" class="tk-mode" data-tk-mode="1">${MODES.map(([v, label]) => opt(v, label, current)).join('')}</select></dd>`;
 }
 
-export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', message = '', focal = null, paths = null } = {}) {
+export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', message = '', focal = null, paths = null, where = null } = {}) {
   const mine = clock && clock.ref === entry.ref;
   const other = clock && !mine;
   const est = estimateText(entry);
@@ -688,8 +707,12 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
   const kind = closeKind(entry);
   const proposed = (entry.flags || []).includes('close-proposed');
   // A proposed close comes first; on a decision, Decided is the alternative (Brain D-117 B).
-  const closeBtn = kind === 'card' || kind === 'item' || kind === 'decide'
-    ? `<button type="button" class="mini-btn${proposed ? '' : ' primary'}" data-tk="done-ask">${kind === 'decide' ? (proposed ? 'Decided otherwise…' : 'Decided…') : 'Done…'}</button>` : '';
+  // Done is one tap on an open item, with "marked done on the phone" as its evidence; a
+  // note is optional (Brain D-133 B). A card still asks, a decision still takes its outcome.
+  const closeBtn = kind === 'item'
+    ? `<button type="button" class="mini-btn${proposed ? '' : ' primary'}" data-tk="close-quick">Done</button><button type="button" class="mini-btn" data-tk="done-ask">Done with a note…</button>`
+    : kind === 'card' || kind === 'decide'
+      ? `<button type="button" class="mini-btn${proposed ? '' : ' primary'}" data-tk="done-ask">${kind === 'decide' ? (proposed ? 'Decided otherwise…' : 'Decided…') : 'Done…'}</button>` : '';
   const progressBtn = kind !== 'decision' && kind !== 'none' ? '<button type="button" class="mini-btn" data-tk="progress-ask">Add progress…</button>' : '';
   const sortBtn = entry.source === 'item' && kind !== 'decision' ? '<button type="button" class="mini-btn" data-tk="categorise">Categorise…</button>' : '';
   // The one thing for today (Brain D-113 A): any hot or next item can take the slot; the
@@ -711,6 +734,11 @@ export function taskHtml(entry, { clock = null, now = Date.now(), panel = '', me
     ? '<button type="button" class="mini-btn" data-tk="hand">Hand to Claude</button>' : '';
   if (inLane) html += entry.prepared ? preparedHtml(entry, paths) : '<p class="cc-note cc-lane-note">In the Claude lane: the next morning brief prepares it and brings it back here.</p>';
   html += `<div class="tk-acts">${closeBtn}${progressBtn}${focalBtn}${handBtn}${sortBtn}<a class="mini-btn" href="${entryHref(entry)}" data-tk="file">Open in file</a></div>`;
+  // Where it sits, and where it can move (DEV-61105.04): Today, Next, Next week or Floating.
+  if (where && ['hot', 'next', 'waiting'].includes(entry.section) && kind !== 'decision') {
+    const name = { today: 'Today', next: 'Next', later: 'Next week', week: 'Floating' }[where] || 'Floating';
+    html += `<div class="tk-where"><span class="cc-id">In ${esc(name)}</span>${placeActs(entry, where, { index: 0, count: 1 })}</div>`;
+  }
   if (kind === 'decision') html += '<p class="cc-note">A decision is settled by replying to it in a session; it is not closed here.</p>';
   if (isUnconfirmed(entry)) {
     html += `<div class="tk-panel"><p>A routine found this new item. Confirm it to keep it${proposed ? '' : ', close it with Done'}, or reject it.</p>` +
@@ -802,10 +830,10 @@ function focusRow(e, zone, clock) {
   const why = `${ticking}${chips(e)}${lineChip(e)}`;
   const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-t">${esc(e.title)}</span>${factsLine(e, { area: false })}` +
     `${why ? `<span class="cc-why">${why}</span>` : ''}${flagDetail(e)}</span>`;
-  const ref = esc(e.ref);
-  const b = (act, label) => `<button type="button" class="mini-btn" data-cc-place="${act}" data-ref="${ref}">${label}</button>`;
-  const acts = zone === 'top' ? b('one', '↑ One thing') + b('tolist', '↓ To list') : b('one', '↑ One thing') + b('top', '↑ Top 3');
-  return `<div class="cc-item" draggable="true" data-cc-drag="${ref}" data-cc-zone="${zone}">${rowLink(e, body)}${rowActs(e)}<div class="cc-acts cc-place">${acts}</div></div>`;
+  // Moves live on the card a tap opens (DEV-61105.04); a drag still works here. A categorised
+  // line has no card yet, so its moves stay on the row.
+  const acts = e.source === 'line' ? placeActs(e, 'today', { index: 0, count: 1 }) : '';
+  return `<div class="cc-item" draggable="true" data-cc-drag="${esc(e.ref)}" data-cc-zone="${zone}">${rowLink(e, body)}${rowActs(e)}${acts}</div>`;
 }
 
 function focusTab(view, lens, byRef, opts = {}) {
@@ -827,7 +855,7 @@ function focusTab(view, lens, byRef, opts = {}) {
   const lists = focusLists(view, lens, opts.places, focal ? focal.ref : null);
   const rowsOf = (refs, zone) => refs.map((r) => byRef.get(r)).filter(Boolean).map((e) => focusRow(e, zone, clock)).join('');
   const open = 3 - lists.top.length;
-  const lane = slot.claude.map((ref) => byRef.get(ref)).filter(Boolean);
+  const lane = slot.claude.filter((ref) => !focal || ref !== focal.ref).map((ref) => byRef.get(ref)).filter(Boolean);
   html += `<div class="cc-two"><section><h2 class="cc-gh">Top 3 <em>${lists.top.length}</em></h2><div class="cc-box" data-cc-slot="top">` +
     rowsOf(lists.top, 'top') +
     (open ? `<p class="cc-empty cc-open">${open === 3 ? 'Nothing in your top 3 yet.' : `${open} open.`} Drag a row up or tap ↑ Top 3.</p>` : '') + '</div></section>' +
@@ -837,7 +865,16 @@ function focusTab(view, lens, byRef, opts = {}) {
   html += `<section class="cc-today-list"><h2 class="cc-gh">Next actions · Today <em>${below.length}</em><a class="cc-more" href="#next">All next actions →</a></h2>` +
     `<div class="cc-box" data-cc-slot="list">${rowsOf(below, 'list') || '<p class="cc-empty">Nothing else in Today. Bring items up in Next actions.</p>'}</div></section>`;
   const waiting = clarifyCount(view, lens);
-  if (waiting) html += `<p class="cc-quiet"><a href="#inbox">${waiting} to clarify in the Inbox →</a></p>`;
+  if (waiting) {
+    // One tap settles everything the routines flagged, without the trip to the Inbox tab
+    // (DEV-61105.04; the batch writes are D-112 A's).
+    const groups = new Map(clarifyGroups(view, lens));
+    const fresh = groups.get('New items to confirm') || [];
+    const closing = groups.get('Proposed closes') || [];
+    const batch = (flag, rows, label) => (rows.length > 1
+      ? `<button type="button" class="mini-btn cc-batch" data-cc-batch="${flag}" data-ids="${esc(rows.map((e) => e.ref).join(','))}">${label} ${rows.length}</button>` : '');
+    html += `<p class="cc-quiet"><a href="#inbox">${waiting} to clarify in the Inbox →</a>${batch('unconfirmed', fresh, 'Confirm all')}${batch('close-proposed', closing, 'Close all')}</p>`;
+  }
   return html;
 }
 
@@ -852,17 +889,19 @@ function doorsHtml(slot) {
   return html;
 }
 
-// Placement buttons on a Next actions row (Brain D-107, D-109 A, D-120 A): where it can
-// move, and up and down within Today, Next and Next week (a drag does the same).
+// Placement buttons on the task card (Brain D-107, D-109 A, D-120 A; moved off the rows by
+// DEV-61105.04): where the item can move from where it sits (`today`, `next`, `later` or
+// `week`, Floating), with the one thing and the top 3 as places in Today. Up and down are
+// `index` and `count` within its list; a drag on the rows does the same.
 export function placeActs(e, sub, { index = 0, count = 1 } = {}) {
   const ref = esc(e.ref);
   const b = (act, label, cls = '') => `<button type="button" class="mini-btn${cls}" data-cc-place="${act}" data-ref="${ref}">${label}</button>`;
   const ud = (index > 0 ? b('up', '▲') : '') + (index < count - 1 ? b('down', '▼') : '');
   let inner = '';
-  if (sub === 'today') inner = ud + b('next', '→ Next') + b('week', '→ Floating') + b('next-week', '→ Next week');
-  else if (sub === 'next') inner = ud + b('today', '→ Today') + b('week', '→ Floating') + b('next-week', '→ Next week');
+  if (sub === 'today') inner = b('one', '↑ One thing') + b('top', '↑ Top 3') + ud + b('next', '→ Next') + b('week', '→ Floating') + b('next-week', '→ Next week');
+  else if (sub === 'next') inner = b('today', '→ Today', ' primary') + b('one', '↑ One thing') + ud + b('week', '→ Floating') + b('next-week', '→ Next week');
   else if (sub === 'later') inner = b('week', 'Promote', ' primary') + b('keep', 'Keep') + b('today', '→ Today') + b('next', '→ Next') + ud;
-  else inner = b('today', '→ Today') + b('next', '→ Next') + b('next-week', '→ Next week');
+  else inner = b('today', '→ Today', ' primary') + b('one', '↑ One thing') + b('top', '↑ Top 3') + b('next', '→ Next') + b('next-week', '→ Next week');
   return `<div class="cc-acts cc-place" data-cc-place-for="${ref}">${inner}</div>`;
 }
 
@@ -872,7 +911,8 @@ function placedRow(e, sub, clock, pos, extra = '') {
   const why = `${ticking}${chips(e)}${lineChip(e)}`;
   const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-t">${esc(e.title)}</span>${factsLine(e)}` +
     `${why ? `<span class="cc-why">${why}</span>` : ''}${extra}${flagDetail(e)}</span>`;
-  return `<div class="cc-item" draggable="true" data-cc-drag="${esc(e.ref)}" data-cc-list="${sub}">${rowLink(e, body)}${rowActs(e)}${placeActs(e, sub, pos)}</div>`;
+  const acts = e.source === 'line' ? placeActs(e, sub, pos) : ''; // a line has no card yet (DEV-61105.04)
+  return `<div class="cc-item" draggable="true" data-cc-drag="${esc(e.ref)}" data-cc-list="${sub}">${rowLink(e, body)}${rowActs(e)}${acts}</div>`;
 }
 
 // The four lists of Next actions for a lens (Brain D-120 A): Today, Next and Next week in
@@ -895,7 +935,14 @@ export function nextCounts(view, lens, places) {
   return { all: counts.today + counts.next + counts.week + counts.later, ...counts };
 }
 
-function nextTab(view, lens, { sub = 'all', filter = null, clock = null, places = null, today = '' } = {}) {
+export const FLOAT_SHOWN = 20;
+// Where Next actions opens (DEV-61105.04): Today when it has anything, else Next, else Floating.
+export function openingSub(view, lens, places) {
+  const c = nextCounts(view, lens, places);
+  return c.today ? 'today' : c.next ? 'next' : 'week';
+}
+
+function nextTab(view, lens, { sub = 'all', filter = null, clock = null, places = null, today = '', floatAll = false } = {}) {
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
   if (!SUBS.includes(sub)) sub = 'all';
   const lists = nextLists(view, lens, places);
@@ -923,14 +970,25 @@ function nextTab(view, lens, { sub = 'all', filter = null, clock = null, places 
     html += filter
       ? `<p class="cc-note">Showing ${esc(filter.type === 'context' ? CONTEXT_NAMES[filter.value] || filter.value : (view.lenses[lens].areas[filter.value] || {}).name || filter.value)} · <button type="button" class="text-btn" data-cc-clear="1">Show everything</button></p>`
       : '<p class="cc-note">Every other clarified action, by priority and due date: hot first, then the order <code>brain.py next</code> gives. A line you categorise in the Inbox lands here at once.</p>';
+    // Hot and next show first, the first FLOAT_SHOWN of them unless asked for all; waiting,
+    // review and blocked fold under their own headings (DEV-61105.04).
+    const active = rows.filter((e) => ['hot', 'next'].includes(e.section));
+    const quiet = rows.filter((e) => !['hot', 'next'].includes(e.section));
+    const shown = floatAll ? active : active.slice(0, FLOAT_SHOWN);
     let section = null;
     html += '<div class="cc-box" data-cc-list-box="week">';
-    for (const e of rows) {
+    for (const e of shown) {
       if (e.section !== section) { section = e.section; html += `<h2 class="cc-sec">${SECTION_NAMES[section] || esc(section)}</h2>`; }
       html += placedRow(e, 'week', clock, {});
     }
+    if (active.length > shown.length) html += `<button type="button" class="text-btn cc-more" data-cc-float-all="1">Show all ${active.length}</button>`;
     if (!rows.length) html += '<p class="cc-empty">Nothing here.</p>';
     html += '</div>';
+    for (const key of ['waiting', 'review', 'blocked']) {
+      const mine = quiet.filter((e) => e.section === key);
+      if (!mine.length) continue;
+      html += `<details class="cc-fold"><summary>${SECTION_NAMES[key]} <em>${mine.length}</em></summary><div class="cc-box" data-cc-list-box="week">${mine.map((e) => placedRow(e, 'week', clock, {})).join('')}</div></details>`;
+    }
   }
   if (show('later')) {
     html += head('later', 'Pushed back to next week, latest raised first. At week end, promote each or keep it; it waits until you move it.') + '<div class="cc-box" data-cc-list-box="later">';
@@ -966,7 +1024,8 @@ function clarifyGroups(view, lens) {
   return [
     ['New items to confirm', fresh],
     ['Proposed closes', closing],
-    ['No estimate yet', inLens.filter((e) => ['hot', 'next'].includes(e.section) && !(Number.parseInt(e.minutes, 10) > 0) && !settled.has(e.ref))],
+    // A missing estimate reads as 30 minutes (Brain D-135 B); only a hot one is worth a tidy-up.
+    ['No estimate yet', inLens.filter((e) => e.section === 'hot' && !(Number.parseInt(e.minutes, 10) > 0) && !settled.has(e.ref))],
     ['Parked without a review date', pick(q.needs_review_date)],
     ['No owner: yours, or hand it over?', pick(q.no_owner)],
   ];
@@ -988,7 +1047,7 @@ export function tidyCount(view, lens) {
 // Reject, Confirm all and Close all (D-112 A), then the rest of the old Clarify groups.
 function inboxTab(view, lens, opts) {
   let html = '<p class="cc-note">Everything not yet clarified. Tap a line to decide what it is; settle what the routines found from the row.</p>';
-  html += inboxHtml(view, lens, { projects: opts.projects || [], all: true, title: 'To clarify', addFirst: true, flagsLine: false });
+  html += inboxHtml(view, lens, { projects: opts.projects || [], all: true, title: 'To clarify', addFirst: true, flagsLine: false, today: opts.today || '' });
   const groups = clarifyGroups(view, lens);
   const batch = { 'New items to confirm': ['unconfirmed', 'Confirm all'], 'Proposed closes': ['close-proposed', 'Close all'] };
   const section = (title, rows) => {
@@ -1106,7 +1165,7 @@ export function lensChipHtml(lens, shown, open = false) {
     (open ? `<div class="cc-seg cc-chooser" role="group" aria-label="Lens">${shown.map((l) => `<button type="button" data-cc-lens="${l}" aria-pressed="${l === lens}">${LENS_NAMES[l]}</button>`).join('')}</div>` : '') + '</div>';
 }
 
-export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '', focal = null, places = null, sub = 'all', lensOpen = false, family = null, q = '' } = {}) {
+export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '', focal = null, places = null, sub = 'all', lensOpen = false, family = null, q = '', floatAll = false } = {}) {
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
   // Only the lenses this view carries, so an older view without Brain's own lens still renders.
   const shown = LENSES.filter((l) => view.lenses[l]);
@@ -1120,9 +1179,9 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', 
   const body = tab === 'family' ? familyHtml(view, family || '?', { clock })
     : tab === 'search' ? searchHtml(view, q, { clock })
     : tab === 'someday' ? somedayHtml(view, lens)
-    : tab === 'next' ? nextTab(view, lens, { sub, filter, clock, places, today })
+    : tab === 'next' ? nextTab(view, lens, { sub, filter, clock, places, today, floatAll })
     : tab === 'allocation' ? allocationTab(view, lens, time)
-      : tab === 'inbox' ? inboxTab(view, lens, { clock, projects })
+      : tab === 'inbox' ? inboxTab(view, lens, { clock, projects, today })
         : focusTab(view, lens, byRef, { clock, projects, inboxAll, focal, places });
   // A view made on an earlier Perth day has yesterday's "overdue" and "due soon".
   const stale = today && view.date && view.date < today
