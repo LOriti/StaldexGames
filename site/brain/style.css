@@ -496,3 +496,21 @@ body:has(.clock-bar:not([hidden])) .main { padding-bottom: 72px; }
 .tk-choice.primary { border-color: var(--accent); background: var(--accent-soft); }
 .tk-choice.primary b { color: var(--accent); }
 .tk-facts select.tk-mode { font: inherit; padding: 2px 6px; border: 1px solid var(--line); border-radius: 6px; background: var(--sheet); color: var(--ink); }
+
+/* Search from every tab (Brain DEV-61103.05) and the Capture button on every screen (DEV-61105.01). */
+.cc-search { display: grid; gap: 12px; }
+.cc-search-box { margin: 0; }
+.cc-search-box input { width: 100%; font: inherit; font-size: 16px; color: var(--ink); background: var(--sheet); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; -webkit-appearance: none; appearance: none; }
+.cc-search-box input:focus { border-color: var(--accent); outline: none; box-shadow: 0 0 0 2px var(--accent-soft); }
+.cc-search-link[aria-current="page"] { color: var(--accent); border-color: var(--accent); }
+.cc-fab {
+  position: fixed; right: max(16px, env(safe-area-inset-right)); bottom: max(16px, env(safe-area-inset-bottom)); z-index: 20;
+  border: 0; border-radius: 99px; padding: 13px 18px; background: var(--accent); color: var(--paper);
+  font: 600 15px/1 var(--sans); cursor: pointer; box-shadow: 0 8px 24px rgb(0 0 0 / 0.24);
+}
+.cc-fab span { font-size: 18px; margin-right: 2px; }
+.cc-fab:hover { filter: brightness(1.08); }
+.cc-fab[hidden] { display: none; }
+body:has(.clock-bar:not([hidden])) .cc-fab { bottom: calc(max(12px, env(safe-area-inset-bottom)) + 58px); }
+body:has(.tk-wrap:not([hidden])) .cc-fab { display: none; }
+@media print { .cc-fab { display: none; } }
