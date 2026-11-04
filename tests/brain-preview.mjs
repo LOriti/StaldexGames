@@ -189,6 +189,43 @@ if (!(await page.locator('.cc-lens-chip').count())) problems.push('no lens chip'
 await page.locator('[data-cc-lens-open]').click(); await settle(); await shot('lens-chooser');
 if (!(await page.locator('.cc-chooser [data-cc-lens="work"]').count())) problems.push('the lens chip opened no chooser');
 for (const lens of ['work', 'brain', 'all']) { await pickLens(lens); await shot(`focus-${lens}`); }
+// Search from every tab (Brain DEV-61103.05): `/` opens it, results follow the typing, a hit opens its card.
+if (!(await page.locator('a.cc-search-link[href="#search"]').count())) problems.push('no Search link in the head');
+await page.keyboard.press('/'); await settle();
+if (!(await page.locator('#cc-q').count())) problems.push('`/` did not open the search');
+else {
+  if (!(await page.evaluate(() => document.activeElement?.id === 'cc-q'))) problems.push('the search box did not take focus');
+  await page.locator('#cc-q').fill('signed variation'); await settle();
+  if (!(await page.locator('#cc-search-results a[data-cc-ref="WORK-SYS-60101.10"]').count())) problems.push('search did not find the card by its title');
+  await shot('search');
+  await page.locator('#cc-q').fill('crane'); await settle();
+  if (!(await page.locator('#cc-search-results a[data-cc-line^="Book the crane inspection"]').count())) problems.push('search did not find a categorised line');
+  await page.locator('#cc-q').fill('pa-admin-60101.05'); await settle();
+  if (!(await page.locator('#cc-search-results a[data-cc-ref="PA-ADMIN-60101.05"]').count())) problems.push('search did not find an item in another lens by id');
+  await page.locator('#cc-search-results a[data-cc-ref="PA-ADMIN-60101.05"]').click(); await settle();
+  if (!(await page.locator('.tk-wrap:not([hidden]) #tk-title', { hasText: 'PA-ADMIN-60101.05' }).count())) problems.push('a search hit did not open its card');
+  await shot('search-hit-card');
+  await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+  await page.locator('#cc-q').fill('no such thing anywhere'); await settle();
+  if (!(await page.locator('#cc-search-results .cc-empty', { hasText: 'Nothing open matches' }).count())) problems.push('an empty search does not say so');
+}
+// The Capture button is on every screen (Brain DEV-61105.01): the Allocation tab, then a file.
+await page.goto(`${base}/brain/#allocation`); await settle();
+if (!(await page.locator('.cc-fab:visible').count())) problems.push('no Capture button on the Allocation tab');
+await page.goto(`${base}/brain/#/projects/alpha/QUEUE.md`); await settle();
+if (!(await page.locator('.cc-fab:visible').count())) problems.push('no Capture button on a file');
+await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('all');
+await page.locator('.cc-fab').click(); await settle();
+if (!(await page.locator('.tk-wrap:not([hidden]) [data-tk-form="capture"]').count())) problems.push('Capture opened no card');
+else {
+  if (!(await page.evaluate(() => document.activeElement?.id === 'tk-cap-text'))) problems.push('the capture box did not take focus');
+  await page.locator('#tk-cap-text').fill('Captured from the button');
+  await shot('capture');
+  await page.locator('[data-tk-form="capture"] button[type="submit"]').click(); await settle();
+  if (!writes.some(([path, body]) => path === '/api/brain/inbox' && /"text":"Captured from the button"/.test(body))) problems.push('Capture wrote no inbox line');
+  if (!(await page.locator('.tk-wrap:not([hidden]) [data-wk="someday"]').count())) problems.push('a captured line opened no walk');
+  await page.locator('[data-wk="someday"]').click(); await settle();
+}
 // Each item once, with its flag (Brain D-115 A): the hot close-proposed item is not repeated
 // in the inbox panel, its row says "close proposed", and the Inbox count means captures.
 await pickLens('work');

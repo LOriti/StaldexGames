@@ -462,7 +462,7 @@ export function inboxHref(r) {
 }
 
 // The add box starts on a project in the lens being looked at.
-function defaultProject(view, lens, projects) {
+export function defaultProject(view, lens, projects) {
   if (lens === 'all') return projects[0];
   const homes = [...(view.inbox || []), ...view.entries].filter((r) => r.lens === lens).map((r) => /^project:(.+)$/.exec(r.home || '')?.[1]);
   return homes.find((slug) => projects.includes(slug)) || projects[0];
@@ -488,22 +488,122 @@ export function inboxHtml(view, lens, { projects = [], all = false, title = 'Inb
     '<input type="text" name="text" maxlength="500" required autocomplete="off" placeholder="Capture something…" aria-label="New inbox line">' +
     '<button type="submit" class="mini-btn primary">Add</button><span class="write-msg" hidden></span></form>' : '';
   let html = `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${captures}</em></h2>${flagLine}<div class="cc-box">${addFirst ? add : ''}`;
-  // A flagged register item opens its card (Confirm, Reject, close); a raw line or capture
-  // opens its file until its own card lands (Brain DEV-61026.27, D-100).
   const known = new Set(view.entries.map((e) => e.ref));
-  // A raw line opens its categorisation card (Brain D-100 B); a new register item opens its
-  // card, which categorises and confirms it.
-  const open = (r) => (r.kind === 'line' ? ` data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(projectOf(r) || '')}"`
-    : r.ref && known.has(r.ref) ? ` data-cc-${r.kind === 'unconfirmed' ? 'sort' : 'ref'}="${esc(r.ref)}"` : '');
-  const sorted = (r) => (r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · in Next actions</span>'
-    : r.details && r.details.reference ? ' <span class="cc-chip ok">reference · the groom files it</span>' : '');
-  html += shown.map((r) => `<a class="cc-row cc-in" href="${inboxHref(r)}"${open(r)}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
-    `<span class="cc-m"><span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(r.home)}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span>` +
-    `<span class="cc-t">${esc(r.text)}${sorted(r)}</span></span></a>`).join('');
+  html += shown.map((r) => inboxRow(r, known)).join('');
   if (!rows.length) html += `<p class="cc-empty">Inbox empty${lens === 'all' ? '' : ' in this lens'}. Nothing waits to be clarified.</p>`;
   if (rows.length > shown.length) html += `<button type="button" class="text-btn cc-more" data-cc-inbox-all="1">Show all ${rows.length}</button>`;
   if (!addFirst) html += add;
   return `${html}</div></section>`;
+}
+
+// One Inbox row. A flagged register item opens its card (Confirm, Reject, close); a raw
+// line opens its categorisation card (Brain D-100 B); a new register item opens its card,
+// which categorises and confirms it; a capture opens its file until its own card lands
+// (Brain DEV-61026.27, D-100).
+export function inboxRow(r, known) {
+  const open = r.kind === 'line' ? ` data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(projectOf(r) || '')}"`
+    : r.ref && known.has(r.ref) ? ` data-cc-${r.kind === 'unconfirmed' ? 'sort' : 'ref'}="${esc(r.ref)}"` : '';
+  const sorted = r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · in Next actions</span>'
+    : r.details && r.details.reference ? ' <span class="cc-chip ok">reference · the groom files it</span>' : '';
+  return `<a class="cc-row cc-in" href="${inboxHref(r)}"${open}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
+    `<span class="cc-m"><span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(r.home)}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span>` +
+    `<span class="cc-t">${esc(r.text)}${sorted}</span></span></a>`;
+}
+
+// ---- search (Brain DEV-61103.05) ------------------------------------------------------------
+// Every open card, item, Inbox line and Someday line in the view, across every project and
+// lens, found by a few words or an id. Done and archived items are not in the view, so a
+// search never finds them; the files are the place for those.
+
+const lower = (value) => String(value || '').toLowerCase();
+// A word matches where a word starts, so "rac" finds "RAC" and not "tracking".
+const starts = (text, word) => new RegExp(`(^|[^a-z0-9])${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(text);
+
+// Matches, best first: an id, alias or `L-` line id exactly (with or without `P-`), then the
+// whole query at a word in the title, then every word in the title, then every word anywhere
+// on the item (its next step, home, context, priority, owner, state, kind and what was prepared).
+export function searchMatches(view, q, { limit = 50 } = {}) {
+  const query = lower(q).trim().replace(/\s+/g, ' ');
+  if (!query) return [];
+  const words = query.split(' ');
+  const bareId = (id) => id.replace(/^p-/, '');
+  const out = [];
+  const consider = (kind, ids, title, extra, row) => {
+    const lid = ids.filter(Boolean).map(lower);
+    const t = lower(title);
+    const hay = `${lid.join(' ')} ${t} ${lower(extra)}`;
+    let score;
+    if (lid.some((id) => id === query || bareId(id) === bareId(query))) score = 0;
+    else if (starts(t, query)) score = 1;
+    else if (words.every((w) => starts(t, w))) score = 2;
+    else if (words.every((w) => starts(hay, w))) score = 3;
+    else return;
+    out.push({ kind, score, title, row });
+  };
+  withLines(view);
+  const known = new Set();
+  for (const e of view.entries || []) {
+    known.add(e.ref);
+    consider('entry', [e.ref, ...(e.aliases || [])], e.title,
+      [e.next, e.home, e.context, e.priority, e.owner, e.state, e.kind, e.due, e.prepared, e.section, e.line && e.line.text].join(' '), e);
+  }
+  for (const r of view.inbox || []) {
+    if (r.ref && known.has(r.ref)) continue; // a flagged item is already an entry
+    const d = r.details || {};
+    if (r.kind === 'line' && d.categorised && !d.reference) continue; // an entry since withLines
+    consider(r.kind === 'line' ? 'line' : 'inbox', r.kind === 'line' ? [lineRef(r.home, r.text)] : [r.ref], r.text,
+      [r.home, r.family, r.raw, r.date, INBOX_KINDS[r.kind]].join(' '), r);
+  }
+  for (const r of view.someday || []) consider('someday', [], r.text, [r.home, r.family, r.raw, 'someday'].join(' '), r);
+  out.sort((a, b) => a.score - b.score);
+  return out.slice(0, limit);
+}
+
+// A found card or item: its project, id and state, opening its card like any row.
+function searchRow(e, clock) {
+  const state = e.section === 'hot' ? 'hot' : e.place === 'today' ? 'Today' : e.place === 'next-week' ? 'Next week'
+    : e.state && e.state !== 'open' ? e.state : SECTION_NAMES[e.section] || e.section || '';
+  const extra = `${state ? `<span class="cc-chip">${esc(state)}</span>` : ''}${e.source === 'line' ? '<span class="cc-chip flag">line · card at the next groom</span>' : ''}`;
+  const body = `<span class="cc-stripe ${e.section === 'hot' ? 'hot' : ''}"></span><span class="cc-m">` +
+    `<span class="cc-id">${esc(e.source === 'line' ? lineRef(e.home, e.title) : e.ref)} · ${esc(e.home)}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}</span>` +
+    `<span class="cc-t">${esc(e.title)}</span><span class="cc-why">${extra}${chips(e)}${clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : ''}</span>` +
+    (e.next ? `<span class="cc-next"><b>Next</b> ${esc(e.next)}</span>` : '') + '</span>';
+  return rowLink(e, body);
+}
+
+export function searchResultsHtml(view, q, { clock = null } = {}) {
+  const query = String(q || '').trim();
+  if (!query) {
+    return '<p class="cc-note">Every open card, item and Inbox line in every project, whatever the lens. Type a few words, an id or an old alias. ' +
+      'Done and archived items are not searched: <a href="#/INDEX.md">browse the files</a> for those.</p>';
+  }
+  const hits = searchMatches(view, query);
+  if (!hits.length) return `<p class="cc-empty">Nothing open matches “${esc(query)}”. Done and archived items are not searched; <a href="#/INDEX.md">the files</a> have those.</p>`;
+  const known = new Set((view.entries || []).map((e) => e.ref));
+  const body = hits.map((h) => (h.kind === 'entry' ? searchRow(h.row, clock) : h.kind === 'someday' ? somedayRow(h.row) : inboxRow(h.row, known))).join('');
+  return `<section class="cc-inbox"><h2 class="cc-gh">Found <em>${hits.length}</em></h2><div class="cc-box">${body}</div></section>`;
+}
+
+// The search page: the box, then the results, live as the query changes.
+export function searchHtml(view, q, { clock = null } = {}) {
+  return '<section class="cc-search"><form class="cc-search-box" role="search" action="#search"><label class="visually-hidden" for="cc-q">Search Brain</label>' +
+    `<input id="cc-q" type="search" name="q" data-cc-search="1" value="${esc(q || '')}" placeholder="Find a card, item or line: a few words or an id" ` +
+    'autocomplete="off" autocapitalize="off" spellcheck="false" enterkeyhint="search"></form>' +
+    `<div id="cc-search-results">${searchResultsHtml(view, q, { clock })}</div></section>`;
+}
+
+// ---- capture from anywhere (Brain DEV-61105.01) ---------------------------------------------
+// The card the fixed Capture button opens on every screen: one line into a project's Inbox,
+// the same write as the Inbox tab's box; the walk follows at once (D-110 A).
+export function captureHtml(projects, picked, { message = '' } = {}) {
+  const options = projects.map((p) => `<option value="${esc(p)}"${p === picked ? ' selected' : ''}>${esc(p)}</option>`).join('');
+  return '<div class="tk-head"><span class="cc-id">Capture · to the inbox</span><button type="button" class="icon-btn tk-x" data-tk="hide" aria-label="Close">✕</button></div>' +
+    '<h2 class="tk-ttl" id="tk-title">What’s on your mind?</h2>' +
+    '<form class="tk-panel tk-sort" data-tk-form="capture"><label for="tk-cap-text">One line. Clarify it straight after, do it now, or leave it for the morning.</label>' +
+    '<input id="tk-cap-text" name="text" maxlength="500" required autocomplete="off" placeholder="Ring Sam about the quote">' +
+    `<label for="tk-cap-project">Project</label><select id="tk-cap-project" name="project">${options}</select>` +
+    '<span class="tk-acts"><button type="submit" class="mini-btn primary">Add to inbox</button></span>' +
+    (message ? `<p class="write-msg${/^Not /.test(message) ? ' bad' : ''}">${esc(message)}</p>` : '') + '</form>';
 }
 
 // The card after an Inbox add (Brain D-110 A): sort it now, do it now, or leave it for the
@@ -989,7 +1089,7 @@ export function lensChipHtml(lens, shown, open = false) {
     (open ? `<div class="cc-seg cc-chooser" role="group" aria-label="Lens">${shown.map((l) => `<button type="button" data-cc-lens="${l}" aria-pressed="${l === lens}">${LENS_NAMES[l]}</button>`).join('')}</div>` : '') + '</div>';
 }
 
-export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '', focal = null, places = null, sub = 'all', lensOpen = false, family = null } = {}) {
+export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', time = null, clock = null, projects = [], inboxAll = false, today = '', focal = null, places = null, sub = 'all', lensOpen = false, family = null, q = '' } = {}) {
   const byRef = new Map(view.entries.map((e) => [e.ref, e]));
   // Only the lenses this view carries, so an older view without Brain's own lens still renders.
   const shown = LENSES.filter((l) => view.lenses[l]);
@@ -1001,6 +1101,7 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', 
   const tabs = TABS.map((t) => `<a href="#${t}"${t === tab ? ' aria-current="page"' : ''}>${TAB_NAMES[t]}${t === 'inbox' && count ? ` <span class="cc-n">${count}</span>` : ''}</a>`).join('');
   const parked = somedayRows(view, lens).length;
   const body = tab === 'family' ? familyHtml(view, family || '?', { clock })
+    : tab === 'search' ? searchHtml(view, q, { clock })
     : tab === 'someday' ? somedayHtml(view, lens)
     : tab === 'next' ? nextTab(view, lens, { sub, filter, clock, places, today })
     : tab === 'allocation' ? allocationTab(view, lens, time)
@@ -1011,7 +1112,9 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', 
     ? `<p class="cc-stale" role="status">This view was made for ${esc(view.date)}; today’s refresh has not run yet, so overdue and due-soon may be a day behind. Refresh in a few minutes.</p>` : '';
   return `<div class="cc"><div class="cc-head">${seg}` +
     `<nav class="cc-tabs" aria-label="Command centre">${tabs}</nav>` +
-    `<span class="cc-side"><a class="cc-files cc-someday" href="#someday"${tab === 'someday' ? ' aria-current="page"' : ''}>Someday <em>${parked}</em></a><a class="cc-files" href="#/INDEX.md">Browse files</a></span></div>` + stale + body +
+    `<span class="cc-side"><a class="cc-files cc-someday" href="#someday"${tab === 'someday' ? ' aria-current="page"' : ''}>Someday <em>${parked}</em></a>` +
+    `<a class="cc-files cc-search-link" href="#search"${tab === 'search' ? ' aria-current="page"' : ''} title="Search every open card, item and line (press /)">Search</a>` +
+    `<a class="cc-files" href="#/INDEX.md">Browse files</a></span></div>` + stale + body +
     `<p class="cc-note">${esc(view.gaps.join(' '))}${asOf ? ` As of ${esc(asOf)}.` : ''}</p></div>`;
 }
 

@@ -726,3 +726,60 @@ test('another mode on an item with Claude asks whether to take it back (Brain D-
   const panel = home.taskPanel('via-ask', entry('A-1', { ai: 'prepare' }));
   assert.match(panel, /A-1 is with Claude\. Take it out of the Claude lane too\?[\s\S]*data-tk="via-unhand">Yes, I’ll do it[\s\S]*data-tk="via-keep">No, Claude still prepares it[\s\S]*data-tk="cancel"/);
 });
+
+test('search finds open cards, items and lines by id, alias, line id, title and next step (Brain DEV-61103.05)', () => {
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [
+    ...VIEW.entries,
+    entry('PA-HOME-60103.04', { source: 'card', lens: 'personal', title: 'Book RAC Security Consultation - 1300 360 504', aliases: ['L-aaaf4551', 'brain-099'], next: 'Call number', priority: 'P1', state: null }),
+    entry('WORK-SYS-60101.20', { title: 'Chase the signed variation', next: 'Email Sam the variation for signature', place: 'today' }),
+  ], inbox: [
+    { kind: 'line', text: 'Renew the RAC policy', raw: 'Renew the RAC policy', details: {}, family: 'PA-FIN', home: 'project:alpha', date: '2030-01-02', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'personal' },
+    { kind: 'line', text: 'Book the crane inspection', raw: 'Book the crane inspection `categorised: 2030-01-02`', details: { categorised: '2030-01-02', priority: 'P1' }, family: 'WORK-COMP', home: 'project:alpha', date: '2030-01-02', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'work' },
+    { kind: 'unconfirmed', text: 'Task A-1', home: 'project:alpha', date: '2030-01-02', path: 'register/open-items.md', ref: 'A-1', lens: 'work' },
+  ], someday: [
+    { text: 'Learn the ukulele', raw: 'Learn the ukulele `someday: 2030-01-01`', date: '2030-01-01', family: 'PA-HOME', home: 'project:alpha', path: 'projects/alpha/QUEUE.md', lens: 'personal' },
+  ] }));
+  const refs = (q) => home.searchMatches(view, q).map((h) => (h.kind === 'entry' ? h.row.ref : `${h.kind}:${h.row.text}`));
+  assert.deepEqual(home.searchMatches(view, '   '), [], 'nothing typed finds nothing');
+  assert.deepEqual(refs('rac'), ['PA-HOME-60103.04', 'line:Renew the RAC policy'], 'case-insensitive, across projects and lenses, lines included');
+  assert.equal(refs('pa-home-60103.04')[0], 'PA-HOME-60103.04', 'an id, any case');
+  assert.equal(refs('P-PA-HOME-60103.04')[0], 'PA-HOME-60103.04', 'with or without P-');
+  assert.equal(refs('brain-099')[0], 'PA-HOME-60103.04', 'an old id through its alias');
+  assert.equal(refs('L-aaaf4551')[0], 'PA-HOME-60103.04', 'the line id the card came from');
+  assert.equal(refs(home.lineRef('project:alpha', 'Renew the RAC policy'))[0], 'line:Renew the RAC policy', 'a raw line by its L- id');
+  assert.deepEqual(refs('security 1300'), ['PA-HOME-60103.04'], 'every word must match, in any order');
+  assert.deepEqual(refs('call number'), ['PA-HOME-60103.04'], 'the next step counts');
+  assert.deepEqual(refs('signature'), ['WORK-SYS-60101.20'], 'an item\'s next step counts');
+  assert.deepEqual(refs('ukulele'), ['someday:Learn the ukulele'], 'Someday lines are found');
+  assert.deepEqual(refs('crane'), [home.lineRef('project:alpha', 'Book the crane inspection')], 'a categorised line is found once, as its entry');
+  assert.equal(refs('a-1').filter((r) => r === 'A-1').length, 1, 'a flagged item is found once, not again from the inbox');
+  assert.deepEqual(refs('nothing like this'), []);
+  assert.deepEqual(refs('ract'), [], 'a word matches where a word starts: "ract" is not "contract"');
+  assert.deepEqual(refs('60103'), ['PA-HOME-60103.04'], 'part of an id, at a word boundary');
+  assert.deepEqual(refs('consultation -'), ['PA-HOME-60103.04'], 'punctuation in the query is literal');
+  const order = refs('variation');
+  assert.equal(order[0], 'WORK-SYS-60101.20', 'the whole query in the title ranks first');
+
+  const html = home.searchResultsHtml(view, 'rac');
+  assert.match(html, /Found <em>2<\/em>/);
+  assert.match(html, /data-cc-ref="PA-HOME-60103.04"[\s\S]*PA-HOME-60103\.04 · project:alpha · P1 · High[\s\S]*<span class="cc-chip">Next<\/span>[\s\S]*<b>Next<\/b> Call number/, 'project, id, state and next step, opening the card');
+  assert.match(html, /data-cc-line="Renew the RAC policy" data-cc-project="alpha"/, 'a raw line opens its walk');
+  assert.match(home.searchResultsHtml(view, 'signature'), /<span class="cc-chip">Today<\/span>/, 'a placed item shows where it sits');
+  assert.match(home.searchResultsHtml(view, 'zzz'), /Nothing open matches “zzz”\. Done and archived items are not searched/);
+  assert.match(home.searchResultsHtml(view, ''), /Done and archived items are not searched/);
+  assert.match(home.searchResultsHtml(view, '<b>'), /matches “&lt;b&gt;”/, 'the query is escaped');
+  const page = home.homeHtml(view, { lens: 'work', tab: 'search', q: 'rac' });
+  assert.match(page, /<input id="cc-q" type="search" name="q" data-cc-search="1" value="rac"/);
+  assert.match(page, /<a class="cc-files cc-search-link" href="#search" aria-current="page"/);
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'focus' }), /<a class="cc-files cc-search-link" href="#search" title=/, 'the search link is on every tab');
+});
+
+test('the capture card adds one line to a project\'s inbox (Brain DEV-61105.01)', () => {
+  const html = home.captureHtml(['alpha', 'beta'], 'beta');
+  assert.match(html, /<form class="tk-panel tk-sort" data-tk-form="capture">/);
+  assert.match(html, /<input id="tk-cap-text" name="text" maxlength="500" required/);
+  assert.match(html, /<option value="alpha">alpha<\/option><option value="beta" selected>beta<\/option>/);
+  assert.match(home.captureHtml(['alpha'], 'alpha', { message: 'Not saved: changed elsewhere' }), /<p class="write-msg bad">Not saved: changed elsewhere<\/p>/);
+  assert.equal(home.defaultProject(VIEW, 'brain', ['alpha', 'beta']), 'beta', 'the project follows the lens');
+  assert.equal(home.defaultProject(VIEW, 'all', ['alpha', 'beta']), 'alpha');
+});
