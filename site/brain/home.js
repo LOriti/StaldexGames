@@ -501,10 +501,12 @@ export function inboxRow(r, known) {
 // search never finds them; the files are the place for those.
 
 const lower = (value) => String(value || '').toLowerCase();
+// A word matches where a word starts, so "rac" finds "RAC" and not "tracking".
+const starts = (text, word) => new RegExp(`(^|[^a-z0-9])${word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`).test(text);
 
 // Matches, best first: an id, alias or `L-` line id exactly (with or without `P-`), then the
-// whole query in the title, then every word in the title, then every word anywhere on the
-// item (its next step, home, context, priority, owner, state, kind and what was prepared).
+// whole query at a word in the title, then every word in the title, then every word anywhere
+// on the item (its next step, home, context, priority, owner, state, kind and what was prepared).
 export function searchMatches(view, q, { limit = 50 } = {}) {
   const query = lower(q).trim().replace(/\s+/g, ' ');
   if (!query) return [];
@@ -517,9 +519,9 @@ export function searchMatches(view, q, { limit = 50 } = {}) {
     const hay = `${lid.join(' ')} ${t} ${lower(extra)}`;
     let score;
     if (lid.some((id) => id === query || bareId(id) === bareId(query))) score = 0;
-    else if (t.includes(query)) score = 1;
-    else if (words.every((w) => t.includes(w))) score = 2;
-    else if (words.every((w) => hay.includes(w))) score = 3;
+    else if (starts(t, query)) score = 1;
+    else if (words.every((w) => starts(t, w))) score = 2;
+    else if (words.every((w) => starts(hay, w))) score = 3;
     else return;
     out.push({ kind, score, title, row });
   };

@@ -744,6 +744,9 @@ test('search finds open cards, items and lines by id, alias, line id, title and 
   assert.deepEqual(refs('crane'), [home.lineRef('project:alpha', 'Book the crane inspection')], 'a categorised line is found once, as its entry');
   assert.equal(refs('a-1').filter((r) => r === 'A-1').length, 1, 'a flagged item is found once, not again from the inbox');
   assert.deepEqual(refs('nothing like this'), []);
+  assert.deepEqual(refs('ract'), [], 'a word matches where a word starts: "ract" is not "contract"');
+  assert.deepEqual(refs('60103'), ['PA-HOME-60103.04'], 'part of an id, at a word boundary');
+  assert.deepEqual(refs('consultation -'), ['PA-HOME-60103.04'], 'punctuation in the query is literal');
   const order = refs('variation');
   assert.equal(order[0], 'WORK-SYS-60101.20', 'the whole query in the title ranks first');
 
