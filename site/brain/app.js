@@ -7,7 +7,7 @@ import {
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists, MODES, contextOfVia,
-} from './home.js?v=20261103b';
+} from './home.js?v=20261104a';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';

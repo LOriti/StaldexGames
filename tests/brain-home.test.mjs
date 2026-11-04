@@ -381,6 +381,16 @@ test('Hand to Claude from the card, and the lane\'s two states on the phone (Bra
   assert.match(home.preparedHtml({ prepared: 'see https://example.com/x?y=1 now' }), /<a href="https:\/\/example\.com\/x\?y=1" target="_blank" rel="noopener noreferrer">/);
   assert.doesNotMatch(home.preparedHtml({ prepared: 'in other/file.md' }, new Set(['a.md'])), /<a /, 'an unknown path is plain text');
   assert.equal(home.laneChip(entry('A-23', { claude: 'running' })), '', 'running is the desk\'s only');
+  // A hand-over with its own session (Brain D-132 C): the card opens it and the note.
+  const handover = { ai: 'prepare', prepared: '2026-11-04, session https://claude.ai/code/session_01ABC, run-up projects/alpha/prepared/X-1.md' };
+  assert.equal(home.sessionOf(handover.prepared), 'https://claude.ai/code/session_01ABC');
+  assert.equal(home.runupOf(handover.prepared), 'projects/alpha/prepared/X-1.md');
+  const handoverCard = home.preparedHtml(handover, new Set(['projects/alpha/prepared/X-1.md']));
+  assert.match(handoverCard, /<a class="mini-btn primary" href="https:\/\/claude\.ai\/code\/session_01ABC" target="_blank" rel="noopener noreferrer">Open Claude session<\/a>/);
+  assert.match(handoverCard, /<a class="mini-btn" href="#\/projects\/alpha\/prepared\/X-1\.md">Open run-up<\/a>/);
+  assert.match(home.laneChip(entry('A-24', handover)), /Claude session waiting/);
+  assert.match(home.laneChip(entry('A-25', { ai: 'prepare', prepared: '2026-11-04, run-up projects/alpha/prepared/X-2.md' })), /run-up ready/);
+  assert.doesNotMatch(home.preparedHtml({ prepared: 'session https://evil.example/session_1' }), /Open Claude session/, 'only a claude.ai session link');
   assert.doesNotMatch(home.taskHtml(entry('D-4')), /data-tk="hand"/);
   assert.doesNotMatch(home.taskHtml(entry('A-24', { section: 'blocked' })), /data-tk="hand"/);
   const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, handed, back] }));
