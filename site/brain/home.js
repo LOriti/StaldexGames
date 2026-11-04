@@ -440,13 +440,19 @@ export function rowLink(e, body, cls = 'cc-row') {
 }
 const lineChip = (e) => (e.source === 'line' ? '<span class="cc-chip flag">card at the next groom</span>' : '');
 const idText = (e) => (e.source === 'line' ? 'Inbox line' : e.ref);
+// The home without its `project:` prefix: the slug is the name Leon knows.
+export const homeName = (home) => String(home || '').replace(/^project:/, '');
+// The small line under a title: id, project, priority, area and estimate (DEV-61105.03).
+function factsLine(e, { area = true } = {}) {
+  const est = estimateText(e);
+  return `<span class="cc-id">${esc(idText(e))} · ${esc(homeName(e.home))}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}${area && e.area ? ` · area ${esc(e.area)}` : ''}${est ? ` · ${esc(est)}` : ''}</span>`;
+}
 
 function row(e, open = true, clock = null) {
   const stripe = e.section === 'hot' ? 'hot' : e.claude === 'back' ? 'ok' : '';
-  const est = estimateText(e);
   const ticking = clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : '';
-  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(idText(e))} · ${esc(e.home)}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}${e.area ? ` · area ${esc(e.area)}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
-    `<span class="cc-t">${esc(e.title)}</span>${chips(e) || ticking || lineChip(e) ? `<span class="cc-why">${ticking}${chips(e)}${lineChip(e)}</span>` : ''}${flagDetail(e)}</span>`;
+  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-t">${esc(e.title)}</span>${factsLine(e)}` +
+    `${chips(e) || ticking || lineChip(e) ? `<span class="cc-why">${ticking}${chips(e)}${lineChip(e)}</span>` : ''}${flagDetail(e)}</span>`;
   const link = open ? rowLink(e, body) : `<div class="cc-row">${body}</div>`;
   const acts = open ? rowActs(e) : '';
   return acts ? `<div class="cc-item">${link}${acts}</div>` : link;
@@ -506,8 +512,8 @@ export function inboxRow(r, known) {
   const sorted = r.details && r.details.categorised ? ' <span class="cc-chip ok">categorised · in Next actions</span>'
     : r.details && r.details.reference ? ' <span class="cc-chip ok">reference · the groom files it</span>' : '';
   return `<a class="cc-row cc-in" href="${inboxHref(r)}"${open}><span class="cc-stripe ${r.kind === 'line' || r.kind === 'capture' ? '' : 'flag'}"></span>` +
-    `<span class="cc-m"><span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(r.home)}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span>` +
-    `<span class="cc-t">${esc(r.text)}${sorted}</span></span></a>`;
+    `<span class="cc-m"><span class="cc-t">${esc(r.text)}${sorted}</span>` +
+    `<span class="cc-id"><span class="cc-kind">${INBOX_KINDS[r.kind] || esc(r.kind)}</span> · ${esc(homeName(r.home))}${r.ref ? ` · ${esc(r.ref)}` : ''}${r.date ? ` · ${esc(r.date)}` : ''}</span></span></a>`;
 }
 
 // ---- search (Brain DEV-61103.05) ------------------------------------------------------------
@@ -564,9 +570,9 @@ function searchRow(e, clock) {
   const state = e.section === 'hot' ? 'hot' : e.place === 'today' ? 'Today' : e.place === 'next-week' ? 'Next week'
     : e.state && e.state !== 'open' ? e.state : SECTION_NAMES[e.section] || e.section || '';
   const extra = `${state ? `<span class="cc-chip">${esc(state)}</span>` : ''}${e.source === 'line' ? '<span class="cc-chip flag">line · card at the next groom</span>' : ''}`;
-  const body = `<span class="cc-stripe ${e.section === 'hot' ? 'hot' : ''}"></span><span class="cc-m">` +
-    `<span class="cc-id">${esc(e.source === 'line' ? lineRef(e.home, e.title) : e.ref)} · ${esc(e.home)}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}</span>` +
-    `<span class="cc-t">${esc(e.title)}</span><span class="cc-why">${extra}${chips(e)}${clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : ''}</span>` +
+  const body = `<span class="cc-stripe ${e.section === 'hot' ? 'hot' : ''}"></span><span class="cc-m"><span class="cc-t">${esc(e.title)}</span>` +
+    `<span class="cc-id">${esc(e.source === 'line' ? lineRef(e.home, e.title) : e.ref)} · ${esc(homeName(e.home))}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}</span>` +
+    `<span class="cc-why">${extra}${chips(e)}${clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : ''}</span>` +
     (e.next ? `<span class="cc-next"><b>Next</b> ${esc(e.next)}</span>` : '') + '</span>';
   return rowLink(e, body);
 }
@@ -792,11 +798,10 @@ export function focusLists(view, lens, places, focalRef) {
 
 function focusRow(e, zone, clock) {
   const stripe = e.section === 'hot' ? 'hot' : e.claude === 'back' ? 'ok' : '';
-  const est = estimateText(e);
   const ticking = clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : '';
   const why = `${ticking}${chips(e)}${lineChip(e)}`;
-  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(idText(e))} · ${esc(e.home)}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
-    `<span class="cc-t">${esc(e.title)}</span>${why ? `<span class="cc-why">${why}</span>` : ''}${flagDetail(e)}</span>`;
+  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-t">${esc(e.title)}</span>${factsLine(e, { area: false })}` +
+    `${why ? `<span class="cc-why">${why}</span>` : ''}${flagDetail(e)}</span>`;
   const ref = esc(e.ref);
   const b = (act, label) => `<button type="button" class="mini-btn" data-cc-place="${act}" data-ref="${ref}">${label}</button>`;
   const acts = zone === 'top' ? b('one', '↑ One thing') + b('tolist', '↓ To list') : b('one', '↑ One thing') + b('top', '↑ Top 3');
@@ -813,7 +818,7 @@ function focusTab(view, lens, byRef, opts = {}) {
     const est = estimateText(focal);
     html += `<a class="cc-focal" href="${entryHref(focal)}" data-cc-ref="${esc(focal.ref)}" data-cc-slot="one"><span class="cc-k">The one thing${clock && clock.ref === focal.ref ? ' · clock running' : ''}</span>` +
       `<span class="cc-ttl">${esc(focal.title)}</span><span class="cc-why">${chips(focal)}</span>` +
-      `<span class="cc-id">${esc(focal.ref)} · ${esc(focal.home)}${est ? ` · ${esc(est)}` : ''} · ${esc(choice.reason)}</span></a>`;
+      `<span class="cc-id">${esc(focal.ref)} · ${esc(homeName(focal.home))}${est ? ` · ${esc(est)}` : ''} · ${esc(choice.reason)}</span></a>`;
   } else {
     const best = Object.entries(slot.contexts).filter(([, c]) => c.count).sort((a, b) => b[1].count - a[1].count)[0];
     html += '<div class="cc-focal calm" data-cc-slot="one"><span class="cc-k">Nothing hot</span><span class="cc-ttl">Nothing needs you right now' +
@@ -863,11 +868,10 @@ export function placeActs(e, sub, { index = 0, count = 1 } = {}) {
 
 function placedRow(e, sub, clock, pos, extra = '') {
   const stripe = e.section === 'hot' ? 'hot' : e.claude === 'back' ? 'ok' : '';
-  const est = estimateText(e);
   const ticking = clock && clock.ref === e.ref ? '<span class="cc-chip clock">clock running</span>' : '';
   const why = `${ticking}${chips(e)}${lineChip(e)}`;
-  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-id">${esc(idText(e))} · ${esc(e.home)}${e.priority ? ` · ${esc(priorityText(e.priority))}` : ''}${e.area ? ` · area ${esc(e.area)}` : ''}${est ? ` · ${esc(est)}` : ''}</span>` +
-    `<span class="cc-t">${esc(e.title)}</span>${why ? `<span class="cc-why">${why}</span>` : ''}${extra}${flagDetail(e)}</span>`;
+  const body = `<span class="cc-stripe ${stripe}"></span><span class="cc-m"><span class="cc-t">${esc(e.title)}</span>${factsLine(e)}` +
+    `${why ? `<span class="cc-why">${why}</span>` : ''}${extra}${flagDetail(e)}</span>`;
   return `<div class="cc-item" draggable="true" data-cc-drag="${esc(e.ref)}" data-cc-list="${sub}">${rowLink(e, body)}${rowActs(e)}${placeActs(e, sub, pos)}</div>`;
 }
 
@@ -968,9 +972,15 @@ function clarifyGroups(view, lens) {
   ];
 }
 
+// What only Leon can settle: raw lines and captures, new items and proposed closes
+// (DEV-61105.03). Tidy-ups (estimates, review dates, owners) are not counted.
+export const SETTLE_GROUPS = ['New items to confirm', 'Proposed closes'];
 export function clarifyCount(view, lens) {
   const inbox = (view.inbox || []).filter((r) => (lens === 'all' || r.lens === lens) && (r.kind === 'line' || r.kind === 'capture')).length;
-  return inbox + clarifyGroups(view, lens).reduce((n, [, rows]) => n + rows.length, 0);
+  return inbox + clarifyGroups(view, lens).filter(([t]) => SETTLE_GROUPS.includes(t)).reduce((n, [, rows]) => n + rows.length, 0);
+}
+export function tidyCount(view, lens) {
+  return clarifyGroups(view, lens).filter(([t]) => !SETTLE_GROUPS.includes(t)).reduce((n, [, rows]) => n + rows.length, 0);
 }
 
 // The Inbox tab (Brain DEV-61026.33): the add box first, then raw lines and captures to
@@ -981,15 +991,22 @@ function inboxTab(view, lens, opts) {
   html += inboxHtml(view, lens, { projects: opts.projects || [], all: true, title: 'To clarify', addFirst: true, flagsLine: false });
   const groups = clarifyGroups(view, lens);
   const batch = { 'New items to confirm': ['unconfirmed', 'Confirm all'], 'Proposed closes': ['close-proposed', 'Close all'] };
-  for (const [title, rows] of groups) {
-    if (!rows.length) continue;
+  const section = (title, rows) => {
     const b = batch[title];
     const all = b && rows.length > 1
       ? `<button type="button" class="mini-btn primary cc-batch" data-cc-batch="${b[0]}" data-ids="${esc(rows.map((e) => e.ref).join(','))}">${b[1]} ${rows.length}</button>` : '';
-    html += `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${rows.length}</em></h2>${all ? `<p class="cc-batch-row">${all}</p>` : ''}<div class="cc-box">` +
+    return `<section class="cc-inbox"><h2 class="cc-gh">${esc(title)} <em>${rows.length}</em></h2>${all ? `<p class="cc-batch-row">${all}</p>` : ''}<div class="cc-box">` +
       rows.map((e) => row(e, true, opts.clock)).join('') + '</div></section>';
-  }
+  };
+  for (const [title, rows] of groups) if (rows.length && SETTLE_GROUPS.includes(title)) html += section(title, rows);
   if (!clarifyCount(view, lens)) html += `<p class="cc-empty">Nothing to clarify${lens === 'all' ? '' : ' in this lens'}.</p>`;
+  // Tidy-ups wait folded away: groomed work missing an estimate, a review date or an owner
+  // is not clarifying, and it no longer swells the count (DEV-61105.03).
+  const tidy = groups.filter(([title, rows]) => rows.length && !SETTLE_GROUPS.includes(title));
+  if (tidy.length) {
+    html += `<details class="cc-tidy"><summary>Tidy-ups <em>${tidyCount(view, lens)}</em> <span class="cc-note">estimates, review dates and owners; not urgent</span></summary>` +
+      tidy.map(([title, rows]) => section(title, rows)).join('') + '</details>';
+  }
   return html;
 }
 
@@ -1051,8 +1068,8 @@ export function somedayRows(view, lens) {
 
 function somedayRow(r) {
   const project = projectOf(r) || '';
-  return `<div class="cc-item"><div class="cc-row cc-in"><span class="cc-stripe"></span><span class="cc-m"><span class="cc-id"><span class="cc-kind">Someday</span> · ${esc(r.home)}${r.date ? ` · since ${esc(r.date)}` : ''}</span>` +
-    `<span class="cc-t">${esc(r.text)}</span></span></div><div class="cc-acts"><button type="button" class="mini-btn" data-cc-promote="1" data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(project)}">Promote to Inbox</button></div></div>`;
+  return `<div class="cc-item"><div class="cc-row cc-in"><span class="cc-stripe"></span><span class="cc-m"><span class="cc-t">${esc(r.text)}</span>` +
+    `<span class="cc-id"><span class="cc-kind">Someday</span> · ${esc(homeName(r.home))}${r.date ? ` · since ${esc(r.date)}` : ''}</span></span></div><div class="cc-acts"><button type="button" class="mini-btn" data-cc-promote="1" data-cc-line="${esc(r.raw || r.text)}" data-cc-project="${esc(project)}">Promote to Inbox</button></div></div>`;
 }
 
 export function somedayHtml(view, lens) {
@@ -1109,12 +1126,11 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', 
         : focusTab(view, lens, byRef, { clock, projects, inboxAll, focal, places });
   // A view made on an earlier Perth day has yesterday's "overdue" and "due soon".
   const stale = today && view.date && view.date < today
-    ? `<p class="cc-stale" role="status">This view was made for ${esc(view.date)}; today’s refresh has not run yet, so overdue and due-soon may be a day behind. Refresh in a few minutes.</p>` : '';
+    ? `<p class="cc-stale" role="status">View made for ${esc(view.date)}; today’s refresh runs at 06:00, so overdue and due-soon may be a day behind.</p>` : '';
   return `<div class="cc"><div class="cc-head">${seg}` +
-    `<nav class="cc-tabs" aria-label="Command centre">${tabs}</nav>` +
     `<span class="cc-side"><a class="cc-files cc-someday" href="#someday"${tab === 'someday' ? ' aria-current="page"' : ''}>Someday <em>${parked}</em></a>` +
-    `<a class="cc-files cc-search-link" href="#search"${tab === 'search' ? ' aria-current="page"' : ''} title="Search every open card, item and line (press /)">Search</a>` +
-    `<a class="cc-files" href="#/INDEX.md">Browse files</a></span></div>` + stale + body +
+    `<a class="cc-files" href="#/INDEX.md">Files</a></span></div>` +
+    `<nav class="cc-tabs" aria-label="Command centre">${tabs}</nav>` + stale + body +
     `<p class="cc-note">${esc(view.gaps.join(' '))}${asOf ? ` As of ${esc(asOf)}.` : ''}</p></div>`;
 }
 

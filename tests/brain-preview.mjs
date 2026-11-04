@@ -190,7 +190,8 @@ await page.locator('[data-cc-lens-open]').click(); await settle(); await shot('l
 if (!(await page.locator('.cc-chooser [data-cc-lens="work"]').count())) problems.push('the lens chip opened no chooser');
 for (const lens of ['work', 'brain', 'all']) { await pickLens(lens); await shot(`focus-${lens}`); }
 // Search from every tab (Brain DEV-61103.05): `/` opens it, results follow the typing, a hit opens its card.
-if (!(await page.locator('a.cc-search-link[href="#search"]').count())) problems.push('no Search link in the head');
+if (!(await page.locator('#search-btn[href="#search"]').count())) problems.push('no Search in the top bar');
+if (await page.locator('.cc-head .cc-tabs').count()) problems.push('the tabs are still inside the head row');
 await page.keyboard.press('/'); await settle();
 if (!(await page.locator('#cc-q').count())) problems.push('`/` did not open the search');
 else {

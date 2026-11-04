@@ -111,7 +111,7 @@ test('what is not clarified lives on the Inbox tab, with a count and a link from
 });
 
 test('a view from an earlier Perth day says so', () => {
-  assert.match(home.homeHtml(VIEW, { lens: 'work', today: '2026-10-27' }), /class="cc-stale"[^>]*>This view was made for 2026-10-26/);
+  assert.match(home.homeHtml(VIEW, { lens: 'work', today: '2026-10-27' }), /class="cc-stale"[^>]*>View made for 2026-10-26/);
   assert.doesNotMatch(home.homeHtml(VIEW, { lens: 'work', today: '2026-10-26' }), /cc-stale/);
 });
 
@@ -560,7 +560,7 @@ test('a categorised Inbox line is a next action at once, and its place follows i
   assert.equal(lines[0].ref, ref);
   assert.ok(view.entries.findIndex((e) => e.ref === ref) < view.entries.findIndex((e) => e.ref === 'C-3'), 'sorted in by priority');
   const floating = home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week', places: { today: [], next: [], week: [] } });
-  assert.match(floating, /data-cc-line="Call the bank `categorised: 2030-01-01` `priority: P1`" data-cc-project="alpha">[\s\S]*?Inbox line · project:alpha[\s\S]*?card at the next groom[\s\S]*?data-cc-place="today" data-ref="L-/);
+  assert.match(floating, /data-cc-line="Call the bank `categorised: 2030-01-01` `priority: P1`" data-cc-project="alpha">[\s\S]*?Inbox line · alpha[\s\S]*?card at the next groom[\s\S]*?data-cc-place="today" data-ref="L-/);
   // Placed in Today as a line, then groomed: the card carries the line's id as an alias.
   const groomed = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, entry('ALPHA-60101.01', { source: 'card', aliases: [ref] })], inbox: [] }));
   home.withLines(groomed);
@@ -713,7 +713,7 @@ test('priorities say what they mean, and the mode is guessed, shown and changeab
   assert.match(html, /<select id="tk-mode" class="tk-mode" data-tk-mode="1">[\s\S]*<option value="email" selected>Email<\/option>/);
   assert.match(home.taskHtml(entry('D-4', { context: 'agendas' })), /<dt>Mode<\/dt><dd>Agenda<\/dd>/, 'a decision shows its mode, not a picker');
   const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, card] }));
-  assert.match(home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week' }), /ALPHA-60101\.30 · project:alpha · P0 · Urgent/);
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week' }), /<span class="cc-t">Task ALPHA-60101\.30<\/span><span class="cc-id">ALPHA-60101\.30 · alpha · P0 · Urgent/);
   const lines = JSON.parse(JSON.stringify({ ...VIEW, inbox: [
     { kind: 'line', text: 'Book the inspection', raw: 'x', details: { categorised: '2030-01-01', via: 'call' }, home: 'project:alpha', lens: 'work' },
     { kind: 'line', text: 'Reply to Jo', raw: 'y', details: { categorised: '2030-01-01' }, home: 'project:alpha', lens: 'work' },
@@ -762,7 +762,7 @@ test('search finds open cards, items and lines by id, alias, line id, title and 
 
   const html = home.searchResultsHtml(view, 'rac');
   assert.match(html, /Found <em>2<\/em>/);
-  assert.match(html, /data-cc-ref="PA-HOME-60103.04"[\s\S]*PA-HOME-60103\.04 · project:alpha · P1 · High[\s\S]*<span class="cc-chip">Next<\/span>[\s\S]*<b>Next<\/b> Call number/, 'project, id, state and next step, opening the card');
+  assert.match(html, /data-cc-ref="PA-HOME-60103.04"[\s\S]*PA-HOME-60103\.04 · alpha · P1 · High[\s\S]*<span class="cc-chip">Next<\/span>[\s\S]*<b>Next<\/b> Call number/, 'project, id, state and next step, opening the card');
   assert.match(html, /data-cc-line="Renew the RAC policy" data-cc-project="alpha"/, 'a raw line opens its walk');
   assert.match(home.searchResultsHtml(view, 'signature'), /<span class="cc-chip">Today<\/span>/, 'a placed item shows where it sits');
   assert.match(home.searchResultsHtml(view, 'zzz'), /Nothing open matches “zzz”\. Done and archived items are not searched/);
@@ -770,8 +770,7 @@ test('search finds open cards, items and lines by id, alias, line id, title and 
   assert.match(home.searchResultsHtml(view, '<b>'), /matches “&lt;b&gt;”/, 'the query is escaped');
   const page = home.homeHtml(view, { lens: 'work', tab: 'search', q: 'rac' });
   assert.match(page, /<input id="cc-q" type="search" name="q" data-cc-search="1" value="rac"/);
-  assert.match(page, /<a class="cc-files cc-search-link" href="#search" aria-current="page"/);
-  assert.match(home.homeHtml(view, { lens: 'work', tab: 'focus' }), /<a class="cc-files cc-search-link" href="#search" title=/, 'the search link is on every tab');
+  assert.doesNotMatch(page, /cc-search-link/, 'Search lives in the top bar, not the head (DEV-61105.03)');
 });
 
 test('the capture card adds one line to a project\'s inbox (Brain DEV-61105.01)', () => {
@@ -782,4 +781,29 @@ test('the capture card adds one line to a project\'s inbox (Brain DEV-61105.01)'
   assert.match(home.captureHtml(['alpha'], 'alpha', { message: 'Not saved: changed elsewhere' }), /<p class="write-msg bad">Not saved: changed elsewhere<\/p>/);
   assert.equal(home.defaultProject(VIEW, 'brain', ['alpha', 'beta']), 'beta', 'the project follows the lens');
   assert.equal(home.defaultProject(VIEW, 'all', ['alpha', 'beta']), 'alpha');
+});
+
+
+test('the Inbox counts what only Leon can settle; tidy-ups fold away (Brain DEV-61105.03)', () => {
+  const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [
+    ...VIEW.entries,
+    entry('A-7', { flags: ['unconfirmed'], minutes: null }),
+    entry('A-8', { section: 'next', minutes: null, title: 'No estimate on this one' }),
+  ], inbox: [
+    { kind: 'line', text: 'A raw line', raw: 'A raw line', details: {}, family: 'WORK-SYS', home: 'project:alpha', date: '2026-10-26', path: 'projects/alpha/QUEUE.md', ref: null, lens: 'work' },
+    { kind: 'unconfirmed', text: 'Task A-7', home: 'project:alpha', date: '2026-10-26', path: 'register/open-items.md', ref: 'A-7', lens: 'work' },
+  ] }));
+  view.lenses.work.quiet.no_owner = ['A-2'];
+  // one line, one new item: two to clarify; A-1, A-2 and A-8 lack an estimate and A-2 an owner, which are tidy-ups
+  assert.equal(home.clarifyCount(view, 'work'), 2);
+  assert.ok(home.tidyCount(view, 'work') >= 3);
+  const html = home.homeHtml(view, { lens: 'work', tab: 'inbox', projects: ['alpha'] });
+  assert.match(html, /<a href="#inbox" aria-current="page">Inbox <span class="cc-n">2<\/span><\/a>/);
+  assert.match(html, /<details class="cc-tidy"><summary>Tidy-ups <em>\d+<\/em>[\s\S]*No estimate yet[\s\S]*No estimate on this one/);
+  assert.ok(html.indexOf('New items to confirm') < html.indexOf('cc-tidy'), 'what Leon settles comes before the tidy-ups');
+  const focus = home.homeHtml(view, { lens: 'work', tab: 'focus' });
+  assert.match(focus, /2 to clarify in the Inbox/);
+  // title first, then the facts line without "project:"
+  assert.match(home.homeHtml(view, { lens: 'work', tab: 'next', sub: 'week' }), /<span class="cc-t">Task A-7<\/span><span class="cc-id">A-7 · alpha/);
+  assert.match(focus, /<span class="cc-side">[\s\S]*Files<\/a><\/span><\/div><nav class="cc-tabs"/, 'the side links share the lens row; the tabs follow');
 });

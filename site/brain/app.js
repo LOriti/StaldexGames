@@ -8,7 +8,7 @@ import {
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists, MODES, contextOfVia,
   searchResultsHtml, captureHtml, defaultProject, sessionsFrom, withSession,
-} from './home.js?v=20261105c';
+} from './home.js?v=20261105d';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
