@@ -37,6 +37,9 @@ const BLOBS = { 's-index': '# Portfolio', 's-state': '# State', 's-state2': '# S
 const PINNED = '0123456789abcdef0123456789abcdef01234567';
 
 const calls = [];
+const FIRE = 'https://api.anthropic.com/v1/claude_code/routines/trig_01TEST/fire';
+const fires = [];
+let fireStatus = 200;
 const extraKeys = [];
 globalThis.fetch = async (input, init = {}) => {
   const url = String(input);
@@ -67,8 +70,15 @@ globalThis.fetch = async (input, init = {}) => {
     if (file.putStatus !== 200) return new Response('{}', { status: file.putStatus });
     return ok({ content: { sha: 'new-sha' }, commit: { sha: 'commit-sha' } });
   }
+  // The Brain hand-over task's API trigger (Brain D-132 C).
+  if (url === FIRE) {
+    fires.push({ headers: init.headers, body: JSON.parse(init.body) });
+    if (fireStatus !== 200) return new Response('{}', { status: fireStatus });
+    return ok({ type: 'routine_fire', claude_code_session_id: 'session_01FIRED', claude_code_session_url: 'https://claude.ai/code/session_01FIRED' });
+  }
   return new Response('nope', { status: 404 });
 };
+
 
 // Synthetic queue the contents API serves for project `demo`.
 const QUEUE = '---\nproject: demo\ntype: queue\nupdated: 2030-01-01\n---\n\n# demo\n\n' +
@@ -367,4 +377,33 @@ test('a stale sha is reported as 409 and never retried', async () => {
   repo.putStatus = 500;
   assert.equal((await post('/api/brain/inbox', { project: 'demo', text: 'x' }, { token: await sign({}) })).status, 502);
   repo.putStatus = 200;
+});
+
+test('Hand to Claude fires the hand-over task and returns the session link (Brain D-132 C)', async () => {
+  const token = await sign({});
+  const env = { ...ENV, BRAIN_HANDOVER_URL: FIRE, BRAIN_HANDOVER_TOKEN: 'sk-test' };
+  fires.length = 0; fireStatus = 200;
+  const res = await post('/api/brain/hand', { id: 'P-DEV-01014.01' }, { token, env });
+  assert.equal(res.status, 200);
+  assert.equal(res.body.session, 'https://claude.ai/code/session_01FIRED');
+  assert.equal(fires.length, 1);
+  assert.deepEqual(fires[0].body, { text: 'P-DEV-01014.01' });
+  assert.equal(fires[0].headers.Authorization, 'Bearer sk-test');
+  assert.equal(fires[0].headers['anthropic-beta'], 'experimental-cc-routine-2026-04-01');
+  // A failed fire keeps the hand-over and says why.
+  fireStatus = 429;
+  const busy = await post('/api/brain/hand', { id: 'P-DEV-01014.01' }, { token, env });
+  assert.equal(busy.status, 200);
+  assert.equal(busy.body.session, null);
+  assert.equal(busy.body.fire, 'busy, try later');
+  fireStatus = 200;
+  // Not set up, or a fire URL that is not Anthropic's: nothing is called.
+  fires.length = 0;
+  assert.equal((await post('/api/brain/hand', { id: 'P-DEV-01014.01' }, { token })).body.fire, 'not set up');
+  const odd = await post('/api/brain/hand', { id: 'P-DEV-01014.01' }, { token, env: { ...env, BRAIN_HANDOVER_URL: 'https://evil.example/fire' } });
+  assert.equal(odd.body.fire, 'bad fire URL');
+  assert.equal(fires.length, 0);
+  // Other writes never fire it.
+  await post('/api/brain/progress', { id: 'P-DEV-01014.01', progress: 'moved' }, { token, env });
+  assert.equal(fires.length, 0);
 });

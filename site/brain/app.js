@@ -7,7 +7,7 @@ import {
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists, MODES, contextOfVia,
-} from './home.js?v=20261104a';
+} from './home.js?v=20261104b';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -736,10 +736,14 @@ function writeError(err) {
 // branch head from before it) without a full reload: the home keeps this page's patched
 // copy of the view until Brain renders a new one, and a file page re-shows its new text.
 async function write(route, body) {
-  const { commit } = await api(route, body);
+  return (await writeFull(route, body)).commit;
+}
+
+async function writeFull(route, body) {
+  const out = await api(route, body);
   home.dirty = true;
-  await refreshTree(commit);
-  return commit;
+  await refreshTree(out.commit);
+  return out;
 }
 
 async function refreshTree(commit) {
@@ -1214,13 +1218,17 @@ modal.addEventListener('click', async (e) => {
     for (const b of modal.querySelectorAll('button')) b.disabled = true;
     try {
       const card = closeKind(entry) === 'card';
-      await write('/hand', { id: entry.ref, ...(card ? { project: projectOf(entry) } : {}) });
+      const fired = await writeFull('/hand', { id: entry.ref, ...(card ? { project: projectOf(entry) } : {}) });
       entry.ai = 'prepare'; entry.claude = entry.prepared ? 'back' : 'ready'; entry.context = 'claude';
+      // The Worker started the item's own session (Brain D-132 C); it writes the same link
+      // onto the item, so this local copy only bridges the gap until Brain re-renders.
+      if (fired.session) { entry.prepared = `${new Date().toISOString().slice(0, 10)}, session ${fired.session}`; entry.claude = 'back'; }
       for (const slot of Object.values(home.view.lenses)) {
         const inLens = view_lens(slot) === 'all' || entry.lens === view_lens(slot);
         if (inLens && !slot.claude.includes(entry.ref)) { slot.claude.push(entry.ref); slot.claude_total += 1; }
       }
-      task.message = 'Handed to Claude. The next morning brief prepares it.';
+      task.message = fired.session ? 'Handed to Claude. Its session is starting: open it to answer its questions.'
+        : `Handed to Claude${fired.fire && fired.fire !== 'not set up' ? ` (session not started: ${fired.fire})` : ''}. The next brief or debrief prepares it.`;
     } catch (err) {
       task.message = writeError(err);
     }

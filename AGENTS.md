@@ -24,7 +24,7 @@ Notes for anyone, human or agent, changing this repo. Keep it short and team-neu
   keep `home.js` free of imports so the tests can load it alone. Its only writes are the
   Worker's `WRITES` table: queue edits (done, Inbox line, Progress, categorise a line, remove a handled line, mode),
   register edits (Confirm, Reject, Progress, close with Evidence, decide with an outcome, categorise, mode) and time rows on Brain's `daily-log`
-  branch (task clock, hours entered); their edits follow Brain's own rules, so change them
+  branch (task clock, hours entered), and Hand to Claude also fires Brain's "Brain hand-over" scheduled task (its fire URL and token are the Worker secrets `BRAIN_HANDOVER_URL` and `BRAIN_HANDOVER_TOKEN`); their edits follow Brain's own rules, so change them
   only from a Brain request. Bump the `?v=` on the
   asset URLs in `index.html` and the imports in `app.js` when those files change, so
   phones pick up a deploy without a hard refresh.

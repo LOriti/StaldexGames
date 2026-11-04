@@ -122,6 +122,8 @@ function answer(url, method = 'GET', body = null) {
       const hhmm = `12:${String(writes.length % 60).padStart(2, '0')}`;
       for (const it of b.items || []) TIME.push({ date: today, kind: it.kind || b.kind, start: hhmm, end: '', minutes: 0, ref: it.ref, area: '', lens: b.lens || '', note: String(it.note) });
     }
+    // Hand to Claude also starts the item's session (Brain D-132 C).
+    if (u.pathname === '/api/brain/hand') return { path: 'synthetic', sha: 'x', commit: null, session: 'https://claude.ai/code/session_01PREVIEW', fire: 'started' };
     return { path: 'synthetic', sha: 'x', commit: null };
   }
   if (u.pathname === '/api/brain/time') return { from: u.searchParams.get('from'), to: today, rows: TIME };
@@ -449,7 +451,8 @@ if (await focal.count()) {
   else {
     await page.locator('[data-tk="hand"]').click(); await settle();
     if (!writes.some(([path]) => path === '/api/brain/hand')) problems.push('Hand to Claude wrote nothing');
-    if (!(await page.locator('.tk-wrap:not([hidden]) .cc-chip.clock', { hasText: 'ready for Claude' }).count())) problems.push('a handed item does not read ready for Claude');
+    if (!(await page.locator('.tk-wrap:not([hidden]) .cc-chip.clock', { hasText: 'Claude session waiting' }).count())) problems.push('a handed item does not read Claude session waiting');
+    if (!(await page.locator('.tk-wrap:not([hidden]) a[href="https://claude.ai/code/session_01PREVIEW"]', { hasText: 'Open Claude session' }).count())) problems.push('a handed item does not open its new session');
     await shot('task-handed');
     await page.locator('[data-tk="hide"].tk-x').click(); await settle();
     await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('work');

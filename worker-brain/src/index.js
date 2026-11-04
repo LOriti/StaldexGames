@@ -256,6 +256,9 @@ const WRITES = {
     valid: (body) => (body.project !== undefined ? isCardId(body.id, body.project) : isRegisterItem(body)),
     apply: (text, body, today) => (body.project !== undefined ? handCard : handItem)(text, body.id, today),
     message: (body) => `web: hand ${body.id}`,
+    // Then start the item's own Claude session (Brain D-132 C): fire the "Brain hand-over"
+    // scheduled task with the item's id. A failed fire never undoes the hand-over.
+    after: (body, env) => fireHandover(env, body.id),
   },
   // The mode of a card (with `project`) or an open item, `via:` (Brain D-127 A), set from
   // its task card when Brain's guess from the wording is wrong.
@@ -414,7 +417,36 @@ async function write(request, url, env) {
     throw err;
   }
   treeCache.clear();
-  return json({ path, sha: saved.content?.sha || null, commit: saved.commit?.sha || null });
+  const after = action.after ? await action.after(body, env) : {};
+  return json({ path, sha: saved.content?.sha || null, commit: saved.commit?.sha || null, ...after });
+}
+
+// The scheduled task's API trigger (code.claude.com/docs/en/routines, research preview). The
+// URL and token are Worker secrets, never committed; only Anthropic's fire endpoint is called.
+const FIRE_URL = /^https:\/\/api\.anthropic\.com\/v1\/claude_code\/routines\/trig_[A-Za-z0-9]+\/fire$/;
+const SESSION_URL = /^https:\/\/claude\.ai\/code\/session_[A-Za-z0-9]+$/;
+
+export async function fireHandover(env, id) {
+  if (!env.BRAIN_HANDOVER_URL || !env.BRAIN_HANDOVER_TOKEN) return { session: null, fire: 'not set up' };
+  if (!FIRE_URL.test(env.BRAIN_HANDOVER_URL)) return { session: null, fire: 'bad fire URL' };
+  try {
+    const res = await fetch(env.BRAIN_HANDOVER_URL, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${env.BRAIN_HANDOVER_TOKEN}`,
+        'anthropic-beta': 'experimental-cc-routine-2026-04-01',
+        'anthropic-version': '2023-06-01',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ text: id }),
+    });
+    if (!res.ok) return { session: null, fire: res.status === 429 ? 'busy, try later' : `failed (${res.status})` };
+    const out = await res.json().catch(() => ({}));
+    const url = out.claude_code_session_url;
+    return { session: typeof url === 'string' && SESSION_URL.test(url) ? url : null, fire: 'started' };
+  } catch {
+    return { session: null, fire: 'unreachable' };
+  }
 }
 
 // ---- reads ----------------------------------------------------------------------
