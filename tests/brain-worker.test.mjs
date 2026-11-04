@@ -39,6 +39,7 @@ const PINNED = '0123456789abcdef0123456789abcdef01234567';
 const calls = [];
 const FIRE = 'https://api.anthropic.com/v1/claude_code/routines/trig_01TEST/fire';
 const fires = [];
+const logPuts = [];
 let fireStatus = 200;
 const extraKeys = [];
 globalThis.fetch = async (input, init = {}) => {
@@ -69,6 +70,12 @@ globalThis.fetch = async (input, init = {}) => {
     file.puts.push(put);
     if (file.putStatus !== 200) return new Response('{}', { status: file.putStatus });
     return ok({ content: { sha: 'new-sha' }, commit: { sha: 'commit-sha' } });
+  }
+  // Today's daily log on the log branch: new each day here, so a GET is 404 and the PUT creates it.
+  if (url.startsWith('https://api.github.com/repos/LOriti/brain/contents/logs/daily/')) {
+    if ((init.method || 'GET') === 'GET') return new Response('{}', { status: 404 });
+    logPuts.push(JSON.parse(init.body));
+    return ok({ content: { sha: 'log-sha' }, commit: { sha: 'log-commit' } });
   }
   // The Brain hand-over task's API trigger (Brain D-132 C).
   if (url === FIRE) {
@@ -390,6 +397,12 @@ test('Hand to Claude fires the hand-over task and returns the session link (Brai
   assert.deepEqual(fires[0].body, { text: 'P-DEV-01014.01' });
   assert.equal(fires[0].headers.Authorization, 'Bearer sk-test');
   assert.equal(fires[0].headers['anthropic-beta'], 'experimental-cc-routine-2026-04-01');
+  // The link goes onto today's daily log as a `session` row, read live by both screens.
+  assert.equal(res.body.logged, true);
+  const put = logPuts[logPuts.length - 1];
+  assert.equal(put.branch, 'daily-log');
+  assert.match(put.message, /^time: \d{4}-\d{2}-\d{2} session P-DEV-01014\.01$/);
+  assert.match(Buffer.from(put.content, 'base64').toString(), /\| session \| \d{2}:\d{2} \|\s+\| 0 \| P-DEV-01014\.01 \|\s+\|\s+\| https:\/\/claude\.ai\/code\/session_01FIRED \|/);
   // A failed fire keeps the hand-over and says why.
   fireStatus = 429;
   const busy = await post('/api/brain/hand', { id: 'P-DEV-01014.01' }, { token, env });
@@ -406,4 +419,13 @@ test('Hand to Claude fires the hand-over task and returns the session link (Brai
   // Other writes never fire it.
   await post('/api/brain/progress', { id: 'P-DEV-01014.01', progress: 'moved' }, { token, env });
   assert.equal(fires.length, 0);
+});
+
+test('the session link is built from the id when the answer gives no app link', async () => {
+  const { sessionLink } = worker;
+  assert.equal(sessionLink({ claude_code_session_url: 'https://claude.ai/code/session_01A' }), 'https://claude.ai/code/session_01A');
+  assert.equal(sessionLink({ claude_code_session_id: 'cse_018Cnp2HcJUjv4MJUga4gorU' }), 'https://claude.ai/code/session_018Cnp2HcJUjv4MJUga4gorU');
+  assert.equal(sessionLink({ claude_code_session_url: 'https://claude.ai/code/cse_01B' }), 'https://claude.ai/code/session_01B');
+  assert.equal(sessionLink({ claude_code_session_url: 'https://evil.example/x', claude_code_session_id: 'nope' }), null);
+  assert.equal(sessionLink(null), null);
 });

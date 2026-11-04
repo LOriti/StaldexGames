@@ -131,6 +131,14 @@ export function focalRow(body, clock) {
   return { kind: 'focal', start: clock.hhmm, end: '', minutes: 0, ref, area: '', lens, note: '' };
 }
 
+// The Claude session a hand-over started (Brain D-132 C): `| session | HH:MM | | 0 | <id> | |
+// | <link> |`, read live by both screens, so the link never waits on Brain's checks.
+export const SESSION_LINK = /^https:\/\/claude\.ai\/code\/session_[A-Za-z0-9]+$/;
+export function sessionRow(ref, link, clock) {
+  if (!SESSION_LINK.test(link || '')) throw new QueueError('invalid-text', 'not a Claude session link');
+  return { kind: 'session', start: clock.hhmm, end: '', minutes: 0, ref: cleanRef(ref), area: '', lens: '', note: link };
+}
+
 // Placements for the Next actions tab (Brain D-109 A, D-120 A): one row per item in the
 // batch, `| today | HH:MM | | 0 | <id> | | <lens> | <position|out> |` or the same with
 // `next`, or `next-week` and `keep`. A drag reorders by writing the whole list's positions.

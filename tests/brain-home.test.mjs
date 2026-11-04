@@ -391,6 +391,16 @@ test('Hand to Claude from the card, and the lane\'s two states on the phone (Bra
   assert.match(home.laneChip(entry('A-24', handover)), /Claude session waiting/);
   assert.match(home.laneChip(entry('A-25', { ai: 'prepare', prepared: '2026-11-04, run-up projects/alpha/prepared/X-2.md' })), /run-up ready/);
   assert.doesNotMatch(home.preparedHtml({ prepared: 'session https://evil.example/session_1' }), /Open Claude session/, 'only a claude.ai session link');
+  // The link from the daily log's `session` row shows before Brain re-renders (D-132 C).
+  const sessions = home.sessionsFrom([
+    { date: '2026-11-04', kind: 'session', ref: 'A-30', note: 'https://claude.ai/code/session_01LOG' },
+    { date: '2026-11-04', kind: 'session', ref: 'A-31', note: 'https://evil.example/x' },
+  ]);
+  assert.deepEqual(Object.keys(sessions), ['A-30']);
+  const live = home.withSession(entry('A-30', { ai: 'prepare', prepared: '' }), sessions);
+  assert.match(home.preparedHtml(live), /href="https:\/\/claude\.ai\/code\/session_01LOG"/);
+  assert.match(home.withSession(entry('A-30', { ai: 'prepare', prepared: '2026-11-04, run-up p/x.md' }), sessions).prepared, /session https:\/\/claude\.ai\/code\/session_01LOG, run-up p\/x\.md/);
+  assert.equal(home.withSession(entry('A-30', { ai: null, prepared: '' }), sessions).prepared, '', 'taken back: no link');
   assert.doesNotMatch(home.taskHtml(entry('D-4')), /data-tk="hand"/);
   assert.doesNotMatch(home.taskHtml(entry('A-24', { section: 'blocked' })), /data-tk="hand"/);
   const view = JSON.parse(JSON.stringify({ ...VIEW, entries: [...VIEW.entries, handed, back] }));

@@ -7,8 +7,8 @@ import {
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists, MODES, contextOfVia,
-  searchResultsHtml, captureHtml, defaultProject,
-} from './home.js?v=20261105a';
+  searchResultsHtml, captureHtml, defaultProject, sessionsFrom, withSession,
+} from './home.js?v=20261105c';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -925,6 +925,8 @@ function renderClock() {
 }
 
 function refreshAll() {
+  // Session links from the daily log (Brain D-132 C), live, ahead of Brain's re-render.
+  if (home.view && home.sessions) home.view.entries = home.view.entries.map((e) => withSession(e, home.sessions));
   renderTask();
   renderClock();
   if (home.view && homeTab()) renderHome();
@@ -1042,6 +1044,7 @@ async function loadTime() {
     home.time = { rows: body.rows, monday };
     home.focal = latestFocal(body.rows, today);
     home.places = placements(body.rows, today);
+    home.sessions = sessionsFrom(body.rows);
     // A clock from a bygone day is not still running: only recent rows decide.
     const open = openClock(body.rows.filter((r) => r.date >= monday));
     if (open && !(clock && clock.ref === open.ref && clock.start === open.start) && (!clock || clock.written)) {
@@ -1104,6 +1107,22 @@ async function stopIfMine(entry) {
   if (!clock || clock.ref !== entry.ref) return 0;
   const ran = clockMinutes(clock);
   return (await stopClock()) ? ran : null;
+}
+
+// A short pop-up at the bottom of the screen, with an optional link; it fades on its own.
+function toast(text, link = null) {
+  document.querySelector('.toast')?.remove();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.setAttribute('role', 'status');
+  el.textContent = text;
+  if (link) {
+    const a = document.createElement('a');
+    a.href = link.href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = link.label;
+    el.append(' ', a);
+  }
+  document.body.append(el);
+  setTimeout(() => el.remove(), 8000);
 }
 
 function hideTask() {
@@ -1262,13 +1281,17 @@ modal.addEventListener('click', async (e) => {
       entry.ai = 'prepare'; entry.claude = entry.prepared ? 'back' : 'ready'; entry.context = 'claude';
       // The Worker started the item's own session (Brain D-132 C); it writes the same link
       // onto the item, so this local copy only bridges the gap until Brain re-renders.
-      if (fired.session) { entry.prepared = `${new Date().toISOString().slice(0, 10)}, session ${fired.session}`; entry.claude = 'back'; }
+      if (fired.session) home.sessions = { ...(home.sessions || {}), [entry.ref]: { link: fired.session, date: perthDay().today } };
       for (const slot of Object.values(home.view.lenses)) {
         const inLens = view_lens(slot) === 'all' || entry.lens === view_lens(slot);
         if (inLens && !slot.claude.includes(entry.ref)) { slot.claude.push(entry.ref); slot.claude_total += 1; }
       }
-      task.message = fired.session ? 'Handed to Claude. Its session is starting: open it to answer its questions.'
-        : `Handed to Claude${fired.fire && fired.fire !== 'not set up' ? ` (session not started: ${fired.fire})` : ''}. The next brief or debrief prepares it.`;
+      // A pop-up, and the card closes, so Leon is not left waiting on it.
+      if (fired.session) toast('Claude session started for ' + entry.ref + '. Its questions arrive in about a minute.', { href: fired.session, label: 'Open' });
+      else if (fired.fire === 'started') toast('Claude session started for ' + entry.ref + '. Find it on the card shortly.');
+      else toast(`Handed to Claude${fired.fire && fired.fire !== 'not set up' ? ` (session not started: ${fired.fire})` : ''}. The next brief or debrief prepares it.`);
+      refreshAll();
+      return hideTask();
     } catch (err) {
       task.message = writeError(err);
     }

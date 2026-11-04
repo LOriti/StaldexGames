@@ -48,7 +48,7 @@ import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
 import { QueueError, addInbox, cardProgress, categoriseLine, handCard, handledLine, markDone, perthDate, promoteLine, referenceLine, somedayLine, viaCard } from './queue.js';
 import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, handItem, itemProgress, rejectFlag, settleAll, viaItem } from './register.js';
 import { VIAS, cleanDetails, lineAttrs } from './categorise.js';
-import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock, placeRows } from './timelog.js';
+import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock, placeRows, sessionRow } from './timelog.js';
 
 const TREE_TTL_MS = 30 * 1000;
 const BLOB_CACHE_MAX = 200;
@@ -258,7 +258,7 @@ const WRITES = {
     message: (body) => `web: hand ${body.id}`,
     // Then start the item's own Claude session (Brain D-132 C): fire the "Brain hand-over"
     // scheduled task with the item's id. A failed fire never undoes the hand-over.
-    after: (body, env) => fireHandover(env, body.id),
+    after: (body, env) => handOver(env, body.id),
   },
   // The mode of a card (with `project`) or an open item, `via:` (Brain D-127 A), set from
   // its task card when Brain's guess from the wording is wrong.
@@ -426,6 +426,45 @@ async function write(request, url, env) {
 const FIRE_URL = /^https:\/\/api\.anthropic\.com\/v1\/claude_code\/routines\/trig_[A-Za-z0-9]+\/fire$/;
 const SESSION_URL = /^https:\/\/claude\.ai\/code\/session_[A-Za-z0-9]+$/;
 
+// The fire answer names the session by URL and id; the id comes as `cse_…` or `session_…`
+// (live answers differ from the docs' example), and the app's link is always
+// https://claude.ai/code/session_<suffix>. Anything else gives no link.
+export function sessionLink(out) {
+  const url = typeof out?.claude_code_session_url === 'string' ? out.claude_code_session_url : '';
+  if (SESSION_URL.test(url)) return url;
+  for (const raw of [out?.claude_code_session_id, url.split('/').pop()]) {
+    const m = /^(?:cse_|session_)([A-Za-z0-9]+)$/.exec(String(raw || ''));
+    if (m) return `https://claude.ai/code/session_${m[1]}`;
+  }
+  return null;
+}
+
+// Fire, then put the session's link on today's daily log as a `session` row: one commit
+// on the log branch, so the link shows on both screens without waiting for Brain's checks.
+async function handOver(env, id) {
+  const fired = await fireHandover(env, id);
+  if (!fired.session) return fired;
+  try {
+    const clock = perthClock();
+    const path = logPath(clock.date);
+    const contents = `/repos/${repoPath(env)}/contents/${path.split('/').map(encodeURIComponent).join('/')}`;
+    let current = null;
+    try {
+      current = await (await github(env, `${contents}?ref=${LOG_BRANCH}`)).json();
+    } catch (err) {
+      if (!(err instanceof UpstreamError && err.status === 404)) throw err;
+    }
+    const text = appendTime(current ? base64ToUtf8(current.content) : '', clock.date, clock.hhmm, sessionRow(id, fired.session, clock));
+    await github(env, contents, 'application/vnd.github+json', {
+      method: 'PUT',
+      body: JSON.stringify({ message: `time: ${clock.date} session ${id}`, content: utf8ToBase64(text), ...(current ? { sha: current.sha } : {}), branch: LOG_BRANCH }),
+    });
+    return { ...fired, logged: true };
+  } catch {
+    return { ...fired, logged: false };
+  }
+}
+
 export async function fireHandover(env, id) {
   if (!env.BRAIN_HANDOVER_URL || !env.BRAIN_HANDOVER_TOKEN) return { session: null, fire: 'not set up' };
   if (!FIRE_URL.test(env.BRAIN_HANDOVER_URL)) return { session: null, fire: 'bad fire URL' };
@@ -442,8 +481,7 @@ export async function fireHandover(env, id) {
     });
     if (!res.ok) return { session: null, fire: res.status === 429 ? 'busy, try later' : `failed (${res.status})` };
     const out = await res.json().catch(() => ({}));
-    const url = out.claude_code_session_url;
-    return { session: typeof url === 'string' && SESSION_URL.test(url) ? url : null, fire: 'started' };
+    return { session: sessionLink(out), fire: 'started' };
   } catch {
     return { session: null, fire: 'unreachable' };
   }

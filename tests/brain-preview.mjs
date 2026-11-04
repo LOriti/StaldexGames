@@ -488,10 +488,10 @@ if (await focal.count()) {
   else {
     await page.locator('[data-tk="hand"]').click(); await settle();
     if (!writes.some(([path]) => path === '/api/brain/hand')) problems.push('Hand to Claude wrote nothing');
-    if (!(await page.locator('.tk-wrap:not([hidden]) .cc-chip.clock', { hasText: 'Claude session waiting' }).count())) problems.push('a handed item does not read Claude session waiting');
-    if (!(await page.locator('.tk-wrap:not([hidden]) a[href="https://claude.ai/code/session_01PREVIEW"]', { hasText: 'Open Claude session' }).count())) problems.push('a handed item does not open its new session');
+    // The card closes and a pop-up offers the new session (Brain D-132 C).
+    if (!(await page.locator('.toast a[href="https://claude.ai/code/session_01PREVIEW"]', { hasText: 'Open' }).count())) problems.push('no pop-up with the new session after Hand to Claude');
+    if (await page.locator('.tk-wrap:not([hidden])').count()) problems.push('the card stays open after Hand to Claude');
     await shot('task-handed');
-    await page.locator('[data-tk="hide"].tk-x').click(); await settle();
     await page.goto(`${base}/brain/#focus`); await settle(); await pickLens('work');
     if (!(await page.locator('a.cc-row[data-cc-ref="WORK-COMP-60101.02"] .cc-chip.clock').count())) problems.push('the Claude lane does not show the handed item as ready');
     if (!(await page.locator('a.cc-row[data-cc-ref="WORK-SYS-60101.11"] .cc-chip.ok', { hasText: 'back for review' }).count())) problems.push('the lane does not show back for review');
