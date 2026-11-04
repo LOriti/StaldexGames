@@ -426,6 +426,19 @@ async function write(request, url, env) {
 const FIRE_URL = /^https:\/\/api\.anthropic\.com\/v1\/claude_code\/routines\/trig_[A-Za-z0-9]+\/fire$/;
 const SESSION_URL = /^https:\/\/claude\.ai\/code\/session_[A-Za-z0-9]+$/;
 
+// The fire answer names the session by URL and id; the id comes as `cse_…` or `session_…`
+// (live answers differ from the docs' example), and the app's link is always
+// https://claude.ai/code/session_<suffix>. Anything else gives no link.
+export function sessionLink(out) {
+  const url = typeof out?.claude_code_session_url === 'string' ? out.claude_code_session_url : '';
+  if (SESSION_URL.test(url)) return url;
+  for (const raw of [out?.claude_code_session_id, url.split('/').pop()]) {
+    const m = /^(?:cse_|session_)([A-Za-z0-9]+)$/.exec(String(raw || ''));
+    if (m) return `https://claude.ai/code/session_${m[1]}`;
+  }
+  return null;
+}
+
 export async function fireHandover(env, id) {
   if (!env.BRAIN_HANDOVER_URL || !env.BRAIN_HANDOVER_TOKEN) return { session: null, fire: 'not set up' };
   if (!FIRE_URL.test(env.BRAIN_HANDOVER_URL)) return { session: null, fire: 'bad fire URL' };
@@ -442,8 +455,7 @@ export async function fireHandover(env, id) {
     });
     if (!res.ok) return { session: null, fire: res.status === 429 ? 'busy, try later' : `failed (${res.status})` };
     const out = await res.json().catch(() => ({}));
-    const url = out.claude_code_session_url;
-    return { session: typeof url === 'string' && SESSION_URL.test(url) ? url : null, fire: 'started' };
+    return { session: sessionLink(out), fire: 'started' };
   } catch {
     return { session: null, fire: 'unreachable' };
   }

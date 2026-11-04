@@ -7,7 +7,7 @@ import {
   closeKind, fmtElapsed, fmtMinutes, clockMinutes, rewardHtml, promoteNext, categoriseHtml, parseFamilies,
   latestFocal, focalChoice, clockRecords, CLOCK_GRACE_MS, refreshDue, rowActs, walkHtml, walkDetails, actionCheck,
   TWO_MINUTES_MS, fmtCountdown, placements, SUBS, withLines, resolvePlaces, focusLists, MODES, contextOfVia,
-} from './home.js?v=20261104b';
+} from './home.js?v=20261105a';
 
 const API = '/api/brain';
 const HOME = 'INDEX.md';
@@ -1066,6 +1066,22 @@ async function stopIfMine(entry) {
   return (await stopClock()) ? ran : null;
 }
 
+// A short pop-up at the bottom of the screen, with an optional link; it fades on its own.
+function toast(text, link = null) {
+  document.querySelector('.toast')?.remove();
+  const el = document.createElement('div');
+  el.className = 'toast';
+  el.setAttribute('role', 'status');
+  el.textContent = text;
+  if (link) {
+    const a = document.createElement('a');
+    a.href = link.href; a.target = '_blank'; a.rel = 'noopener noreferrer'; a.textContent = link.label;
+    el.append(' ', a);
+  }
+  document.body.append(el);
+  setTimeout(() => el.remove(), 8000);
+}
+
 function hideTask() {
   Object.assign(task, { ref: null, panel: '', reward: null, sort: null, back: null, walk: null });
   refreshAll();
@@ -1227,8 +1243,12 @@ modal.addEventListener('click', async (e) => {
         const inLens = view_lens(slot) === 'all' || entry.lens === view_lens(slot);
         if (inLens && !slot.claude.includes(entry.ref)) { slot.claude.push(entry.ref); slot.claude_total += 1; }
       }
-      task.message = fired.session ? 'Handed to Claude. Its session is starting: open it to answer its questions.'
-        : `Handed to Claude${fired.fire && fired.fire !== 'not set up' ? ` (session not started: ${fired.fire})` : ''}. The next brief or debrief prepares it.`;
+      // A pop-up, and the card closes, so Leon is not left waiting on it.
+      if (fired.session) toast('Claude session started for ' + entry.ref + '. Its questions arrive in about a minute.', { href: fired.session, label: 'Open' });
+      else if (fired.fire === 'started') toast('Claude session started for ' + entry.ref + '. Find it on the card shortly.');
+      else toast(`Handed to Claude${fired.fire && fired.fire !== 'not set up' ? ` (session not started: ${fired.fire})` : ''}. The next brief or debrief prepares it.`);
+      refreshAll();
+      return hideTask();
     } catch (err) {
       task.message = writeError(err);
     }
