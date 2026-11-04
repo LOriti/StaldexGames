@@ -332,7 +332,11 @@ export function flagChips(e) {
 // The Claude lane's two states on the phone (Brain D-119 A, P6): ready to hand over, and
 // back for review once the brief wrote `Prepared:`; "running" is the desk's own.
 export function laneChip(e) {
-  if (e.claude === 'back' || (e.prepared && ['prepare', 'complete'].includes(e.ai))) return '<span class="cc-chip ok">back for review</span>';
+  const handed = ['prepare', 'complete'].includes(e.ai);
+  // A run-up and its own session (Brain D-131 A, D-132 C): waiting on Leon's answers there.
+  if (handed && sessionOf(e.prepared)) return '<span class="cc-chip clock">Claude session waiting</span>';
+  if (handed && runupOf(e.prepared)) return '<span class="cc-chip clock">run-up ready</span>';
+  if (e.claude === 'back' || (e.prepared && handed)) return '<span class="cc-chip ok">back for review</span>';
   if (e.claude === 'ready' || ['prepare', 'complete'].includes(e.ai)) return '<span class="cc-chip clock">ready for Claude</span>';
   return '';
 }
@@ -345,10 +349,29 @@ function chips(e) {
   return out.join(' ');
 }
 
+// A hand-over's pointer (Brain D-131 A, D-132 C): `session <link>, run-up <note>`. Sessions a
+// scheduled task starts are not in the Claude app's list or search, so the card is the way in.
+export function sessionOf(prepared) {
+  const m = /\bsession (https:\/\/claude\.ai\/code\/session_[A-Za-z0-9]+)/.exec(String(prepared || ''));
+  return m ? m[1] : null;
+}
+export function runupOf(prepared) {
+  const m = /\brun-up ([A-Za-z0-9_./-]+\.md)/.exec(String(prepared || ''));
+  return m ? m[1] : null;
+}
+
 // What the brief prepared, as a link when it points at a page or a Brain file.
 export function preparedHtml(e, paths = null) {
   const text = String(e.prepared || '');
   if (!text) return '';
+  const session = sessionOf(text);
+  const runup = runupOf(text);
+  if (session || runup) {
+    const note = runup && (!paths || paths.has(runup)) ? `<a class="mini-btn" href="#/${encodeURI(runup)}">Open run-up</a>` : '';
+    const open = session ? `<a class="mini-btn primary" href="${esc(session)}" target="_blank" rel="noopener noreferrer">Open Claude session</a>` : '';
+    const say = session ? 'Claude is on it: its questions are waiting in the session.' : 'The run-up is ready: start its session from the note.';
+    return `<div class="tk-prepared tk-handover"><p><b>${session ? 'Claude session' : 'Run-up ready'}</b> ${say}</p><span class="tk-acts">${open}${note}</span></div>`;
+  }
   const m = /(https?:\/\/\S+|[A-Za-z0-9_./-]+\.md)/.exec(text);
   const target = m && (/^https?:/.test(m[1]) ? m[1] : (!paths || paths.has(m[1].replace(/^\.\//, ''))) ? m[1] : null);
   const link = target ? (/^https?:/.test(target) ? `<a href="${esc(target)}" target="_blank" rel="noopener noreferrer">${esc(target)}</a>` : `<a href="#/${encodeURI(target)}">${esc(target)}</a>`) : '';

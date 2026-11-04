@@ -50,9 +50,10 @@ const VIEW = {
     entry('WORK-LEAD-60101.09', { area: '1', kind: 'decision', title: 'Which venue for the planning day', flags: ['close-proposed'], evidence: 'Leon chose the cafe in his reply of 2 Jan.' }),
     entry('WORK-SYS-60101.10', { area: '1', section: 'hot', hot: ['due today'], title: 'Chase the signed variation', flags: ['close-proposed'], evidence: 'Reply sent 1 Jan 16:02.' }),
     entry('WORK-SYS-60101.11', { area: '1', title: 'Draft the board paper', ai: 'prepare', claude: 'back', prepared: '2026-01-02, draft in projects/alpha/QUEUE.md' }),
+    entry('WORK-SYS-60101.12', { area: '1', title: 'Prepare the insurance declaration', ai: 'prepare', claude: 'back', prepared: '2026-01-02, session https://claude.ai/code/session_01SYNTHETIC, run-up projects/alpha/prepared/WORK-SYS-60101.12.md' }),
   ],
   lenses: {
-    work: slot({ focal: { ref: 'WORK-SYS-60101.01', reason: 'chosen by the morning brief' }, hot: ['WORK-SYS-60101.10'], hot_total: 2, claude: ['WORK-SYS-60101.11'], claude_total: 1,
+    work: slot({ focal: { ref: 'WORK-SYS-60101.01', reason: 'chosen by the morning brief' }, hot: ['WORK-SYS-60101.10'], hot_total: 2, claude: ['WORK-SYS-60101.12', 'WORK-SYS-60101.11'], claude_total: 2,
       areas: { 1: { name: 'Systems', hours: 16, count: 1, hot: true }, 2: { name: 'Compliance', hours: 8, count: 1, hot: false } } }),
     ventures: slot({ focal: { ref: 'PROJ-TT-60101.03', reason: 'hottest by rule' }, hot_total: 1 }),
     personal: slot(),
@@ -86,6 +87,7 @@ const FILES = {
     item('P-WORK-COMP-60101.07', 'A new item the brief found', 'project:alpha').replace('`review: unknown`', '`review: unknown` `unconfirmed: 2026-01-02`'),
   'register/decisions.md': `# Decisions\n\n${filler(10)}\n\n${item('D-1', 'Synthetic decision D-1', 'project:beta').replace('kind: action', 'kind: decision')}`,
   'projects/alpha/QUEUE.md': `---\nproject: alpha\ntype: queue\nupdated: 2026-01-01\n---\n\n# alpha — queue\n\n${filler(12)}\n\n${card('PROJ-TT-60101.03', 'Synthetic task PROJ-TT-60101.03')}\n## Inbox\n\n- A raw idea\n`,
+  'projects/alpha/prepared/WORK-SYS-60101.12.md': `---\ntype: document\nlifecycle: open\ndate: 2026-01-02\n---\n\n# Run-up: Prepare the insurance declaration\n\nSynthetic run-up.\n`,
   'projects/beta/QUEUE.md': `---\nproject: beta\ntype: queue\nupdated: 2026-01-01\n---\n\n# beta — queue\n\n${filler(12)}\n\n${card('DEV-60101.06', 'Synthetic task DEV-60101.06')}\n## Inbox\n`,
 };
 const sha = (path) => Buffer.from(path).toString('hex').slice(0, 40).padEnd(40, '0');
@@ -456,6 +458,13 @@ if (await focal.count()) {
     await page.locator('a.cc-row[data-cc-ref="WORK-SYS-60101.11"]').click(); await settle();
     if (!(await page.locator('.tk-prepared a[href="#/projects/alpha/QUEUE.md"]').count())) problems.push('the Prepared pointer does not open from the card');
     await shot('task-back-for-review');
+    await page.locator('[data-tk="hide"].tk-x').click(); await settle();
+    // A hand-over with its own session (Brain D-132 C): the card opens the session and the note.
+    if (!(await page.locator('a.cc-row[data-cc-ref="WORK-SYS-60101.12"] .cc-chip', { hasText: 'Claude session waiting' }).count())) problems.push('the lane does not show a hand-over session as waiting');
+    await page.locator('a.cc-row[data-cc-ref="WORK-SYS-60101.12"]').click(); await settle();
+    if (!(await page.locator('.tk-handover a[href="https://claude.ai/code/session_01SYNTHETIC"]', { hasText: 'Open Claude session' }).count())) problems.push('the card does not open the hand-over session');
+    if (!(await page.locator('.tk-handover a[href="#/projects/alpha/prepared/WORK-SYS-60101.12.md"]').count())) problems.push('the card does not open the run-up');
+    await shot('task-handover-session');
     await page.locator('[data-tk="hide"].tk-x').click(); await settle();
   }
   // The interruption (Brain DEV-61030.15): Switch remembers the clock's item; done offers the way back.
