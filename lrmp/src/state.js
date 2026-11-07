@@ -23,7 +23,7 @@ const state = {
   recipeEdits: {}, // { dishName: [ingredient lines, per serve] } — see core/recipes.js
   customRecipes: {}, // { name: {mode, p, t, l, e, ing, steps} } — user-added dishes
   removedDishes: [], // built-in dish names deleted from cards + pools (restorable)
-  planAnchor: null, // local YYYY-MM-DD represented by plan[0] (normally today minus 3)
+  planAnchor: null, // local YYYY-MM-DD represented by plan[0] (normally today minus CONTEXT_DAYS = 2)
   tab: 'weekly', // 'recipes' | 'month' | 'weekly' | 'shopping'
   week: 0, // 0-3, which week the Weekly view is showing
 };
