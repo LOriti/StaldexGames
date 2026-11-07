@@ -158,7 +158,7 @@ export function renderWeekly(root) {
   const end = dateForIndex(week * 7 + 6, planAnchor);
   const today = dateForIndex(CONTEXT_DAYS, planAnchor);
   const context = week === 0
-    ? `Showing ${formatRange(start, end)} · the previous 3 days stay visible for context`
+    ? `Showing ${formatRange(start, end)} · the previous ${CONTEXT_DAYS} days stay visible for context`
     : `Showing ${formatRange(start, end)} · ${week * 7 - CONTEXT_DAYS}–${week * 7 + 6 - CONTEXT_DAYS} days from today`;
 
   root.innerHTML = `

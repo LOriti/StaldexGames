@@ -1,6 +1,6 @@
 import { DAYS, emptyDinner } from './plan.js';
 
-export const CONTEXT_DAYS = 3;
+export const CONTEXT_DAYS = 2;
 
 export function localDateKey(date = new Date()) {
   const y = date.getFullYear();

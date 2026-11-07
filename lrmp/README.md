@@ -24,12 +24,12 @@ npm run build     # -> dist/  (static, no backend — deploy anywhere)
 **Recipes** — all 40 dishes across the five cooking modes: Curry, Fry/BBQ, Assembly,
 Soup & Stew, Bake. Ingredients and method for each. Star your favourites.
 
-**28 days** — a 4×7 rolling grid from three days ago through the next 24 days. Tap a day to pick a dish: choose a cooking mode, then a recipe
+**28 days** — a 4×7 rolling grid from two days ago through the next 25 days. Tap a day to pick a dish: choose a cooking mode, then a recipe
 (or 🎲 surprise, which avoids same-week repeats). Tap a planned day to change or clear it,
 drag days to swap them, or drag into the bin to remove one. Blank days are fine — they're
 your leftover and freezer nights.
 
-**Weekly** — the working view. It opens around today, keeping the previous three days visible for context. Each day shows Dinner and Lunch.
+**Weekly** — the working view. It opens around today, showing the previous two days, today and the next four. Each day shows Dinner and Lunch.
 - **−/+** sets how many leftover portions a dinner yields.
 - Those portions **fill later lunches automatically**, earliest-cooked first. Not enough?
   You get a gap — which is honest information, not a bug.

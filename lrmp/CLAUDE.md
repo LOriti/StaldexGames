@@ -59,7 +59,7 @@ src/
     freezer.js    freezer accounting
     shopping.js   weekly shopping list derived from the plan; week-scoped ticks
     recipes.js    serving maths (1 serve = 2 portions) + recipeEdits resolution/scaling
-    timeline.js   rolling date window: today sits at index 3; rollover preserves dates
+    timeline.js   rolling date window: today sits at index 2; rollover preserves dates
   storage/
     adapter.js    persistence. See "Gotchas" — do not bypass this.
     sync.js       optional remote sync layer (Worker in ../worker-lrmp/). See Gotcha 1b.
@@ -86,7 +86,8 @@ fast and meaningful. Keep it that way.
 
 ### The plan
 Flat array of **28 days**. `planAnchor` is the local date represented by index 0; it is
-normally today minus three days, so index 3 is always Today. On a new local day the array
+normally today minus two days (`CONTEXT_DAYS` in `core/timeline.js`), so index 2 is always
+Today and the Weekly "Now" page shows two past days, today and four future days. On a new local day the array
 rolls left, keeping meals attached to their dates and appending a new empty future day.
 
 ```js

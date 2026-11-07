@@ -5,13 +5,15 @@ import {
 } from '../src/core/timeline.js';
 
 describe('rolling timeline', () => {
-  it('starts three days before today and puts today at index 3', () => {
+  it('starts two days before today and puts today at index 2', () => {
     const now = new Date(2026, 7, 27, 18, 30);
     const anchor = timelineAnchor(now);
-    expect(anchor).toBe('2026-08-24');
+    expect(anchor).toBe('2026-08-25');
     expect(localDateKey(dateForIndex(CONTEXT_DAYS, anchor))).toBe('2026-08-27');
-    expect(dayContext(0)).toBe('3d ago');
-    expect(dayContext(3)).toBe('Today');
+    expect(dayContext(0)).toBe('2d ago');
+    expect(dayContext(1)).toBe('Yesterday');
+    expect(dayContext(2)).toBe('Today');
+    expect(dayContext(6)).toBe('+4d');
   });
 
   it('advances meals and pins with their dates', () => {

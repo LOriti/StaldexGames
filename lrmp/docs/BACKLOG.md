@@ -65,7 +65,7 @@ together.
 
 ## 6. Real dates — shipped
 
-The plan is now a rolling 28-day window: three days of context, Today, and 24 future days.
+The plan is now a rolling 28-day window: two days of context, Today, and 25 future days.
 Meals and lunch pins move with their calendar dates; expired days fall off and new future
 days enter empty. Shopping ticks reset when the window moves because they are week-scoped.
 
