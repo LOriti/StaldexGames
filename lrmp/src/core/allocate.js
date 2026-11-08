@@ -1,3 +1,5 @@
+import { manualAt } from './lunches.js';
+
 /**
  * THE CORE ALGORITHM. Read this before touching anything in the Weekly view.
  *
@@ -35,15 +37,21 @@
  *     Days without a pin stay 100% derived. Lunches never become a second source of
  *     truth: delete the pin and the day re-derives.
  *
- * Pure function: same plan in, same result out. No DOM, no mutation of `plan` or `pins`.
+ *  7. MANUAL LUNCHES (`manual`, see core/lunches.js) fill a day with something the user
+ *     added by hand: free text, a dish, or a portion out of the freezer. That day eats
+ *     NO leftover token, so the queue carries on to later days. A manual lunch beats a
+ *     pin on the same day, and such a pin reserves nothing.
+ *
+ * Pure function: same plan in, same result out. No DOM, no mutation of `plan`, `pins` or `manual`.
  *
  * @param {Array} plan  28-day plan (see core/plan.js)
  * @param {Object<number,string>} pins  sparse { dayIndex: dishName } lunch overrides
- * @returns {{ lunch: Array<{dish:string, from:number, pinned?:true, unfulfilled?:true}|null>, weekSurplus: Array<Array<{dish:string, from:number}>> }}
+ * @param {Object<number,{name:string,frozen?:true}>} manual  sparse hand-added lunches
+ * @returns {{ lunch: Array<{dish:string, from:number, pinned?:true, unfulfilled?:true, manual?:true, frozen?:true}|null>, weekSurplus: Array<Array<{dish:string, from:number}>> }}
  *          lunch[i]        = the lunch on day i, or null for a gap
  *          weekSurplus[w]  = portions rolling OUT of week w (into week w+1)
  */
-export function allocate(plan, pins = {}) {
+export function allocate(plan, pins = {}, manual = {}) {
   const DAYS = 28;
 
   // Every leftover portion as a token, in cook order (which IS the FIFO order).
@@ -63,7 +71,7 @@ export function allocate(plan, pins = {}) {
   const reservedFor = new Map(); // dayIndex -> token
   const pinDays = Object.keys(pins)
     .map(Number)
-    .filter((d) => Number.isInteger(d) && d >= 0 && d < DAYS && pins[d])
+    .filter((d) => Number.isInteger(d) && d >= 0 && d < DAYS && pins[d] && !manualAt(manual, d))
     .sort((a, b) => a - b);
   for (const day of pinDays) {
     const t = tokens.find((tok) => !reserved.has(tok) && tok.dish === pins[day] && tok.release <= day);
@@ -90,8 +98,12 @@ export function allocate(plan, pins = {}) {
       weekSurplus[day / 7 - 1] = queue.map((t) => ({ dish: t.dish, from: t.from }));
     }
 
-    // (c) eat: the pinned portion if this day has one, else the oldest unreserved one
-    if (pins[day]) {
+    // (c) eat: a hand-added lunch eats nothing; else the pinned portion if this day has
+    //     one; else the oldest unreserved one
+    const m = manualAt(manual, day);
+    if (m) {
+      lunch[day] = { dish: m.name, from: -1, manual: true, ...(m.frozen ? { frozen: true } : {}) };
+    } else if (pins[day]) {
       const t = reservedFor.get(day);
       if (t) {
         queue.splice(queue.indexOf(t), 1);

@@ -16,7 +16,7 @@ with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
 ```bash
 npm install
 npm run dev       # http://localhost:5173
-npm test          # 94 tests, all must stay green
+npm test          # 108 tests, all must stay green
 npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
 
@@ -41,6 +41,12 @@ it never invents one — and deleting the pin returns the day to fully derived. 
 the pattern for any future user override: sparse layer over derivation, never a
 parallel lunch array.
 
+Manual lunches follow that pattern too: `state.manualLunches` is a sparse
+`{ dayIndex: { name, frozen? } }` layer (`core/lunches.js`), passed as
+`allocate(plan, pins, manual)`. A manual lunch fills its day **without eating a leftover**,
+so the queue carries on to later days. It beats a pin on the same day. Taking one from the
+freezer decrements it, and clearing or replacing that lunch puts the portion back.
+
 ---
 
 ## Layout
@@ -57,6 +63,7 @@ src/
     plan.js       plan shape, seeding, painting, shuffling, swapping
     allocate.js   *** the FIFO leftover→lunch allocator. Read this first. ***
     freezer.js    freezer accounting
+    lunches.js    hand-added lunches (typed, a dish, or from the freezer)
     shopping.js   weekly shopping list derived from the plan; week-scoped ticks
     recipes.js    serving maths (1 serve = 2 portions) + recipeEdits resolution/scaling
     timeline.js   rolling date window: today sits at index 2; rollover preserves dates
@@ -70,6 +77,7 @@ src/
     weeklyView.js   the complex one
     shoppingView.js weekly list: tick off ingredients, skip dishes, copy as text
     dishPicker.js   tap-an-empty-day picker: mode click filters, then pick/random/note
+    lunchPicker.js  tap-a-lunch picker: type a lunch, or take one from the freezer
     recipeModal.js
   state.js    tiny observable store; hydrate / commit / subscribe
   main.js     entry, tab switching
@@ -114,7 +122,7 @@ is nothing to sync. Edit either, both update.
    dinner's `extra`. Nothing is created or destroyed by a freezer op.
 
 ### The allocator (`core/allocate.js`)
-Pure: `(plan, lunchPins) → { lunch[28], weekSurplus[4] }`.
+Pure: `(plan, lunchPins, manualLunches) → { lunch[28], weekSurplus[4] }`.
 
 - A dinner cooked on day D releases leftovers **from day D+1**. Never same-day — you ate it.
 - **FIFO**: earliest-cooked is eaten first. Walk days in order; each day, release
@@ -162,8 +170,8 @@ in-memory, and exposes one async interface. **Never call `localStorage` or `wind
 directly anywhere else.** If `backend() === 'memory'` the app toasts a warning.
 
 **1b. Remote sync is a layer, not a replacement.**
-`src/storage/sync.js` mirrors the four persisted slices (plan, freezer, favourites,
-lunch pins) to the Worker in
+`src/storage/sync.js` mirrors the persisted slices (`snapshot()` in `state.js`: plan,
+freezer, favourites, lunch pins, manual lunches and the rest) to the Worker in
 `../worker-lrmp/` (single shared blob, last-write-wins, deliberately unauthenticated —
 the unlisted URL is the only gate; see that Worker's README). Rules: local persistence
 always happens first and must never depend on the network; `commit()` schedules a
@@ -218,7 +226,7 @@ controls to a tile.
 
 **Works:** month painting + auto-dish-selection, week board with derived lunches, leftover
 steppers, FIFO allocation with gaps, rolling weekly surplus, lunch pinning (drag a lunch to
-another day), freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
+another day), manual lunches (tap a lunch: typed, a dish, or from the freezer), freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
 to next week (drop it on the surplus strip; the final period cannot wrap into history), free-text day notes
 ("dinner out") on empty days, all 40 recipes, persistence, mobile drag.
 

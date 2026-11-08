@@ -15,7 +15,7 @@ npm run dev       # http://localhost:5173
 ```
 
 ```bash
-npm test          # 94 tests
+npm test          # 108 tests
 npm run build     # -> dist/  (static, no backend — deploy anywhere)
 ```
 
@@ -38,6 +38,9 @@ your leftover and freezer nights.
 - **Drag a dinner** onto another day to swap, or onto the **freezer** to bank all its
   leftovers at once. **❄** banks a single portion.
 - **Use ▸** pulls a frozen meal back out into an empty dinner slot.
+- **Tap a lunch** (or an empty one) to add your own: type anything, pick a dish, or take
+  a portion out of the freezer. A hand-added lunch eats no leftover, so those portions
+  move on to a later day. ✕ removes it, and a freezer portion goes back.
 
 Everything saves automatically.
 
