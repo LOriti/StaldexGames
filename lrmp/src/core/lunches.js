@@ -19,6 +19,12 @@ import { bank, take } from './freezer.js';
 
 export const MAX_LUNCH_NAME = 40;
 
+/** Leftovers a hand-added lunch makes (not a freezer one: that is already a portion). */
+export function lunchYield(m) {
+  if (!m || m.frozen || !(m.extra > 0) || typeof m.name !== 'string' || !m.name.trim()) return null;
+  return { name: m.name.trim(), extra: m.extra };
+}
+
 export function manualAt(manual, idx) {
   const m = manual?.[idx];
   return m && typeof m.name === 'string' && m.name.trim() ? m : null;
@@ -36,8 +42,10 @@ export function clearManualLunch(manual, freezer, idx) {
 export function setManualLunch(manual, freezer, pins, idx, name) {
   const clean = String(name ?? '').trim().slice(0, MAX_LUNCH_NAME);
   if (!clean) return false;
+  const prev = manualAt(manual, idx);
+  const keep = prev && !prev.frozen ? prev.extra ?? 0 : 0; // renaming keeps its leftovers
   clearManualLunch(manual, freezer, idx);
-  manual[idx] = { name: clean };
+  manual[idx] = keep > 0 ? { name: clean, extra: keep } : { name: clean };
   if (pins) delete pins[idx];
   return true;
 }
@@ -69,11 +77,11 @@ export function isValidManualLunches(m) {
  *   - 'cook' dinner, later day → its leftovers feed that lunch: a pin. A dinner with no
  *     leftovers gets one, since the user just asked for a portion.
  *   - 'cook' dinner, same or earlier day → leftovers can't exist yet, so the meal itself
- *     moves to lunch as a hand-added lunch and the dinner slot empties. Its leftover
- *     count goes with it (`dropped` reports how many stop counting).
+ *     moves to lunch as a hand-added lunch, keeping its leftover count, and the dinner
+ *     slot empties.
  *
  * Any hand-added lunch already on the target day is replaced (a frozen one goes back).
- * Mutates its arguments. Returns { ok, kind, dish, dropped? }.
+ * Mutates its arguments. Returns { ok, kind, dish }.
  */
 export function dinnerToLunch(plan, pins, manual, freezer, from, to) {
   const d = plan[from]?.dinner;
@@ -99,9 +107,8 @@ export function dinnerToLunch(plan, pins, manual, freezer, from, to) {
     pins[to] = dish;
     return { ok: true, kind: 'pinned', dish };
   }
-  const dropped = d.extra;
   delete pins[to];
-  manual[to] = { name: dish };
+  manual[to] = d.extra > 0 ? { name: dish, extra: d.extra } : { name: dish };
   plan[from].dinner = empty;
-  return { ok: true, kind: 'moved', dish, dropped };
+  return { ok: true, kind: 'moved', dish };
 }

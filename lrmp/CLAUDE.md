@@ -16,7 +16,7 @@ with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
 ```bash
 npm install
 npm run dev       # http://localhost:5173
-npm test          # 123 tests, all must stay green
+npm test          # 134 tests, all must stay green
 npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
 
@@ -56,6 +56,12 @@ default; this is opt-in by dragging a lunch onto an empty dinner or via the pick
 The reverse drag, a dinner onto a lunch, is `dinnerToLunch()` in `core/lunches.js`: a
 later day pins the leftovers (bumping `extra` to 1 if needed), the same or an earlier day
 moves the meal into a manual lunch, and freezer/leftover dinners move across as-is.
+
+**Any meal can make leftovers.** `dinnerYield()` (`core/plan.js`) covers cooked dinners
+and note days with `extra`; `lunchYield()` (`core/lunches.js`) covers manual lunches with
+`extra`. Lunch-made portions release at `day + 0.5`: after that lunch, in time for its
+dinner. They carry `meal: 'lunch'`, and surplus `froms` spell them `'L<day>'` so the
+freezer ops decrement the right source. Freezer and leftover meals never yield.
 
 ---
 
@@ -124,8 +130,8 @@ is nothing to sync. Edit either, both update.
 
 ### Invariants (tests enforce these)
 1. `plan.length === 28`, always.
-2. **Only `src: 'cook'` dinners produce leftovers.** A `'freezer'` dinner is a single
-   reheated portion — `extra` stays 0. It does not breed.
+2. **Cooked dinners, note days and manual lunches produce leftovers.** A `'freezer'` or
+   `'leftover'` meal is a single reheated portion — `extra` stays 0. It does not breed.
 3. Empty days are **legitimate and expected**. Not every day needs a category; blanks are
    leftover/freezer nights. Don't "helpfully" auto-fill them.
 4. Portions are conserved. Every portion banked in the freezer is decremented from a

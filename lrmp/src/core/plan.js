@@ -23,8 +23,9 @@
  *
  * INVARIANTS (tests enforce these — don't break them):
  *   - plan.length === 28, always.
- *   - Only src === 'cook' dinners produce leftovers. A 'freezer' dinner is a single
- *     reheated portion; it yields nothing. Its `extra` must stay 0.
+ *   - Only src === 'cook' dinners and note days produce leftovers (see dinnerYield).
+ *     A 'freezer' or 'leftover' dinner is a single reheated portion; it yields nothing.
+ *     Its `extra` must stay 0.
  *   - An empty day has cat/dish/src null and extra 0. Empty days are legitimate and
  *     common — not every day needs a category.
  */
@@ -197,6 +198,18 @@ export function swapDinners(plan, a, b) {
   plan[a].dinner = plan[b].dinner;
   plan[b].dinner = tmp;
   return plan;
+}
+
+/**
+ * The leftovers a dinner makes, and what the portions are called: a cooked dish, or a
+ * note day ("Chicken salad") the user gave a leftover count. Freezer and leftover nights
+ * are already leftovers, so they make none. null when it yields nothing.
+ */
+export function dinnerYield(d) {
+  if (!d || !(d.extra > 0)) return null;
+  if (d.dish && d.src === 'cook') return { name: d.dish, extra: d.extra };
+  if (!d.dish && typeof d.note === 'string' && d.note.trim()) return { name: d.note.trim(), extra: d.extra };
+  return null;
 }
 
 /** A dinner that eats a leftover portion of `dish` rather than cooking it. */

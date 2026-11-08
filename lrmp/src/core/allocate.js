@@ -1,4 +1,5 @@
-import { manualAt } from './lunches.js';
+import { lunchYield, manualAt } from './lunches.js';
+import { dinnerYield } from './plan.js';
 
 /**
  * THE CORE ALGORITHM. Read this before touching anything in the Weekly view.
@@ -12,7 +13,9 @@ import { manualAt } from './lunches.js';
  *  1. A dinner cooked on day D makes its leftovers available from day D+1 onward.
  *     Never same-day — you ate it for dinner.
  *
- *  2. Only src === 'cook' dinners produce leftovers. A 'freezer' dinner is already a
+ *  2. Cooked dinners, note days and hand-added lunches with a leftover count produce
+ *     leftovers (dinnerYield / lunchYield). A lunch's leftovers can be that same day's
+ *     dinner and later lunches (they release at "day + 0.5"). A 'freezer' dinner is already a
  *     single reheated portion; it produces nothing.
  *
  *  3. FIFO — earliest-cooked is eaten first. Walk the days in order, maintaining a
@@ -64,14 +67,17 @@ export function allocate(plan, pins = {}, manual = {}) {
 
   // Every leftover portion as a token, in cook order (which IS the FIFO order).
   // A dinner cooked on day D releases from day D+1; day 27's tokens release "day 28",
-  // i.e. never inside this plan — they can only be terminal surplus.
+  // i.e. never inside this plan — they can only be terminal surplus. A lunch made on
+  // day D releases at D + 0.5: after that day's lunch, in time for its dinner.
   const tokens = [];
   for (let d = 0; d < DAYS; d++) {
-    const din = plan[d].dinner;
-    if (din.dish && din.src === 'cook' && din.extra > 0) {
-      for (let k = 0; k < din.extra; k++) tokens.push({ dish: din.dish, from: d, release: d + 1 });
-    }
+    const ly = lunchYield(manualAt(manual, d));
+    if (ly) for (let k = 0; k < ly.extra; k++) tokens.push({ dish: ly.name, from: d, meal: 'lunch', release: d + 0.5 });
+    const dy = dinnerYield(plan[d].dinner);
+    if (dy) for (let k = 0; k < dy.extra; k++) tokens.push({ dish: dy.name, from: d, release: d + 1 });
   }
+  // What a token looks like once eaten or carried: a lunch-made one says so.
+  const view = (t) => (t.meal ? { dish: t.dish, from: t.from, meal: t.meal } : { dish: t.dish, from: t.from });
 
   // Reserve a token for each pin (earliest pinned day first) so plain FIFO days
   // can't eat a portion the user has promised to a later lunch.
@@ -83,14 +89,14 @@ export function allocate(plan, pins = {}, manual = {}) {
   const claims = Object.keys(pins)
     .map(Number)
     .filter((d) => Number.isInteger(d) && d >= 0 && d < DAYS && pins[d] && !manualAt(manual, d))
-    .map((day) => ({ day, meal: 0, dish: pins[day], into: reservedFor }));
+    .map((day) => ({ day, meal: 0, dish: pins[day], into: reservedFor, by: day }));
   for (let d = 0; d < DAYS; d++) {
     const din = plan[d].dinner;
-    if (din.dish && din.src === 'leftover') claims.push({ day: d, meal: 1, dish: din.dish, into: dinnerFor });
+    if (din.dish && din.src === 'leftover') claims.push({ day: d, meal: 1, dish: din.dish, into: dinnerFor, by: d + 0.5 });
   }
   claims.sort((a, b) => a.day - b.day || a.meal - b.meal);
   for (const c of claims) {
-    const t = tokens.find((tok) => !reserved.has(tok) && tok.dish === c.dish && tok.release <= c.day);
+    const t = tokens.find((tok) => !reserved.has(tok) && tok.dish === c.dish && tok.release <= c.by);
     if (t) {
       reserved.add(t);
       c.into.set(c.day, t);
@@ -112,7 +118,7 @@ export function allocate(plan, pins = {}, manual = {}) {
     //     toward the surplus rolling into Monday. Reserved tokens are still physically
     //     in the queue (they exist, they roll), so they appear here too.
     if (day > 0 && day % 7 === 0) {
-      weekSurplus[day / 7 - 1] = queue.map((t) => ({ dish: t.dish, from: t.from }));
+      weekSurplus[day / 7 - 1] = queue.map(view);
     }
 
     // (c) eat: a hand-added lunch eats nothing; else the pinned portion if this day has
@@ -124,7 +130,7 @@ export function allocate(plan, pins = {}, manual = {}) {
       const t = reservedFor.get(day);
       if (t) {
         queue.splice(queue.indexOf(t), 1);
-        lunch[day] = { dish: t.dish, from: t.from, pinned: true };
+        lunch[day] = { ...view(t), pinned: true };
       } else {
         lunch[day] = { dish: pins[day], from: -1, pinned: true, unfulfilled: true };
       }
@@ -132,9 +138,12 @@ export function allocate(plan, pins = {}, manual = {}) {
       const i = queue.findIndex((t) => !reserved.has(t));
       if (i !== -1) {
         const t = queue.splice(i, 1)[0];
-        lunch[day] = { dish: t.dish, from: t.from };
+        lunch[day] = view(t);
       }
     }
+
+    // (c2) anything made at today's lunch is now available for tonight
+    while (next < tokens.length && tokens[next].release <= day + 0.5) queue.push(tokens[next++]);
 
     // (d) a leftover dinner eats its reserved portion
     const din = plan[day].dinner;
@@ -142,7 +151,7 @@ export function allocate(plan, pins = {}, manual = {}) {
       const t = dinnerFor.get(day);
       if (t) {
         queue.splice(queue.indexOf(t), 1);
-        dinner[day] = { dish: t.dish, from: t.from };
+        dinner[day] = view(t);
       } else {
         dinner[day] = { dish: din.dish, from: -1, unfulfilled: true };
       }
@@ -151,20 +160,21 @@ export function allocate(plan, pins = {}, manual = {}) {
 
   // Day 27 (final Sunday) still releases its leftovers — they have nowhere to go.
   while (next < tokens.length) queue.push(tokens[next++]);
-  weekSurplus[3] = queue.map((t) => ({ dish: t.dish, from: t.from }));
+  weekSurplus[3] = queue.map(view);
 
   return { lunch, weekSurplus, dinner };
 }
 
 /**
- * Group a surplus token list into draggable batches: [{ dish, froms: number[], count }]
- * `froms` is retained so freezing a batch can decrement the right source dinners.
+ * Group a surplus token list into draggable batches: [{ dish, froms, count }]
+ * `froms` is retained so freezing a batch can decrement the right sources: a dinner's day
+ * index as a number, or 'L<day>' for a portion made at that day's lunch.
  */
 export function groupSurplus(tokens = []) {
   const byDish = new Map();
   for (const t of tokens) {
     if (!byDish.has(t.dish)) byDish.set(t.dish, []);
-    byDish.get(t.dish).push(t.from);
+    byDish.get(t.dish).push(t.meal === 'lunch' ? `L${t.from}` : t.from);
   }
   return [...byDish.entries()].map(([dish, froms]) => ({ dish, froms, count: froms.length }));
 }
@@ -189,9 +199,12 @@ export function lunchStats(lunchArr, week = null) {
  */
 export function leftoverOptions(plan, pins = {}, manual = {}, idx) {
   const seen = new Map();
-  for (let d = 0; d < idx; d++) {
-    const din = plan[d].dinner;
-    if (din.dish && din.src === 'cook' && din.extra > 0 && !seen.has(din.dish)) seen.set(din.dish, din.cat);
+  for (let d = 0; d <= idx; d++) {
+    const ly = lunchYield(manualAt(manual, d));
+    if (ly && !seen.has(ly.name)) seen.set(ly.name, null);
+    if (d === idx) break; // tonight's own dinner can't feed itself
+    const dy = dinnerYield(plan[d].dinner);
+    if (dy && !seen.has(dy.name)) seen.set(dy.name, plan[d].dinner.cat ?? null);
   }
   const out = [];
   for (const [dish, cat] of seen) {

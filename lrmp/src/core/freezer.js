@@ -13,6 +13,7 @@
  */
 
 import { metaOf } from '../data/dishes.js';
+import { dinnerYield } from './plan.js';
 
 export function bank(freezer, dish, count = 1) {
   if (!dish || count <= 0) return freezer;
@@ -32,14 +33,23 @@ export function totalPortions(freezer) {
 }
 
 /**
- * Freeze ONE leftover portion from a specific dinner (the snowflake button).
+ * Freeze ONE leftover portion (drag a lunch tile onto the freezer). The portion came from
+ * the dinner on day `idx`, or from that day's hand-added lunch when meal === 'lunch'.
  * @returns {boolean} whether anything was frozen
  */
-export function freezeOne(plan, freezer, idx) {
+export function freezeOne(plan, freezer, idx, manual = {}, meal = 'dinner') {
+  if (meal === 'lunch') {
+    const m = manual?.[idx];
+    if (!m || m.frozen || !(m.extra > 0)) return false;
+    m.extra -= 1;
+    bank(freezer, m.name.trim(), 1);
+    return true;
+  }
   const d = plan[idx].dinner;
-  if (!d.dish || d.src !== 'cook' || d.extra <= 0) return false;
+  const y = dinnerYield(d);
+  if (!y) return false;
   d.extra -= 1;
-  bank(freezer, d.dish, 1);
+  bank(freezer, y.name, 1);
   return true;
 }
 
@@ -49,11 +59,11 @@ export function freezeOne(plan, freezer, idx) {
  */
 export function freezeDinner(plan, freezer, idx) {
   const d = plan[idx].dinner;
-  if (!d.dish || d.src !== 'cook' || d.extra <= 0) return 0;
-  const n = d.extra;
+  const y = dinnerYield(d);
+  if (!y) return 0;
   d.extra = 0;
-  bank(freezer, d.dish, n);
-  return n;
+  bank(freezer, y.name, y.extra);
+  return y.extra;
 }
 
 /**
@@ -62,11 +72,19 @@ export function freezeDinner(plan, freezer, idx) {
  * `extra` counts stay honest and the allocator re-derives correctly.
  * @returns {number} how many portions were banked
  */
-export function freezeSurplus(plan, freezer, dish, froms = []) {
+export function freezeSurplus(plan, freezer, dish, froms = [], manual = {}) {
   let banked = 0;
   for (const from of froms) {
+    if (typeof from === 'string' && from.startsWith('L')) {
+      const m = manual?.[Number(from.slice(1))];
+      if (m && !m.frozen && m.name.trim() === dish && m.extra > 0) {
+        m.extra -= 1;
+        banked += 1;
+      }
+      continue;
+    }
     const d = plan[from]?.dinner;
-    if (d && d.dish === dish && d.extra > 0) {
+    if (dinnerYield(d)?.name === dish) {
       d.extra -= 1;
       banked += 1;
     }

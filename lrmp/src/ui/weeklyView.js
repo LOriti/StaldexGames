@@ -20,6 +20,16 @@ const colourOf = (dish) => {
 
 /* ---------- tiles ---------- */
 
+/** −/+ leftover stepper. `meal` says whose count it changes: the day's dinner or lunch. */
+function stepper(idx, n, meal = 'dinner') {
+  return `<span class="lft">
+           <button class="st" data-act="dec" data-idx="${idx}" data-meal="${meal}" aria-label="Fewer leftovers">−</button>
+           <span class="lft-n">${n}</span>
+           <button class="st" data-act="inc" data-idx="${idx}" data-meal="${meal}" aria-label="More leftovers">+</button>
+           <span class="lft-l">leftovers</span>
+         </span>`;
+}
+
 function dinnerTile(plan, idx, left, planAnchor) {
   const d = plan[idx].dinner;
 
@@ -27,7 +37,7 @@ function dinnerTile(plan, idx, left, planAnchor) {
     const colour = d.cat && MODE_BY_KEY[d.cat] ? MODE_BY_KEY[d.cat].color : colourOf(d.dish);
     const ok = left && !left.unfulfilled;
     const kind = ok
-      ? `🥡 leftovers · from ${formatDay(dateForIndex(left.from, planAnchor))}`
+      ? `🥡 leftovers · from ${formatDay(dateForIndex(left.from, planAnchor))}${left.meal === 'lunch' ? ' lunch' : ''}`
       : '🥡 no portion left by then';
     return `<div class="tile dtile lodin ${ok ? '' : 'lodin-wait'}" data-idx="${idx}" style="--gc:${colour}">
               <button class="nbtn" data-cleardinner="${idx}" aria-label="Send this portion back to lunches">✕</button>
@@ -41,7 +51,7 @@ function dinnerTile(plan, idx, left, planAnchor) {
     return `<div class="tile ntile" data-idx="${idx}">
               <button class="nbtn" data-clearnote="${idx}" aria-label="Clear note">✕</button>
               <div class="tile-name sm" data-editnote="${idx}">${escapeAttr(d.note)}</div>
-              <div class="tile-kind">no cooking</div>
+              <div class="dctrl">${stepper(idx, d.extra ?? 0)}</div>
             </div>`;
   }
   if (!d.dish) {
@@ -52,12 +62,7 @@ function dinnerTile(plan, idx, left, planAnchor) {
   const controls =
     d.src === 'freezer'
       ? `<span class="frz-badge">❄ from freezer</span>`
-      : `<span class="lft">
-           <button class="st" data-act="dec" data-idx="${idx}" aria-label="Fewer leftovers">−</button>
-           <span class="lft-n">${d.extra}</span>
-           <button class="st" data-act="inc" data-idx="${idx}" aria-label="More leftovers">+</button>
-           <span class="lft-l">leftovers</span>
-         </span>`;
+      : stepper(idx, d.extra);
 
   return `<div class="tile dtile" data-idx="${idx}" style="--gc:${colour}">
             <button class="rbtn" aria-label="Recipe">📖</button>
@@ -66,7 +71,7 @@ function dinnerTile(plan, idx, left, planAnchor) {
           </div>`;
 }
 
-function lunchTile(lunch, idx) {
+function lunchTile(lunch, idx, manualLunches = {}) {
   const L = lunch[idx];
   if (!L) return `<button class="flex lunch-gap add-lunch" data-addlunch="${idx}">no lunch — tap to add</button>`;
 
@@ -76,7 +81,9 @@ function lunchTile(lunch, idx) {
               <button class="nbtn" data-clearlunch="${idx}" aria-label="Remove this lunch">✕</button>
               ${known ? '<button class="rbtn" aria-label="Recipe">📖</button>' : ''}
               <div class="tile-name sm" data-addlunch="${idx}">${escapeAttr(L.dish)}</div>
-              <div class="tile-kind">${L.frozen ? '❄ from freezer' : 'added by you'}</div>
+              ${L.frozen
+                ? '<div class="tile-kind">❄ from freezer</div>'
+                : `<div class="dctrl">${stepper(idx, manualLunches[idx]?.extra ?? 0, 'lunch')}</div>`}
             </div>`;
   }
 
@@ -87,8 +94,8 @@ function lunchTile(lunch, idx) {
               <div class="tile-kind">pinned — no portion by then</div>
             </div>`;
   }
-  return `<div class="tile ltile" data-idx="${idx}" data-from="${L.from}" data-dish="${escapeAttr(L.dish)}" ${L.pinned ? 'data-pinned="1"' : ''} style="--gc:${colourOf(L.dish)}">
-            <button class="rbtn" aria-label="Recipe">📖</button>
+  return `<div class="tile ltile" data-idx="${idx}" data-from="${L.from}" data-meal="${L.meal ?? 'dinner'}" data-dish="${escapeAttr(L.dish)}" ${L.pinned ? 'data-pinned="1"' : ''} style="--gc:${colourOf(L.dish)}">
+            ${metaOf(L.dish) ? '<button class="rbtn" aria-label="Recipe">📖</button>' : ''}
             ${L.pinned ? `<button class="pinbtn" data-unpin="${idx}" aria-label="Unpin this lunch">📌</button>` : ''}
             <div class="tile-name sm">${escapeAttr(L.dish)}</div>
             <div class="tile-kind">${L.pinned ? 'leftovers · pinned' : 'leftovers'}</div>
@@ -176,7 +183,7 @@ export function renderWeekly(root) {
                 <span class="bday-context">${dayContext(idx)}</span>
               </div>
               <div class="slot dslot" data-idx="${idx}">${dinnerTile(plan, idx, leftDinners[idx], planAnchor)}</div>
-              <div class="slot lslot" data-idx="${idx}">${lunchTile(lunch, idx)}</div>
+              <div class="slot lslot" data-idx="${idx}">${lunchTile(lunch, idx, manualLunches)}</div>
             </div>`;
   }).join('');
 
@@ -207,6 +214,7 @@ export function renderWeekly(root) {
       drag a lunch onto another day to pin it there 📌, or onto the freezer to bank that one portion ·
       drag a lunch onto an empty dinner to have those leftovers for dinner instead 🥡, or a dinner onto a lunch to have it for lunch ·
       tap a lunch, or an empty one, to add your own: typed, a dish, or one from the freezer (the leftovers move on to a later day) ·
+      notes and your own lunches can make leftovers too with −/+ ·
       −/+ sets leftover portions (they fill later lunches, earliest-cooked first, and roll into the next week) ·
       tap an empty dinner to pick a dish (filtered by mode) or write a note · everything saves automatically.</p>`;
 
@@ -227,7 +235,8 @@ function openNoteEditor(root, slot, idx) {
     const s = get();
     const v = input.value.trim();
     if (v) {
-      s.plan[idx].dinner = { ...emptyDinner(), note: v };
+      const keep = s.plan[idx].dinner.note ? s.plan[idx].dinner.extra ?? 0 : 0; // edits keep leftovers
+      s.plan[idx].dinner = { ...emptyDinner(), note: v, extra: keep };
       commit({ plan: true });
     } else if (s.plan[idx].dinner.note) {
       s.plan[idx].dinner = emptyDinner();
@@ -283,10 +292,13 @@ function wire(root) {
     const act = e.target.closest('[data-act]');
     if (act) {
       const idx = Number(act.dataset.idx);
-      const d = s.plan[idx].dinner;
-      if (act.dataset.act === 'inc') d.extra = Math.min(8, d.extra + 1);
-      else if (act.dataset.act === 'dec') d.extra = Math.max(0, d.extra - 1);
-      return commit({ plan: true });
+      const lunchMeal = act.dataset.meal === 'lunch';
+      const d = lunchMeal ? s.manualLunches[idx] : s.plan[idx].dinner;
+      if (!d) return;
+      const n = d.extra ?? 0;
+      if (act.dataset.act === 'inc') d.extra = Math.min(8, n + 1);
+      else if (act.dataset.act === 'dec') d.extra = Math.max(0, n - 1);
+      return commit(lunchMeal ? { lunches: true } : { plan: true });
     }
 
     const up = e.target.closest('[data-unpin]');
@@ -384,14 +396,14 @@ function wire(root) {
           return commit({ plan: true, freezer: true });
         }
         if (payload.type === 'lunch') {
-          const ok = fz.freezeOne(s.plan, s.freezer, payload.from);
+          const ok = fz.freezeOne(s.plan, s.freezer, payload.from, s.manualLunches, payload.meal);
           if (ok && payload.pinned) delete s.lunchPins[payload.idx];
           toast(ok ? '1 portion frozen' : 'Nothing to freeze');
-          return commit({ plan: true, freezer: true, pins: payload.pinned });
+          return commit({ plan: true, freezer: true, pins: payload.pinned, lunches: true });
         }
-        const n = fz.freezeSurplus(s.plan, s.freezer, payload.dish, payload.froms);
+        const n = fz.freezeSurplus(s.plan, s.freezer, payload.dish, payload.froms, s.manualLunches);
         toast(n ? `${n} portion${n === 1 ? '' : 's'} frozen` : 'Nothing to freeze');
-        return commit({ plan: true, freezer: true });
+        return commit({ plan: true, freezer: true, lunches: true });
       }
 
       if (target.classList.contains('surplus') && payload.type === 'dinner') {
@@ -423,7 +435,7 @@ function wire(root) {
         } else if (res.kind === 'frozen') {
           toast(`${res.dish} from the freezer moved to ${day} lunch`);
         } else {
-          toast(`${res.dish} moved to ${day} lunch${res.dropped ? ' — its leftovers no longer count' : ''}`);
+          toast(`${res.dish} moved to ${day} lunch`);
         }
         return commit({ plan: true, pins: true, lunches: true, freezer: true });
       }
@@ -483,6 +495,7 @@ function wire(root) {
         type: 'lunch',
         idx: Number(t.dataset.idx),
         from: Number(t.dataset.from),
+        meal: t.dataset.meal,
         dish: t.dataset.dish,
         pinned: t.dataset.pinned === '1',
         label: t.dataset.dish,
@@ -494,7 +507,9 @@ function wire(root) {
   root.querySelectorAll('.stile').forEach((t) => {
     t.addEventListener('pointerdown', (e) => {
       const dish = t.dataset.dish;
-      const froms = String(t.dataset.froms).split(',').filter(Boolean).map(Number);
+      // Dinner sources are day numbers; lunch-made portions are 'L<day>' (see groupSurplus).
+      const froms = String(t.dataset.froms).split(',').filter(Boolean)
+        .map((f) => (f.startsWith('L') ? f : Number(f)));
       beginDrag(e, t, {
         type: 'surplus',
         dish,

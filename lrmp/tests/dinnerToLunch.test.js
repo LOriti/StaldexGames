@@ -33,9 +33,9 @@ describe('dragging a dinner onto a lunch', () => {
     const s = setup();
     s.pins[1] = 'Other';
     const r = dinnerToLunch(s.plan, s.pins, s.manual, s.freezer, 1, 1);
-    expect(r).toMatchObject({ kind: 'moved', dish: 'Keema', dropped: 2 });
+    expect(r).toMatchObject({ kind: 'moved', dish: 'Keema' });
     expect(s.plan[1].dinner.dish).toBeNull();
-    expect(s.manual[1]).toEqual({ name: 'Keema' });
+    expect(s.manual[1]).toEqual({ name: 'Keema', extra: 2 });
     expect(s.pins).toEqual({});
   });
 
@@ -43,7 +43,7 @@ describe('dragging a dinner onto a lunch', () => {
     const s = setup();
     const r = dinnerToLunch(s.plan, s.pins, s.manual, s.freezer, 1, 0);
     expect(r.kind).toBe('moved');
-    expect(s.manual[0]).toEqual({ name: 'Keema' });
+    expect(s.manual[0]).toEqual({ name: 'Keema', extra: 2 });
   });
 
   it('turns a leftover dinner back into a pinned lunch', () => {
