@@ -8,7 +8,7 @@ import { escapeAttr, toast, beginDrag } from './dom.js';
 import { openRecipe } from './recipeModal.js';
 import { openDishPicker } from './dishPicker.js';
 import { openLunchPicker } from './lunchPicker.js';
-import { clearManualLunch } from '../core/lunches.js';
+import { clearManualLunch, dinnerToLunch } from '../core/lunches.js';
 import {
   CONTEXT_DAYS, dateForIndex, dayContext, formatDate, formatDay, formatLongDate, formatRange,
 } from '../core/timeline.js';
@@ -205,7 +205,7 @@ export function renderWeekly(root) {
     ${surplusRow(weekSurplus[week], week)}
     <p class="board-note">Drag a dinner onto another day to swap, onto the freezer ❄ to bank all its leftovers, or down into the surplus strip to push it to next week ·
       drag a lunch onto another day to pin it there 📌, or onto the freezer to bank that one portion ·
-      drag a lunch onto an empty dinner to have those leftovers for dinner instead 🥡 ·
+      drag a lunch onto an empty dinner to have those leftovers for dinner instead 🥡, or a dinner onto a lunch to have it for lunch ·
       tap a lunch, or an empty one, to add your own: typed, a dish, or one from the freezer (the leftovers move on to a later day) ·
       −/+ sets leftover portions (they fill later lunches, earliest-cooked first, and roll into the next week) ·
       tap an empty dinner to pick a dish (filtered by mode) or write a note · everything saves automatically.</p>`;
@@ -367,7 +367,7 @@ function wire(root) {
       if (!el) return null;
       const freezerEl = el.closest('.freezer');
       if (freezerEl) return freezerEl; // every drag type can land in the freezer
-      if (payload.type === 'dinner') return el.closest('.dslot') || el.closest('.surplus');
+      if (payload.type === 'dinner') return el.closest('.dslot') || el.closest('.lslot') || el.closest('.surplus');
       if (payload.type === 'lunch') return el.closest('.lslot') || el.closest('.dslot');
       return null;
     },
@@ -407,6 +407,25 @@ function wire(root) {
       if (target.classList.contains('dslot') && payload.type === 'dinner') {
         swapDinners(s.plan, payload.idx, Number(target.dataset.idx));
         return commit({ plan: true });
+      }
+
+      // A dinner dropped on a lunch slot: have it for lunch (see core/lunches.js).
+      if (target.classList.contains('lslot') && payload.type === 'dinner') {
+        const to = Number(target.dataset.idx);
+        const res = dinnerToLunch(s.plan, s.lunchPins, s.manualLunches, s.freezer, payload.idx, to);
+        if (!res.ok) return;
+        const day = formatDay(dateForIndex(to, s.planAnchor));
+        if (res.kind === 'pinned') {
+          const check = allocate(s.plan, s.lunchPins, s.manualLunches).lunch[to];
+          toast(check?.unfulfilled
+            ? `No ${res.dish} portion left by ${day} — lunch will wait`
+            : `${res.dish} leftovers for ${day} lunch`);
+        } else if (res.kind === 'frozen') {
+          toast(`${res.dish} from the freezer moved to ${day} lunch`);
+        } else {
+          toast(`${res.dish} moved to ${day} lunch${res.dropped ? ' — its leftovers no longer count' : ''}`);
+        }
+        return commit({ plan: true, pins: true, lunches: true, freezer: true });
       }
 
       // A leftover lunch dropped on a dinner slot: eat that dish for dinner instead.

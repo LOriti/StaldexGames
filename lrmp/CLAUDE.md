@@ -16,7 +16,7 @@ with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
 ```bash
 npm install
 npm run dev       # http://localhost:5173
-npm test          # 115 tests, all must stay green
+npm test          # 123 tests, all must stay green
 npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
 
@@ -52,6 +52,10 @@ Leftover dinners are the opposite direction and live in the plan itself: a dinne
 instead of cooking. It reserves that portion like a pin (allocator rule 8), yields
 nothing, never shops, and `allocate()` reports it in `dinner[i]`. Lunch stays the
 default; this is opt-in by dragging a lunch onto an empty dinner or via the picker.
+
+The reverse drag, a dinner onto a lunch, is `dinnerToLunch()` in `core/lunches.js`: a
+later day pins the leftovers (bumping `extra` to 1 if needed), the same or an earlier day
+moves the meal into a manual lunch, and freezer/leftover dinners move across as-is.
 
 ---
 
@@ -232,7 +236,7 @@ controls to a tile.
 
 **Works:** month painting + auto-dish-selection, week board with derived lunches, leftover
 steppers, FIFO allocation with gaps, rolling weekly surplus, lunch pinning (drag a lunch to
-another day), manual lunches (tap a lunch: typed, a dish, or from the freezer), leftover dinners (drag a lunch onto an empty dinner), freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
+another day), manual lunches (tap a lunch: typed, a dish, or from the freezer), leftover dinners (drag a lunch onto an empty dinner), dinner-to-lunch drags, freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
 to next week (drop it on the surplus strip; the final period cannot wrap into history), free-text day notes
 ("dinner out") on empty days, all 40 recipes, persistence, mobile drag.
 

@@ -58,3 +58,50 @@ export function isValidManualLunches(m) {
     Object.values(m).every((v) => v && typeof v === 'object' && typeof v.name === 'string')
   );
 }
+
+/**
+ * Drag a dinner onto a lunch slot. What that means depends on the dinner:
+ *
+ *   - 'leftover' dinner → back to being a lunch: pinned to the target day. The dinner
+ *     slot empties.
+ *   - 'freezer' dinner  → the same frozen portion becomes the target day's lunch. The
+ *     portion just moves, so the freezer count does not change.
+ *   - 'cook' dinner, later day → its leftovers feed that lunch: a pin. A dinner with no
+ *     leftovers gets one, since the user just asked for a portion.
+ *   - 'cook' dinner, same or earlier day → leftovers can't exist yet, so the meal itself
+ *     moves to lunch as a hand-added lunch and the dinner slot empties. Its leftover
+ *     count goes with it (`dropped` reports how many stop counting).
+ *
+ * Any hand-added lunch already on the target day is replaced (a frozen one goes back).
+ * Mutates its arguments. Returns { ok, kind, dish, dropped? }.
+ */
+export function dinnerToLunch(plan, pins, manual, freezer, from, to) {
+  const d = plan[from]?.dinner;
+  if (!d?.dish || !plan[to]) return { ok: false, kind: 'empty' };
+  const dish = d.dish;
+  const empty = { cat: null, dish: null, src: null, extra: 0 };
+
+  clearManualLunch(manual, freezer, to);
+
+  if (d.src === 'leftover') {
+    pins[to] = dish;
+    plan[from].dinner = empty;
+    return { ok: true, kind: 'pinned', dish };
+  }
+  if (d.src === 'freezer') {
+    delete pins[to];
+    manual[to] = { name: dish, frozen: true };
+    plan[from].dinner = empty;
+    return { ok: true, kind: 'frozen', dish };
+  }
+  if (to > from) {
+    if (d.extra < 1) d.extra = 1;
+    pins[to] = dish;
+    return { ok: true, kind: 'pinned', dish };
+  }
+  const dropped = d.extra;
+  delete pins[to];
+  manual[to] = { name: dish };
+  plan[from].dinner = empty;
+  return { ok: true, kind: 'moved', dish, dropped };
+}
