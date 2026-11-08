@@ -15,7 +15,7 @@ npm run dev       # http://localhost:5173
 ```
 
 ```bash
-npm test          # 108 tests
+npm test          # 115 tests
 npm run build     # -> dist/  (static, no backend — deploy anywhere)
 ```
 
@@ -41,6 +41,9 @@ your leftover and freezer nights.
 - **Tap a lunch** (or an empty one) to add your own: type anything, pick a dish, or take
   a portion out of the freezer. A hand-added lunch eats no leftover, so those portions
   move on to a later day. ✕ removes it, and a freezer portion goes back.
+- Leftovers go to lunch by default. **Drag a lunch onto an empty dinner**, or tap an empty
+  dinner and choose **🥡 Eat leftovers**, to have that portion for dinner instead. ✕ on
+  the dinner sends it back to the lunches.
 
 Everything saves automatically.
 

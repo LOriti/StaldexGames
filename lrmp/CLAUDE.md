@@ -16,7 +16,7 @@ with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
 ```bash
 npm install
 npm run dev       # http://localhost:5173
-npm test          # 108 tests, all must stay green
+npm test          # 115 tests, all must stay green
 npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
 
@@ -46,6 +46,12 @@ Manual lunches follow that pattern too: `state.manualLunches` is a sparse
 `allocate(plan, pins, manual)`. A manual lunch fills its day **without eating a leftover**,
 so the queue carries on to later days. It beats a pin on the same day. Taking one from the
 freezer decrements it, and clearing or replacing that lunch puts the portion back.
+
+Leftover dinners are the opposite direction and live in the plan itself: a dinner with
+`src: 'leftover'` (`leftoverDinner()` in `core/plan.js`) eats one portion of its dish
+instead of cooking. It reserves that portion like a pin (allocator rule 8), yields
+nothing, never shops, and `allocate()` reports it in `dinner[i]`. Lunch stays the
+default; this is opt-in by dragging a lunch onto an empty dinner or via the picker.
 
 ---
 
@@ -102,7 +108,7 @@ rolls left, keeping meals attached to their dates and appending a new empty futu
 plan[i].dinner = {
   cat:   'curry' | 'fry' | 'assembly' | 'soup' | 'bake' | null,
   dish:  string | null,        // must exist in DISH_INDEX
-  src:   'cook' | 'freezer' | null,
+  src:   'cook' | 'freezer' | 'leftover' | null,  // 'leftover' eats a leftover portion
   extra: number,               // leftover portions this dinner yields
   note:  string                // OPTIONAL free-text day note ("dinner out") — a note day
                                // cooks nothing and the allocator ignores it
@@ -122,7 +128,7 @@ is nothing to sync. Edit either, both update.
    dinner's `extra`. Nothing is created or destroyed by a freezer op.
 
 ### The allocator (`core/allocate.js`)
-Pure: `(plan, lunchPins, manualLunches) → { lunch[28], weekSurplus[4] }`.
+Pure: `(plan, lunchPins, manualLunches) → { lunch[28], weekSurplus[4], dinner[28] }`.
 
 - A dinner cooked on day D releases leftovers **from day D+1**. Never same-day — you ate it.
 - **FIFO**: earliest-cooked is eaten first. Walk days in order; each day, release
@@ -226,7 +232,7 @@ controls to a tile.
 
 **Works:** month painting + auto-dish-selection, week board with derived lunches, leftover
 steppers, FIFO allocation with gaps, rolling weekly surplus, lunch pinning (drag a lunch to
-another day), manual lunches (tap a lunch: typed, a dish, or from the freezer), freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
+another day), manual lunches (tap a lunch: typed, a dish, or from the freezer), leftover dinners (drag a lunch onto an empty dinner), freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
 to next week (drop it on the surplus strip; the final period cannot wrap into history), free-text day notes
 ("dinner out") on empty days, all 40 recipes, persistence, mobile drag.
 
