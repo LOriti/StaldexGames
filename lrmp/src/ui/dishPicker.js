@@ -1,6 +1,8 @@
 import { MODES, MODE_BY_KEY } from '../data/modes.js';
 import { dishPool } from '../data/dishes.js';
-import { DAY_NAMES, sameWeekDishes, defaultExtraFor, paintDay, emptyDinner } from '../core/plan.js';
+import { sameWeekDishes, defaultExtraFor, paintDay, emptyDinner, leftoverDinner } from '../core/plan.js';
+import { leftoverOptions } from '../core/allocate.js';
+import { dateForIndex, formatDate, formatDay } from '../core/timeline.js';
 import { get, commit } from '../state.js';
 import { $, escapeAttr, toast } from './dom.js';
 import { closeRecipe } from './recipeModal.js';
@@ -22,19 +24,28 @@ export function openDishPicker(idx, opts = {}) {
   document.body.style.overflow = 'hidden';
 }
 
+// The plan is a rolling window, so a day's weekday comes from its date, not idx % 7.
+function dayName(idx) {
+  return formatDay(dateForIndex(idx, get().planAnchor));
+}
+
 function dayLabel(idx) {
-  return `Wk ${Math.floor(idx / 7) + 1} · ${DAY_NAMES[idx % 7]}`;
+  const date = dateForIndex(idx, get().planAnchor);
+  return `${formatDay(date)} ${formatDate(date)}`;
 }
 
 function extrasRow({ onNote, onRemove }) {
   return `
     <div class="m-edit-row">
+      <button class="m-editbtn" data-leftovers="1">🥡 Eat leftovers</button>
       ${onNote ? '<button class="m-editbtn" data-note="1">✎ Just write a note (e.g. dinner out)</button>' : ''}
       ${onRemove ? '<button class="m-editbtn" data-remove="1">🗑 Clear this day</button>' : ''}
     </div>`;
 }
 
-function wireExtras(body, opts) {
+function wireExtras(body, opts, idx) {
+  const lo = body.querySelector('[data-leftovers]');
+  if (lo) lo.onclick = () => renderLeftoverStep(idx, opts);
   const note = body.querySelector('[data-note]');
   if (note) note.onclick = () => { closeRecipe(); opts.onNote?.(); };
   const rm = body.querySelector('[data-remove]');
@@ -59,7 +70,7 @@ function renderModeStep(idx, opts) {
   body.querySelectorAll('[data-mode]').forEach((b) => {
     b.onclick = () => renderDishStep(idx, b.dataset.mode, opts);
   });
-  wireExtras(body, opts);
+  wireExtras(body, opts, idx);
 }
 
 function renderDishStep(idx, modeKey, opts) {
@@ -103,7 +114,7 @@ function renderDishStep(idx, modeKey, opts) {
       s.plan[idx].dinner = { cat: modeKey, dish: name, src: 'cook', extra: defaultExtraFor(name) };
       commit({ plan: true });
       closeRecipe();
-      toast(`${name} planned for ${DAY_NAMES[idx % 7]}`);
+      toast(`${name} planned for ${dayName(idx)}`);
     };
   });
   body.querySelector('[data-back]').onclick = () => renderModeStep(idx, opts);
@@ -111,9 +122,40 @@ function renderDishStep(idx, modeKey, opts) {
     paintDay(s.plan, idx, modeKey);
     commit({ plan: true });
     closeRecipe();
-    toast(`${s.plan[idx].dinner.dish ?? 'Nothing'} planned for ${DAY_NAMES[idx % 7]}`);
+    toast(`${s.plan[idx].dinner.dish ?? 'Nothing'} planned for ${dayName(idx)}`);
   };
-  wireExtras(body, opts);
+  wireExtras(body, opts, idx);
+}
+
+/** Leftovers night: pick a dish cooked earlier whose portion can be dinner on this day. */
+function renderLeftoverStep(idx, opts) {
+  const s = get();
+  const options = leftoverOptions(s.plan, s.lunchPins, s.manualLunches, idx);
+  const rows = options.map((o) => `
+    <button class="pick-row" data-ldish="${escapeAttr(o.dish)}" data-lcat="${escapeAttr(o.cat ?? '')}" style="--gc:${o.cat && MODE_BY_KEY[o.cat] ? MODE_BY_KEY[o.cat].color : '#888'}">
+      <span class="pick-dish">🥡 ${escapeAttr(o.dish)}</span>
+    </button>`).join('');
+
+  const body = $('#modalBody');
+  body.innerHTML = `
+    <div class="m-eyebrow">${dayLabel(idx)}</div>
+    <h3 class="m-title">Leftovers for dinner</h3>
+    <p class="m-meta">Takes one portion that would otherwise go to a lunch. Later lunches move along to fit.</p>
+    <div class="pick-list">${rows || '<p class="m-meta" style="padding:10px 12px">No leftovers are available by this day. Plan a dinner with leftovers on an earlier day first.</p>'}</div>
+    <div class="m-edit-row">
+      <button class="m-editbtn" data-back="1">‹ All modes</button>
+    </div>`;
+
+  body.querySelectorAll('[data-ldish]').forEach((b) => {
+    b.onclick = () => {
+      const name = b.dataset.ldish;
+      s.plan[idx].dinner = leftoverDinner(name, b.dataset.lcat || null);
+      commit({ plan: true });
+      closeRecipe();
+      toast(`${name} leftovers for ${dayName(idx)} dinner`);
+    };
+  });
+  body.querySelector('[data-back]').onclick = () => renderModeStep(idx, opts);
 }
 
 /** Shared "clear the day" used by Month's remove option. */

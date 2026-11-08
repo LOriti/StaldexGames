@@ -28,7 +28,7 @@ export function renderMonth(root) {
         <div class="mcell ${idx === CONTEXT_DAYS ? 'is-today' : ''} ${idx < CONTEXT_DAYS ? 'is-past' : ''} ${dinner.cat ? 'on' : ''} ${!dinner.dish && dinner.note ? 'noted' : ''}" data-idx="${idx}" ${mode ? `style="--gc:${mode.color}"` : ''}>
           <span class="mc-date">${formatDate(dateForIndex(idx, planAnchor))}${idx === CONTEXT_DAYS ? ' · Today' : ''}</span>
           ${mode ? `<div class="mc-ico">${mode.ico}</div>` : ''}
-          <div class="mc-dish">${dinner.dish ?? (dinner.note ? `✎ ${dinner.note}` : '')}</div>
+          <div class="mc-dish">${dinner.src === 'leftover' ? '🥡 ' : ''}${dinner.dish ?? (dinner.note ? `✎ ${dinner.note}` : '')}</div>
         </div>`);
     }
     cells.push(`<div class="mrow">${row.join('')}</div>`);

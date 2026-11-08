@@ -37,10 +37,13 @@ export function dayDelta(fromKey, toKey) {
   return Math.round((to - from) / 86_400_000);
 }
 
-/** Keep meals attached to their dates while the 28-day rolling window advances. */
-export function rollPlan(plan, pins, fromAnchor, toAnchor) {
+/**
+ * Keep meals attached to their dates while the 28-day rolling window advances.
+ * Pins and manual lunches are sparse day-index maps and move the same way.
+ */
+export function rollPlan(plan, pins, fromAnchor, toAnchor, manual = {}) {
   const delta = dayDelta(fromAnchor, toAnchor);
-  if (!delta) return { plan, pins, changed: false };
+  if (!delta) return { plan, pins, manual, changed: false };
 
   const nextPlan = Array.from({ length: DAYS }, (_, index) => {
     const oldIndex = index + delta;
@@ -49,13 +52,16 @@ export function rollPlan(plan, pins, fromAnchor, toAnchor) {
       : { dinner: emptyDinner() };
   });
 
-  const nextPins = {};
-  for (const [oldIndex, dish] of Object.entries(pins || {})) {
-    const nextIndex = Number(oldIndex) - delta;
-    if (nextIndex >= 0 && nextIndex < DAYS) nextPins[nextIndex] = dish;
-  }
+  const shift = (map) => {
+    const next = {};
+    for (const [oldIndex, value] of Object.entries(map || {})) {
+      const nextIndex = Number(oldIndex) - delta;
+      if (nextIndex >= 0 && nextIndex < DAYS) next[nextIndex] = value;
+    }
+    return next;
+  };
 
-  return { plan: nextPlan, pins: nextPins, changed: true };
+  return { plan: nextPlan, pins: shift(pins), manual: shift(manual), changed: true };
 }
 
 export function dayContext(index) {

@@ -166,6 +166,18 @@
   .empty-day{font-family:inherit;background:none;cursor:pointer;line-height:1.5;transition:background .12s,color .12s}
   .empty-day:hover{background:rgba(192,138,22,.07);color:var(--ink-soft)}
   .empty-day:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+  .add-lunch{font-family:inherit;background:none;cursor:pointer;line-height:1.5;transition:background .12s,color .12s}
+  .add-lunch:hover{background:rgba(192,138,22,.07);color:var(--ink-soft)}
+  .add-lunch:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
+  .ltile.mtile{border-style:dashed;border-left-style:solid;box-shadow:none;cursor:default;touch-action:auto}
+  .mtile .tile-name{cursor:pointer;padding-right:44px}
+  .mtile .rbtn{right:30px}
+  .unful .tile-name{cursor:pointer}
+  .lunch-sub{margin-top:22px;color:var(--ink-soft)}
+  .lodin{border-style:dashed;border-left-style:solid;box-shadow:none}
+  .lodin .tile-name{padding-right:44px}
+  .lodin .rbtn{right:30px}
+  .lodin-wait{opacity:.7}
   .ltile{cursor:grab;touch-action:none}
   .ltile:active{cursor:grabbing}
   .ltile.unful{border-style:dashed;border-left-style:solid;opacity:.7;cursor:default}

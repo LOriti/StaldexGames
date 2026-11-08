@@ -1,3 +1,5 @@
+import { manualAt } from './lunches.js';
+
 /**
  * THE CORE ALGORITHM. Read this before touching anything in the Weekly view.
  *
@@ -35,15 +37,29 @@
  *     Days without a pin stay 100% derived. Lunches never become a second source of
  *     truth: delete the pin and the day re-derives.
  *
- * Pure function: same plan in, same result out. No DOM, no mutation of `plan` or `pins`.
+ *  7. MANUAL LUNCHES (`manual`, see core/lunches.js) fill a day with something the user
+ *     added by hand: free text, a dish, or a portion out of the freezer. That day eats
+ *     NO leftover token, so the queue carries on to later days. A manual lunch beats a
+ *     pin on the same day, and such a pin reserves nothing.
+ *
+ *  8. LEFTOVER DINNERS. A dinner with src === 'leftover' eats one portion of its dish
+ *     instead of cooking (lunch is still the default home for leftovers; this is the
+ *     opt-in). It reserves the earliest-cooked portion of that dish released by that
+ *     day, exactly like a pin, and is `unfulfilled` when none can exist by then. It
+ *     yields nothing. Cooked Monday, leftovers for Tuesday dinner: fine. Same day: no.
+ *
+ * Pure function: same plan in, same result out. No DOM, no mutation of `plan`, `pins` or `manual`.
  *
  * @param {Array} plan  28-day plan (see core/plan.js)
  * @param {Object<number,string>} pins  sparse { dayIndex: dishName } lunch overrides
- * @returns {{ lunch: Array<{dish:string, from:number, pinned?:true, unfulfilled?:true}|null>, weekSurplus: Array<Array<{dish:string, from:number}>> }}
+ * @param {Object<number,{name:string,frozen?:true}>} manual  sparse hand-added lunches
+ * @returns {{ lunch: Array<{dish:string, from:number, pinned?:true, unfulfilled?:true, manual?:true, frozen?:true}|null>, weekSurplus: Array<Array<{dish:string, from:number}>> }}
  *          lunch[i]        = the lunch on day i, or null for a gap
+ *          dinner[i]       = for a leftover dinner, { dish, from } or { dish, from: -1,
+ *                            unfulfilled: true }; null on every other day
  *          weekSurplus[w]  = portions rolling OUT of week w (into week w+1)
  */
-export function allocate(plan, pins = {}) {
+export function allocate(plan, pins = {}, manual = {}) {
   const DAYS = 28;
 
   // Every leftover portion as a token, in cook order (which IS the FIFO order).
@@ -59,23 +75,32 @@ export function allocate(plan, pins = {}) {
 
   // Reserve a token for each pin (earliest pinned day first) so plain FIFO days
   // can't eat a portion the user has promised to a later lunch.
+  // Leftover dinners reserve the same way. Claims are settled earliest day first, and on
+  // the same day the lunch pin before the dinner (lunch is eaten first).
   const reserved = new Set();
-  const reservedFor = new Map(); // dayIndex -> token
-  const pinDays = Object.keys(pins)
+  const reservedFor = new Map(); // dayIndex -> token (lunch pins)
+  const dinnerFor = new Map(); // dayIndex -> token (leftover dinners)
+  const claims = Object.keys(pins)
     .map(Number)
-    .filter((d) => Number.isInteger(d) && d >= 0 && d < DAYS && pins[d])
-    .sort((a, b) => a - b);
-  for (const day of pinDays) {
-    const t = tokens.find((tok) => !reserved.has(tok) && tok.dish === pins[day] && tok.release <= day);
+    .filter((d) => Number.isInteger(d) && d >= 0 && d < DAYS && pins[d] && !manualAt(manual, d))
+    .map((day) => ({ day, meal: 0, dish: pins[day], into: reservedFor }));
+  for (let d = 0; d < DAYS; d++) {
+    const din = plan[d].dinner;
+    if (din.dish && din.src === 'leftover') claims.push({ day: d, meal: 1, dish: din.dish, into: dinnerFor });
+  }
+  claims.sort((a, b) => a.day - b.day || a.meal - b.meal);
+  for (const c of claims) {
+    const t = tokens.find((tok) => !reserved.has(tok) && tok.dish === c.dish && tok.release <= c.day);
     if (t) {
       reserved.add(t);
-      reservedFor.set(day, t);
+      c.into.set(c.day, t);
     }
   }
 
   const queue = [];
   let next = 0;
   const lunch = new Array(DAYS).fill(null);
+  const dinner = new Array(DAYS).fill(null);
   const weekSurplus = [[], [], [], []];
 
   for (let day = 0; day < DAYS; day++) {
@@ -90,8 +115,12 @@ export function allocate(plan, pins = {}) {
       weekSurplus[day / 7 - 1] = queue.map((t) => ({ dish: t.dish, from: t.from }));
     }
 
-    // (c) eat: the pinned portion if this day has one, else the oldest unreserved one
-    if (pins[day]) {
+    // (c) eat: a hand-added lunch eats nothing; else the pinned portion if this day has
+    //     one; else the oldest unreserved one
+    const m = manualAt(manual, day);
+    if (m) {
+      lunch[day] = { dish: m.name, from: -1, manual: true, ...(m.frozen ? { frozen: true } : {}) };
+    } else if (pins[day]) {
       const t = reservedFor.get(day);
       if (t) {
         queue.splice(queue.indexOf(t), 1);
@@ -106,13 +135,25 @@ export function allocate(plan, pins = {}) {
         lunch[day] = { dish: t.dish, from: t.from };
       }
     }
+
+    // (d) a leftover dinner eats its reserved portion
+    const din = plan[day].dinner;
+    if (din.dish && din.src === 'leftover') {
+      const t = dinnerFor.get(day);
+      if (t) {
+        queue.splice(queue.indexOf(t), 1);
+        dinner[day] = { dish: t.dish, from: t.from };
+      } else {
+        dinner[day] = { dish: din.dish, from: -1, unfulfilled: true };
+      }
+    }
   }
 
   // Day 27 (final Sunday) still releases its leftovers — they have nowhere to go.
   while (next < tokens.length) queue.push(tokens[next++]);
   weekSurplus[3] = queue.map((t) => ({ dish: t.dish, from: t.from }));
 
-  return { lunch, weekSurplus };
+  return { lunch, weekSurplus, dinner };
 }
 
 /**
@@ -138,4 +179,25 @@ export function lunchStats(lunchArr, week = null) {
     else gaps++;
   }
   return { filled, gaps };
+}
+
+/**
+ * Which leftovers could be dinner on day `idx` without inventing food: dishes cooked on
+ * an earlier day with leftovers, where a leftover dinner of that dish would be fulfilled.
+ * Taking one may move a later lunch along or open a gap, which is honest.
+ * @returns {Array<{dish:string, cat:string|null}>} in cook order
+ */
+export function leftoverOptions(plan, pins = {}, manual = {}, idx) {
+  const seen = new Map();
+  for (let d = 0; d < idx; d++) {
+    const din = plan[d].dinner;
+    if (din.dish && din.src === 'cook' && din.extra > 0 && !seen.has(din.dish)) seen.set(din.dish, din.cat);
+  }
+  const out = [];
+  for (const [dish, cat] of seen) {
+    const trial = plan.map((day, i) => (i === idx ? { ...day, dinner: { cat, dish, src: 'leftover', extra: 0 } } : day));
+    const r = allocate(trial, pins, manual).dinner[idx];
+    if (r && !r.unfulfilled) out.push({ dish, cat });
+  }
+  return out;
 }

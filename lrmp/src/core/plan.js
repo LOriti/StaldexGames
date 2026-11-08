@@ -11,7 +11,9 @@
  *     dinner: {
  *       cat:   string|null   // mode key ('curry' | 'fry' | 'assembly' | 'soup' | 'bake')
  *       dish:  string|null   // dish name, must exist in DISH_INDEX
- *       src:   'cook' | 'freezer' | null
+ *       src:   'cook' | 'freezer' | 'leftover' | null
+ *                            // 'leftover' = eat one leftover portion of `dish` for
+ *                            // dinner instead of cooking (see core/allocate.js rule 8)
  *       extra: number        // leftover portions this dinner yields
  *       note:  string        // OPTIONAL free-text day note ("dinner out"). A note day
  *                            // has cat/dish/src null and extra 0 — it cooks nothing,
@@ -195,6 +197,11 @@ export function swapDinners(plan, a, b) {
   plan[a].dinner = plan[b].dinner;
   plan[b].dinner = tmp;
   return plan;
+}
+
+/** A dinner that eats a leftover portion of `dish` rather than cooking it. */
+export function leftoverDinner(dish, cat = null) {
+  return { cat, dish, src: 'leftover', extra: 0 };
 }
 
 /** Guard against corrupt/stale persisted state. */

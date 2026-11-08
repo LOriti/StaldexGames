@@ -1,12 +1,14 @@
 import { MODE_BY_KEY } from '../data/modes.js';
 import { metaOf, allDishNames } from '../data/dishes.js';
-import { DAY_NAMES, swapDinners, deferDinner, emptyDinner } from '../core/plan.js';
+import { DAY_NAMES, swapDinners, deferDinner, emptyDinner, leftoverDinner } from '../core/plan.js';
 import { allocate, groupSurplus } from '../core/allocate.js';
 import * as fz from '../core/freezer.js';
 import { get, commit, setUI } from '../state.js';
 import { escapeAttr, toast, beginDrag } from './dom.js';
 import { openRecipe } from './recipeModal.js';
 import { openDishPicker } from './dishPicker.js';
+import { openLunchPicker } from './lunchPicker.js';
+import { clearManualLunch } from '../core/lunches.js';
 import {
   CONTEXT_DAYS, dateForIndex, dayContext, formatDate, formatDay, formatLongDate, formatRange,
 } from '../core/timeline.js';
@@ -18,8 +20,22 @@ const colourOf = (dish) => {
 
 /* ---------- tiles ---------- */
 
-function dinnerTile(plan, idx) {
+function dinnerTile(plan, idx, left, planAnchor) {
   const d = plan[idx].dinner;
+
+  if (d.dish && d.src === 'leftover') {
+    const colour = d.cat && MODE_BY_KEY[d.cat] ? MODE_BY_KEY[d.cat].color : colourOf(d.dish);
+    const ok = left && !left.unfulfilled;
+    const kind = ok
+      ? `🥡 leftovers · from ${formatDay(dateForIndex(left.from, planAnchor))}`
+      : '🥡 no portion left by then';
+    return `<div class="tile dtile lodin ${ok ? '' : 'lodin-wait'}" data-idx="${idx}" style="--gc:${colour}">
+              <button class="nbtn" data-cleardinner="${idx}" aria-label="Send this portion back to lunches">✕</button>
+              ${metaOf(d.dish) ? '<button class="rbtn" aria-label="Recipe">📖</button>' : ''}
+              <div class="tile-name">${escapeAttr(d.dish)}</div>
+              <div class="tile-kind">${kind}</div>
+            </div>`;
+  }
 
   if (!d.dish && d.note) {
     return `<div class="tile ntile" data-idx="${idx}">
@@ -52,19 +68,29 @@ function dinnerTile(plan, idx) {
 
 function lunchTile(lunch, idx) {
   const L = lunch[idx];
-  if (!L) return `<div class="flex lunch-gap">no lunch</div>`;
+  if (!L) return `<button class="flex lunch-gap add-lunch" data-addlunch="${idx}">no lunch — tap to add</button>`;
+
+  if (L.manual) {
+    const known = Boolean(metaOf(L.dish));
+    return `<div class="tile ltile mtile" data-idx="${idx}" data-dish="${escapeAttr(L.dish)}" style="--gc:${known ? colourOf(L.dish) : '#a49d8e'}">
+              <button class="nbtn" data-clearlunch="${idx}" aria-label="Remove this lunch">✕</button>
+              ${known ? '<button class="rbtn" aria-label="Recipe">📖</button>' : ''}
+              <div class="tile-name sm" data-addlunch="${idx}">${escapeAttr(L.dish)}</div>
+              <div class="tile-kind">${L.frozen ? '❄ from freezer' : 'added by you'}</div>
+            </div>`;
+  }
 
   if (L.unfulfilled) {
     return `<div class="tile ltile unful" data-idx="${idx}" data-dish="${escapeAttr(L.dish)}" style="--gc:${colourOf(L.dish)}">
               <button class="pinbtn" data-unpin="${idx}" aria-label="Unpin this lunch">📌</button>
-              <div class="tile-name sm">${L.dish}</div>
+              <div class="tile-name sm" data-addlunch="${idx}">${escapeAttr(L.dish)}</div>
               <div class="tile-kind">pinned — no portion by then</div>
             </div>`;
   }
   return `<div class="tile ltile" data-idx="${idx}" data-from="${L.from}" data-dish="${escapeAttr(L.dish)}" ${L.pinned ? 'data-pinned="1"' : ''} style="--gc:${colourOf(L.dish)}">
             <button class="rbtn" aria-label="Recipe">📖</button>
             ${L.pinned ? `<button class="pinbtn" data-unpin="${idx}" aria-label="Unpin this lunch">📌</button>` : ''}
-            <div class="tile-name sm">${L.dish}</div>
+            <div class="tile-name sm">${escapeAttr(L.dish)}</div>
             <div class="tile-kind">${L.pinned ? 'leftovers · pinned' : 'leftovers'}</div>
           </div>`;
 }
@@ -126,8 +152,8 @@ function surplusRow(tokens, week) {
 /* ---------- view ---------- */
 
 export function renderWeekly(root) {
-  const { plan, freezer, week, lunchPins, planAnchor } = get();
-  const { lunch, weekSurplus } = allocate(plan, lunchPins);
+  const { plan, freezer, week, lunchPins, manualLunches, planAnchor } = get();
+  const { lunch, weekSurplus, dinner: leftDinners } = allocate(plan, lunchPins, manualLunches);
 
   const weekBtns = [0, 1, 2, 3]
     .map((i) => {
@@ -149,7 +175,7 @@ export function renderWeekly(root) {
                 <span class="bday-date">${formatDate(date)}</span>
                 <span class="bday-context">${dayContext(idx)}</span>
               </div>
-              <div class="slot dslot" data-idx="${idx}">${dinnerTile(plan, idx)}</div>
+              <div class="slot dslot" data-idx="${idx}">${dinnerTile(plan, idx, leftDinners[idx], planAnchor)}</div>
               <div class="slot lslot" data-idx="${idx}">${lunchTile(lunch, idx)}</div>
             </div>`;
   }).join('');
@@ -179,6 +205,8 @@ export function renderWeekly(root) {
     ${surplusRow(weekSurplus[week], week)}
     <p class="board-note">Drag a dinner onto another day to swap, onto the freezer ❄ to bank all its leftovers, or down into the surplus strip to push it to next week ·
       drag a lunch onto another day to pin it there 📌, or onto the freezer to bank that one portion ·
+      drag a lunch onto an empty dinner to have those leftovers for dinner instead 🥡 ·
+      tap a lunch, or an empty one, to add your own: typed, a dish, or one from the freezer (the leftovers move on to a later day) ·
       −/+ sets leftover portions (they fill later lunches, earliest-cooked first, and roll into the next week) ·
       tap an empty dinner to pick a dish (filtered by mode) or write a note · everything saves automatically.</p>`;
 
@@ -267,6 +295,27 @@ function wire(root) {
       return commit({ pins: true });
     }
 
+    const cd = e.target.closest('[data-cleardinner]');
+    if (cd) {
+      s.plan[Number(cd.dataset.cleardinner)].dinner = emptyDinner();
+      toast('Portion back with the lunches');
+      return commit({ plan: true });
+    }
+
+    const cl = e.target.closest('[data-clearlunch]');
+    if (cl) {
+      const idx = Number(cl.dataset.clearlunch);
+      const wasFrozen = s.manualLunches[idx]?.frozen;
+      clearManualLunch(s.manualLunches, s.freezer, idx);
+      if (wasFrozen) toast('Portion back in the freezer');
+      return commit({ lunches: true, freezer: true });
+    }
+
+    // Empty lunch, a hand-added lunch's name, or a waiting pin's name: open the lunch picker.
+    // (Leftover tiles are draggable, so their tap arrives through beginDrag's onTap.)
+    const al = e.target.closest('[data-addlunch]');
+    if (al) return openLunchPicker(Number(al.dataset.addlunch));
+
     const pd = e.target.closest('[data-pickday]');
     if (pd) {
       const idx = Number(pd.dataset.pickday);
@@ -319,7 +368,7 @@ function wire(root) {
       const freezerEl = el.closest('.freezer');
       if (freezerEl) return freezerEl; // every drag type can land in the freezer
       if (payload.type === 'dinner') return el.closest('.dslot') || el.closest('.surplus');
-      if (payload.type === 'lunch') return el.closest('.lslot');
+      if (payload.type === 'lunch') return el.closest('.lslot') || el.closest('.dslot');
       return null;
     },
     onDrop: (target, payload) => {
@@ -327,6 +376,9 @@ function wire(root) {
 
       if (target.classList.contains('freezer')) {
         if (payload.type === 'dinner') {
+          if (s.plan[payload.idx].dinner.src === 'leftover') {
+            return toast('That night eats leftovers — ✕ sends the portion back to lunches');
+          }
           const n = fz.freezeDinner(s.plan, s.freezer, payload.idx);
           toast(n ? `${n} portion${n === 1 ? '' : 's'} frozen` : 'No leftovers to freeze');
           return commit({ plan: true, freezer: true });
@@ -357,15 +409,33 @@ function wire(root) {
         return commit({ plan: true });
       }
 
+      // A leftover lunch dropped on a dinner slot: eat that dish for dinner instead.
+      if (target.classList.contains('dslot') && payload.type === 'lunch') {
+        const to = Number(target.dataset.idx);
+        const din = s.plan[to].dinner;
+        if (din.dish || din.note) return toast('That day already has a dinner — clear it first');
+        const info = metaOf(payload.dish);
+        s.plan[to].dinner = leftoverDinner(payload.dish, info ? info.mode : null);
+        if (payload.pinned) delete s.lunchPins[payload.idx];
+        const day = formatDay(dateForIndex(to, s.planAnchor));
+        const check = allocate(s.plan, s.lunchPins, s.manualLunches).dinner[to];
+        toast(check?.unfulfilled
+          ? `No ${payload.dish} portion left by ${day} — dinner will wait`
+          : `${payload.dish} leftovers for ${day} dinner`);
+        return commit({ plan: true, pins: payload.pinned });
+      }
+
       if (target.classList.contains('lslot') && payload.type === 'lunch') {
         const to = Number(target.dataset.idx);
         if (to === payload.idx) return;
+        // Dropping leftovers onto a hand-added lunch replaces it (a frozen one goes back).
+        const hadManual = clearManualLunch(s.manualLunches, s.freezer, to);
         s.lunchPins[to] = payload.dish;
         if (payload.pinned) delete s.lunchPins[payload.idx];
         // Honest feedback: a pin the allocator can't feed shows as waiting, not filled.
-        const check = allocate(s.plan, s.lunchPins).lunch[to];
-        if (check?.unfulfilled) toast(`No ${payload.dish} portion available by ${DAY_NAMES[to % 7]} — pin will wait`);
-        return commit({ pins: true });
+        const check = allocate(s.plan, s.lunchPins, s.manualLunches).lunch[to];
+        if (check?.unfulfilled) toast(`No ${payload.dish} portion available by ${formatDay(dateForIndex(to, s.planAnchor))} — pin will wait`);
+        return commit({ pins: true, lunches: hadManual, freezer: hadManual });
       }
     },
     onEnd: () => renderWeekly(root),
@@ -386,9 +456,10 @@ function wire(root) {
     });
   });
 
-  root.querySelectorAll('.ltile:not(.unful)').forEach((t) => {
+  root.querySelectorAll('.ltile:not(.unful):not(.mtile)').forEach((t) => {
     t.addEventListener('pointerdown', (e) => {
       if (e.target.closest('button')) return; // let 📖/📌 through
+      const idx = Number(t.dataset.idx);
       beginDrag(e, t, {
         type: 'lunch',
         idx: Number(t.dataset.idx),
@@ -397,7 +468,7 @@ function wire(root) {
         pinned: t.dataset.pinned === '1',
         label: t.dataset.dish,
         colour: colourOf(t.dataset.dish),
-      }, dragOpts);
+      }, { ...dragOpts, onTap: () => openLunchPicker(idx) });
     });
   });
 
