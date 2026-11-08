@@ -16,7 +16,7 @@ with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
 ```bash
 npm install
 npm run dev       # http://localhost:5173
-npm test          # 115 tests, all must stay green
+npm test          # 134 tests, all must stay green
 npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
 
@@ -52,6 +52,16 @@ Leftover dinners are the opposite direction and live in the plan itself: a dinne
 instead of cooking. It reserves that portion like a pin (allocator rule 8), yields
 nothing, never shops, and `allocate()` reports it in `dinner[i]`. Lunch stays the
 default; this is opt-in by dragging a lunch onto an empty dinner or via the picker.
+
+The reverse drag, a dinner onto a lunch, is `dinnerToLunch()` in `core/lunches.js`: a
+later day pins the leftovers (bumping `extra` to 1 if needed), the same or an earlier day
+moves the meal into a manual lunch, and freezer/leftover dinners move across as-is.
+
+**Any meal can make leftovers.** `dinnerYield()` (`core/plan.js`) covers cooked dinners
+and note days with `extra`; `lunchYield()` (`core/lunches.js`) covers manual lunches with
+`extra`. Lunch-made portions release at `day + 0.5`: after that lunch, in time for its
+dinner. They carry `meal: 'lunch'`, and surplus `froms` spell them `'L<day>'` so the
+freezer ops decrement the right source. Freezer and leftover meals never yield.
 
 ---
 
@@ -120,8 +130,8 @@ is nothing to sync. Edit either, both update.
 
 ### Invariants (tests enforce these)
 1. `plan.length === 28`, always.
-2. **Only `src: 'cook'` dinners produce leftovers.** A `'freezer'` dinner is a single
-   reheated portion — `extra` stays 0. It does not breed.
+2. **Cooked dinners, note days and manual lunches produce leftovers.** A `'freezer'` or
+   `'leftover'` meal is a single reheated portion — `extra` stays 0. It does not breed.
 3. Empty days are **legitimate and expected**. Not every day needs a category; blanks are
    leftover/freezer nights. Don't "helpfully" auto-fill them.
 4. Portions are conserved. Every portion banked in the freezer is decremented from a
@@ -232,7 +242,7 @@ controls to a tile.
 
 **Works:** month painting + auto-dish-selection, week board with derived lunches, leftover
 steppers, FIFO allocation with gaps, rolling weekly surplus, lunch pinning (drag a lunch to
-another day), manual lunches (tap a lunch: typed, a dish, or from the freezer), leftover dinners (drag a lunch onto an empty dinner), freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
+another day), manual lunches (tap a lunch: typed, a dish, or from the freezer), leftover dinners (drag a lunch onto an empty dinner), dinner-to-lunch drags, freezer (bank/use/remove; drag dinner/lunch/surplus tiles in), defer-a-dinner
 to next week (drop it on the surplus strip; the final period cannot wrap into history), free-text day notes
 ("dinner out") on empty days, all 40 recipes, persistence, mobile drag.
 

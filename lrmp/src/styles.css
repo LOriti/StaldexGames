@@ -184,7 +184,7 @@
   .pinbtn{position:absolute;top:5px;right:30px;width:21px;height:21px;border:none;background:rgba(42,36,29,.07);border-radius:5px;cursor:pointer;font-size:10px;line-height:1;padding:0;display:flex;align-items:center;justify-content:center}
   .pinbtn:hover{background:rgba(42,36,29,.16)}
   .pinbtn:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
-  .unful .pinbtn{right:5px}
+  .unful .pinbtn,.ltile:not(:has(.rbtn)) .pinbtn{right:5px}
   .ntile{--gc:#a49d8e;background:var(--bg2);border:1px dashed var(--line);border-left:4px solid var(--gc);cursor:pointer;box-shadow:none}
   .ntile .tile-name{font-style:italic;color:var(--cream)}
   .ntile .tile-kind{color:var(--cream-dim)}

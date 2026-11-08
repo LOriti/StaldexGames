@@ -15,7 +15,7 @@ npm run dev       # http://localhost:5173
 ```
 
 ```bash
-npm test          # 115 tests
+npm test          # 134 tests
 npm run build     # -> dist/  (static, no backend — deploy anywhere)
 ```
 
@@ -44,6 +44,12 @@ your leftover and freezer nights.
 - Leftovers go to lunch by default. **Drag a lunch onto an empty dinner**, or tap an empty
   dinner and choose **🥡 Eat leftovers**, to have that portion for dinner instead. ✕ on
   the dinner sends it back to the lunches.
+- **Drag a dinner onto a lunch** to have it for lunch. On a later day it pins that
+  dinner's leftovers there (adding a portion if it had none). On the same or an earlier
+  day the meal itself moves to lunch. Freezer and leftover dinners move across as they are.
+- **Any meal can make leftovers.** Notes ("Chicken salad") and your own lunches get the
+  same −/+ as cooked dinners. A lunch's leftovers can be that evening's dinner, then later
+  lunches. Freezer meals and leftover nights make none: they already are leftovers.
 
 Everything saves automatically.
 
