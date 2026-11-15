@@ -131,9 +131,69 @@ export function cashOffset(accounts, loans) {
   return { cash: r2(cash), rate, loan: loan ? loan.loan : '', interest_a_year: r2((cash * rate) / 100) };
 }
 
+// ---- category codes and allocations (Brain D-152 A, D-155) ------------------------------
+//
+// Every category carries a short code whose letter is its tier and whose number is its rank
+// within the tier, most important first: I money in, H houses, E essentials, C commitments,
+// D discretionary, X between own accounts, S to sort. The list is published with the figures
+// (`categories`); without one, codes are made up from the groups so the page still works.
+
+export const TIERS = [
+  ['I', 'Money in'], ['H', 'Houses'], ['E', 'Essentials'], ['C', 'Commitments'],
+  ['D', 'Discretionary'], ['X', 'Between own accounts'], ['S', 'To sort'],
+];
+const GROUP_LETTER = { 'Money in': 'I', Housing: 'H', 'Property deals': 'H', Living: 'E', 'Own accounts': 'X', 'Loan proceeds': 'X', 'To sort': 'S' };
+const tierRank = (code) => {
+  const i = TIERS.findIndex(([l]) => l === String(code || '').charAt(0));
+  return i < 0 ? TIERS.length : i;
+};
+const codeNum = (code) => +(String(code || '').slice(1)) || 0;
+export const byCode = (a, b) => tierRank(a.code) - tierRank(b.code) || codeNum(a.code) - codeNum(b.code) || String(a.category).localeCompare(String(b.category));
+
+export function registry(doc) {
+  const published = doc.categories && Array.isArray(doc.categories.rows) ? doc.categories.rows.filter((r) => r && r.category) : [];
+  const out = published.map((r) => ({ code: String(r.code || ''), category: r.category, group: r.group, tier: r.tier || '' }));
+  const known = new Set(out.map((r) => r.category));
+  // Anything the figures use that the list does not name gets a made-up code at the end of its tier.
+  const extra = new Map();
+  for (const r of [...doc.transactions.rows, ...doc.budget.rows.map((b) => ({ category: b.category, group: 'Living' }))]) {
+    if (!known.has(r.category) && !extra.has(r.category)) extra.set(r.category, r.group || 'To sort');
+  }
+  for (const [category, group] of extra) {
+    const letter = GROUP_LETTER[group] || 'S';
+    const used = out.filter((r) => r.code.charAt(0) === letter).map((r) => codeNum(r.code));
+    out.push({ code: `${letter}${(used.length ? Math.max(...used) : 0) + 1}`, category, group, tier: '' });
+  }
+  return out.sort(byCode);
+}
+
+const sameFp = (r, fp) => Boolean(fp) && r.date === fp.date && r.amount === fp.amount && r.description === fp.description && r.account === fp.account;
+
+// The figures with the tab's allocations laid over them; a ruling whose transaction no longer
+// matches (a re-close) is left out rather than moving another row.
+export function applyRulings(rows, rulings) {
+  const items = rulings && rulings.items ? rulings.items : {};
+  return rows.map((r) => {
+    const k = items[r.id];
+    if (!k || !sameFp(r, k.fp)) return r;
+    return { ...r, category: k.category, group: k.group, ruled: { by: k.by, at: k.at, note: k.note, like: k.like, from: k.from } };
+  });
+}
+
+export function viewOf(doc) {
+  return { ...doc, transactions: { ...doc.transactions, rows: applyRulings(doc.transactions.rows, doc.rulings) } };
+}
+
+function ordered(b, codes) {
+  const rank = (c) => ({ code: codes.get(c) || 'Z', category: c });
+  return { ...b, rows: b.rows.slice().sort((x, y) => byCode(rank(x.category), rank(y.category))) };
+}
+
 // Everything the page draws, for one set of filters.
 export function model(doc, p) {
   const txn = doc.transactions.rows;
+  const reg = registry(doc);
+  const codes = new Map(reg.map((r) => [r.category, r.code]));
   const per = period(txn, p);
   return {
     params: p,
@@ -141,10 +201,12 @@ export function model(doc, p) {
     accounts: Array.from(new Set(txn.map((r) => r.account))).sort(),
     period: per,
     totals: totals(txn, p),
-    budget: budgetRows(txn, doc.budget.rows, p, per),
+    budget: ordered(budgetRows(txn, doc.budget.rows, p, per), codes),
     monthly: monthly(txn, p),
     byCategory: byCategory(txn, p),
     cash: cashOffset(doc.accounts.rows, doc.loans.rows),
+    registry: reg,
+    codes,
   };
 }
 
@@ -190,8 +252,10 @@ export function esc(s) {
 }
 
 const STATUS_CLASS = { over: 'over', 'ahead of pace': 'ahead', ok: 'ok', 'no budget': 'none' };
-const CHIP_TEXT = { 'ahead of pace': 'ahead' };
+const CHIP_TEXT = { 'ahead of pace': 'ahead', 'no budget': 'no line' };
 const chip = (s) => (s ? `<span class="chip ${STATUS_CLASS[s] || 'none'}" title="${esc(s)}">${esc(CHIP_TEXT[s] || s)}</span>` : '');
+const codeTag = (code) => (code ? `<span class="code">${esc(code)}</span>` : '');
+const catCell = (codes, category) => `<span class="cn">${codeTag(codes.get(category))}<span>${esc(category)}</span></span>`;
 const SERIES = [
   { key: 'money_in', name: 'Money in', color: '#12a37f' },
   { key: 'living', name: 'Living costs', color: '#4f46e5' },
@@ -250,13 +314,13 @@ function budgetHtml(m) {
     return `<div class="pace"><i class="${cls}" style="width:${w}%"></i>${tick}</div>`;
   };
   const row = (r) => `<tr class="${r.total ? 'total' : `pick${p.category === r.category ? ' on' : ''}`}"${r.total ? '' : ` data-category="${esc(r.category)}"`}>
-    <td>${esc(r.category)}</td><td class="n">${r.budget ? money(r.budget) : '—'}</td><td class="n">${money(r.actual)}</td>
-    <td class="n${r.left < 0 ? ' neg-over' : ''}">${money(r.left)}</td><td class="n hide-sm">${pct(r.used)}</td>
+    <td>${r.total ? esc(r.category) : catCell(m.codes, r.category)}</td><td class="n">${r.budget ? money(r.budget) : '—'}</td><td class="n">${money(r.actual)}</td>
+    <td class="n hide-sm${r.left < 0 ? ' neg-over' : ''}">${money(r.left)}</td><td class="n hide-sm">${pct(r.used)}</td>
     <td>${chip(r.status)}</td><td class="hide-sm">${pace(r, r.total ? Math.max(1, r.budget, r.actual) : max)}</td></tr>`;
   const scope = p.month ? 'the month' : `${m.period ? m.period.months : ''} months`;
   return `<section class="fin-card" id="budget"><h2>Budget against actual</h2>
-    <p class="hint">Living costs for ${esc(scope)} by category, against the budget. "Ahead" means more than 10 points ahead of the share of the month gone; the tick on each bar is where spending would sit on pace. Tap a row for its transactions.</p>
-    <div class="fin-tw"><table><thead><tr><th>Category</th><th class="n">Budget</th><th class="n">Actual</th><th class="n">Left</th><th class="n hide-sm">Used</th><th>Status</th><th class="hide-sm">Pace</th></tr></thead>
+    <p class="hint">Living costs for ${esc(scope)} by category in order of importance (essentials first), against the budget. "Ahead" means more than 10 points ahead of the share of the month gone; the tick on each bar is where spending would sit on pace. Tap a row for its transactions.</p>
+    <div class="fin-tw"><table><thead><tr><th>Category</th><th class="n">Budget</th><th class="n">Actual</th><th class="n hide-sm">Left</th><th class="n hide-sm">Used</th><th>Status</th><th class="hide-sm">Pace</th></tr></thead>
     <tbody>${rows.map(row).join('')}${row(total)}</tbody></table></div></section>`;
 }
 
@@ -297,7 +361,8 @@ function categoryChart(m, width) {
   const rows = m.byCategory;
   if (!rows.length) return '<p class="fin-empty">No money out for these filters.</p>';
   const W = Math.max(300, width), bh = 20, gap = 7, mr = 70;
-  const longest = Math.max(...rows.map((r) => r.category.length));
+  const lab = (r) => `${m.codes.get(r.category) || ''} ${r.category}`.trim();
+  const longest = Math.max(...rows.map((r) => lab(r).length));
   const ml = Math.min(W * 0.45, longest * 6.6 + 14);
   const H = rows.length * (bh + gap);
   const max = Math.max(1, ...rows.map((r) => r.money_out));
@@ -308,7 +373,7 @@ function categoryChart(m, width) {
   rows.forEach((r, i) => {
     const yy = i * (bh + gap);
     const dim = p.category && p.category !== r.category ? ' opacity=".35"' : '';
-    svg += `<g${dim}><text class="lab" x="${ml - 8}" y="${yy + bh / 2}" dy="0.35em" text-anchor="end">${esc(clip(r.category))}</text>`
+    svg += `<g${dim}><text class="lab" x="${ml - 8}" y="${yy + bh / 2}" dy="0.35em" text-anchor="end">${esc(clip(lab(r)))}</text>`
       + `<rect x="${ml}" y="${yy}" width="${Math.max(2, x(r.money_out))}" height="${bh}" rx="4" fill="${GROUP_COLOR[r.group] || '#4f46e5'}"/>`
       + `<text class="val" x="${ml + x(r.money_out) + 6}" y="${yy + bh / 2}" dy="0.35em">${money(r.money_out)}</text></g>`
       + `<rect class="hit" data-cat="${i}" x="0" y="${yy - gap / 2}" width="${W}" height="${bh + gap}"/>`;
@@ -326,8 +391,10 @@ function loansHtml(m, doc) {
 }
 
 const newest = (a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : a.id > b.id ? -1 : 1);
-function txnRow(r, cols) {
-  return `<tr>${cols.map((c) => {
+function txnRow(r, cols, codes) {
+  const ruled = r.ruled ? ` <span class="ruled" title="Allocated on the tab${r.ruled.by ? ` by ${esc(r.ruled.by)}` : ''}">✎</span>` : '';
+  return `<tr class="pick" data-txn="${esc(r.id)}">${cols.map((c) => {
+    if (c === 'category') return `<td>${catCell(codes, r.category)}${ruled}</td>`;
     if (c === 'date') return `<td class="d">${esc(dayLabel(r.date).slice(0, -5))}</td>`;
     if (c === 'account') return `<td class="m hide-sm">${esc(shortAcct(r.account))}</td>`;
     if (c === 'amount') return `<td class="n${r.amount > 0 ? ' pos' : ''}">${esc(signed(r.amount))}</td>`;
@@ -345,19 +412,19 @@ export function txnRows(txn, p, q = '') {
   return txn.filter((r) => inView(r, p) && (!needle || `${r.description} ${r.category} ${r.account} ${r.amount}`.toLowerCase().includes(needle))).sort(newest);
 }
 
-function reviewHtml(doc, p) {
+function reviewHtml(doc, p, codes) {
   const rows = reviewRows(doc.transactions.rows, p);
   return `<section class="fin-card" id="review"><h2>To sort and flagged <span class="chip warn">${rows.length}</span></h2>
-    <p class="hint">Transactions that need a ruling or carry a note, for the month and account shown.</p>
+    <p class="hint">Transactions that need a ruling or carry a note, for the month and account shown. Tap one to allocate it.</p>
     ${rows.length ? `<div class="fin-tw tall"><table><thead><tr><th>Date</th><th class="hide-sm">Account</th><th>Description</th><th>Category</th><th class="n">Amount</th><th>Why it's here</th></tr></thead>
-    <tbody>${rows.map((r) => txnRow(r, ['date', 'account', 'description', 'category', 'amount', 'note'])).join('')}</tbody></table></div>` : '<p class="fin-empty">Nothing to sort here.</p>'}</section>`;
+    <tbody>${rows.map((r) => txnRow(r, ['date', 'account', 'description', 'category', 'amount', 'note'], codes)).join('')}</tbody></table></div>` : '<p class="fin-empty">Nothing to sort here.</p>'}</section>`;
 }
 
-function txnHtml(doc, p, q, all) {
+function txnHtml(doc, p, q, all, codes) {
   const rows = txnRows(doc.transactions.rows, p, q);
   const shown = all ? rows : rows.slice(0, TXN_PAGE);
   return `<div class="fin-tw tall"><table><thead><tr><th>Date</th><th class="hide-sm">Account</th><th>Description</th><th>Category</th><th class="hide-sm">Group</th><th class="n">Amount</th></tr></thead>
-    <tbody>${shown.map((r) => txnRow(r, ['date', 'account', 'description', 'category', 'group', 'amount'])).join('') || '<tr><td colspan="6" class="m">No transactions for these filters.</td></tr>'}</tbody></table></div>
+    <tbody>${shown.map((r) => txnRow(r, ['date', 'account', 'description', 'category', 'group', 'amount'], codes)).join('') || '<tr><td colspan="6" class="m">No transactions for these filters.</td></tr>'}</tbody></table></div>
     ${rows.length > shown.length ? `<button type="button" class="fin-more" id="txn-all">Show all ${rows.length}</button>` : ''}`;
 }
 
@@ -371,6 +438,15 @@ function statementsHtml(doc) {
     <div class="fin-tw"><table><thead><tr><th>Account</th><th class="hide-sm">Owner</th><th>Status</th><th class="hide-sm">Loaded to</th><th class="n">Last balance</th><th class="hide-sm">Offset</th><th class="hide-sm">Note</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
+function codesHtml(m) {
+  const tiers = TIERS.map(([letter, name]) => {
+    const rows = m.registry.filter((r) => r.code.charAt(0) === letter);
+    if (!rows.length) return '';
+    return `<div class="tier"><h3><span class="code">${letter}</span>${esc(name)}</h3><ul>${rows.map((r) => `<li>${codeTag(r.code)}${esc(r.category)}</li>`).join('')}</ul></div>`;
+  }).join('');
+  return `<section class="fin-card" id="codes"><h2>Category codes</h2><p class="hint">The letter is the tier, in order of importance; the number is the rank inside it. Type a code to allocate a transaction quickly.</p><div class="tiers">${tiers}</div></section>`;
+}
+
 function sourcesHtml(doc) {
   const parts = [['transactions', 'Transactions'], ['budget', 'Budget'], ['accounts', 'Statements'], ['loans', 'Loans']];
   let html = '';
@@ -382,6 +458,8 @@ function sourcesHtml(doc) {
     if (plain.length) html += `<dl>${plain.map((x) => `<dt>${esc(x.label)}</dt><dd>${esc(x.value)}</dd>`).join('')}</dl>`;
     html += code.map((x) => `<details><summary>${esc(x.label)}</summary><pre>${esc(x.value)}</pre></details>`).join('');
   }
+  const n = doc.rulings && doc.rulings.items ? Object.keys(doc.rulings.items).length : 0;
+  if (n) html = `<p class="hint"><b>${n} allocation${n === 1 ? '' : 's'}</b> made on the tab since this close; the next close turns them into categorising rules.</p>` + html;
   const when = doc.published ? new Date(doc.published) : null;
   return `<section class="fin-card" id="sources"><h2>Sources</h2><p class="hint">Published ${when && !isNaN(when) ? esc(when.toLocaleString('en-AU', { timeZone: 'Australia/Perth', dateStyle: 'medium', timeStyle: 'short' })) : esc(doc.published)} (Perth) by the monthly close. Transfers and card repayments between your own accounts are left out of the totals so nothing counts twice.</p>${html}</section>`;
 }
@@ -395,12 +473,48 @@ export function pageHtml(doc, m, { width = 360, q = '', all = false } = {}) {
       <section class="fin-card" id="by-category"><h2>Where the money went</h2><p class="hint">Money out by category, between-account moves left out. Tap a bar to filter the transactions.</p>
         <div class="fin-chart" id="chart-cat">${categoryChart(m, width)}</div></section>
     </div>
-    ${loansHtml(m, doc)}${reviewHtml(doc, m.params)}
+    ${loansHtml(m, doc)}${reviewHtml(doc, m.params, m.codes)}
     <section class="fin-card" id="transactions"><h2>Transactions</h2><p class="hint">Every row for the filters above, newest first.</p>
       <input type="search" class="fin-search" id="txn-q" placeholder="Search description, category or amount" value="${esc(q)}" autocomplete="off">
-      <div id="txn-body">${txnHtml(doc, m.params, q, all)}</div></section>
-    ${statementsHtml(doc)}${sourcesHtml(doc)}
+      <div id="txn-body">${txnHtml(doc, m.params, q, all, m.codes)}</div></section>
+    ${codesHtml(m)}${statementsHtml(doc)}${sourcesHtml(doc)}
     <p class="fin-foot">Private: served from a Cloudflare store behind Access${doc.viewer ? ` · signed in as ${esc(doc.viewer)}` : ''}.</p></main>`;
+}
+
+// The allocation sheet: the transaction, a search that takes a code or a name, the categories
+// by tier, a note, and whether the next close should treat its look-alikes the same way.
+export function pickOptions(reg, q) {
+  const needle = String(q || '').trim().toLowerCase();
+  if (!needle) return reg;
+  const exact = reg.filter((r) => r.code.toLowerCase() === needle);
+  if (exact.length) return exact;
+  // A tier letter, or a letter and digits, is a code: E shows the essentials, E1 the first.
+  if (/^[a-z]\d*$/.test(needle) && reg.some((r) => r.code.toLowerCase().startsWith(needle))) return reg.filter((r) => r.code.toLowerCase().startsWith(needle));
+  return reg.filter((r) => r.code.toLowerCase().startsWith(needle) || r.category.toLowerCase().includes(needle));
+}
+
+export function sheetHtml(row, reg, codes, { q = '', pick = null, note = '', like = false, busy = false, error = '' } = {}) {
+  const opts = pickOptions(reg, q);
+  const chosen = pick || row.category;
+  const list = TIERS.map(([letter, name]) => {
+    const rows = opts.filter((r) => r.code.charAt(0) === letter);
+    if (!rows.length) return '';
+    return `<h4>${esc(name)}</h4>${rows.map((r) => `<button type="button" class="opt${r.category === chosen ? ' on' : ''}${r.category === row.category ? ' now' : ''}" data-pick="${esc(r.category)}">${codeTag(r.code)}<span class="name">${esc(r.category)}</span>${r.category === row.category ? '<em>now</em>' : ''}</button>`).join('')}`;
+  }).join('') || '<p class="fin-empty">No category matches. Try a code such as E1, or part of a name.</p>';
+  const ruled = row.ruled ? `<p class="hint">Allocated on the tab${row.ruled.by ? ` by ${esc(row.ruled.by)}` : ''}${row.ruled.from ? `, was ${esc(row.ruled.from.category)}` : ''}.</p>` : '';
+  return `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
+    <div class="sheet-head"><div><p class="hint" style="margin:0">${esc(dayLabel(row.date))} · ${esc(shortAcct(row.account))}</p>
+      <h2 id="sheet-title">${esc(row.description)}</h2><p class="sheet-amt${row.amount > 0 ? ' pos' : ''}">${esc(signed(row.amount))}</p>
+      <p class="hint" style="margin:0">Now: ${catCell(codes, row.category)}</p>${ruled}</div>
+      <button type="button" class="sheet-x" data-sheet="close" aria-label="Close">✕</button></div>
+    <input type="search" class="fin-search" id="sheet-q" placeholder="Code or category, e.g. E1 or groceries" value="${esc(q)}" autocomplete="off" enterkeyhint="done">
+    <div class="sheet-list" id="sheet-list">${list}</div>
+    <label class="sheet-note">Note (optional)<input type="text" id="sheet-note" maxlength="200" value="${esc(note)}" placeholder="Why, or who it was for"></label>
+    <label class="sheet-like"><input type="checkbox" id="sheet-like"${like ? ' checked' : ''}> Treat other “${esc(row.description)}” transactions the same way from the next close</label>
+    ${error ? `<p class="sheet-err" role="alert">${esc(error)}</p>` : ''}
+    <div class="sheet-acts">${row.ruled ? `<button type="button" class="fin-more ghost" data-sheet="undo"${busy ? ' disabled' : ''}>Undo allocation</button>` : ''}
+      <button type="button" class="fin-save" data-sheet="save"${busy || chosen === row.category ? ' disabled' : ''}>${busy ? 'Saving…' : `Allocate to ${esc(codes.get(chosen) || '')} ${esc(chosen)}`}</button></div>
+  </div>`;
 }
 
 // ---- the page ----------------------------------------------------------------------------
@@ -423,13 +537,14 @@ async function start(root) {
     return;
   }
   const months = monthsOf(doc.transactions.rows);
-  let q = '', all = false, last = null;
+  let q = '', all = false, last = null, cur = viewOf(doc);
   const draw = () => {
     const p = readParams(location.hash, months);
-    const m = model(doc, p);
+    cur = viewOf(doc);
+    const m = model(cur, p);
     const scrollY = window.scrollY;
     const width = Math.min(root.clientWidth || 360, 1180) < 900 ? Math.max(300, (root.clientWidth || 360) - 56) : 520;
-    root.innerHTML = pageHtml(doc, m, { width, q, all });
+    root.innerHTML = pageHtml(cur, m, { width, q, all });
     window.scrollTo(0, scrollY);
     last = m;
     wire(m);
@@ -474,13 +589,88 @@ async function start(root) {
     const qEl = root.querySelector('#txn-q');
     const body = root.querySelector('#txn-body');
     const redrawTxn = () => {
-      body.innerHTML = txnHtml(doc, last.params, q, all);
+      body.innerHTML = txnHtml(cur, last.params, q, all, last.codes);
       const more = body.querySelector('#txn-all');
       if (more) more.onclick = () => { all = true; redrawTxn(); };
     };
     qEl.oninput = () => { q = qEl.value; redrawTxn(); };
     redrawTxn();
   }
+  // Tapping any transaction row opens the allocation sheet (Brain D-152 A).
+  root.addEventListener('click', (e) => {
+    const tr = e.target.closest('tr[data-txn]');
+    if (tr && !e.target.closest('a')) openSheet(tr.dataset.txn);
+  });
+  let sheet = null;
+  function openSheet(id) {
+    const row = cur.transactions.rows.find((r) => r.id === id);
+    if (!row) return;
+    sheet = { row, q: '', pick: null, note: row.ruled ? row.ruled.note || '' : '', like: row.ruled ? Boolean(row.ruled.like) : false, busy: false, error: '' };
+    const host = document.createElement('div');
+    host.className = 'sheet-wrap';
+    host.id = 'sheet-wrap';
+    document.body.appendChild(host);
+    document.body.classList.add('sheet-open');
+    renderSheet();
+    host.querySelector('#sheet-q')?.focus({ preventScroll: true });
+  }
+  function closeSheet() {
+    document.getElementById('sheet-wrap')?.remove();
+    document.body.classList.remove('sheet-open');
+    sheet = null;
+  }
+  function renderSheet(keepList = false) {
+    const host = document.getElementById('sheet-wrap');
+    if (!host || !sheet) return;
+    const reg = registry(cur);
+    const codes = new Map(reg.map((r) => [r.category, r.code]));
+    const scroll = host.querySelector('#sheet-list')?.scrollTop || 0;
+    const focusQ = document.activeElement && document.activeElement.id === 'sheet-q';
+    host.innerHTML = sheetHtml(sheet.row, reg, codes, sheet);
+    if (keepList) host.querySelector('#sheet-list').scrollTop = scroll;
+    const qEl = host.querySelector('#sheet-q');
+    if (focusQ) { qEl.focus(); qEl.setSelectionRange(qEl.value.length, qEl.value.length); }
+    qEl.oninput = () => {
+      sheet.q = qEl.value;
+      const only = pickOptions(reg, sheet.q);
+      if (only.length === 1) sheet.pick = only[0].category;
+      renderSheet();
+    };
+    qEl.onkeydown = (ev) => { if (ev.key === 'Enter') { const only = pickOptions(reg, sheet.q); if (only.length) { sheet.pick = only[0].category; renderSheet(); } } };
+    host.querySelector('#sheet-note').oninput = (ev) => { sheet.note = ev.target.value; };
+    host.querySelector('#sheet-like').onchange = (ev) => { sheet.like = ev.target.checked; };
+    host.onclick = (ev) => {
+      if (ev.target === host) return closeSheet();
+      const b = ev.target.closest('[data-pick], [data-sheet]');
+      if (!b) return;
+      if (b.dataset.pick) { sheet.pick = b.dataset.pick; sheet.error = ''; return renderSheet(true); }
+      if (b.dataset.sheet === 'close') return closeSheet();
+      if (b.dataset.sheet === 'save') return save(false);
+      if (b.dataset.sheet === 'undo') return save(true);
+    };
+  }
+  async function save(clear) {
+    const r = sheet.row;
+    sheet.busy = true; sheet.error = ''; renderSheet(true);
+    try {
+      const base = doc.transactions.rows.find((x) => x.id === r.id);
+      const res = await fetch('/api/brain/finance/allocate', {
+        method: 'POST', credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-Brain-Write': '1', Accept: 'application/json' },
+        body: JSON.stringify({ id: r.id, fp: { date: base.date, amount: base.amount, description: base.description, account: base.account },
+          ...(clear ? { clear: true } : { category: sheet.pick || r.category, note: sheet.note, like: sheet.like }) }),
+      });
+      const out = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(res.status === 401 ? 'Signed out. Reload the page to sign in again.' : (out && out.error) || `HTTP ${res.status}`);
+      doc.rulings = out.rulings;
+      closeSheet();
+      draw();
+    } catch (err) {
+      if (!sheet) return;
+      sheet.busy = false; sheet.error = `Not saved: ${err.message}`; renderSheet(true);
+    }
+  }
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && sheet) closeSheet(); });
   window.addEventListener('hashchange', draw);
   let rw = root.clientWidth;
   window.addEventListener('resize', () => { if (Math.abs(root.clientWidth - rw) > 40) { rw = root.clientWidth; draw(); } });

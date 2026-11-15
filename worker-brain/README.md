@@ -151,6 +151,18 @@ limited to Workers KV; the Worker only reads.
 - Answers: 200 the document (plus `viewer`), 404 `nothing published yet`, 502 `published data
   malformed`, 503 `finance not configured` (no `FINANCE` binding). Same Access gate as the
   rest; it needs no GitHub token.
+- **Allocations** (Brain D-152 A): `POST /api/brain/finance/allocate`
+  `{ id, fp: { date, amount, description, account }, category, note?, like? }` (or `clear: true`)
+  moves one transaction to another category without touching the published figures. The
+  ruling goes into a second KV key, `finance-rulings`, with who made it; `GET /api/brain/finance`
+  returns it as `rulings`, and the page lays it over the figures. Same write guards as Brain's
+  writes (JSON, `Origin: https://staldex.com`, `X-Brain-Write: 1`). 409 if the transaction no
+  longer matches `fp`, 400 for an unknown category, 404 for an unknown id. The next close turns
+  the rulings into categoriser rules and clears them. Finance-only sign-ins may use this
+  route and no other write.
+- **Category codes** (Brain D-155): the published document may carry `categories`
+  (`{ code, category, group, tier }`). The code's letter is the tier, in order of importance
+  (I, H, E, C, D, X, S), and its number the rank inside it.
 - **A Finance-only viewer** (Brain D-148 A), once wanted: in Zero Trust create a second
   application, `Finance`, with destinations `staldex.com` path `brain/finance` and `staldex.com`
   path `api/brain/finance` (more specific than Brain's, so Access uses it there), a policy

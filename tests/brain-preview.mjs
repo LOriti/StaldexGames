@@ -8,6 +8,7 @@
 // (/api/brain/*) is answered here with made-up data, so no Brain content, token or
 // sign-in is involved. Needs Playwright with Chromium.
 import { createServer } from 'node:http';
+import { allocate } from '../worker-brain/src/finance.js';
 import { mkdir, readFile } from 'node:fs/promises';
 import { createRequire } from 'node:module';
 import { extname, join, normalize } from 'node:path';
@@ -144,6 +145,12 @@ const FINANCE = {
     { account: 'Card ••0002', owner: 'Synthetic', type: 'Card', status: 'Loaded', loaded_to: '2026-11-14', latest_balance: -1800, offset: 'No', note: '' },
     { account: 'Savings ••0003', owner: 'Synthetic', type: 'Savings', status: 'Not loaded', loaded_to: '', latest_balance: null, offset: 'No', note: 'Statement to come' },
   ], meta: [] },
+  categories: { rows: [
+    ['I1', 'Wages', 'Money in'], ['I2', 'Rebates', 'Money in'], ['H1', 'Home loan', 'Housing'], ['H2', 'Repairs', 'Housing'],
+    ...FIN_CATS.map(([category], i) => [i < 7 ? `E${i + 1}` : `D${i - 6}`, category, 'Living']),
+    ['X1', 'Card repayment', 'Own accounts'], ['S1', 'To sort', 'To sort'],
+  ].map(([code, category, group]) => ({ code, category, group })), meta: [] },
+  rulings: { schema: 'brain-finance-rulings/1', items: {} },
   loans: { rows: [{ loan: 'Home ••0009', property: 'Synthetic St', status: 'Open', balance: 640000, as_at: '2026-11-14', rate: 6.1, repayment_now: 4200, repayment_from_15_dec: 4300, last_interest: 3250, note: 'Synthetic' }], meta: [] },
 };
 
@@ -160,6 +167,11 @@ function answer(url, method = 'GET', body = null) {
       const b = JSON.parse(body || '{}');
       const hhmm = `12:${String(writes.length % 60).padStart(2, '0')}`;
       for (const it of b.items || []) TIME.push({ date: today, kind: it.kind || b.kind, start: hhmm, end: '', minutes: 0, ref: it.ref, area: '', lens: b.lens || '', note: String(it.note) });
+    }
+    if (u.pathname === '/api/brain/finance/allocate') {
+      const doc = FINANCE_REAL || FINANCE;
+      doc.rulings = allocate(doc, doc.rulings, JSON.parse(body || '{}'), { email: 'preview@example.com' });
+      return { rulings: doc.rulings };
     }
     // Hand to Claude also starts the item's session (Brain D-132 C).
     if (u.pathname === '/api/brain/hand') return { path: 'synthetic', sha: 'x', commit: null, session: 'https://claude.ai/code/session_01PREVIEW', fire: 'started' };
@@ -240,6 +252,21 @@ async function financeShots() {
   if ((await page.locator('#fin-title').textContent()) !== 'Year to date') problems.push('All months did not show the year to date');
   await page.evaluate(() => window.scrollTo(0, 0)); await shot('finance-year');
   await page.locator('#statements').scrollIntoViewIfNeeded(); await shot('finance-statements');
+  // Allocate a to-sort row by typing its code (Brain D-152 A, D-155).
+  await page.selectOption('#f-month', '2026-11'); await settle();
+  await page.locator('#review tr[data-txn]').first().click(); await settle();
+  if (!(await page.locator('.sheet').count())) problems.push('tapping a to-sort row opened no allocation sheet');
+  else {
+    await shot('finance-sheet');
+    await page.locator('#sheet-q').fill('E1'); await settle();
+    await page.locator('#sheet-note').fill('Groceries at the market');
+    await shot('finance-sheet-picked');
+    await page.locator('[data-sheet="save"]').click(); await settle();
+    if (!writes.some(([path, body]) => path === '/api/brain/finance/allocate' && /"category":"Food and groceries"/.test(body))) problems.push('Allocate wrote nothing');
+    if (await page.locator('.sheet').count()) problems.push('the sheet stayed open after saving');
+    if (!(await page.locator('#transactions .ruled, #review .ruled').count()) && !(await page.locator('.ruled').count())) problems.push('the allocated row shows no mark');
+    await page.locator('#codes').scrollIntoViewIfNeeded(); await shot('finance-codes');
+  }
 }
 if (args.includes('--finance')) {
   await financeShots();

@@ -175,3 +175,98 @@ test('a Finance-only sign-in reaches Finance and nothing else (Brain D-148 A)', 
   const { FINANCE_ACCESS_AUD, ...unset } = env;
   assert.equal((await call('/api/brain/finance', unset, partner)).status, 401, 'no Finance app configured: only Brain tokens');
 });
+
+// ---- category codes and allocations (Brain D-152 A, D-155) ---------------------------------
+
+const fw = await import('../worker-brain/src/finance.js');
+const CATS = { rows: [
+  { code: 'I1', category: 'Wages', group: 'Money in' },
+  { code: 'H1', category: 'Repairs', group: 'Housing' },
+  { code: 'E1', category: 'Food', group: 'Living' },
+  { code: 'D2', category: 'Clothes', group: 'Living' },
+  { code: 'D1', category: 'Fun', group: 'Living' },
+  { code: 'X1', category: 'Transfer', group: 'Own accounts' },
+  { code: 'S1', category: 'To sort', group: 'To sort' },
+], meta: [] };
+
+test('codes come from the published list, ordered by tier then rank; gaps get a made-up code', () => {
+  const reg = fin.registry({ ...DOC, categories: CATS });
+  assert.deepEqual(reg.map((r) => r.code), ['I1', 'H1', 'E1', 'D1', 'D2', 'X1', 'S1']);
+  const bare = fin.registry(DOC);
+  assert.equal(bare.find((r) => r.category === 'Food').code.charAt(0), 'E', 'Living falls under essentials until a list says otherwise');
+  assert.equal(bare.find((r) => r.category === 'Wages').code, 'I1');
+  const m = fin.model({ ...DOC, categories: CATS }, { month: '2026-08' });
+  assert.deepEqual(m.budget.rows.map((r) => r.category), ['Food', 'Fun', 'Clothes'], 'budget rows run in order of importance');
+});
+
+test('a code or part of a name finds a category', () => {
+  const reg = fin.registry({ ...DOC, categories: CATS });
+  assert.deepEqual(fin.pickOptions(reg, 'd1').map((r) => r.category), ['Fun']);
+  assert.deepEqual(fin.pickOptions(reg, 'D').map((r) => r.code), ['D1', 'D2']);
+  assert.deepEqual(fin.pickOptions(reg, 'cloth').map((r) => r.code), ['D2']);
+  assert.equal(fin.pickOptions(reg, '').length, reg.length);
+});
+
+test('an allocation moves the row, carries who made it, and is undone cleanly', () => {
+  const doc = { ...DOC, categories: CATS };
+  const t6 = TXN.find((r) => r.id === 'T6');
+  let rulings = fw.allocate(doc, null, { id: 'T6', fp: fw.fingerprint(t6), category: 'Fun', note: ' a  gift ', like: true }, { email: 'partner@example.com' }, new Date('2026-11-16T00:00:00Z'));
+  assert.deepEqual(rulings.items.T6, { id: 'T6', fp: fw.fingerprint(t6), from: { category: 'To sort', group: 'To sort' }, category: 'Fun', group: 'Living', code: 'D1', note: 'a gift', like: true, by: 'partner@example.com', at: '2026-11-16T00:00:00.000Z' });
+  const view = fin.viewOf({ ...doc, rulings });
+  const moved = view.transactions.rows.find((r) => r.id === 'T6');
+  assert.equal(moved.group, 'Living');
+  assert.equal(moved.ruled.by, 'partner@example.com');
+  assert.equal(fin.totals(view.transactions.rows, { month: '2026-08' }).to_sort, 0);
+  rulings = fw.allocate(doc, rulings, { id: 'T6', fp: fw.fingerprint(t6), clear: true }, { email: 'owner@example.com' });
+  assert.deepEqual(rulings.items, {});
+});
+
+test('an allocation is refused for a changed row, an unknown category or a bad id; a stale one is ignored', () => {
+  const doc = { ...DOC, categories: CATS };
+  const t6 = TXN.find((r) => r.id === 'T6');
+  const err = (body) => { try { fw.allocate(doc, null, body, {}); return null; } catch (e) { return e.status; } };
+  assert.equal(err({ id: 'T6', fp: { ...fw.fingerprint(t6), amount: 1 }, category: 'Fun' }), 409);
+  assert.equal(err({ id: 'T6', fp: fw.fingerprint(t6), category: 'Nope' }), 400);
+  assert.equal(err({ id: '../x', fp: {}, category: 'Fun' }), 400);
+  assert.equal(err({ id: 'T99', fp: {}, category: 'Fun' }), 404);
+  assert.equal(err({ id: 'T6', fp: fw.fingerprint(t6), category: 'Fun', note: 'x'.repeat(201) }), 400);
+  const stale = { items: { T6: { id: 'T6', fp: { ...fw.fingerprint(t6), description: 'other' }, category: 'Fun', group: 'Living' } } };
+  assert.equal(fin.applyRulings(TXN, stale).find((r) => r.id === 'T6').category, 'To sort', 'a ruling for a renumbered row moves nothing');
+});
+
+test('the sheet escapes what the data says', () => {
+  const doc = { ...DOC, categories: CATS };
+  const reg = fin.registry(doc);
+  const row = { ...TXN[0], description: '<script>x</script>' };
+  const html = fin.sheetHtml(row, reg, new Map(reg.map((r) => [r.category, r.code])), { q: '"><b>' });
+  assert.ok(!html.includes('<script>x'));
+  assert.ok(!html.includes('"><b>'));
+});
+
+const kvRw = (doc) => {
+  const store = new Map([['finance', JSON.stringify(doc)]]);
+  return { store, get: async (k, type) => (store.has(k) ? (type === 'json' ? JSON.parse(store.get(k)) : store.get(k)) : null), put: async (k, v) => { store.set(k, v); } };
+};
+const post = (path, env, token, body, headers = {}) => worker.default.fetch(new Request(`https://staldex.com${path}`, {
+  method: 'POST', body: JSON.stringify(body),
+  headers: { 'Content-Type': 'application/json', Origin: 'https://staldex.com', 'X-Brain-Write': '1', ...(token ? { 'Cf-Access-Jwt-Assertion': token } : {}), ...headers },
+}), env);
+
+test('the allocate route saves for Brain and Finance-only sign-ins and serves the rulings back', async () => {
+  const FINANCE = kvRw({ ...DOC, categories: CATS });
+  const env = { ...BASE, FINANCE, FINANCE_ACCESS_AUD: FIN_AUD };
+  const t6 = TXN.find((r) => r.id === 'T6');
+  const partner = await sign({ aud: [FIN_AUD], email: 'partner@example.com' });
+  const res = await post('/api/brain/finance/allocate', env, partner, { id: 'T6', fp: fw.fingerprint(t6), category: 'Fun' });
+  assert.equal(res.status, 200);
+  assert.equal((await res.json()).rulings.items.T6.by, 'partner@example.com');
+  const got = await (await call('/api/brain/finance', env, await sign({}))).json();
+  assert.equal(got.rulings.items.T6.category, 'Fun');
+  assert.equal(JSON.parse(FINANCE.store.get('finance')).transactions.rows.find((r) => r.id === 'T6').category, 'To sort', 'the published figures are untouched');
+  assert.equal((await post('/api/brain/finance/allocate', env, partner, { id: 'T6', fp: fw.fingerprint(t6), category: 'Fun' }, { Origin: 'https://evil.example' })).status, 403);
+  assert.equal((await post('/api/brain/finance/allocate', env, null, { id: 'T6', fp: fw.fingerprint(t6), category: 'Fun' })).status, 401);
+  assert.equal((await post('/api/brain/done', env, partner, { project: 'x', id: 'DEV-61115.01' })).status, 401, 'a Finance-only sign-in still writes nothing else');
+  assert.equal((await post('/api/brain/finance/allocate', env, partner, { id: 'T6', fp: fw.fingerprint(t6), category: 'Nope' })).status, 400);
+  const get = await worker.default.fetch(new Request('https://staldex.com/api/brain/finance/allocate'), env);
+  assert.equal(get.status, 405);
+});
