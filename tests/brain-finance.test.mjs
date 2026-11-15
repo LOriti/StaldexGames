@@ -180,30 +180,37 @@ test('a Finance-only sign-in reaches Finance and nothing else (Brain D-148 A)', 
 
 const fw = await import('../worker-brain/src/finance.js');
 const CATS = { rows: [
-  { code: 'I1', category: 'Wages', group: 'Money in' },
-  { code: 'H1', category: 'Repairs', group: 'Housing' },
-  { code: 'E1', category: 'Food', group: 'Living' },
-  { code: 'D2', category: 'Clothes', group: 'Living' },
-  { code: 'D1', category: 'Fun', group: 'Living' },
-  { code: 'X1', category: 'Transfer', group: 'Own accounts' },
-  { code: 'S1', category: 'To sort', group: 'To sort' },
+  { code: 'IN-1', category: 'Wages', group: 'Money in' },
+  { code: 'H-1', category: 'Repairs', group: 'Housing' },
+  { code: 'FOO-1', category: 'Food', group: 'Living' },
+  { code: 'ENT-2', category: 'Clothes', group: 'Living' },
+  { code: 'ENT-1', category: 'Fun', group: 'Living' },
+  { code: 'T-1', category: 'Transfer', group: 'Own accounts' },
+  { code: 'XXX-1', category: 'To sort', group: 'To sort' },
+], groups: [
+  { code: 'IN', name: 'Money in' }, { code: 'H', name: 'House' }, { code: 'FOO', name: 'Food' },
+  { code: 'ENT', name: 'Entertainment' }, { code: 'T', name: 'Between own accounts' }, { code: 'XXX', name: 'To sort' },
 ], meta: [] };
 
 test('codes come from the published list, ordered by tier then rank; gaps get a made-up code', () => {
   const reg = fin.registry({ ...DOC, categories: CATS });
-  assert.deepEqual(reg.map((r) => r.code), ['I1', 'H1', 'E1', 'D1', 'D2', 'X1', 'S1']);
+  assert.deepEqual(reg.map((r) => r.code), ['IN-1', 'H-1', 'FOO-1', 'ENT-1', 'ENT-2', 'T-1', 'XXX-1'], 'in the published group order');
   const bare = fin.registry(DOC);
-  assert.equal(bare.find((r) => r.category === 'Food').code.charAt(0), 'E', 'Living falls under essentials until a list says otherwise');
-  assert.equal(bare.find((r) => r.category === 'Wages').code, 'I1');
+  assert.equal(fin.tierOf(bare.find((r) => r.category === 'Food').code), 'L', 'without a list, living costs fall under L');
+  assert.equal(bare.find((r) => r.category === 'Wages').code, 'IN-1');
+  assert.equal(bare.find((r) => r.category === 'Transfer').code, 'T-1');
   const m = fin.model({ ...DOC, categories: CATS }, { month: '2026-08' });
   assert.deepEqual(m.budget.rows.map((r) => r.category), ['Food', 'Fun', 'Clothes'], 'budget rows run in order of importance');
 });
 
 test('a code or part of a name finds a category', () => {
   const reg = fin.registry({ ...DOC, categories: CATS });
-  assert.deepEqual(fin.pickOptions(reg, 'd1').map((r) => r.category), ['Fun']);
-  assert.deepEqual(fin.pickOptions(reg, 'D').map((r) => r.code), ['D1', 'D2']);
-  assert.deepEqual(fin.pickOptions(reg, 'cloth').map((r) => r.code), ['D2']);
+  assert.deepEqual(fin.pickOptions(reg, 'ent-1').map((r) => r.category), ['Fun']);
+  assert.deepEqual(fin.pickOptions(reg, 'ENT1').map((r) => r.category), ['Fun'], 'the dash is optional');
+  assert.deepEqual(fin.pickOptions(reg, 'ent').map((r) => r.code), ['ENT-1', 'ENT-2']);
+  assert.deepEqual(fin.pickOptions(reg, 't').map((r) => r.code), ['T-1'], 'a group code shows that group alone');
+  assert.deepEqual(fin.pickOptions(reg, 'xxx').map((r) => r.code), ['XXX-1']);
+  assert.deepEqual(fin.pickOptions(reg, 'cloth').map((r) => r.code), ['ENT-2']);
   assert.equal(fin.pickOptions(reg, '').length, reg.length);
 });
 
@@ -211,7 +218,7 @@ test('an allocation moves the row, carries who made it, and is undone cleanly', 
   const doc = { ...DOC, categories: CATS };
   const t6 = TXN.find((r) => r.id === 'T6');
   let rulings = fw.allocate(doc, null, { id: 'T6', fp: fw.fingerprint(t6), category: 'Fun', note: ' a  gift ', like: true }, { email: 'partner@example.com' }, new Date('2026-11-16T00:00:00Z'));
-  assert.deepEqual(rulings.items.T6, { id: 'T6', fp: fw.fingerprint(t6), from: { category: 'To sort', group: 'To sort' }, category: 'Fun', group: 'Living', code: 'D1', note: 'a gift', like: true, by: 'partner@example.com', at: '2026-11-16T00:00:00.000Z' });
+  assert.deepEqual(rulings.items.T6, { id: 'T6', fp: fw.fingerprint(t6), from: { category: 'To sort', group: 'To sort' }, category: 'Fun', group: 'Living', code: 'ENT-1', note: 'a gift', like: true, by: 'partner@example.com', at: '2026-11-16T00:00:00.000Z' });
   const view = fin.viewOf({ ...doc, rulings });
   const moved = view.transactions.rows.find((r) => r.id === 'T6');
   assert.equal(moved.group, 'Living');
