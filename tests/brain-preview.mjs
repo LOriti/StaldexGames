@@ -146,10 +146,13 @@ const FINANCE = {
     { account: 'Savings ••0003', owner: 'Synthetic', type: 'Savings', status: 'Not loaded', loaded_to: '', latest_balance: null, offset: 'No', note: 'Statement to come' },
   ], meta: [] },
   categories: { rows: [
-    ['I1', 'Wages', 'Money in'], ['I2', 'Rebates', 'Money in'], ['H1', 'Home loan', 'Housing'], ['H2', 'Repairs', 'Housing'],
-    ...FIN_CATS.map(([category], i) => [i < 7 ? `E${i + 1}` : `D${i - 6}`, category, 'Living']),
-    ['X1', 'Card repayment', 'Own accounts'], ['S1', 'To sort', 'To sort'],
-  ].map(([code, category, group]) => ({ code, category, group })), meta: [] },
+    ['IN-1', 'Wages', 'Money in'], ['IN-2', 'Rebates', 'Money in'], ['MTG-1', 'Home loan', 'Housing'], ['H-1', 'Repairs', 'Housing'],
+    ...FIN_CATS.map(([category], i) => [i < 7 ? `BIL-${i + 1}` : `ENT-${i - 6}`, category, 'Living']),
+    ['T-1', 'Card repayment', 'Own accounts'], ['XXX-1', 'To sort', 'To sort'],
+  ].map(([code, category, group]) => ({ code, category, group })), groups: [
+    { code: 'IN', name: 'Money in' }, { code: 'MTG', name: 'Mortgage' }, { code: 'H', name: 'House' }, { code: 'BIL', name: 'Bills' },
+    { code: 'ENT', name: 'Entertainment' }, { code: 'T', name: 'Between own accounts' }, { code: 'XXX', name: 'To sort' },
+  ], meta: [] },
   rulings: { schema: 'brain-finance-rulings/1', items: {} },
   loans: { rows: [{ loan: 'Home ••0009', property: 'Synthetic St', status: 'Open', balance: 640000, as_at: '2026-11-14', rate: 6.1, repayment_now: 4200, repayment_from_15_dec: 4300, last_interest: 3250, note: 'Synthetic' }], meta: [] },
 };
@@ -258,7 +261,7 @@ async function financeShots() {
   if (!(await page.locator('.sheet').count())) problems.push('tapping a to-sort row opened no allocation sheet');
   else {
     await shot('finance-sheet');
-    await page.locator('#sheet-q').fill('E1'); await settle();
+    await page.locator('#sheet-q').fill('BIL-1'); await settle();
     await page.locator('#sheet-note').fill('Groceries at the market');
     await shot('finance-sheet-picked');
     await page.locator('[data-sheet="save"]').click(); await settle();

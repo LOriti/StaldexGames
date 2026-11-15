@@ -133,22 +133,31 @@ export function cashOffset(accounts, loans) {
 
 // ---- category codes and allocations (Brain D-152 A, D-155) ------------------------------
 //
-// Every category carries a short code whose letter is its tier and whose number is its rank
-// within the tier, most important first: I money in, H houses, E essentials, C commitments,
-// D discretionary, X between own accounts, S to sort. The list is published with the figures
-// (`categories`); without one, codes are made up from the groups so the page still works.
+// Every category carries a code such as FOO-1: a group of up to three letters, a dash, and
+// the category's rank inside the group. The groups and their order are published with the
+// figures (`categories.groups`, Brain D-155); without them, codes are made up from the
+// figures' own groups so the page still works.
 
-export const TIERS = [
-  ['I', 'Money in'], ['H', 'Houses'], ['E', 'Essentials'], ['C', 'Commitments'],
-  ['D', 'Discretionary'], ['X', 'Between own accounts'], ['S', 'To sort'],
+export const DEFAULT_GROUPS = [
+  { code: 'IN', name: 'Money in' }, { code: 'H', name: 'Houses' }, { code: 'L', name: 'Living' },
+  { code: 'T', name: 'Between own accounts' }, { code: 'XXX', name: 'To sort' },
 ];
-const GROUP_LETTER = { 'Money in': 'I', Housing: 'H', 'Property deals': 'H', Living: 'E', 'Own accounts': 'X', 'Loan proceeds': 'X', 'To sort': 'S' };
-const tierRank = (code) => {
-  const i = TIERS.findIndex(([l]) => l === String(code || '').charAt(0));
-  return i < 0 ? TIERS.length : i;
-};
-const codeNum = (code) => +(String(code || '').slice(1)) || 0;
-export const byCode = (a, b) => tierRank(a.code) - tierRank(b.code) || codeNum(a.code) - codeNum(b.code) || String(a.category).localeCompare(String(b.category));
+const FALLBACK = { 'Money in': 'IN', Housing: 'H', 'Property deals': 'H', Living: 'L', 'Own accounts': 'T', 'Loan proceeds': 'T', 'To sort': 'XXX' };
+export const tierOf = (code) => String(code || '').split('-')[0];
+const codeNum = (code) => +(String(code || '').split('-')[1]) || 0;
+
+export function groupsOf(doc) {
+  const g = doc.categories && Array.isArray(doc.categories.groups) ? doc.categories.groups.filter((x) => x && x.code) : [];
+  return g.length ? g : DEFAULT_GROUPS;
+}
+
+export function sorter(groups) {
+  const rank = (code) => {
+    const i = groups.findIndex((g) => g.code === tierOf(code));
+    return i < 0 ? groups.length : i;
+  };
+  return (a, b) => rank(a.code) - rank(b.code) || codeNum(a.code) - codeNum(b.code) || String(a.category).localeCompare(String(b.category));
+}
 
 export function registry(doc) {
   const published = doc.categories && Array.isArray(doc.categories.rows) ? doc.categories.rows.filter((r) => r && r.category) : [];
@@ -160,11 +169,11 @@ export function registry(doc) {
     if (!known.has(r.category) && !extra.has(r.category)) extra.set(r.category, r.group || 'To sort');
   }
   for (const [category, group] of extra) {
-    const letter = GROUP_LETTER[group] || 'S';
-    const used = out.filter((r) => r.code.charAt(0) === letter).map((r) => codeNum(r.code));
-    out.push({ code: `${letter}${(used.length ? Math.max(...used) : 0) + 1}`, category, group, tier: '' });
+    const tier = FALLBACK[group] || 'XXX';
+    const used = out.filter((r) => tierOf(r.code) === tier).map((r) => codeNum(r.code));
+    out.push({ code: `${tier}-${(used.length ? Math.max(...used) : 0) + 1}`, category, group, tier: '' });
   }
-  return out.sort(byCode);
+  return out.sort(sorter(groupsOf(doc)));
 }
 
 const sameFp = (r, fp) => Boolean(fp) && r.date === fp.date && r.amount === fp.amount && r.description === fp.description && r.account === fp.account;
@@ -184,9 +193,10 @@ export function viewOf(doc) {
   return { ...doc, transactions: { ...doc.transactions, rows: applyRulings(doc.transactions.rows, doc.rulings) } };
 }
 
-function ordered(b, codes) {
-  const rank = (c) => ({ code: codes.get(c) || 'Z', category: c });
-  return { ...b, rows: b.rows.slice().sort((x, y) => byCode(rank(x.category), rank(y.category))) };
+function ordered(b, codes, groups) {
+  const by = sorter(groups);
+  const rank = (c) => ({ code: codes.get(c) || 'ZZZ-0', category: c });
+  return { ...b, rows: b.rows.slice().sort((x, y) => by(rank(x.category), rank(y.category))) };
 }
 
 // Everything the page draws, for one set of filters.
@@ -201,11 +211,12 @@ export function model(doc, p) {
     accounts: Array.from(new Set(txn.map((r) => r.account))).sort(),
     period: per,
     totals: totals(txn, p),
-    budget: ordered(budgetRows(txn, doc.budget.rows, p, per), codes),
+    budget: ordered(budgetRows(txn, doc.budget.rows, p, per), codes, groupsOf(doc)),
     monthly: monthly(txn, p),
     byCategory: byCategory(txn, p),
     cash: cashOffset(doc.accounts.rows, doc.loans.rows),
     registry: reg,
+    groups: groupsOf(doc),
     codes,
   };
 }
@@ -439,12 +450,12 @@ function statementsHtml(doc) {
 }
 
 function codesHtml(m) {
-  const tiers = TIERS.map(([letter, name]) => {
-    const rows = m.registry.filter((r) => r.code.charAt(0) === letter);
+  const tiers = m.groups.map((g) => {
+    const rows = m.registry.filter((r) => tierOf(r.code) === g.code);
     if (!rows.length) return '';
-    return `<div class="tier"><h3><span class="code">${letter}</span>${esc(name)}</h3><ul>${rows.map((r) => `<li>${codeTag(r.code)}${esc(r.category)}</li>`).join('')}</ul></div>`;
+    return `<div class="tier"><h3><span class="code">${esc(g.code)}</span>${esc(g.name)}</h3><ul>${rows.map((r) => `<li>${codeTag(r.code)}${esc(r.category)}</li>`).join('')}</ul></div>`;
   }).join('');
-  return `<section class="fin-card" id="codes"><h2>Category codes</h2><p class="hint">The letter is the tier, in order of importance; the number is the rank inside it. Type a code to allocate a transaction quickly.</p><div class="tiers">${tiers}</div></section>`;
+  return `<section class="fin-card" id="codes"><h2>Category codes</h2><p class="hint">Each code is its group, a dash, and its place in the group. Type a code or a group (FOO, ENT-2) to allocate a transaction quickly.</p><div class="tiers">${tiers}</div></section>`;
 }
 
 function sourcesHtml(doc) {
@@ -484,30 +495,37 @@ export function pageHtml(doc, m, { width = 360, q = '', all = false } = {}) {
 // The allocation sheet: the transaction, a search that takes a code or a name, the categories
 // by tier, a note, and whether the next close should treat its look-alikes the same way.
 export function pickOptions(reg, q) {
-  const needle = String(q || '').trim().toLowerCase();
+  const needle = String(q || '').trim().toLowerCase().replace(/\s+/g, '');
   if (!needle) return reg;
-  const exact = reg.filter((r) => r.code.toLowerCase() === needle);
+  const code = (r) => r.code.toLowerCase();
+  const exact = reg.filter((r) => code(r) === needle);
   if (exact.length) return exact;
-  // A tier letter, or a letter and digits, is a code: E shows the essentials, E1 the first.
-  if (/^[a-z]\d*$/.test(needle) && reg.some((r) => r.code.toLowerCase().startsWith(needle))) return reg.filter((r) => r.code.toLowerCase().startsWith(needle));
-  return reg.filter((r) => r.code.toLowerCase().startsWith(needle) || r.category.toLowerCase().includes(needle));
+  // A group code shows that group (T, not XXX); "ent-" or "ent2" the codes it starts.
+  const group = reg.filter((r) => tierOf(code(r)) === needle);
+  if (group.length) return group;
+  const dashed = needle.replace(/^([a-z]{1,3})(\d)/, '$1-$2');
+  const prefix = reg.filter((r) => code(r).startsWith(dashed));
+  if (prefix.length && /^[a-z]{1,3}(-\d*)?$/.test(dashed)) return prefix;
+  return reg.filter((r) => code(r).startsWith(needle) || r.category.toLowerCase().includes(String(q).trim().toLowerCase()));
 }
 
-export function sheetHtml(row, reg, codes, { q = '', pick = null, note = '', like = false, busy = false, error = '' } = {}) {
+export function sheetHtml(row, reg, codes, { q = '', pick = null, note = '', like = false, busy = false, error = '', groups = DEFAULT_GROUPS } = {}) {
   const opts = pickOptions(reg, q);
   const chosen = pick || row.category;
-  const list = TIERS.map(([letter, name]) => {
-    const rows = opts.filter((r) => r.code.charAt(0) === letter);
+  const known = new Set(groups.map((g) => g.code));
+  const all = [...groups, ...Array.from(new Set(opts.map((r) => tierOf(r.code)).filter((c) => !known.has(c)))).map((c) => ({ code: c, name: c }))];
+  const list = all.map(({ code: gc, name }) => {
+    const rows = opts.filter((r) => tierOf(r.code) === gc);
     if (!rows.length) return '';
     return `<h4>${esc(name)}</h4>${rows.map((r) => `<button type="button" class="opt${r.category === chosen ? ' on' : ''}${r.category === row.category ? ' now' : ''}" data-pick="${esc(r.category)}">${codeTag(r.code)}<span class="name">${esc(r.category)}</span>${r.category === row.category ? '<em>now</em>' : ''}</button>`).join('')}`;
-  }).join('') || '<p class="fin-empty">No category matches. Try a code such as E1, or part of a name.</p>';
+  }).join('') || '<p class="fin-empty">No category matches. Try a code such as FOO-1, a group such as ENT, or part of a name.</p>';
   const ruled = row.ruled ? `<p class="hint">Allocated on the tab${row.ruled.by ? ` by ${esc(row.ruled.by)}` : ''}${row.ruled.from ? `, was ${esc(row.ruled.from.category)}` : ''}.</p>` : '';
   return `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
     <div class="sheet-head"><div><p class="hint" style="margin:0">${esc(dayLabel(row.date))} · ${esc(shortAcct(row.account))}</p>
       <h2 id="sheet-title">${esc(row.description)}</h2><p class="sheet-amt${row.amount > 0 ? ' pos' : ''}">${esc(signed(row.amount))}</p>
       <p class="hint" style="margin:0">Now: ${catCell(codes, row.category)}</p>${ruled}</div>
       <button type="button" class="sheet-x" data-sheet="close" aria-label="Close">✕</button></div>
-    <input type="search" class="fin-search" id="sheet-q" placeholder="Code or category, e.g. E1 or groceries" value="${esc(q)}" autocomplete="off" enterkeyhint="done">
+    <input type="search" class="fin-search" id="sheet-q" placeholder="Code, group or name, e.g. FOO-1, ENT or groceries" value="${esc(q)}" autocomplete="off" enterkeyhint="done">
     <div class="sheet-list" id="sheet-list">${list}</div>
     <label class="sheet-note">Note (optional)<input type="text" id="sheet-note" maxlength="200" value="${esc(note)}" placeholder="Why, or who it was for"></label>
     <label class="sheet-like"><input type="checkbox" id="sheet-like"${like ? ' checked' : ''}> Treat other “${esc(row.description)}” transactions the same way from the next close</label>
@@ -626,7 +644,7 @@ async function start(root) {
     const codes = new Map(reg.map((r) => [r.category, r.code]));
     const scroll = host.querySelector('#sheet-list')?.scrollTop || 0;
     const focusQ = document.activeElement && document.activeElement.id === 'sheet-q';
-    host.innerHTML = sheetHtml(sheet.row, reg, codes, sheet);
+    host.innerHTML = sheetHtml(sheet.row, reg, codes, { ...sheet, groups: groupsOf(cur) });
     if (keepList) host.querySelector('#sheet-list').scrollTop = scroll;
     const qEl = host.querySelector('#sheet-q');
     if (focusQ) { qEl.focus(); qEl.setSelectionRange(qEl.value.length, qEl.value.length); }
