@@ -543,3 +543,7 @@ body:has(.tk-wrap:not([hidden])) .cc-fab { display: none; }
 .cc-fold summary em { font-style: normal; color: var(--faint); }
 .cc-fold[open] summary { margin-bottom: 8px; }
 .cc-quiet .cc-batch { margin-left: auto; }
+
+/* The Finance tab opens its own page (Brain DEV-61115.01): marked so it reads as a way out. */
+.cc-tabs a.cc-tab-finance { color: #4f46e5; }
+.cc-tabs a.cc-tab-finance::after { content: " ↗"; font-weight: 500; }

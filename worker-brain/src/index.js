@@ -43,11 +43,13 @@
 //   POST /api/brain/place   { kind: today | next | next-week, items: [{ kind?, ref, note }], lens } → placement rows, one commit
 //   POST /api/brain/categorise { project, line, details } | { id, details } → an Inbox line or an open item
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
+//   GET  /api/brain/finance                 → the Finance tab's figures, from the FINANCE KV store (finance.js)
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
 import { QueueError, addInbox, cardProgress, categoriseLine, handCard, handledLine, markDone, perthDate, promoteLine, referenceLine, somedayLine, viaCard } from './queue.js';
 import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, handItem, itemProgress, rejectFlag, settleAll, viaItem } from './register.js';
 import { VIAS, cleanDetails, lineAttrs } from './categorise.js';
+import { FINANCE_KEY, financeConfigs, validFinance } from './finance.js';
 import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock, placeRows, sessionRow } from './timelog.js';
 
 const TREE_TTL_MS = 30 * 1000;
@@ -516,6 +518,24 @@ async function timeRows(url, env) {
   return json({ from: dates[0], to: today, rows });
 }
 
+// The Finance tab (Brain DEV-61115.01): one published document, read from KV and passed
+// through. It is never written here; a monthly close publishes it.
+async function finance(env, viewer) {
+  if (!env.FINANCE) return json({ error: 'finance not configured' }, 503);
+  const doc = await env.FINANCE.get(FINANCE_KEY, 'json');
+  if (!doc) return json({ error: 'nothing published yet' }, 404);
+  if (!validFinance(doc)) return json({ error: 'published data malformed' }, 502);
+  return json({ ...doc, viewer: viewer.email || null });
+}
+
+async function verifyAny(token, cfgs) {
+  for (const cfg of cfgs) {
+    const viewer = await verifyAccessJwt(token, cfg);
+    if (viewer) return viewer;
+  }
+  return null;
+}
+
 async function route(url, env, viewer) {
   if (url.pathname === '/api/brain/time') return timeRows(url, env);
   const isTree = url.pathname === '/api/brain/tree';
@@ -553,15 +573,25 @@ export default {
     if (writing && !writeAllowed(request)) return json({ error: 'forbidden' }, 403);
 
     const cfg = accessConfig(env);
-    if (!cfg || !env.GITHUB_TOKEN) return json({ error: 'not configured' }, 503);
+    // Finance needs no GitHub token, and also takes the Finance-only Access app's tokens
+    // (Brain D-148 A); every other route takes Brain's own Access app alone.
+    const isFinance = url.pathname === '/api/brain/finance';
+    if (!cfg || (!isFinance && !env.GITHUB_TOKEN)) return json({ error: 'not configured' }, 503);
 
     let viewer;
     try {
-      viewer = await verifyAccessJwt(readAccessToken(request), cfg);
+      viewer = await verifyAny(readAccessToken(request), isFinance ? financeConfigs(cfg, env) : [cfg]);
     } catch {
       return json({ error: 'access unavailable' }, 503);
     }
     if (!viewer) return json({ error: 'unauthorised' }, 401);
+    if (isFinance) {
+      try {
+        return await finance(env, viewer);
+      } catch {
+        return json({ error: 'internal error' }, 500);
+      }
+    }
 
     try {
       return writing ? await write(request, url, env) : await route(url, env, viewer);

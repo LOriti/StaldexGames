@@ -138,6 +138,30 @@ or the next push won't deploy. Then do step 3.2.
 
 The page itself (`site/brain/`) ships with the normal Pages deploy.
 
+## Finance tab (Brain DEV-61115.01)
+
+`staldex.com/brain/finance/` is its own page (`site/brain/finance/`, its own look) and
+reads `GET /api/brain/finance`. The figures are **not** in Brain or in this repository: each
+monthly close publishes one JSON document (`schema: brain-finance/1`: `published` plus
+`transactions`, `budget`, `accounts` and `loans`, each `{ rows, meta }`) to the key `finance`
+in the private Workers KV namespace `brain-finance`, bound here as `FINANCE` in
+`wrangler.toml`. Brain's `scripts/finance_publish.py` does that with a Cloudflare API token
+limited to Workers KV; the Worker only reads.
+
+- Answers: 200 the document (plus `viewer`), 404 `nothing published yet`, 502 `published data
+  malformed`, 503 `finance not configured` (no `FINANCE` binding). Same Access gate as the
+  rest; it needs no GitHub token.
+- **A Finance-only viewer** (Brain D-148 A), once wanted: in Zero Trust create a second
+  application, `Finance`, with destinations `staldex.com` path `brain/finance` and `staldex.com`
+  path `api/brain/finance` (more specific than Brain's, so Access uses it there), a policy
+  allowing Leon's and the other person's emails, One-time PIN. Then add two runtime variables
+  on `brain-viewer`: `FINANCE_ACCESS_AUD` (the new app's AUD tag) and, optionally,
+  `FINANCE_ALLOWED_EMAILS`. Tokens from that app are accepted on `/api/brain/finance` only;
+  every other route still takes Brain's app alone, so she sees nothing else.
+- Look before merging: `node tests/brain-preview.mjs --finance` (synthetic figures).
+  `--finance-data <publish.json>` draws a local close instead; keep that file and its
+  screenshots out of every repository.
+
 ## Smoke test
 
 1. Private/incognito window → `https://staldex.com/brain/` → you should get the **Access
