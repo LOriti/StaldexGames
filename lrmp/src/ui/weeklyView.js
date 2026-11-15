@@ -8,6 +8,7 @@ import { escapeAttr, toast, beginDrag } from './dom.js';
 import { openRecipe } from './recipeModal.js';
 import { openDishPicker } from './dishPicker.js';
 import { openLunchPicker } from './lunchPicker.js';
+import { renderHistory, weekSegment, wireWeekSegment } from './historyView.js';
 import { clearManualLunch, dinnerToLunch } from '../core/lunches.js';
 import {
   CONTEXT_DAYS, dateForIndex, dayContext, formatDate, formatDay, formatLongDate, formatRange,
@@ -159,17 +160,14 @@ function surplusRow(tokens, week) {
 /* ---------- view ---------- */
 
 export function renderWeekly(root) {
-  const { plan, freezer, week, lunchPins, manualLunches, planAnchor } = get();
+  if (get().histWeek > 0) return renderHistory(root);
+  const { plan, freezer, week, lunchPins, manualLunches, planAnchor, history, histWeek } = get();
   const { lunch, weekSurplus, dinner: leftDinners } = allocate(plan, lunchPins, manualLunches);
 
-  const weekBtns = [0, 1, 2, 3]
-    .map((i) => {
-      const start = dateForIndex(i * 7, planAnchor);
-      const end = dateForIndex(i * 7 + 6, planAnchor);
-      const label = i === 0 ? 'Now' : `+${i} wk${i === 1 ? '' : 's'}`;
-      return `<button class="wk-btn ${i === week ? 'on' : ''}" data-wk="${i}" title="${formatRange(start, end)}">${label}</button>`;
-    })
-    .join('');
+  const weekBtns = weekSegment({
+    histWeek, week, planAnchor, history,
+    rangeOf: (i) => formatRange(dateForIndex(i * 7, planAnchor), dateForIndex(i * 7 + 6, planAnchor)),
+  });
 
   const rows = DAY_NAMES.map((name, d) => {
     const idx = week * 7 + d;
@@ -204,7 +202,7 @@ export function renderWeekly(root) {
       ${week === 0 ? '' : '<button class="today-jump" data-today>Back to today</button>'}
     </section>
     ${freezerPanel(freezer)}
-    <div class="board-bar"><span class="bb-label">Timeline</span><div class="wk-seg">${weekBtns}</div></div>
+    <div class="board-bar"><span class="bb-label">Timeline</span>${weekBtns}</div>
     <div class="board">
       <div class="brow bhead"><div class="bday"></div><div class="bcol">Dinner</div><div class="bcol">Lunch</div></div>
       ${rows}
@@ -280,11 +278,8 @@ function addToFreezer(root) {
 
 function wire(root) {
   const today = root.querySelector('[data-today]');
-  if (today) today.onclick = () => setUI({ week: 0 });
-
-  root.querySelectorAll('.wk-btn').forEach((b) => {
-    b.onclick = () => setUI({ week: Number(b.dataset.wk) });
-  });
+  if (today) today.onclick = () => setUI({ week: 0, histWeek: 0 });
+  wireWeekSegment(root);
 
   root.onclick = (e) => {
     const s = get();

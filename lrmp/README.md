@@ -15,7 +15,7 @@ npm run dev       # http://localhost:5173
 ```
 
 ```bash
-npm test          # 134 tests
+npm test          # 141 tests
 npm run build     # -> dist/  (static, no backend — deploy anywhere)
 ```
 
@@ -50,6 +50,9 @@ your leftover and freezer nights.
 - **Any meal can make leftovers.** Notes ("Chicken salad") and your own lunches get the
   same −/+ as cooked dinners. A lunch's leftovers can be that evening's dinner, then later
   lunches. Freezer meals and leftover nights make none: they already are leftovers.
+- **◀** next to the week buttons goes back a week at a time to see history: what was
+  planned and eaten on days that have left the plan. It is read only, and it starts from
+  when this was added (a year is kept).
 
 Everything saves automatically.
 
