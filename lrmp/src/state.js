@@ -12,7 +12,9 @@ import * as store from './storage/adapter.js';
 import { schedulePush } from './storage/sync.js';
 import { setCatalog } from './data/dishes.js';
 import { seedPlan, isValidPlan } from './core/plan.js';
-import { dateFromKey, timelineAnchor, rollPlan } from './core/timeline.js';
+import { dateFromKey, dayDelta, localDateKey, timelineAnchor, rollPlan } from './core/timeline.js';
+import { allocate } from './core/allocate.js';
+import { archiveDays, isValidHistory, pruneHistory } from './core/history.js';
 import { isValidManualLunches } from './core/lunches.js';
 
 const state = {
@@ -21,6 +23,7 @@ const state = {
   favourites: new Set(),
   lunchPins: {}, // sparse { dayIndex: dishName } — lunch overrides, see core/allocate.js
   manualLunches: {}, // sparse { dayIndex: { name, frozen? } } — hand-added lunches, see core/lunches.js
+  history: {}, // { 'YYYY-MM-DD': { dinner?, lunch? } } — days that left the window, see core/history.js
   shopping: { excluded: {}, have: {} }, // week-scoped ticks, see core/shopping.js
   recipeEdits: {}, // { dishName: [ingredient lines, per serve] } — see core/recipes.js
   customRecipes: {}, // { name: {mode, p, t, l, e, ing, steps} } — user-added dishes
@@ -28,6 +31,7 @@ const state = {
   planAnchor: null, // local YYYY-MM-DD represented by plan[0] (normally today minus CONTEXT_DAYS = 2)
   tab: 'weekly', // 'recipes' | 'month' | 'weekly' | 'shopping'
   week: 0, // 0-3, which week the Weekly view is showing
+  histWeek: 0, // 0 = the plan; 1+ = how many weeks back the Weekly view is looking (read-only)
 };
 
 const listeners = new Set();
@@ -46,12 +50,13 @@ function emit() {
 }
 
 /** Mutate + persist + re-render. Pass which slices changed so we only write those. */
-export function commit({ plan = false, freezer = false, favourites = false, pins = false, lunches = false, shopping = false, recipes = false, customs = false } = {}) {
+export function commit({ plan = false, freezer = false, favourites = false, pins = false, lunches = false, shopping = false, recipes = false, customs = false, history = false } = {}) {
   if (plan) store.set(store.KEYS.PLAN, state.plan);
   if (freezer) store.set(store.KEYS.FREEZER, state.freezer);
   if (favourites) store.set(store.KEYS.FAVOURITES, [...state.favourites]);
   if (pins) store.set(store.KEYS.PINS, state.lunchPins);
   if (lunches) store.set(store.KEYS.MANUAL_LUNCHES, state.manualLunches);
+  if (history) store.set(store.KEYS.HISTORY, state.history);
   if (shopping) store.set(store.KEYS.SHOPPING, state.shopping);
   if (recipes) store.set(store.KEYS.RECIPE_EDITS, state.recipeEdits);
   if (customs) {
@@ -61,7 +66,7 @@ export function commit({ plan = false, freezer = false, favourites = false, pins
   // Catalog reads customs AND recipe edits (makes-serves drives plan defaults) —
   // refresh it before emit so the re-render sees the new pools/defaults.
   if (customs || recipes) setCatalog(state.customRecipes, state.removedDishes, state.recipeEdits);
-  if (plan || freezer || favourites || pins || lunches || shopping || recipes || customs) schedulePush(snapshot());
+  if (plan || freezer || favourites || pins || lunches || shopping || recipes || customs || history) schedulePush(snapshot());
   emit();
 }
 
@@ -73,6 +78,7 @@ export function snapshot() {
     favourites: [...state.favourites],
     pins: state.lunchPins,
     manualLunches: state.manualLunches,
+    history: state.history,
     shopping: state.shopping,
     recipeEdits: state.recipeEdits,
     customRecipes: state.customRecipes,
@@ -93,6 +99,7 @@ export function applyRemote(data) {
   if (data.pins && typeof data.pins === 'object') state.lunchPins = data.pins;
   // Whole-blob last-write-wins, like every other slice: a snapshot without the key has none.
   state.manualLunches = isValidManualLunches(data.manualLunches) ? data.manualLunches : {};
+  state.history = isValidHistory(data.history) ? data.history : {};
   if (isValidShopping(data.shopping)) state.shopping = data.shopping;
   if (isValidEdits(data.recipeEdits)) state.recipeEdits = data.recipeEdits;
   if (isValidCustoms(data.customRecipes)) state.customRecipes = data.customRecipes;
@@ -106,6 +113,7 @@ export function applyRemote(data) {
   store.set(store.KEYS.FAVOURITES, [...state.favourites]);
   store.set(store.KEYS.PINS, state.lunchPins);
   store.set(store.KEYS.MANUAL_LUNCHES, state.manualLunches);
+  store.set(store.KEYS.HISTORY, state.history);
   store.set(store.KEYS.SHOPPING, state.shopping);
   store.set(store.KEYS.RECIPE_EDITS, state.recipeEdits);
   store.set(store.KEYS.CUSTOM_RECIPES, state.customRecipes);
@@ -118,6 +126,13 @@ export function applyRemote(data) {
 
 function rebasePlanToToday() {
   const target = timelineAnchor();
+  // Before the oldest days roll off, keep a record of what was planned and eaten.
+  const delta = dayDelta(state.planAnchor, target);
+  if (delta > 0) {
+    const { lunch } = allocate(state.plan, state.lunchPins, state.manualLunches);
+    archiveDays(state.history, state.plan, lunch, state.planAnchor, delta);
+    pruneHistory(state.history, localDateKey());
+  }
   const rolled = rollPlan(state.plan, state.lunchPins, state.planAnchor, target, state.manualLunches);
   state.planAnchor = target;
   if (!rolled.changed) return false;
@@ -160,7 +175,7 @@ export function setUI(patch) {
 }
 
 export async function hydrate() {
-  const [plan, freezer, favourites, pins, shopping, recipeEdits, customRecipes, removedDishes, planAnchor, manualLunches] = await Promise.all([
+  const [plan, freezer, favourites, pins, shopping, recipeEdits, customRecipes, removedDishes, planAnchor, manualLunches, history] = await Promise.all([
     store.get(store.KEYS.PLAN, null),
     store.get(store.KEYS.FREEZER, {}),
     store.get(store.KEYS.FAVOURITES, []),
@@ -171,6 +186,7 @@ export async function hydrate() {
     store.get(store.KEYS.REMOVED_DISHES, null),
     store.get(store.KEYS.PLAN_ANCHOR, null),
     store.get(store.KEYS.MANUAL_LUNCHES, {}),
+    store.get(store.KEYS.HISTORY, {}),
   ]);
 
   state.plan = isValidPlan(plan) ? plan : seedPlan();
@@ -178,6 +194,7 @@ export async function hydrate() {
   state.favourites = new Set(Array.isArray(favourites) ? favourites : []);
   state.lunchPins = pins && typeof pins === 'object' ? pins : {};
   state.manualLunches = isValidManualLunches(manualLunches) ? manualLunches : {};
+  state.history = isValidHistory(history) ? history : {};
   state.shopping = isValidShopping(shopping) ? shopping : { excluded: {}, have: {} };
   state.recipeEdits = isValidEdits(recipeEdits) ? recipeEdits : {};
   state.customRecipes = isValidCustoms(customRecipes) ? customRecipes : {};
@@ -194,6 +211,7 @@ export async function hydrate() {
     store.set(store.KEYS.PLAN, state.plan);
     store.set(store.KEYS.PINS, state.lunchPins);
     store.set(store.KEYS.MANUAL_LUNCHES, state.manualLunches);
+    store.set(store.KEYS.HISTORY, state.history);
     store.set(store.KEYS.SHOPPING, state.shopping);
     store.set(store.KEYS.PLAN_ANCHOR, state.planAnchor);
   }

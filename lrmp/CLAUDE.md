@@ -16,7 +16,7 @@ with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
 ```bash
 npm install
 npm run dev       # http://localhost:5173
-npm test          # 134 tests, all must stay green
+npm test          # 141 tests, all must stay green
 npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
 
@@ -63,6 +63,12 @@ and note days with `extra`; `lunchYield()` (`core/lunches.js`) covers manual lun
 dinner. They carry `meal: 'lunch'`, and surplus `froms` spell them `'L<day>'` so the
 freezer ops decrement the right source. Freezer and leftover meals never yield.
 
+**History.** Before `rebasePlanToToday()` rolls days off, it archives them into
+`state.history` (`core/history.js`): the dinner as planned and the lunch as derived,
+keyed by date, pruned after a year, synced in the snapshot. Nothing derives from it.
+`state.histWeek` (0 = the plan) drives the read-only view; it is separate from
+`state.week` because the Shopping tab reads `week` too.
+
 ---
 
 ## Layout
@@ -80,6 +86,7 @@ src/
     allocate.js   *** the FIFO leftover→lunch allocator. Read this first. ***
     freezer.js    freezer accounting
     lunches.js    hand-added lunches (typed, a dish, or from the freezer)
+    history.js    read-only record of days that left the window (archived on rollover)
     shopping.js   weekly shopping list derived from the plan; week-scoped ticks
     recipes.js    serving maths (1 serve = 2 portions) + recipeEdits resolution/scaling
     timeline.js   rolling date window: today sits at index 2; rollover preserves dates
@@ -94,6 +101,7 @@ src/
     shoppingView.js weekly list: tick off ingredients, skip dishes, copy as text
     dishPicker.js   tap-an-empty-day picker: mode click filters, then pick/random/note
     lunchPicker.js  tap-a-lunch picker: type a lunch, or take one from the freezer
+    historyView.js  ◀ back-a-week view of state.history, plus the shared week buttons
     recipeModal.js
   state.js    tiny observable store; hydrate / commit / subscribe
   main.js     entry, tab switching
