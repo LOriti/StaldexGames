@@ -1,6 +1,6 @@
 // Brain viewer preview: screenshots of the real page with synthetic data. Not a test.
 //
-//   node tests/brain-preview.mjs [--url https://staldexgames.pages.dev] [--out <dir>] [--wide]
+//   node tests/brain-preview.mjs [--url https://staldexgames.pages.dev] [--out <dir>] [--wide] [--finance [--finance-data <publish.json>]]
 //
 // Without --url it serves `site/` from this checkout on 127.0.0.1, so a change can be seen
 // before it merges. With --url it opens the deployed site instead, to confirm a deploy is
@@ -109,6 +109,44 @@ const TIME = [
 ];
 const writes = [];
 
+// The Finance tab's figures (Brain DEV-61115.01): made up, seeded so every run draws alike.
+let seed = 7;
+const rnd = () => ((seed = (seed * 16807) % 2147483647) / 2147483647);
+const FIN_CATS = [['Food and groceries', 1800, 22], ['Utilities', 450, 4], ['Phone and internet', 265, 3], ['Transport', 200, 6],
+  ['Insurance', 330, 2], ['Health and fitness', 160, 3], ['Kids', 200, 4], ['Clothing', 400, 3], ['Eating out', 600, 10], ['Travel and fun', 1200, 3]];
+const FIN_TXN = [];
+const finMonths = ['2026-07', '2026-08', '2026-09', '2026-10', '2026-11'];
+for (const m of finMonths) {
+  const lastDay = m === '2026-11' ? 14 : 28;
+  const add = (group, category, amount, extra = {}) => FIN_TXN.push({ id: `S${String(FIN_TXN.length + 1).padStart(4, '0')}`, date: `${m}-${String(1 + Math.floor(rnd() * lastDay)).padStart(2, '0')}`, month: m,
+    account: extra.account || (rnd() > 0.5 ? 'Bank everyday ••0001' : 'Card ••0002'), owner: 'Synthetic', description: extra.description || `${category.toUpperCase()} SHOP ${Math.floor(rnd() * 900 + 100)}`,
+    amount: Math.round(amount * 100) / 100, balance: null, category, group, note: extra.note || '' });
+  for (const [cat, budget, n] of FIN_CATS) {
+    const k = m === '2026-11' ? Math.ceil(n / 2) : n;
+    for (let i = 0; i < k; i++) add('Living', cat, -(budget / n) * (0.6 + rnd() * (cat === 'Clothing' ? 1.4 : 0.8)));
+  }
+  add('Money in', 'Wages', 9000, { account: 'Bank everyday ••0001', description: 'SALARY SYNTHETIC CO' });
+  add('Money in', 'Rebates', 300, { account: 'Bank everyday ••0001', description: 'HEALTH REBATE' });
+  add('Housing', 'Home loan', -4200, { account: 'Bank everyday ••0001', description: 'LOAN REPAYMENT' });
+  if (rnd() > 0.4) add('Housing', 'Repairs', -800 * rnd() - 200, { description: 'HANDYMAN SERVICES' });
+  add('Own accounts', 'Card repayment', -2500, { account: 'Bank everyday ••0001', description: 'CARD PAYMENT' });
+  add('To sort', 'To sort', -150 * rnd() - 20, { note: 'Unknown payee' });
+}
+// --finance-data <file>: draw a local publish document instead (a close's figures, kept
+// outside every repository; the screenshots then hold real figures and stay local too).
+const FINANCE_REAL = opt('--finance-data') ? JSON.parse(await readFile(opt('--finance-data'), 'utf8')) : null;
+const FINANCE = {
+  schema: 'brain-finance/1', published: new Date().toISOString(), viewer: null,
+  transactions: { rows: FIN_TXN, meta: [{ label: 'Input', value: 'Synthetic statements' }, { label: 'categorise.py', value: '# synthetic\nRULES = []', type: 'code', lang: 'python' }] },
+  budget: { rows: FIN_CATS.map(([category, monthly_budget]) => ({ category, monthly_budget, basis: 'synthetic' })), meta: [{ label: 'Source', value: 'Synthetic budget' }] },
+  accounts: { rows: [
+    { account: 'Bank everyday ••0001', owner: 'Synthetic', type: 'Transaction', status: 'Loaded', loaded_to: '2026-11-14', latest_balance: 12000, offset: 'No', note: 'Synthetic' },
+    { account: 'Card ••0002', owner: 'Synthetic', type: 'Card', status: 'Loaded', loaded_to: '2026-11-14', latest_balance: -1800, offset: 'No', note: '' },
+    { account: 'Savings ••0003', owner: 'Synthetic', type: 'Savings', status: 'Not loaded', loaded_to: '', latest_balance: null, offset: 'No', note: 'Statement to come' },
+  ], meta: [] },
+  loans: { rows: [{ loan: 'Home ••0009', property: 'Synthetic St', status: 'Open', balance: 640000, as_at: '2026-11-14', rate: 6.1, repayment_now: 4200, repayment_from_15_dec: 4300, last_interest: 3250, note: 'Synthetic' }], meta: [] },
+};
+
 function answer(url, method = 'GET', body = null) {
   const u = new URL(url);
   if (method === 'POST') {
@@ -127,6 +165,7 @@ function answer(url, method = 'GET', body = null) {
     if (u.pathname === '/api/brain/hand') return { path: 'synthetic', sha: 'x', commit: null, session: 'https://claude.ai/code/session_01PREVIEW', fire: 'started' };
     return { path: 'synthetic', sha: 'x', commit: null };
   }
+  if (u.pathname === '/api/brain/finance') return FINANCE_REAL || FINANCE;
   if (u.pathname === '/api/brain/time') return { from: u.searchParams.get('from'), to: today, rows: TIME };
   if (u.pathname === '/api/brain/tree') return TREE;
   const path = u.searchParams.get('path');
@@ -180,6 +219,35 @@ async function pickLens(lens) {
   if (!(await page.locator(`[data-cc-lens="${lens}"]`).count())) await page.locator('[data-cc-lens-open]').click();
   await page.locator(`[data-cc-lens="${lens}"]`).click();
   await settle();
+}
+
+
+// ---- the Finance tab (Brain DEV-61115.01) --------------------------------------------------
+async function financeShots() {
+  await page.goto(`${base}/brain/finance/`, { waitUntil: 'networkidle' });
+  await page.waitForSelector('#tiles', { timeout: 10_000 }).catch(() => problems.push('the Finance tab never rendered'));
+  await settle(); await shot('finance-top');
+  for (const id of ['budget', 'by-month', 'by-category', 'loans', 'review', 'transactions', 'statements']) {
+    if (!(await page.locator(`#${id}`).count())) problems.push(`Finance has no #${id}`);
+  }
+  if ((await page.locator('#budget tbody tr').count()) < 2) problems.push('Finance budget table is empty');
+  await page.locator('#budget').scrollIntoViewIfNeeded(); await shot('finance-budget');
+  await page.locator('#by-month').scrollIntoViewIfNeeded(); await shot('finance-charts');
+  await page.locator('#budget tr[data-category]').first().click(); await settle();
+  if (!/c=/.test(await page.evaluate(() => location.hash))) problems.push('tapping a budget row did not filter by category');
+  await shot('finance-category');
+  await page.selectOption('#f-month', 'all'); await settle();
+  if ((await page.locator('#fin-title').textContent()) !== 'Year to date') problems.push('All months did not show the year to date');
+  await page.evaluate(() => window.scrollTo(0, 0)); await shot('finance-year');
+  await page.locator('#statements').scrollIntoViewIfNeeded(); await shot('finance-statements');
+}
+if (args.includes('--finance')) {
+  await financeShots();
+  await browser.close();
+  server?.close();
+  console.log(shots.map((s) => `  ${s}`).join('\n'));
+  console.log(problems.length ? `Problems:\n${problems.map((p) => `  - ${p}`).join('\n')}` : 'No problems found.');
+  process.exit(problems.length ? 1 : 0);
 }
 
 const response = await page.goto(`${base}/brain/#focus`, { waitUntil: 'networkidle' });
@@ -627,6 +695,10 @@ if (await laneItem.count()) {
   if (!writes.some(([path, body]) => path === '/api/brain/via' && /"unhand":true/.test(body))) problems.push('taking it back from Claude wrote no unhand');
   await page.locator('.tk button[data-tk="hide"]').first().click().catch(() => {}); await settle();
 } else problems.push('no Claude item to try the mode ask on');
+// The Finance tab is in the tab row and opens its own page.
+await page.goto(`${base}/brain/#focus`); await settle();
+if (!(await page.locator('.cc-tabs a[href="/brain/finance/"]').count())) problems.push('no Finance tab in the tab row');
+await financeShots();
 await browser.close();
 server?.close();
 console.log(shots.map((s) => `  ${s}`).join('\n'));

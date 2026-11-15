@@ -1189,7 +1189,8 @@ export function homeHtml(view, { lens, tab = 'focus', filter = null, asOf = '', 
   return `<div class="cc"><div class="cc-head">${seg}` +
     `<span class="cc-side"><a class="cc-files cc-someday" href="#someday"${tab === 'someday' ? ' aria-current="page"' : ''}>Someday <em>${parked}</em></a>` +
     `<a class="cc-files" href="#/INDEX.md">Files</a></span></div>` +
-    `<nav class="cc-tabs" aria-label="Command centre">${tabs}</nav>` + stale + body +
+    // Finance is its own page with its own look and its own Access rule (Brain DEV-61115.01, D-148 A).
+    `<nav class="cc-tabs" aria-label="Command centre">${tabs}<a href="/brain/finance/" class="cc-tab-finance">Finance</a></nav>` + stale + body +
     `<p class="cc-note">${esc(view.gaps.join(' '))}${asOf ? ` As of ${esc(asOf)}.` : ''}</p></div>`;
 }
 
