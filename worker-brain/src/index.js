@@ -44,12 +44,13 @@
 //   POST /api/brain/categorise { project, line, details } | { id, details } → an Inbox line or an open item
 //   GET  /api/brain/time?from=<date>        → { from, to, rows: [{ date, kind, start, end, minutes, ref, area, lens, note }] }
 //   GET  /api/brain/finance                 → the Finance tab's figures, from the FINANCE KV store (finance.js)
+//   POST /api/brain/finance/allocate { id, fp, category, note, like } | { id, fp, clear: true } → { rulings }
 
 import { accessConfig, readAccessToken, verifyAccessJwt } from './access.js';
 import { QueueError, addInbox, cardProgress, categoriseLine, handCard, handledLine, markDone, perthDate, promoteLine, referenceLine, somedayLine, viaCard } from './queue.js';
 import { FLAGS, REGISTER_ID, REGISTER_PATH, categoriseItem, closeItem, confirmFlag, decideItem, handItem, itemProgress, rejectFlag, settleAll, viaItem } from './register.js';
 import { VIAS, cleanDetails, lineAttrs } from './categorise.js';
-import { FINANCE_KEY, financeConfigs, validFinance } from './finance.js';
+import { FINANCE_KEY, FinanceError, RULINGS_KEY, allocate, emptyRulings, financeConfigs, validFinance } from './finance.js';
 import { DATE, LOG_BRANCH, appendTime, clockRow, focalRow, hoursRow, logPath, parseTime, perthClock, placeRows, sessionRow } from './timelog.js';
 
 const TREE_TTL_MS = 30 * 1000;
@@ -520,12 +521,27 @@ async function timeRows(url, env) {
 
 // The Finance tab (Brain DEV-61115.01): one published document, read from KV and passed
 // through. It is never written here; a monthly close publishes it.
-async function finance(env, viewer) {
+const FINANCE_ALLOCATE = '/api/brain/finance/allocate';
+
+async function finance(request, url, env, viewer) {
   if (!env.FINANCE) return json({ error: 'finance not configured' }, 503);
   const doc = await env.FINANCE.get(FINANCE_KEY, 'json');
   if (!doc) return json({ error: 'nothing published yet' }, 404);
   if (!validFinance(doc)) return json({ error: 'published data malformed' }, 502);
-  return json({ ...doc, viewer: viewer.email || null });
+  const rulings = (await env.FINANCE.get(RULINGS_KEY, 'json')) || emptyRulings();
+  if (url.pathname !== FINANCE_ALLOCATE) return json({ ...doc, rulings, viewer: viewer.email || null });
+  // One allocation (Brain D-152 A): read, apply, write back. Two people saving the same
+  // second is the only race, and the later save wins; each ruling names who made it.
+  const body = await readBody(request);
+  let next;
+  try {
+    next = allocate(doc, rulings, body, viewer);
+  } catch (err) {
+    if (err instanceof FinanceError) return json({ error: err.message }, err.status);
+    throw err;
+  }
+  await env.FINANCE.put(RULINGS_KEY, JSON.stringify(next));
+  return json({ rulings: next });
 }
 
 async function verifyAny(token, cfgs) {
@@ -568,14 +584,14 @@ async function route(url, env, viewer) {
 export default {
   async fetch(request, env) {
     const url = new URL(request.url);
-    const writing = Object.hasOwn(WRITES, url.pathname);
+    const writing = Object.hasOwn(WRITES, url.pathname) || url.pathname === FINANCE_ALLOCATE;
     if (request.method !== (writing ? 'POST' : 'GET')) return json({ error: 'method not allowed' }, 405);
     if (writing && !writeAllowed(request)) return json({ error: 'forbidden' }, 403);
 
     const cfg = accessConfig(env);
     // Finance needs no GitHub token, and also takes the Finance-only Access app's tokens
     // (Brain D-148 A); every other route takes Brain's own Access app alone.
-    const isFinance = url.pathname === '/api/brain/finance';
+    const isFinance = url.pathname === '/api/brain/finance' || url.pathname === FINANCE_ALLOCATE;
     if (!cfg || (!isFinance && !env.GITHUB_TOKEN)) return json({ error: 'not configured' }, 503);
 
     let viewer;
@@ -587,7 +603,7 @@ export default {
     if (!viewer) return json({ error: 'unauthorised' }, 401);
     if (isFinance) {
       try {
-        return await finance(env, viewer);
+        return await finance(request, url, env, viewer);
       } catch {
         return json({ error: 'internal error' }, 500);
       }

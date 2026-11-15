@@ -26,7 +26,8 @@ Notes for anyone, human or agent, changing this repo. Keep it short and team-neu
   register edits (Confirm, Reject, Progress, close with Evidence, decide with an outcome, categorise, mode) and time rows on Brain's `daily-log`
   branch (task clock, hours entered), and Hand to Claude also fires Brain's "Brain hand-over" scheduled task and writes the new session's link to the daily log as a `session` row (its fire URL and token are the Worker secrets `BRAIN_HANDOVER_URL` and `BRAIN_HANDOVER_TOKEN`); their edits follow Brain's own rules, so change them
   only from a Brain request. The Finance tab (`site/brain/finance/`) is a separate page that
-  reads `/api/brain/finance`, figures a monthly close publishes to a private KV store; never
+  reads `/api/brain/finance`, figures a monthly close publishes to a private KV store, and its
+  one write is an allocation (`/api/brain/finance/allocate`) kept beside them in KV; never
   commit a figure, a merchant or a categorising rule, not even in a fixture. Bump the `?v=` on the
   asset URLs in `index.html` and the imports in `app.js` when those files change, so
   phones pick up a deploy without a hard refresh.
