@@ -94,7 +94,11 @@ export function budgetRows(txn, budget, p, per) {
     return { category: c, monthly_budget: monthly, budget: bud, actual, left: r2(bud - actual), used: bud ? actual / bud : null, status: status(bud, actual, share) };
   }).filter((r) => r.budget || r.actual).sort((a, b) => b.actual - a.actual);
   const tb = r2(sum(out, (r) => r.budget)), ta = r2(sum(out, (r) => r.actual));
-  const total = { category: 'Living total', monthly_budget: r2(sum(out, (r) => r.monthly_budget)), budget: tb, actual: ta, left: r2(tb - ta), used: tb ? ta / tb : null, status: status(tb, ta, share), total: true };
+  // Spending on lines with no budget still counts in the total, so the total can read over
+  // when every budgeted line is fine; the page says how much that is.
+  const loose = out.filter((r) => !r.budget && r.actual > 0);
+  const total = { category: 'Living total', monthly_budget: r2(sum(out, (r) => r.monthly_budget)), budget: tb, actual: ta, left: r2(tb - ta), used: tb ? ta / tb : null, status: status(tb, ta, share), total: true,
+    unbudgeted: r2(sum(loose, (r) => r.actual)), unbudgeted_rows: loose.length };
   return { rows: out, total, share };
 }
 
@@ -216,6 +220,7 @@ export function model(doc, p) {
     byCategory: byCategory(txn, p),
     cash: cashOffset(doc.accounts.rows, doc.loans.rows),
     registry: reg,
+    waiting: waiting(txn),
     groups: groupsOf(doc),
     codes,
   };
@@ -288,7 +293,7 @@ function heroHtml(m, doc) {
   const daysLeft = p.month && per && !per.complete ? daysInMonth(p.month) - per.days : 0;
   const opt = (v, label, on) => `<option value="${esc(v)}"${on ? ' selected' : ''}>${esc(label)}</option>`;
   return `<header class="fin-hero"><div class="fin-wrap">
-    <div class="fin-top"><span class="fin-brand"><i aria-hidden="true"></i>Finance</span><a href="../#focus">Brain ↗</a></div>
+    <div class="fin-top"><span class="fin-brand"><i aria-hidden="true"></i>Finance</span>${doc.brain === false ? '' : '<a href="../#focus">Brain ↗</a>'}</div>
     <h1 id="fin-title">${esc(title)}</h1>
     <p class="fin-sub">${esc(sub)}</p>
     <div class="fin-filters" id="filters">
@@ -306,11 +311,12 @@ function heroHtml(m, doc) {
 }
 
 function stripHtml(m) {
-  const t = m.totals, c = m.cash;
+  const t = m.totals, c = m.cash, w = m.waiting;
+  const more = m.params.month && w.to_sort > t.to_sort_rows ? ` · ${w.to_sort} in all months` : '';
   return `<section class="fin-strip" id="totals" aria-label="Totals">
     <div class="fin-mini"><div class="l">Money in</div><div class="v">${money(t.money_in)}</div><div class="s">Loans, wages, packaging, rebates</div></div>
     <div class="fin-mini"><div class="l">Houses</div><div class="v">${money(t.housing)}</div><div class="s">Loans, repairs, buy and sell costs</div></div>
-    <div class="fin-mini"><div class="l">To sort</div><div class="v">${money(t.to_sort)}</div><div class="s">${t.to_sort_rows} transaction${t.to_sort_rows === 1 ? ' needs' : 's need'} a ruling</div></div>
+    <button type="button" class="fin-mini jump" data-jump="review"><div class="l">To sort ›</div><div class="v">${money(t.to_sort)}</div><div class="s">${t.to_sort_rows} transaction${t.to_sort_rows === 1 ? ' needs' : 's need'} a ruling${more}</div></button>
     <div class="fin-mini"><div class="l">Cash outside an offset</div><div class="v">${money(c.cash)}</div><div class="s">≈ ${money(c.interest_a_year)} a year in interest</div></div>
   </section>`;
 }
@@ -324,7 +330,7 @@ function budgetHtml(m) {
     const tick = r.budget ? `<b style="left:${Math.min(100, ((r.budget * share) / scale) * 100)}%"></b>` : '';
     return `<div class="pace"><i class="${cls}" style="width:${w}%"></i>${tick}</div>`;
   };
-  const row = (r) => `<tr class="${r.total ? 'total' : `pick${p.category === r.category ? ' on' : ''}`}"${r.total ? '' : ` data-category="${esc(r.category)}"`}>
+  const row = (r) => `<tr class="${r.total ? 'total' : `pick${p.category === r.category ? ' on' : ''}`}"${r.total ? '' : ` data-category="${esc(r.category)}" tabindex="0"`}>
     <td>${r.total ? esc(r.category) : catCell(m.codes, r.category)}</td><td class="n">${r.budget ? money(r.budget) : '—'}</td><td class="n">${money(r.actual)}</td>
     <td class="n hide-sm${r.left < 0 ? ' neg-over' : ''}">${money(r.left)}</td><td class="n hide-sm">${pct(r.used)}</td>
     <td>${chip(r.status)}</td><td class="hide-sm">${pace(r, r.total ? Math.max(1, r.budget, r.actual) : max)}</td></tr>`;
@@ -332,7 +338,8 @@ function budgetHtml(m) {
   return `<section class="fin-card" id="budget"><h2>Budget against actual</h2>
     <p class="hint">Living costs for ${esc(scope)} by category in order of importance (essentials first), against the budget. "Ahead" means more than 10 points ahead of the share of the month gone; the tick on each bar is where spending would sit on pace. Tap a row for its transactions.</p>
     <div class="fin-tw"><table><thead><tr><th>Category</th><th class="n">Budget</th><th class="n">Actual</th><th class="n hide-sm">Left</th><th class="n hide-sm">Used</th><th>Status</th><th class="hide-sm">Pace</th></tr></thead>
-    <tbody>${rows.map(row).join('')}${row(total)}</tbody></table></div></section>`;
+    <tbody>${rows.map(row).join('')}${row(total)}</tbody></table></div>
+    ${total.unbudgeted > 0 && total.budget ? `<p class="fin-note"><b>${money(total.unbudgeted)}</b> of this is in ${total.unbudgeted_rows} categor${total.unbudgeted_rows === 1 ? 'y' : 'ies'} with no budget line. The lines that have a budget stand at <b>${money(total.actual - total.unbudgeted)}</b> of ${money(total.budget)}.</p>` : ''}</section>`;
 }
 
 function monthlyChart(m, width) {
@@ -379,7 +386,8 @@ function categoryChart(m, width) {
   const max = Math.max(1, ...rows.map((r) => r.money_out));
   const x = (v) => (v / max) * (W - ml - mr);
   const p = m.params;
-  const clip = (s) => (s.length > 26 && W < 520 ? `${s.slice(0, 24)}…` : s);
+  const room = Math.max(8, Math.floor((ml - 12) / 6.6));
+  const clip = (s) => (s.length > room ? `${s.slice(0, room - 1)}…` : s);
   let svg = '';
   rows.forEach((r, i) => {
     const yy = i * (bh + gap);
@@ -394,47 +402,66 @@ function categoryChart(m, width) {
 
 function loansHtml(m, doc) {
   const c = m.cash;
-  const rows = doc.loans.rows.map((r) => `<tr><td>${esc(r.loan)}</td><td class="m">${esc(r.status)}</td><td class="n">${money2(+r.balance)}</td><td class="n">${(+r.rate).toFixed(2)}%</td>
-    <td class="n">${+r.repayment_now ? money(+r.repayment_now) : ''}</td><td class="n hide-sm">${+r.repayment_from_15_dec ? money(+r.repayment_from_15_dec) : ''}</td><td class="n">${money2(+r.last_interest)}</td><td class="m hide-sm">${esc(r.note)}</td></tr>`).join('');
+  const rows = doc.loans.rows.map((r) => `<tr><td>${esc(r.loan)}<div class="sub show-sm">${esc(r.status)}</div></td><td class="m hide-sm">${esc(r.status)}</td><td class="n">${money2(+r.balance)}</td><td class="n">${(+r.rate).toFixed(2)}%</td>
+    <td class="n">${+r.repayment_now ? money(+r.repayment_now) : ''}</td><td class="n hide-sm">${+r.repayment_from_15_dec ? money(+r.repayment_from_15_dec) : ''}</td><td class="n hide-sm">${money2(+r.last_interest)}</td><td class="m hide-sm">${esc(r.note)}</td></tr>`).join('');
   return `<section class="fin-card" id="loans"><h2>Loans and cash</h2><p class="hint">Balances as at each loan's last statement.</p>
     <div class="fin-callout"><b>${money(c.cash)}</b> sits in accounts that offset no loan. At the ${esc(c.loan)} rate of <b>${c.rate.toFixed(2)}%</b>, that much in a linked offset would save about <b>${money(c.interest_a_year)}</b> a year.</div>
-    <div class="fin-tw"><table><thead><tr><th>Loan</th><th>Status</th><th class="n">Balance</th><th class="n">Rate</th><th class="n">Repayment</th><th class="n hide-sm">From 15 Dec</th><th class="n">Last interest</th><th class="hide-sm">Note</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+    <div class="fin-tw"><table><thead><tr><th>Loan</th><th class="hide-sm">Status</th><th class="n">Balance</th><th class="n">Rate</th><th class="n">Repayment</th><th class="n hide-sm">From 15 Dec</th><th class="n hide-sm">Last interest</th><th class="hide-sm">Note</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 const newest = (a, b) => (a.date > b.date ? -1 : a.date < b.date ? 1 : a.id > b.id ? -1 : 1);
 function txnRow(r, cols, codes) {
   const ruled = r.ruled ? ` <span class="ruled" title="Allocated on the tab${r.ruled.by ? ` by ${esc(r.ruled.by)}` : ''}">✎</span>` : '';
-  return `<tr class="pick" data-txn="${esc(r.id)}">${cols.map((c) => {
-    if (c === 'category') return `<td>${catCell(codes, r.category)}${ruled}</td>`;
+  // On the phone the category and the reason sit under the description, so the amount always shows.
+  const why = cols.includes('note') && r.note ? `<div class="sub show-sm">${esc(r.note)}</div>` : '';
+  return `<tr class="pick" data-txn="${esc(r.id)}" tabindex="0">${cols.map((c) => {
+    if (c === 'description') return `<td>${esc(r.description)}<div class="sub show-sm">${catCell(codes, r.category)}${ruled}</div>${why}</td>`;
+    if (c === 'category') return `<td class="hide-sm">${catCell(codes, r.category)}${ruled}</td>`;
     if (c === 'date') return `<td class="d">${esc(dayLabel(r.date).slice(0, -5))}</td>`;
     if (c === 'account') return `<td class="m hide-sm">${esc(shortAcct(r.account))}</td>`;
     if (c === 'amount') return `<td class="n${r.amount > 0 ? ' pos' : ''}">${esc(signed(r.amount))}</td>`;
-    if (c === 'note' || c === 'group') return `<td class="m${c === 'group' ? ' hide-sm' : ''}">${esc(r[c] || '')}</td>`;
+    if (c === 'note' || c === 'group') return `<td class="m hide-sm">${esc(r[c] || '')}</td>`;
     return `<td>${esc(r[c])}</td>`;
   }).join('')}</tr>`;
 }
 
 export const TXN_PAGE = 150;
+// What still needs someone: to-sort rows first, then rows a rule flagged with a note. A row
+// allocated or kept on the tab since the close has been dealt with and leaves the list.
+const needsRuling = (r) => r.group === 'To sort';
 export function reviewRows(txn, p) {
-  return txn.filter((r) => inView(r, p, { group: true }) && (r.group === 'To sort' || r.note)).sort(newest);
+  return txn.filter((r) => inView(r, p, { group: true }) && !r.ruled && (needsRuling(r) || r.note))
+    .sort((a, b) => needsRuling(b) - needsRuling(a) || newest(a, b));
+}
+export function settledRows(txn, p) {
+  return txn.filter((r) => inView(r, p, { group: true }) && r.ruled);
+}
+// Across every month and account: what the sweep still has to do.
+export function waiting(txn) {
+  const rows = txn.filter((r) => !r.ruled);
+  return { to_sort: rows.filter(needsRuling).length, flagged: rows.filter((r) => !needsRuling(r) && r.note).length };
 }
 export function txnRows(txn, p, q = '') {
   const needle = q.trim().toLowerCase();
-  return txn.filter((r) => inView(r, p) && (!needle || `${r.description} ${r.category} ${r.account} ${r.amount}`.toLowerCase().includes(needle))).sort(newest);
+  return txn.filter((r) => inView(r, p) && (!needle || `${r.description} ${r.category} ${r.account} ${r.amount} ${r.note || ''}`.toLowerCase().includes(needle))).sort(newest);
 }
 
 function reviewHtml(doc, p, codes) {
-  const rows = reviewRows(doc.transactions.rows, p);
-  return `<section class="fin-card" id="review"><h2>To sort and flagged <span class="chip warn">${rows.length}</span></h2>
-    <p class="hint">Transactions that need a ruling or carry a note, for the month and account shown. Tap one to allocate it.</p>
-    ${rows.length ? `<div class="fin-tw tall"><table><thead><tr><th>Date</th><th class="hide-sm">Account</th><th>Description</th><th>Category</th><th class="n">Amount</th><th>Why it's here</th></tr></thead>
+  const txn = doc.transactions.rows;
+  const rows = reviewRows(txn, p);
+  const sort = rows.filter(needsRuling).length, done = settledRows(txn, p).length, w = waiting(txn);
+  const elsewhere = p.month && w.to_sort + w.flagged > rows.length
+    ? ` <button type="button" class="fin-link" data-all-months="1">Show all months (${w.to_sort} to sort, ${w.flagged} flagged)</button>` : '';
+  return `<section class="fin-card" id="review"><h2>To sort and flagged <span class="chip warn">${sort} to sort</span> <span class="chip none">${rows.length - sort} flagged</span></h2>
+    <p class="hint">To sort needs a category. Flagged rows have one but carry a question: allocate them, or keep them as they are. Either way the row leaves this list${done ? `; <b>${done}</b> settled since the last close` : ''}.${elsewhere}</p>
+    ${rows.length ? `<div class="fin-tw tall"><table><thead><tr><th>Date</th><th class="hide-sm">Account</th><th>Description</th><th class="hide-sm">Category</th><th class="n">Amount</th><th class="hide-sm">Why it's here</th></tr></thead>
     <tbody>${rows.map((r) => txnRow(r, ['date', 'account', 'description', 'category', 'amount', 'note'], codes)).join('')}</tbody></table></div>` : '<p class="fin-empty">Nothing to sort here.</p>'}</section>`;
 }
 
 function txnHtml(doc, p, q, all, codes) {
   const rows = txnRows(doc.transactions.rows, p, q);
   const shown = all ? rows : rows.slice(0, TXN_PAGE);
-  return `<div class="fin-tw tall"><table><thead><tr><th>Date</th><th class="hide-sm">Account</th><th>Description</th><th>Category</th><th class="hide-sm">Group</th><th class="n">Amount</th></tr></thead>
+  return `<div class="fin-tw tall"><table><thead><tr><th>Date</th><th class="hide-sm">Account</th><th>Description</th><th class="hide-sm">Category</th><th class="hide-sm">Group</th><th class="n">Amount</th></tr></thead>
     <tbody>${shown.map((r) => txnRow(r, ['date', 'account', 'description', 'category', 'group', 'amount'], codes)).join('') || '<tr><td colspan="6" class="m">No transactions for these filters.</td></tr>'}</tbody></table></div>
     ${rows.length > shown.length ? `<button type="button" class="fin-more" id="txn-all">Show all ${rows.length}</button>` : ''}`;
 }
@@ -455,7 +482,7 @@ function codesHtml(m) {
     if (!rows.length) return '';
     return `<div class="tier"><h3><span class="code">${esc(g.code)}</span>${esc(g.name)}</h3><ul>${rows.map((r) => `<li>${codeTag(r.code)}${esc(r.category)}</li>`).join('')}</ul></div>`;
   }).join('');
-  return `<section class="fin-card" id="codes"><h2>Category codes</h2><p class="hint">Each code is its group, a dash, and its place in the group. Type a code or a group (FOO, ENT-2) to allocate a transaction quickly.</p><div class="tiers">${tiers}</div></section>`;
+  return `<section class="fin-card" id="codes"><details><summary>Category codes (${m.registry.length})</summary><p class="hint">Each code is its group, a dash, and its place in the group. Type a code or a group (FOO, ENT-2) to allocate a transaction quickly.</p><div class="tiers">${tiers}</div></details></section>`;
 }
 
 function sourcesHtml(doc) {
@@ -475,8 +502,18 @@ function sourcesHtml(doc) {
   return `<section class="fin-card" id="sources"><h2>Sources</h2><p class="hint">Published ${when && !isNaN(when) ? esc(when.toLocaleString('en-AU', { timeZone: 'Australia/Perth', dateStyle: 'medium', timeStyle: 'short' })) : esc(doc.published)} (Perth) by the monthly close. Transfers and card repayments between your own accounts are left out of the totals so nothing counts twice.</p>${html}</section>`;
 }
 
+function navHtml(m) {
+  const w = m.waiting, n = w.to_sort + w.flagged;
+  const links = [['budget', 'Budget'], ['review', `To sort${n ? ` <b>${n}</b>` : ''}`], ['transactions', 'Transactions'], ['by-month', 'Charts'], ['loans', 'Loans'], ['statements', 'Statements']];
+  return `<nav class="fin-nav" aria-label="Sections"><div class="fin-wrap">${links.map(([id, label]) => `<button type="button" data-jump="${id}">${label}</button>`).join('')}</div></nav>`;
+}
+
 export function pageHtml(doc, m, { width = 360, q = '', all = false } = {}) {
-  return heroHtml(m, doc) + `<main class="fin-wrap fin-main">${stripHtml(m)}${budgetHtml(m)}
+  return heroHtml(m, doc) + navHtml(m) + `<main class="fin-wrap fin-main">${stripHtml(m)}${budgetHtml(m)}
+    ${reviewHtml(doc, m.params, m.codes)}
+    <section class="fin-card" id="transactions"><h2>Transactions</h2><p class="hint">Every row for the filters above, newest first. Tap one to allocate it.</p>
+      <input type="search" class="fin-search" id="txn-q" placeholder="Search description, category, note or amount" value="${esc(q)}" autocomplete="off">
+      <div id="txn-body">${txnHtml(doc, m.params, q, all, m.codes)}</div></section>
     <div class="fin-grid2">
       <section class="fin-card" id="by-month"><h2>Money in and out by month</h2><p class="hint">Tap a month to show it.</p>
         <div class="fin-legend" aria-hidden="true">${SERIES.map((s) => `<span><i style="background:${s.color}"></i>${s.name}</span>`).join('')}</div>
@@ -484,11 +521,7 @@ export function pageHtml(doc, m, { width = 360, q = '', all = false } = {}) {
       <section class="fin-card" id="by-category"><h2>Where the money went</h2><p class="hint">Money out by category, between-account moves left out. Tap a bar to filter the transactions.</p>
         <div class="fin-chart" id="chart-cat">${categoryChart(m, width)}</div></section>
     </div>
-    ${loansHtml(m, doc)}${reviewHtml(doc, m.params, m.codes)}
-    <section class="fin-card" id="transactions"><h2>Transactions</h2><p class="hint">Every row for the filters above, newest first.</p>
-      <input type="search" class="fin-search" id="txn-q" placeholder="Search description, category or amount" value="${esc(q)}" autocomplete="off">
-      <div id="txn-body">${txnHtml(doc, m.params, q, all, m.codes)}</div></section>
-    ${codesHtml(m)}${statementsHtml(doc)}${sourcesHtml(doc)}
+    ${loansHtml(m, doc)}${statementsHtml(doc)}${codesHtml(m)}${sourcesHtml(doc)}
     <p class="fin-foot">Private: served from a Cloudflare store behind Access${doc.viewer ? ` · signed in as ${esc(doc.viewer)}` : ''}.</p></main>`;
 }
 
@@ -509,9 +542,11 @@ export function pickOptions(reg, q) {
   return reg.filter((r) => code(r).startsWith(needle) || r.category.toLowerCase().includes(String(q).trim().toLowerCase()));
 }
 
-export function sheetHtml(row, reg, codes, { q = '', pick = null, note = '', like = false, busy = false, error = '', groups = DEFAULT_GROUPS } = {}) {
+export function sheetHtml(row, reg, codes, { q = '', pick = null, note = '', like = false, busy = false, error = '', groups = DEFAULT_GROUPS, left = 0 } = {}) {
   const opts = pickOptions(reg, q);
   const chosen = pick || row.category;
+  // A flagged row that is already in the right category can be kept: that settles the flag.
+  const keep = chosen === row.category && Boolean(row.note) && row.group !== 'To sort' && !row.ruled;
   const known = new Set(groups.map((g) => g.code));
   const all = [...groups, ...Array.from(new Set(opts.map((r) => tierOf(r.code)).filter((c) => !known.has(c)))).map((c) => ({ code: c, name: c }))];
   const list = all.map(({ code: gc, name }) => {
@@ -523,7 +558,7 @@ export function sheetHtml(row, reg, codes, { q = '', pick = null, note = '', lik
   return `<div class="sheet" role="dialog" aria-modal="true" aria-labelledby="sheet-title">
     <div class="sheet-head"><div><p class="hint" style="margin:0">${esc(dayLabel(row.date))} · ${esc(shortAcct(row.account))}</p>
       <h2 id="sheet-title">${esc(row.description)}</h2><p class="sheet-amt${row.amount > 0 ? ' pos' : ''}">${esc(signed(row.amount))}</p>
-      <p class="hint" style="margin:0">Now: ${catCell(codes, row.category)}</p>${ruled}</div>
+      <p class="hint" style="margin:0">Now: ${catCell(codes, row.category)}${left ? ` · ${left} more to settle after this` : ''}</p>${row.note ? `<p class="sheet-why">${esc(row.note)}</p>` : ''}${ruled}</div>
       <button type="button" class="sheet-x" data-sheet="close" aria-label="Close">✕</button></div>
     <input type="search" class="fin-search" id="sheet-q" placeholder="Code, group or name, e.g. FOO-1, ENT or groceries" value="${esc(q)}" autocomplete="off" enterkeyhint="done">
     <div class="sheet-list" id="sheet-list">${list}</div>
@@ -531,7 +566,7 @@ export function sheetHtml(row, reg, codes, { q = '', pick = null, note = '', lik
     <label class="sheet-like"><input type="checkbox" id="sheet-like"${like ? ' checked' : ''}> Treat other “${esc(row.description)}” transactions the same way from the next close</label>
     ${error ? `<p class="sheet-err" role="alert">${esc(error)}</p>` : ''}
     <div class="sheet-acts">${row.ruled ? `<button type="button" class="fin-more ghost" data-sheet="undo"${busy ? ' disabled' : ''}>Undo allocation</button>` : ''}
-      <button type="button" class="fin-save" data-sheet="save"${busy || chosen === row.category ? ' disabled' : ''}>${busy ? 'Saving…' : `Allocate to ${esc(codes.get(chosen) || '')} ${esc(chosen)}`}</button></div>
+      <button type="button" class="fin-save" data-sheet="save"${busy || (chosen === row.category && !keep) ? ' disabled' : ''}>${busy ? 'Saving…' : `${keep ? 'Keep in' : 'Allocate to'} ${esc(codes.get(chosen) || '')} ${esc(chosen)}`}</button></div>
   </div>`;
 }
 
@@ -555,7 +590,7 @@ async function start(root) {
     return;
   }
   const months = monthsOf(doc.transactions.rows);
-  let q = '', all = false, last = null, cur = viewOf(doc);
+  let q = '', all = false, last = null, cur = viewOf(doc), jumpTo = null;
   const draw = () => {
     const p = readParams(location.hash, months);
     cur = viewOf(doc);
@@ -566,6 +601,8 @@ async function start(root) {
     window.scrollTo(0, scrollY);
     last = m;
     wire(m);
+    // A jump asked for before the redraw (a budget row, "Show all months") lands after it.
+    if (jumpTo) { const el = document.getElementById(jumpTo); jumpTo = null; if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
   };
   const go = (patch) => {
     const p = { ...readParams(location.hash, months), ...patch };
@@ -587,8 +624,10 @@ async function start(root) {
     root.querySelector('#f-account').onchange = (e) => go({ account: e.target.value || null });
     root.querySelectorAll('[data-group]').forEach((b) => { b.onclick = () => go({ group: b.dataset.group || null, category: null }); });
     root.querySelectorAll('[data-clear-category]').forEach((b) => { b.onclick = () => go({ category: null }); });
+    root.querySelectorAll('[data-jump]').forEach((b) => { b.onclick = () => document.getElementById(b.dataset.jump)?.scrollIntoView({ behavior: 'smooth', block: 'start' }); });
+    root.querySelectorAll('[data-all-months]').forEach((b) => { b.onclick = () => { jumpTo = 'review'; go({ month: 'all', category: null }); }; });
     root.querySelectorAll('tr[data-category]').forEach((tr) => {
-      tr.onclick = () => { go({ category: p.category === tr.dataset.category ? null : tr.dataset.category, group: null }); document.getElementById('transactions')?.scrollIntoView({ behavior: 'smooth' }); };
+      tr.onclick = () => { jumpTo = 'transactions'; go({ category: p.category === tr.dataset.category ? null : tr.dataset.category, group: null }); };
     });
     const cm = root.querySelector('#chart-month');
     cm.querySelectorAll('[data-month]').forEach((r) => {
@@ -602,7 +641,7 @@ async function start(root) {
       const row = m.byCategory[+r.dataset.cat];
       r.addEventListener('pointermove', (ev) => tip(cc, ev, [row.category, `${money2(row.money_out)} out`, `${row.transactions} transaction${row.transactions === 1 ? '' : 's'}`, row.group]));
       r.addEventListener('pointerleave', () => cc.querySelector('.fin-tip')?.remove());
-      r.addEventListener('click', () => go({ category: p.category === row.category ? null : row.category }));
+      r.addEventListener('click', () => { jumpTo = 'transactions'; go({ category: p.category === row.category ? null : row.category }); });
     });
     const qEl = root.querySelector('#txn-q');
     const body = root.querySelector('#txn-body');
@@ -615,22 +654,31 @@ async function start(root) {
     redrawTxn();
   }
   // Tapping any transaction row opens the allocation sheet (Brain D-152 A).
+  // From the To sort list the sheet works as a sweep: saving one opens the next.
   root.addEventListener('click', (e) => {
     const tr = e.target.closest('tr[data-txn]');
-    if (tr && !e.target.closest('a')) openSheet(tr.dataset.txn);
+    if (tr && !e.target.closest('a')) openSheet(tr.dataset.txn, Boolean(tr.closest('#review')));
+  });
+  root.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    const tr = e.target.closest && e.target.closest('tr[data-txn], tr[data-category]');
+    if (tr && e.target === tr) { e.preventDefault(); tr.click(); }
   });
   let sheet = null;
-  function openSheet(id) {
+  const sweepIds = () => reviewRows(cur.transactions.rows, readParams(location.hash, months)).map((r) => r.id);
+  function openSheet(id, sweep = false) {
     const row = cur.transactions.rows.find((r) => r.id === id);
     if (!row) return;
-    sheet = { row, q: '', pick: null, note: row.ruled ? row.ruled.note || '' : '', like: row.ruled ? Boolean(row.ruled.like) : false, busy: false, error: '' };
+    const queue = sweep ? sweepIds() : [];
+    sheet = { row, sweep, queue, left: sweep ? Math.max(0, queue.length - 1) : 0, q: '', pick: null, note: row.ruled ? row.ruled.note || '' : '', like: row.ruled ? Boolean(row.ruled.like) : false, busy: false, error: '' };
     const host = document.createElement('div');
     host.className = 'sheet-wrap';
     host.id = 'sheet-wrap';
     document.body.appendChild(host);
     document.body.classList.add('sheet-open');
     renderSheet();
-    host.querySelector('#sheet-q')?.focus({ preventScroll: true });
+    // On a phone the keyboard would cover the list, so only the desk starts in the search box.
+    if (window.matchMedia('(hover: hover) and (pointer: fine)').matches) host.querySelector('#sheet-q')?.focus({ preventScroll: true });
   }
   function closeSheet() {
     document.getElementById('sheet-wrap')?.remove();
@@ -681,8 +729,16 @@ async function start(root) {
       const out = await res.json().catch(() => null);
       if (!res.ok) throw new Error(res.status === 401 ? 'Signed out. Reload the page to sign in again.' : (out && out.error) || `HTTP ${res.status}`);
       doc.rulings = out.rulings;
+      const { sweep, queue } = sheet;
       closeSheet();
       draw();
+      if (sweep && !clear) {
+        // The next row of the list as it stood, if it still needs settling.
+        const still = new Set(sweepIds());
+        const at = queue.indexOf(r.id);
+        const next = queue.slice(at + 1).concat(queue.slice(0, Math.max(0, at))).find((id) => still.has(id));
+        if (next) openSheet(next, true);
+      }
     } catch (err) {
       if (!sheet) return;
       sheet.busy = false; sheet.error = `Not saved: ${err.message}`; renderSheet(true);

@@ -117,7 +117,25 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--
 .fin dd { margin: 0; }
 .fin-foot { color: var(--muted); font-size: 12px; text-align: center; padding: 8px 0 24px; }
 
+/* section bar, small print under a description, links that are buttons */
+.fin-nav { position: sticky; top: 0; z-index: 5; background: rgba(247,248,252,.94); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); border-bottom: 1px solid var(--rule); }
+.fin-nav .fin-wrap { display: flex; gap: 4px; overflow-x: auto; scrollbar-width: none; padding-top: 8px; padding-bottom: 8px; }
+.fin-nav .fin-wrap::-webkit-scrollbar { display: none; }
+.fin-nav button { font: 600 13px var(--sans); color: var(--head-fg); background: transparent; border: 0; border-radius: 999px; padding: 7px 12px; white-space: nowrap; cursor: pointer; }
+.fin-nav button:hover { background: var(--indigo-soft); color: var(--indigo); }
+.fin-nav button b { background: var(--orange); color: var(--amber-ink); border-radius: 999px; padding: 1px 7px; font-size: 11.5px; margin-left: 3px; }
+.fin-card, .fin-grid2 { scroll-margin-top: 56px; }
+.fin-mini.jump { font: inherit; color: inherit; text-align: left; cursor: pointer; }
+.fin-mini.jump:hover { border-color: var(--indigo); }
+.fin-link { font: 600 12.5px var(--sans); color: var(--indigo); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; }
+.fin-note { font-size: 13px; color: var(--fg); background: var(--head); border-radius: 10px; padding: 10px 12px; margin: 10px 0 0; }
+.fin .show-sm { display: none; }
+.fin .sub { font-size: 12px; color: var(--muted); margin-top: 3px; }
+.fin tr.pick:focus-visible td { background: var(--indigo-soft); }
+.sheet-why { font-size: 12.5px; color: #8a5a00; background: #fff1d6; border-radius: 8px; padding: 6px 9px; margin: 6px 0 0; }
+
 @media (max-width: 720px) {
+  .fin .show-sm { display: block; }
   .fin-tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fin-strip { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .fin-card { padding: 14px 12px; border-radius: 16px; }

@@ -99,7 +99,15 @@ test('cash outside an offset and what it costs', () => {
 });
 
 test('the review list and the transaction search', () => {
-  assert.deepEqual(fin.reviewRows(TXN, { month: '2026-08' }).map((r) => r.id), ['T8', 'T6']);
+  assert.deepEqual(fin.reviewRows(TXN, { month: '2026-08' }).map((r) => r.id), ['T6', 'T8'], 'to sort first, then flagged');
+  assert.deepEqual(fin.waiting(TXN), { to_sort: 1, flagged: 1 });
+  // Kept or allocated on the tab: the row is settled and leaves the list.
+  const t8 = TXN.find((r) => r.id === 'T8');
+  const kept = fin.applyRulings(TXN, { items: { T8: { id: 'T8', fp: { date: t8.date, amount: t8.amount, description: t8.description, account: t8.account }, category: 'Clothes', group: 'Living' } } });
+  assert.deepEqual(fin.reviewRows(kept, { month: '2026-08' }).map((r) => r.id), ['T6']);
+  assert.equal(fin.settledRows(kept, { month: '2026-08' }).length, 1);
+  assert.deepEqual(fin.waiting(kept), { to_sort: 1, flagged: 0 });
+  assert.deepEqual(fin.txnRows(TXN, {}, 'refund due').map((r) => r.id), ['T8'], 'the search reads the note');
   assert.deepEqual(fin.txnRows(TXN, { month: '2026-08' }, 'shop t4').map((r) => r.id), ['T4']);
   assert.equal(fin.txnRows(TXN, {}).length, TXN.length);
 });
@@ -241,6 +249,31 @@ test('an allocation is refused for a changed row, an unknown category or a bad i
   assert.equal(fin.applyRulings(TXN, stale).find((r) => r.id === 'T6').category, 'To sort', 'a ruling for a renumbered row moves nothing');
 });
 
+test('spending on lines with no budget is named beside the total', () => {
+  const b = fin.budgetRows(TXN, DOC.budget.rows, { month: '2026-08' }, fin.period(TXN, { month: '2026-08' }));
+  assert.equal(b.total.unbudgeted, 50);
+  assert.equal(b.total.unbudgeted_rows, 1);
+  const html = fin.pageHtml(DOC, fin.model(DOC, { month: '2026-08' }));
+  assert.match(html, /1 category with no budget line/);
+});
+
+test('a flagged row can be kept as it is; an unflagged one cannot be saved unchanged', () => {
+  const doc = { ...DOC, categories: CATS };
+  const reg = fin.registry(doc);
+  const codes = new Map(reg.map((r) => [r.category, r.code]));
+  const save = (row) => fin.sheetHtml(row, reg, codes).match(/<button[^>]*data-sheet="save"[^>]*>[^<]*/)[0];
+  assert.match(save(TXN.find((r) => r.id === 'T8')), /Keep in/);
+  assert.doesNotMatch(save(TXN.find((r) => r.id === 'T8')), /disabled/);
+  assert.match(save(TXN.find((r) => r.id === 'T1')), /disabled/);
+  assert.match(save(TXN.find((r) => r.id === 'T6')), /disabled/, 'a to-sort row needs a category');
+});
+
+test('the Brain link shows only to someone who can open Brain', () => {
+  const m = fin.model(DOC, { month: '2026-08' });
+  assert.match(fin.pageHtml({ ...DOC, brain: true }, m), /Brain ↗/);
+  assert.doesNotMatch(fin.pageHtml({ ...DOC, brain: false }, m), /Brain ↗/);
+});
+
 test('the sheet escapes what the data says', () => {
   const doc = { ...DOC, categories: CATS };
   const reg = fin.registry(doc);
@@ -269,6 +302,13 @@ test('the allocate route saves for Brain and Finance-only sign-ins and serves th
   assert.equal((await res.json()).rulings.items.T6.by, 'partner@example.com');
   const got = await (await call('/api/brain/finance', env, await sign({}))).json();
   assert.equal(got.rulings.items.T6.category, 'Fun');
+  assert.equal(got.brain, true);
+  assert.equal((await (await call('/api/brain/finance', env, partner)).json()).brain, false, 'a Finance-only sign-in is told it has no Brain');
+  // Keeping a flagged row where it is is a ruling too.
+  const t8 = TXN.find((r) => r.id === 'T8');
+  const keep = await post('/api/brain/finance/allocate', env, partner, { id: 'T8', fp: fw.fingerprint(t8), category: 'Clothes' });
+  assert.equal(keep.status, 200);
+  assert.equal((await keep.json()).rulings.items.T8.from.category, 'Clothes');
   assert.equal(JSON.parse(FINANCE.store.get('finance')).transactions.rows.find((r) => r.id === 'T6').category, 'To sort', 'the published figures are untouched');
   assert.equal((await post('/api/brain/finance/allocate', env, partner, { id: 'T6', fp: fw.fingerprint(t6), category: 'Fun' }, { Origin: 'https://evil.example' })).status, 403);
   assert.equal((await post('/api/brain/finance/allocate', env, null, { id: 'T6', fp: fw.fingerprint(t6), category: 'Fun' })).status, 401);

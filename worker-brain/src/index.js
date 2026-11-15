@@ -529,7 +529,8 @@ async function finance(request, url, env, viewer) {
   if (!doc) return json({ error: 'nothing published yet' }, 404);
   if (!validFinance(doc)) return json({ error: 'published data malformed' }, 502);
   const rulings = (await env.FINANCE.get(RULINGS_KEY, 'json')) || emptyRulings();
-  if (url.pathname !== FINANCE_ALLOCATE) return json({ ...doc, rulings, viewer: viewer.email || null });
+  // `brain` tells the page whether this person can open the rest of Brain (D-148 A).
+  if (url.pathname !== FINANCE_ALLOCATE) return json({ ...doc, rulings, viewer: viewer.email || null, brain: viewer.brain === true });
   // One allocation (Brain D-152 A): read, apply, write back. Two people saving the same
   // second is the only race, and the later save wins; each ruling names who made it.
   const body = await readBody(request);
@@ -547,7 +548,7 @@ async function finance(request, url, env, viewer) {
 async function verifyAny(token, cfgs) {
   for (const cfg of cfgs) {
     const viewer = await verifyAccessJwt(token, cfg);
-    if (viewer) return viewer;
+    if (viewer) return { ...viewer, brain: cfg === cfgs[0] };
   }
   return null;
 }
