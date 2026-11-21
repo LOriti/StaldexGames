@@ -1,7 +1,7 @@
 # Invasion — game design and mechanics
 
-The playable build is one self-contained file, `site/invasion.html`, served unlisted at
-`staldex.com/invasion` (old path `/lead-time` and short forms redirect there). There is no
+The playable build is one self-contained file, `site/invasion.html`, served at
+`staldex.com/invasion` and listed under Games on the homepage (old path `/lead-time` and short forms redirect there). There is no
 build step, no Worker and no server state; the best score is kept in the player's browser.
 
 This document is the source of truth for how the game works. When a number in the code
