@@ -16,9 +16,11 @@ const daysBetween = (a, b) => Math.round((toDate(b) - toDate(a)) / DAY) + 1;
 export const daysInMonth = (m) => new Date(Date.UTC(+m.slice(0, 4), +m.slice(5, 7), 0)).getUTCDate();
 
 // Groups that are spending of one kind or another. Moves between own accounts, money in and
-// loan proceeds are not money out.
+// loan proceeds are not money out. Business spending (Brain DEV-61121.01) is owed back by a
+// business, so it has a section of its own and stays out of the household's money out.
 export const HOUSING = ['Housing', 'Property deals'];
-const NOT_OUT = ['Own accounts', 'Money in', 'Loan proceeds'];
+export const BUSINESS = 'Business';
+const NOT_OUT = ['Own accounts', 'Money in', 'Loan proceeds', BUSINESS];
 
 export function monthsOf(txn) {
   return Array.from(new Set(txn.map((r) => r.month))).sort();
@@ -125,6 +127,28 @@ export function byCategory(txn, p) {
     .filter((g) => g.money_out > 0).sort((a, b) => b.money_out - a.money_out);
 }
 
+// What each business owes back for the period: one row per Business category (each listed
+// category shows even with nothing in it, so every business is in view), money out, money
+// back and the net. A category is "to forward" when its name says so; Business - personal
+// is shown but is not owed by anyone.
+export const forwards = (category) => /to forward/i.test(String(category || ''));
+export function businessRows(txn, p, reg = []) {
+  const rows = txn.filter((r) => r.group === BUSINESS && inView(r, p, { group: true, category: true }));
+  const by = new Map();
+  const add = (category, code) => { if (!by.has(category)) by.set(category, { category, code: code || '', out: 0, back: 0, transactions: 0 }); return by.get(category); };
+  for (const c of reg) if (c.group === BUSINESS) add(c.category, c.code);
+  for (const r of rows) {
+    const g = add(r.category);
+    const v = +r.amount || 0;
+    if (v < 0) g.out -= v; else g.back += v;
+    g.transactions += 1;
+  }
+  const out = Array.from(by.values()).map((g) => ({ ...g, out: r2(g.out), back: r2(g.back), owed: r2(g.out - g.back), forward: forwards(g.category) }))
+    .sort((a, b) => (b.forward - a.forward) || String(a.code || 'ZZZ').localeCompare(String(b.code || 'ZZZ'), 'en', { numeric: true }) || a.category.localeCompare(b.category));
+  const fw = out.filter((r) => r.forward), own = out.filter((r) => !r.forward);
+  return { rows: out, to_forward: r2(sum(fw, (r) => r.owed)), personal: r2(sum(own, (r) => r.owed)), transactions: rows.length };
+}
+
 // Cash in everyday and bills accounts that offset no loan, and what it would save a year
 // in an offset at the rate of the first open loan (the Finance Desk's "Loans and cash").
 export function cashOffset(accounts, loans) {
@@ -144,9 +168,9 @@ export function cashOffset(accounts, loans) {
 
 export const DEFAULT_GROUPS = [
   { code: 'IN', name: 'Money in' }, { code: 'H', name: 'Houses' }, { code: 'L', name: 'Living' },
-  { code: 'T', name: 'Between own accounts' }, { code: 'XXX', name: 'To sort' },
+  { code: 'BUS', name: 'Business' }, { code: 'T', name: 'Between own accounts' }, { code: 'XXX', name: 'To sort' },
 ];
-const FALLBACK = { 'Money in': 'IN', Housing: 'H', 'Property deals': 'H', Living: 'L', 'Own accounts': 'T', 'Loan proceeds': 'T', 'To sort': 'XXX' };
+const FALLBACK = { 'Money in': 'IN', Housing: 'H', 'Property deals': 'H', Living: 'L', Business: 'BUS', 'Own accounts': 'T', 'Loan proceeds': 'T', 'To sort': 'XXX' };
 export const tierOf = (code) => String(code || '').split('-')[0];
 const codeNum = (code) => +(String(code || '').split('-')[1]) || 0;
 
@@ -183,18 +207,23 @@ export function registry(doc) {
 const sameFp = (r, fp) => Boolean(fp) && r.date === fp.date && r.amount === fp.amount && r.description === fp.description && r.account === fp.account;
 
 // The figures with the tab's allocations laid over them; a ruling whose transaction no longer
-// matches (a re-close) is left out rather than moving another row.
-export function applyRulings(rows, rulings) {
+// matches (a re-close) is left out rather than moving another row. The group comes from the
+// category list as it stands when it names the category, so an allocation made before a
+// category moved group (Business, Brain DEV-61121.01) lands in the group it has now.
+export function applyRulings(rows, rulings, groupOf = null) {
   const items = rulings && rulings.items ? rulings.items : {};
   return rows.map((r) => {
     const k = items[r.id];
     if (!k || !sameFp(r, k.fp)) return r;
-    return { ...r, category: k.category, group: k.group, ruled: { by: k.by, at: k.at, note: k.note, like: k.like, from: k.from } };
+    const group = (groupOf && groupOf.get(k.category)) || k.group;
+    return { ...r, category: k.category, group, ruled: { by: k.by, at: k.at, note: k.note, like: k.like, from: k.from } };
   });
 }
 
 export function viewOf(doc) {
-  return { ...doc, transactions: { ...doc.transactions, rows: applyRulings(doc.transactions.rows, doc.rulings) } };
+  const listed = doc.categories && Array.isArray(doc.categories.rows) ? doc.categories.rows.filter((r) => r && r.category && r.group) : [];
+  const groupOf = new Map(listed.map((r) => [r.category, r.group]));
+  return { ...doc, transactions: { ...doc.transactions, rows: applyRulings(doc.transactions.rows, doc.rulings, groupOf) } };
 }
 
 function ordered(b, codes, groups) {
@@ -218,6 +247,7 @@ export function model(doc, p) {
     budget: ordered(budgetRows(txn, doc.budget.rows, p, per), codes, groupsOf(doc)),
     monthly: monthly(txn, p),
     byCategory: byCategory(txn, p),
+    business: businessRows(txn, p, reg),
     cash: cashOffset(doc.accounts.rows, doc.loans.rows),
     registry: reg,
     waiting: waiting(txn),
@@ -278,8 +308,8 @@ const SERIES = [
   { key: 'housing', name: 'Houses', color: '#8b5cf6' },
   { key: 'to_sort', name: 'To sort', color: '#f5a524' },
 ];
-const GROUP_COLOR = { Living: '#4f46e5', Housing: '#8b5cf6', 'Property deals': '#8b5cf6', 'To sort': '#f5a524', 'Money in': '#12a37f', 'Own accounts': '#9aa0b4' };
-const GROUPS = [['', 'All'], ['Living', 'Living'], ['Housing', 'Housing'], ['Money in', 'Money in'], ['To sort', 'To sort'], ['Own accounts', 'Between own accounts']];
+const GROUP_COLOR = { Living: '#4f46e5', Housing: '#8b5cf6', 'Property deals': '#8b5cf6', 'To sort': '#f5a524', 'Money in': '#12a37f', 'Own accounts': '#9aa0b4', Business: '#0e7490' };
+const GROUPS = [['', 'All'], ['Living', 'Living'], ['Housing', 'Housing'], ['Money in', 'Money in'], ['To sort', 'To sort'], ['Business', 'Business'], ['Own accounts', 'Between own accounts']];
 
 // ---- rendering (pure: model in, HTML out) ------------------------------------------------
 
@@ -340,6 +370,21 @@ function budgetHtml(m) {
     <div class="fin-tw"><table><thead><tr><th>Category</th><th class="n">Budget</th><th class="n">Actual</th><th class="n hide-sm">Left</th><th class="n hide-sm">Used</th><th>Status</th><th class="hide-sm">Pace</th></tr></thead>
     <tbody>${rows.map(row).join('')}${row(total)}</tbody></table></div>
     ${total.unbudgeted > 0 && total.budget ? `<p class="fin-note"><b>${money(total.unbudgeted)}</b> of this is in ${total.unbudgeted_rows} categor${total.unbudgeted_rows === 1 ? 'y' : 'ies'} with no budget line. The lines that have a budget stand at <b>${money(total.actual - total.unbudgeted)}</b> of ${money(total.budget)}.</p>` : ''}</section>`;
+}
+
+function businessHtml(m) {
+  const b = m.business, p = m.params;
+  if (!b.rows.length) return '';
+  const scope = p.month ? monthName(p.month) : 'the year to date';
+  const row = (r) => `<tr class="pick${r.forward ? '' : ' aside'}${p.category === r.category ? ' on' : ''}" data-category="${esc(r.category)}" tabindex="0">
+    <td>${catCell(m.codes, r.category)}${r.forward ? '' : '<div class="sub">Not to forward</div>'}</td><td class="n hide-sm">${money2(r.out)}</td><td class="n hide-sm">${r.back ? money2(r.back) : '—'}</td>
+    <td class="n">${money2(r.owed)}</td><td class="n hide-sm">${r.transactions}</td></tr>`;
+  const fw = b.rows.filter((r) => r.forward), own = b.rows.filter((r) => !r.forward);
+  const total = `<tr class="total"><td>To forward</td><td class="n hide-sm">${money2(sum(fw, (r) => r.out))}</td><td class="n hide-sm">${money2(sum(fw, (r) => r.back))}</td><td class="n">${money2(b.to_forward)}</td><td class="n hide-sm">${sum(fw, (r) => r.transactions)}</td></tr>`;
+  return `<section class="fin-card" id="business"><h2>Business <span class="chip none">${money(b.to_forward)} to forward</span></h2>
+    <p class="hint">Spent for a business and owed back, for ${esc(scope)}. Kept out of living costs, the budget and between-account moves. Tap a row for its transactions.</p>
+    <div class="fin-tw"><table><thead><tr><th>Category</th><th class="n hide-sm">Out</th><th class="n hide-sm">Back</th><th class="n">Owed</th><th class="n hide-sm">Rows</th></tr></thead>
+    <tbody>${fw.map(row).join('')}${fw.length ? total : ''}${own.map(row).join('')}</tbody></table></div></section>`;
 }
 
 function monthlyChart(m, width) {
@@ -504,13 +549,13 @@ function sourcesHtml(doc) {
 
 function navHtml(m) {
   const w = m.waiting, n = w.to_sort + w.flagged;
-  const links = [['budget', 'Budget'], ['review', `To sort${n ? ` <b>${n}</b>` : ''}`], ['transactions', 'Transactions'], ['by-month', 'Charts'], ['loans', 'Loans'], ['statements', 'Statements']];
+  const links = [['budget', 'Budget'], ['review', `To sort${n ? ` <b>${n}</b>` : ''}`], ...(m.business.rows.length ? [['business', 'Business']] : []), ['transactions', 'Transactions'], ['by-month', 'Charts'], ['loans', 'Loans'], ['statements', 'Statements']];
   return `<nav class="fin-nav" aria-label="Sections"><div class="fin-wrap">${links.map(([id, label]) => `<button type="button" data-jump="${id}">${label}</button>`).join('')}</div></nav>`;
 }
 
 export function pageHtml(doc, m, { width = 360, q = '', all = false } = {}) {
   return heroHtml(m, doc) + navHtml(m) + `<main class="fin-wrap fin-main">${stripHtml(m)}${budgetHtml(m)}
-    ${reviewHtml(doc, m.params, m.codes)}
+    ${reviewHtml(doc, m.params, m.codes)}${businessHtml(m)}
     <section class="fin-card" id="transactions"><h2>Transactions</h2><p class="hint">Every row for the filters above, newest first. Tap one to allocate it.</p>
       <input type="search" class="fin-search" id="txn-q" placeholder="Search description, category, note or amount" value="${esc(q)}" autocomplete="off">
       <div id="txn-body">${txnHtml(doc, m.params, q, all, m.codes)}</div></section>

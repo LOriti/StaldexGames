@@ -317,3 +317,65 @@ test('the allocate route saves for Brain and Finance-only sign-ins and serves th
   const get = await worker.default.fetch(new Request('https://staldex.com/api/brain/finance/allocate'), env);
   assert.equal(get.status, 405);
 });
+
+// ---- the Business group (Brain DEV-61121.01) ----------------------------------------------
+
+const BUS_CATS = { ...CATS, rows: [...CATS.rows,
+  { code: 'BUS-1', category: 'Acme expenses to forward', group: 'Business' },
+  { code: 'BUS-2', category: 'Beta expenses to forward', group: 'Business' },
+  { code: 'BUS-3', category: 'Gamma expenses to forward', group: 'Business' },
+  { code: 'BUS-4', category: 'Business - personal', group: 'Business' },
+], groups: [...CATS.groups.slice(0, -2), { code: 'BUS', name: 'Business' }, ...CATS.groups.slice(-2)] };
+const BUS_TXN = [...TXN,
+  t('B1', '2026-08-03', 'Business', 'Acme expenses to forward', -300),
+  t('B2', '2026-08-04', 'Business', 'Acme expenses to forward', -45.5),
+  t('B3', '2026-08-06', 'Business', 'Acme expenses to forward', 100),
+  t('B4', '2026-08-07', 'Business', 'Beta expenses to forward', -60),
+  t('B5', '2026-08-08', 'Business', 'Business - personal', -25),
+  t('B6', '2026-07-08', 'Business', 'Beta expenses to forward', -999),
+];
+const BUS_DOC = { ...DOC, transactions: { ...DOC.transactions, rows: BUS_TXN }, categories: BUS_CATS };
+
+test('Business shows the period total owed back per business; Business - personal is shown but not to forward', () => {
+  const m = fin.model(BUS_DOC, { month: '2026-08' });
+  const b = m.business;
+  assert.deepEqual(b.rows.map((r) => [r.code, r.out, r.back, r.owed, r.forward]), [
+    ['BUS-1', 345.5, 100, 245.5, true], ['BUS-2', 60, 0, 60, true], ['BUS-3', 0, 0, 0, true], ['BUS-4', 25, 0, 25, false],
+  ], 'every listed business shows, in code order, with only August counted');
+  assert.equal(b.to_forward, 305.5);
+  assert.equal(b.personal, 25);
+  assert.equal(fin.model(BUS_DOC, { month: null }).business.to_forward, 1304.5, 'the year to date takes July too');
+  const html = fin.pageHtml(BUS_DOC, m);
+  assert.match(html, /id="business"/);
+  assert.match(html, /\$306 to forward/);
+  assert.match(html, /Not to forward/);
+  assert.match(html, /data-jump="business"/, 'the section bar links to it');
+  assert.match(html, /data-group="Business"/, 'and it has a chip of its own');
+});
+
+test('Business stays out of living costs, the budget, houses and where the money went', () => {
+  const p = { month: '2026-08' };
+  const before = fin.model({ ...DOC, categories: CATS }, p), after = fin.model(BUS_DOC, p);
+  assert.deepEqual(after.totals, before.totals);
+  assert.deepEqual(after.budget.total, before.budget.total);
+  assert.deepEqual(after.byCategory, before.byCategory);
+  assert.deepEqual(after.monthly, before.monthly);
+  assert.deepEqual(fin.byCategory(BUS_TXN, { ...p, group: 'Business' }).map((r) => r.category), ['Acme expenses to forward', 'Beta expenses to forward', 'Business - personal'], 'the chip shows them');
+  assert.equal(fin.pageHtml({ ...DOC, categories: CATS }, before).includes('id="business"'), false, 'no Business section when there are no Business categories');
+});
+
+test('allocating from the tab offers the BUS categories under Business, and an older allocation follows its category to Business', () => {
+  const reg = fin.registry(BUS_DOC);
+  assert.deepEqual(fin.pickOptions(reg, 'bus').map((r) => r.code), ['BUS-1', 'BUS-2', 'BUS-3', 'BUS-4']);
+  const t6 = TXN.find((r) => r.id === 'T6');
+  const sheet = fin.sheetHtml(t6, reg, new Map(reg.map((r) => [r.category, r.code])), { groups: fin.groupsOf(BUS_DOC) });
+  assert.match(sheet, /<h4>Business<\/h4><button[^>]*data-pick="Acme expenses to forward"/);
+  const rulings = fw.allocate(BUS_DOC, null, { id: 'T6', fp: fw.fingerprint(t6), category: 'Gamma expenses to forward' }, { email: 'owner@example.com' });
+  assert.equal(rulings.items.T6.group, 'Business', 'the Worker files it under Business');
+  // Allocated while the category still sat in another group: it shows under the group it has now.
+  const old = { items: { T6: { ...rulings.items.T6, group: 'Own accounts' } } };
+  const view = fin.viewOf({ ...BUS_DOC, rulings: old });
+  assert.equal(view.transactions.rows.find((r) => r.id === 'T6').group, 'Business');
+  assert.equal(fin.model(view, { month: '2026-08' }).business.rows.find((r) => r.code === 'BUS-3').owed, 80);
+  assert.equal(fin.registry({ ...DOC, transactions: { ...DOC.transactions, rows: BUS_TXN } }).find((r) => r.category === 'Business - personal').code.startsWith('BUS-'), true, 'without a list, Business falls under BUS');
+});

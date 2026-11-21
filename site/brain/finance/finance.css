@@ -74,6 +74,7 @@ body { margin: 0; background: var(--bg); color: var(--fg); font: 15px/1.5 var(--
 .fin td.d { white-space: nowrap; color: var(--muted); }
 .fin tr.pick { cursor: pointer; }
 .fin tr.pick:hover td { background: var(--indigo-soft); }
+.fin tr.aside td { color: var(--muted); }
 .fin tr.on td { background: var(--indigo-soft); }
 .fin tr.total td { background: var(--ink); color: #fff; font-weight: 700; border-bottom: 0; }
 .fin tr.total td.m { color: #b9bdd3; }

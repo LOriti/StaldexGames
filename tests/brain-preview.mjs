@@ -132,6 +132,10 @@ for (const m of finMonths) {
   if (rnd() > 0.4) add('Housing', 'Repairs', -800 * rnd() - 200, { description: 'HANDYMAN SERVICES' });
   add('Own accounts', 'Card repayment', -2500, { account: 'Bank everyday ••0001', description: 'CARD PAYMENT' });
   add('To sort', 'To sort', -150 * rnd() - 20, { note: 'Unknown payee' });
+  // Spent for a business and owed back (Brain DEV-61121.01).
+  add('Business', 'Acme expenses to forward', -180 * rnd() - 40, { description: 'OFFICE SUPPLIES' });
+  if (rnd() > 0.5) add('Business', 'Beta expenses to forward', -90 * rnd() - 30, { description: 'TRADEMARK FEE' });
+  add('Business', 'Business - personal', -45, { description: 'CLOUD HOSTING' });
 }
 // --finance-data <file>: draw a local publish document instead (a close's figures, kept
 // outside every repository; the screenshots then hold real figures and stay local too).
@@ -148,10 +152,11 @@ const FINANCE = {
   categories: { rows: [
     ['IN-1', 'Wages', 'Money in'], ['IN-2', 'Rebates', 'Money in'], ['MTG-1', 'Home loan', 'Housing'], ['H-1', 'Repairs', 'Housing'],
     ...FIN_CATS.map(([category], i) => [i < 7 ? `BIL-${i + 1}` : `ENT-${i - 6}`, category, 'Living']),
+    ['BUS-1', 'Acme expenses to forward', 'Business'], ['BUS-2', 'Beta expenses to forward', 'Business'], ['BUS-3', 'Business - personal', 'Business'],
     ['T-1', 'Card repayment', 'Own accounts'], ['XXX-1', 'To sort', 'To sort'],
   ].map(([code, category, group]) => ({ code, category, group })), groups: [
     { code: 'IN', name: 'Money in' }, { code: 'MTG', name: 'Mortgage' }, { code: 'H', name: 'House' }, { code: 'BIL', name: 'Bills' },
-    { code: 'ENT', name: 'Entertainment' }, { code: 'T', name: 'Between own accounts' }, { code: 'XXX', name: 'To sort' },
+    { code: 'ENT', name: 'Entertainment' }, { code: 'BUS', name: 'Business' }, { code: 'T', name: 'Between own accounts' }, { code: 'XXX', name: 'To sort' },
   ], meta: [] },
   rulings: { schema: 'brain-finance-rulings/1', items: {} },
   loans: { rows: [{ loan: 'Home ••0009', property: 'Synthetic St', status: 'Open', balance: 640000, as_at: '2026-11-14', rate: 6.1, repayment_now: 4200, repayment_from_15_dec: 4300, last_interest: 3250, note: 'Synthetic' }], meta: [] },
@@ -248,6 +253,12 @@ async function financeShots() {
   if ((await page.locator('#budget tbody tr').count()) < 2) problems.push('Finance budget table is empty');
   await page.locator('#budget').scrollIntoViewIfNeeded(); await shot('finance-budget');
   await page.locator('#by-month').scrollIntoViewIfNeeded(); await shot('finance-charts');
+  // Business (Brain DEV-61121.01): what each business owes back, outside living costs.
+  if (!(await page.locator('#business tbody tr[data-category]').count())) problems.push('Finance has no Business rows');
+  else {
+    await page.locator('#business').scrollIntoViewIfNeeded(); await shot('finance-business');
+    if (await page.locator('#budget tr[data-category*="to forward"]').count()) problems.push('a Business category is in the budget');
+  }
   await page.locator('#budget tr[data-category]').first().click(); await settle();
   if (!/c=/.test(await page.evaluate(() => location.hash))) problems.push('tapping a budget row did not filter by category');
   await shot('finance-category');
