@@ -39,8 +39,9 @@ h1{font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1}
 #screen-inv .cvwrap{height:clamp(240px,42vh,380px)}
 canvas{display:block;width:100%;height:100%}
 #warn{position:absolute;left:12px;top:8px;font-family:var(--mono);font-size:10px;color:var(--bad);letter-spacing:.08em;line-height:1.5}
-.meters{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:4px 12px 7px}
-.m{background:var(--p1);border:1px solid var(--ln);border-radius:8px;padding:5px 7px}
+.meters{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:4px 12px 7px}
+.m{background:var(--p1);border:1px solid var(--ln);border-radius:8px;padding:5px 5px;min-width:0}
+.m .lbl{font-size:8.5px;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .m .v{font-family:var(--mono);font-size:13px;font-weight:600;margin:1px 0 3px;display:flex;justify-content:space-between;align-items:baseline}
 .m .v span{font-size:9.5px;font-weight:400}
 .bar{height:3px;background:var(--p2);border-radius:2px;overflow:hidden;position:relative}
@@ -207,12 +208,12 @@ const TRAITS={
   orb:{n:'Orbital Bombardment',s:'Orbital',d:'Strikes from orbit on cities and defences.',c:'Kinetic impacts confirmed. Coastal capitals have gone dark.'},
   swarm:{n:'Autonomous Swarms',s:'Swarm',d:'Drone swarms that overwhelm air and space defences.',c:'Drone swarms reported over three continents.'},
   ground:{n:'Ground Legions',s:'Ground',d:'Mass landings and armoured columns.',c:'Mass landings confirmed. Armoured columns advancing.'},
-  infil:{n:'Infiltration',s:'Infiltration',d:'Sabotage and agents inside our networks and governments.',c:'Command networks compromised from within.'},
+  infil:{n:'Traitors',s:'Traitors',d:'Humans working for them: believers and defectors, armed with code hidden in the signal.',c:'Traitors open the gates. Command networks compromised from within.'},
   bio:{n:'Engineered Pathogens',s:'Bio',d:'Engineered disease aimed at the population.',c:'Unknown pathogen detected in municipal water supplies.'},
   siege:{n:'Blockade & Siege',s:'Siege',d:'Cutting supply lines and starving us out.',c:'Orbital blockade in place. Supply lines being cut.'}
 };
 const TK=Object.keys(TRAITS);
-const ML={S:'Stability',I:'Industry',K:'Knowledge',R:'Resolve',E:'Effort',RP:'Research',P:'Population'};
+const ML={S:'Stability',I:'Industry',K:'Knowledge',R:'Resolve',E:'Effort',RP:'Research',P:'Population',T:'Traitors'};
 const BR={def:'Defence',end:'Endurance',sci:'Science'};
 const NODES=[
  {id:'D1',br:'def',tier:1,n:'Planetary Defence Grid',rp:10,cost:15,crew:.1,up:.3,fx:{orb:10,swarm:10}},
@@ -235,15 +236,16 @@ const NB={};NODES.forEach(n=>NB[n.id]=n);
 const DIRS=[
  {id:'ind',area:'eco',n:'Industrial Mobilisation',now:{I:3,S:-2},dr:{I:.05}},
  {id:'inf',area:'eco',n:'Infrastructure Program',now:{},dr:{effM:.05}},
- {id:'res',area:'eco',n:'Research Grants',now:{K:3},dr:{K:.05}},
+ {id:'res',area:'eco',n:'Research Grants',now:{K:3,T:2},dr:{K:.05}},
  {id:'uni2',area:'eco',n:'University Expansion',now:{},dr:{resM:.06}},
  {id:'wel',area:'peo',n:'Public Welfare',now:{S:4},dr:{Seq:2}},
  {id:'uni',area:'peo',n:'Unity Campaign',now:{R:4},dr:{R:.1}},
  {id:'fam',area:'peo',n:'Family Policy',now:{S:1},dr:{pop:.0005}},
- {id:'nat',area:'peo',n:'National Service',now:{S:-1},dr:{enl:.01}}
+ {id:'nat',area:'peo',n:'National Service',now:{S:-1},dr:{enl:.01}},
+ {id:'sec',area:'peo',n:'Internal Security',now:{T:-8,S:-3},dr:{sec:.15}}
 ];
 const TESTED={orb:['Contact'],swarm:['Contact','Landings'],ground:['Landings','Resistance'],infil:['Occupation'],bio:['Occupation','Resistance'],siege:['Resistance']};
-const PURPOSE={def:'Stops them in orbit and on the ground. Tested mostly in Contact and Landings.',end:'Keeps people alive, supplied and hidden. Tested mostly in Occupation and Resistance.',sci:'More research, better intel, fewer crew, and the counters to Bio and Infiltration.',emg:'Unlocked by combining finished projects from two branches.'};
+const PURPOSE={def:'Stops them in orbit and on the ground. Tested mostly in Contact and Landings.',end:'Keeps people alive, supplied and hidden. Tested mostly in Occupation and Resistance.',sci:'More research, better intel, fewer crew, and the counters to Bio and Traitors.',emg:'Unlocked by combining finished projects from two branches.'};
 const COUNCIL=[
  {t:'Orbit is contested',d:'The fleet can hold orbit a little longer, or buy time for the ground forces.',o:[
    ['Sacrifice the fleet','Landings ×1.35 · Resistance ×0.85 (no orbital cover later)',{1:1.35,3:.85}],
@@ -259,18 +261,18 @@ const COUNCIL=[
    ['Open a channel to them','25%: a one-year truce · 75%: Resistance ×0.6',{truce:1}]]}
 ];
 const EVENTS=[
- {t:'The Hoax Movement',d:'A coalition of blocs says the signal is fabricated. Enlistment is collapsing.',o:[['Declassify the raw data',{K:4,R:4,S:-4}],['Suppress the movement',{S:3,R:-6}],['Pay for a public inquiry',{E:-12,R:3}]]},
- {t:'Superpower Schism',d:'Two major blocs are fighting over command of the defence programme.',o:[['Broker a settlement',{E:-15,S:6}],['Let it fracture',{S:-10,I:6}],['Split research between them',{RP:-12,S:3}]]},
+ {t:'The Hoax Movement',d:'A coalition of blocs says the signal is fabricated. Enlistment is collapsing.',o:[['Declassify the raw data',{K:4,R:4,S:-4,T:-2}],['Suppress the movement',{S:3,R:-6,T:3}],['Pay for a public inquiry',{E:-12,R:3}]]},
+ {t:'Superpower Schism',d:'Two major blocs are fighting over command of the defence programme.',o:[['Broker a settlement',{E:-15,S:6}],['Let it fracture',{S:-10,I:6,T:5}],['Split research between them',{RP:-12,S:3}]]},
  {t:'Pandemic',d:'A natural outbreak is overwhelming health systems. Something has to give.',o:[['Fund a global response',{E:-20,bio:6}],['Lock down the economy',{I:-6,S:-4}],['Let it run its course',{P:-.4,R:-3}]]},
  {t:'Unverified Breakthrough',d:'A lab claims a field-propulsion result. Peer review is split.',o:[['Fund it (50/50)',{E:-12,gamble:{RP:25}}],['Shelve it',{}]]},
- {t:'Doomsday Cult',d:'A movement preaching surrender has millions of followers.',o:[['Outlaw it',{S:-5,R:4}],['Tolerate it',{R:-8,S:2}]]},
+ {t:'Doomsday Cult',d:'A movement preaching surrender has millions of followers.',o:[['Outlaw it',{S:-5,R:4,T:-5}],['Tolerate it',{R:-8,S:2,T:8}]]},
  {t:'Global Recession',d:'Defence spending has hollowed out consumer economies.',o:[['Stimulus',{E:-15,S:5}],['Austerity',{E:15,S:-8}],['Raid the research budget',{RP:-15,I:3}]]},
  {t:'Conscription Debate',d:'The council wants mandatory service to staff the programme.',o:[['Mandatory service',{R:6,S:-8,ground:6}],['Volunteer force',{R:2}]]},
  {t:'Generational Fatigue',d:'Two generations have lived under the countdown. Apathy is spreading.',o:[['Remembrance Day',{E:-10,R:10}],['Normalise it',{I:5,R:-6}]]},
  {t:'Asteroid Impact',d:'An unrelated impactor is heading for a populated coast. Pick what you lose.',o:[['Evacuate the region',{E:-25}],['Absorb the losses',{P:-.5,I:-4}],['Divert the defence grid',{orb:-8,R:3}]]},
  {t:'Refugee Wave',d:'Climate collapse displaces 300 million people.',o:[['Integrate them',{P:.3,S:-6}],['Close the borders',{S:2,R:-5}],['Fund new cities',{E:-20,P:.3}]]},
- {t:'Automation Boom',d:'Machine labour could double output, at the cost of mass unemployment.',o:[['Embrace it',{I:8,S:-7}],['Regulate it',{I:3,S:1}],['Ban it',{S:3,K:-3}]]},
- {t:'Rogue Lab',d:'A private lab claims to have partially decoded the signal and wants paying.',o:[['Buy the data',{E:-20,RP:30}],['Seize the lab',{RP:20,S:-6}],['Destroy it',{R:3}]]},
+ {t:'Automation Boom',d:'Machine labour could double output, at the cost of mass unemployment.',o:[['Embrace it',{I:8,S:-7,T:3}],['Regulate it',{I:3,S:1}],['Ban it',{S:3,K:-3}]]},
+ {t:'Rogue Lab',d:'A private lab claims to have partially decoded the signal and wants paying.',o:[['Buy the data',{E:-20,RP:30,T:6}],['Seize the lab',{RP:20,S:-6,T:3}],['Destroy it',{R:3,T:-4}]]},
  {t:'Fertility Collapse',d:'Birth rates are falling as people stop believing in a future.',o:[['Family incentives',{E:-15,S:2}],['Accept it',{P:-.4}],['A future-hope campaign',{R:-2,K:2,RP:-6}]]},
  {t:'Mutiny in the Ranks',d:'Under-paid crews refuse orders at a major installation.',o:[['Meet their demands',{E:-18}],['Court-martial the leaders',{R:-6,S:-3}],['Automate the post',{RP:-15,I:-2}]]}
 ];
@@ -483,6 +485,15 @@ function counters(s,ec){
   TK.forEach(t=>{c[t]=Math.max(0,src[t].doc+src[t].met+src[t].bon);byBr.soc+=src[t].met+src[t].bon});
   return{c,src,byBr};
 }
+function traitorDrift(s){
+  const sig=s.owned.has('S3')?0:s.K*.005, dis=(50-s.S)*.02+(50-s.R)*.01;
+  return{base:.3,sig,dis,sec:-s.dr.sec,tot:.3+sig+dis-s.dr.sec};
+}
+function traitorThreat(s,enemy,dt){ // returns strength used in Occupation for Traitors
+  const base=enemy.infil?enemy.infil*(dt?.75:1):0;
+  if(base)return base+s.T*.8;
+  return s.T>20?s.T*1.2:0;
+}
 function phaseMult(s,i){
   if(i===2)return .6+s.S/125;
   if(i===3)return(.5+s.R/100)*(.6+s.P/25)*(s.owned.has('H3')?1.8:1);
@@ -491,8 +502,8 @@ function phaseMult(s,i){
 function simulate(s,enemy,det){
   const {c}=counters(s),dt=s.owned.has('H2');
   return PHASES.map((p,i)=>{
-    const act=p.tr.filter(t=>enemy[t]);let ready,threat;
-    if(act.length){ready=act.reduce((a,t)=>a+c[t],0)/act.length;threat=act.reduce((a,t)=>a+enemy[t]*(dt?.75:1),0)/act.length}
+    const tt=traitorThreat(s,enemy,dt);const act=p.tr.filter(t=>t==='infil'?tt>0:enemy[t]);let ready,threat;
+    if(act.length){ready=act.reduce((a,t)=>a+c[t],0)/act.length;threat=act.reduce((a,t)=>a+(t==='infil'?tt:enemy[t]*(dt?.75:1)),0)/act.length}
     else{ready=p.tr.reduce((a,t)=>a+c[t],0)/p.tr.length;threat=65*(dt?.75:1)}
     const ratio=ready/threat,pm=phaseMult(s,i);
     let m=(.25+Math.pow(Math.min(ratio,2.5),1.6))*pm;if(!det)m*=.9+rnd()*.2;
@@ -510,6 +521,7 @@ function forward(s){
   const a=cloneS(s);
   for(let y=a.year;y<100;y++){
     a.P+=a.P*(a.dr.pop*(a.S/50)+.001*sz(a,'S2'));
+    a.T=clamp(a.T+traitorDrift(a).tot,0,100);
     a.S+=(a.dr.Seq-a.S)*.02-(a.R<30?.5:0);a.R+=a.dr.R;a.K+=a.dr.K;a.I+=a.dr.I;
     ['S','I','K','R'].forEach(k=>a[k]=clamp(a[k],0,100));
   }
@@ -521,7 +533,7 @@ function applyFx(s,fx,real){
     if(k==='gamble'){if(!real)continue;if(rnd()<.5){applyFx(s,fx.gamble,true);log('The breakthrough holds.');float('BREAKTHROUGH +25 RESEARCH','#8aa37f')}else{log('The breakthrough fails replication. Funds lost.');float('FAILED REPLICATION','#968e7f')}continue}
     const v=fx[k];
     if(k==='E')s.E+=v;else if(k==='RP')s.RP+=v;else if(k==='P')s.P=Math.max(.5,s.P+v);
-    else if(['S','I','K','R'].includes(k))s[k]=clamp(s[k]+v,0,100);
+    else if(['S','I','K','R','T'].includes(k))s[k]=clamp(s[k]+v,0,100);
     else s.bonus[k]=(s.bonus[k]||0)+v;
   }
 }
@@ -556,7 +568,7 @@ function floatDelta(im){const p=[];if(Math.abs(im.dE)>=.01)p.push(`EFFORT ${sgn(
 
 function newGame(){
   G={year:0,t:0,E:30,RP:3,P:8,S:60,I:45,K:25,R:55,fund:1,owned:new Set(),size:{},tech:{},builtAt:{},anim:{},bonus:{},uses:{},enemy:{},reports:[],log:[],used:new Set(),
-     dr:{Seq:50,I:.1,K:.15,R:-.35,pop:.004,effM:1,resM:1,enl:0},speed:1,paused:false,tab:'eco',sub:'def',revealed:new Set(),floats:[],ping:0,flash:0,ec:null,peakP:8,council:[]};
+     T:5,dr:{Seq:50,I:.1,K:.15,R:-.35,pop:.004,effM:1,resM:1,enl:0,sec:0},speed:1,paused:false,tab:'eco',sub:'def',revealed:new Set(),floats:[],ping:0,flash:0,ec:null,peakP:8,council:[]};
   G.lvl=G.size; // canvas compatibility
   INV=null;buildScene(Math.floor(rnd()*1e9));
   shuffle(TK).slice(0,3).forEach(t=>G.enemy[t]=BAND[0]+Math.round(rnd()*(BAND[1]-BAND[0])));
@@ -583,6 +595,7 @@ function yearTick(){
   if(ec.net>=0||G.E+ec.net>=0){if(G.fund<.999)log('Upkeep fully funded again.');G.fund=1;G.E+=ec.net}
   else{const f=clamp((Math.max(0,G.E)+ec.gross)/ec.upkeep,0,1);if(G.fund>=.999){log(`Upkeep unpaid. Projects at ${Math.round(f*100)}% funding.`);float('UNDERFUNDED','#c0533f')}G.fund=f;G.E=Math.min(G.E,0)}
   G.RP+=ec.rp;G.P+=ec.growth;G.peakP=Math.max(G.peakP,G.P);
+  const T0=G.T;G.T=clamp(G.T+traitorDrift(G).tot,0,100);[25,50,75].forEach(th=>{if(T0<th&&G.T>=th){log(`Traitors reach ${th}: ${th===25?'vigils for the signal are drawing crowds':th===50?'officials are quietly hedging their bets':'whole agencies answer to the believers'}.`);float('TRAITORS '+th,'#c0533f')}});
   G.S+=(G.dr.Seq-G.S)*.02-(G.R<30?.5:0);G.R+=G.dr.R;G.K+=G.dr.K;G.I+=G.dr.I;
   ['S','I','K','R'].forEach(k=>G[k]=clamp(G[k],0,100));
   if(G.S<20&&rnd()<.25){if(G.owned.has('E1'))log('Riots break out. Strategic Reserves absorb the losses.');else{G.I=clamp(G.I-4,0,100);log('Riots across three blocs. Industry −4.');float('RIOTS · INDUSTRY −4','#c0533f')}}
@@ -646,7 +659,7 @@ function render(){
   $('#sRP').textContent=Math.floor(G.RP);$('#sRP').style.color=G.RP<0?'var(--bad)':'var(--rp)';$('#sRPd').innerHTML=`<span class="pos">${sgn(ec.rp)}/yr</span>`;
   $('#sP').textContent=G.P.toFixed(1)+'bn';$('#sPd').innerHTML=`<span class="${cls(ec.growth)}">${sgn(ec.growth,2)}/yr</span>`;
   const w=[];if(G.E<0)w.push(`IN DEBT · ${Math.round(G.E)} EFFORT`);if(G.RP<0)w.push(`IN DEBT · ${Math.round(G.RP)} RESEARCH`);if(G.fund<.999)w.push(`UNDERFUNDED · ${Math.round(G.fund*100)}%`);if(ec.crewPct<.999)w.push(`UNDERCREWED · ${Math.round(ec.crewPct*100)}%`);$('#warn').innerHTML=w.join('<br>');
-  $('#meters').innerHTML=['S','I','K','R'].map(k=>{const v=Math.round(G[k]),d=DRIFT[k](G),c=v<25?'var(--bad)':'var(--tx)';return `<div class="m"><div class="lbl">${ML[k]}</div><div class="v" style="color:${c}">${v}<span class="${cls(d)}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(2)}</span></div><div class="bar"><i style="width:${v}%;background:${c}"></i></div></div>`}).join('');
+  $('#meters').innerHTML=['S','I','K','R'].map(k=>{const v=Math.round(G[k]),d=DRIFT[k](G),c=v<25?'var(--bad)':'var(--tx)';return `<div class="m"><div class="lbl">${ML[k]}</div><div class="v" style="color:${c}">${v}<span class="${cls(d)}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(2)}</span></div><div class="bar"><i style="width:${v}%;background:${c}"></i></div></div>`}).join('')+(()=>{const v=Math.round(G.T),d=traitorDrift(G).tot;return `<div class="m" style="border-color:#5f3329"><div class="lbl">Traitors</div><div class="v" style="color:var(--bad)">${v}<span class="${cls(-d)}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(2)}</span></div><div class="bar"><i style="width:${v}%;background:var(--bad)"></i></div></div>`})();
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===G.tab));const cp=G.tab==='prj';if($('#screen-game').classList.contains('compact')!==cp){$('#screen-game').classList.toggle('compact',cp);requestAnimationFrame(sizeCanvas)}
   const P=$('#panel'),st=P.scrollTop;
   ({eco:rEco,peo:rPeo,prj:rPrj,int:rInt,emp:rEmp})[G.tab](P,ec);
@@ -656,7 +669,7 @@ function lg(a,b,c=''){return `<div class="lg ${c}"><span>${a}</span><span>${b}</
 function progCards(area){
   const yl=100-G.year;
   return DIRS.filter(d=>d.area===area).map(d=>{const i=DIRS.indexOf(d),c=progCost(d);const im=econDelta(a=>applyProg(a,d));
-    const per=Object.entries(d.dr).map(([k,v])=>k==='Seq'?`Stability settles ${v} higher`:k==='pop'?`+${(v*100).toFixed(2)}% pop growth`:k==='effM'?`+${v*100}% Effort income`:k==='resM'?`+${v*100}% Research output`:k==='enl'?`+${v*100}% of pop can enlist`:`+${v} ${ML[k]}/yr (+${(v*yl).toFixed(1)} by Y100)`).join(' · ');
+    const per=Object.entries(d.dr).map(([k,v])=>k==='Seq'?`Stability settles ${v} higher`:k==='pop'?`+${(v*100).toFixed(2)}% pop growth`:k==='effM'?`+${v*100}% Effort income`:k==='resM'?`+${v*100}% Research output`:k==='enl'?`+${v*100}% of pop can enlist`:k==='sec'?`Traitors −${v}/yr`:`+${v} ${ML[k]}/yr (+${(v*yl).toFixed(1)} by Y100)`).join(' · ');
     return `<div class="card pc"><div class="cm"><div class="nm">${d.n}${G.uses[d.id]?`<span class="chip">×${G.uses[d.id]}</span>`:''}</div><div class="fx">Now: ${fxText(d.now)} · Permanent: ${per}</div><div class="imp">${impText(im)}</div></div><div class="cb"><button class="e" data-d="${i}" ${G.E>=c?'':'disabled'}>FUND<br>${c} Effort</button></div></div>`}).join('');
 }
 function rEco(P,ec){
@@ -672,7 +685,7 @@ function rPeo(P,ec){
    <div class="eq"><b>${G.P.toFixed(2)}bn</b>×(<b>${(G.dr.pop*100).toFixed(2)}%</b>×<b>${G.S.toFixed(0)}</b>Stab/50${sz(G,'S2')?' + labs':''}) =<b class="g">${sgn(ec.growth,3)}bn/yr</b></div>
    <div class="lbl" style="margin-top:6px">Crew</div>
    <div class="eq"><b>${G.P.toFixed(2)}bn</b>×(5% +<b>${G.R.toFixed(0)}</b>Resolve/1000${G.dr.enl?` +<b>${(G.dr.enl*100).toFixed(0)}%</b>service`:''}) =<b>${ec.crewAvail.toFixed(2)}bn</b>can enlist · need<b>${ec.crewReq.toFixed(2)}bn</b>=<b class="${ec.crewPct<.999?'x':'g'}">${Math.round(ec.crewPct*100)}% crewed</b></div>
-   <div class="lbl" style="margin-top:6px">Trends</div><div class="eq">Stability<b>${G.S.toFixed(0)}</b>moves 2% of the gap each year toward<b>${G.dr.Seq}</b>(+2 per Welfare)${G.R<30?' · <b class="x">−0.5/yr: Resolve under 30</b>':''}</div><div class="eq">Resolve<b>${G.R.toFixed(0)}</b>changes<b class="${G.dr.R<0?'x':'g'}">${sgn(G.dr.R,2)}/yr</b>(−0.35 base, +0.10 per Unity)</div><div class="lbl" style="margin-top:6px">Stability ${G.S.toFixed(0)} feeds</div>
+   <div class="lbl" style="margin-top:6px">Traitors</div><div class="eq">${(()=>{const d=traitorDrift(G);return `<b>${G.T.toFixed(0)}</b>changes <b>+0.30</b>base <b>+${d.sig.toFixed(2)}</b>signal${G.owned.has('S3')?' (blocked by Counter-AI)':' (Knowledge × 0.005)'} <b>${sgn(d.dis,2)}</b>loyalty gap (Stability/Resolve below 50)${G.dr.sec?` <b class="g">−${G.dr.sec.toFixed(2)}</b>security`:''} =<b class="${d.tot>0?'x':'g'}">${sgn(d.tot,2)}/yr</b>`})()}</div><div class="lbl" style="margin-top:6px">Trends</div><div class="eq">Stability<b>${G.S.toFixed(0)}</b>moves 2% of the gap each year toward<b>${G.dr.Seq}</b>(+2 per Welfare)${G.R<30?' · <b class="x">−0.5/yr: Resolve under 30</b>':''}</div><div class="eq">Resolve<b>${G.R.toFixed(0)}</b>changes<b class="${G.dr.R<0?'x':'g'}">${sgn(G.dr.R,2)}/yr</b>(−0.35 base, +0.10 per Unity)</div><div class="lbl" style="margin-top:6px">Stability ${G.S.toFixed(0)} feeds</div>
    <div class="eq">Effort ×<b>${ec.stabM.toFixed(2)}</b>· growth ×<b>${(G.S/50).toFixed(2)}</b>· Occupation ×<b>${(.6+G.S/125).toFixed(2)}</b>· Resolve ${G.R.toFixed(0)} → Resistance ×<b>${(.5+G.R/100).toFixed(2)}</b></div></div>`+progCards('peo');
   P.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>doProg(DIRS[+b.dataset.d]));
 }
@@ -704,7 +717,7 @@ function rInt(P,ec){
   `<div class="tv lbl"><span>Threat</span><span>Odds</span><span>You vs range</span><span style="text-align:right">Y100</span></div>`+
   TK.slice().sort((x,y)=>Lk[y]-Lk[x]).map(t=>{const r=c[t],rf=cf[t],ratio=rf/TYPICAL;const st=ratio>=1.2?['Countered','v-ok']:ratio>=.7?['Contested','v-wa']:['Exposed','v-bad'];const lk=Math.round(Lk[t]*100);
     return `<div class="tv"><span>${TRAITS[t].s}</span><span class="mono ${lk>=65?'neg':lk<=35?'mut':''}">${lk}%</span><div class="tvbar"><span class="band" style="left:${BAND[0]/sc*100}%;width:${(BAND[1]-BAND[0])/sc*100}%"></span><span class="fill" style="width:${Math.min(100,rf/sc*100)}%;background:var(--ok);opacity:.35"></span><span class="fill" style="width:${Math.min(100,r/sc*100)}%;background:var(--ok)"></span></div><span class="mono" style="text-align:right">${Math.round(rf)}</span></div><div class="tvs">${TRAITS[t].d} Now ${Math.round(r)} · Y100 ${Math.round(rf)} · <span class="${st[1]}">${st[0]} at Y100</span> · tested in ${TESTED[t].join(', ')}</div>`}).join('')+
-  `<div class="why">Solid bar = readiness now · faded = projected at Y100 on your current course.</div>`+
+  `<div class="why">Solid bar = readiness now · faded = projected at Y100 on your current course. Your Traitors level (${Math.round(G.T)}, about ${Math.round(fw.T)} by Y100) adds ×0.8 to their Traitors strength. If they didn't bring Traitors, a level above 20 still sabotages Occupation on its own.</div>`+
   `<div class="sec"><span>Reports</span></div>`+(G.reports.length?G.reports.map(r=>`<div class="rep"><span class="y">Y${r.y}</span> · ${r.src} → <b>${TRAITS[r.trait].n}</b> · ${r.conf}% reliable</div>`).join(''):'<div class="hint">The first report is due in Year 5.</div>');
 }
 function rEmp(P,ec){
@@ -812,7 +825,7 @@ function debrief(){
    <div class="badges">${badges.map(b=>`<span class="badge">${b}</span>`).join('')}</div>
    <div class="sec"><span>Intel vs reality</span></div>
    <table><tr><th>THREAT</th><th style="text-align:right">LIKELY</th><th style="text-align:right">ACTUAL</th><th style="text-align:right">YOURS</th><th style="text-align:right">VERDICT</th></tr>
-   ${TK.map(t=>{const th=G.enemy[t]?Math.round(G.enemy[t]*(det?.75:1)):0;const r=th?C[t]/th:0;const v=!th?['Not present','mut']:r>=1.2?['Countered','v-ok']:r>=.7?['Contested','v-wa']:['Unprepared','v-bad'];return `<tr><td>${TRAITS[t].s}</td><td class="n">${Math.round(Lk[t]*100)}%</td><td class="n">${th||'—'}</td><td class="n">${Math.round(C[t])}</td><td class="n ${v[1]}">${v[0]}</td></tr>`}).join('')}
+   ${TK.map(t=>{const th=t==='infil'?Math.round(traitorThreat(G,G.enemy,det)):G.enemy[t]?Math.round(G.enemy[t]*(det?.75:1)):0;const r=th?C[t]/th:0;const v=!th?['Not present','mut']:r>=1.2?['Countered','v-ok']:r>=.7?['Contested','v-wa']:['Unprepared','v-bad'];return `<tr><td>${TRAITS[t].s}</td><td class="n">${Math.round(Lk[t]*100)}%</td><td class="n">${th||'—'}</td><td class="n">${Math.round(C[t])}</td><td class="n ${v[1]}">${v[0]}</td></tr>`}).join('')}
    </table>
    <div class="hint">Your top three: ${read.map(t=>`${G.enemy[t]?'✓':'✗'} ${TRAITS[t].s}`).join(' · ')}: <b>${hit}/3 correct</b></div>
    <div class="sec"><span>Phases</span></div>
@@ -821,6 +834,7 @@ function debrief(){
    <div class="sec"><span>Empire at arrival</span></div>
    <table>
     <tr><td>Population</td><td class="n">${G.P.toFixed(2)}bn (peak ${G.peakP.toFixed(2)})</td></tr>
+    <tr><td>Traitors at arrival</td><td class="n">${Math.round(G.T)}${G.enemy.infil?` · added ${Math.round(G.T*.8)} to their strength`:G.T>20?' · sabotaged Occupation on their own':' · contained'}</td></tr>
     <tr><td>Survivors at the end</td><td class="n">${popAt(1).toFixed(2)}bn</td></tr>
     <tr><td>Effort per year</td><td class="n">+${ec.gross.toFixed(2)} · −${ec.upkeep.toFixed(2)} upkeep</td></tr>
     <tr><td>Research per year</td><td class="n">+${ec.rp.toFixed(2)}</td></tr>
@@ -840,7 +854,7 @@ $('#pauseBtn').onclick=()=>{G.paused=!G.paused;updCtl()};
 $('#spdBtn').onclick=()=>{G.speed=G.speed===1?2:G.speed===2?4:1;updCtl()};
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{G.tab=b.dataset.t;render()});
 const b0=getBest();if(b0)$('#bestline').textContent='Best: '+fmtD(b0);
-window.__LT={get G(){return G},act:(id,k)=>act(NB[id],k),tick:n=>{for(let i=0;i<n;i++)yearTick()},render,econ,project,simulate,counters,doProg,NODES,DIRS,priceE,priceR,sz,tc,nodeState,progCost};
+window.__LT={traitorDrift,get G(){return G},act:(id,k)=>act(NB[id],k),tick:n=>{for(let i=0;i<n;i++)yearTick()},render,econ,project,simulate,counters,doProg,NODES,DIRS,priceE,priceR,sz,tc,nodeState,progCost};
 </script>
 </body>
 </html>
