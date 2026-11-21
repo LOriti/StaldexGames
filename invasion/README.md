@@ -108,8 +108,9 @@ level above 20 still tests the Occupation phase at strength Traitors × 1.2.
 ## Programs (Economy and People tabs)
 
 Each costs Effort: 10, then +5 more each time it is funded. Each gives a small effect now and a
-permanent effect every year after, so early funding compounds. Each tab has a live formula bar
-at the top showing how its stats are calculated.
+permanent effect every year after, so early funding compounds. Each tab has a one-line summary at
+the top (Economy: Effort and Research per year; People: growth, crew %, Traitors trend); tap it
+to expand the full live formulas.
 
 | Tab | Program | Now | Permanent |
 |---|---|---|---|
