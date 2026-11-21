@@ -140,6 +140,12 @@ td.n{font-family:var(--mono);text-align:right}
 .pc .fx,.pc .imp{font-size:10px;margin-top:2px}
 .pc .cb button{padding:4px 6px;font-size:9.5px;min-width:78px}
 #ticker{cursor:pointer}
+.calcbar{padding:7px 9px}
+.calcbar summary{list-style:none;cursor:pointer}
+.calcbar summary::-webkit-details-marker{display:none}
+.eq.one{flex-wrap:nowrap;white-space:nowrap;overflow:hidden;margin:0}
+.eq .more{margin-left:auto;color:var(--ac);font-size:13px;padding-left:4px}
+.calcbar[open] .more{visibility:hidden}
 #screen-game.compact .cvwrap{height:clamp(110px,15vh,180px)}
 .pc .cb{gap:4px}.pc .cb button{padding:3px 5px;line-height:1.25}
 .pc .chip{white-space:nowrap}
@@ -672,21 +678,23 @@ function progCards(area){
     return `<div class="card pc"><div class="cm"><div class="nm">${d.n}${G.uses[d.id]?`<span class="chip">×${G.uses[d.id]}</span>`:''}</div><div class="fx">Now: ${fxText(d.now)} · Permanent: ${per}</div><div class="imp">${impText(im)}</div></div><div class="cb"><button class="e" data-d="${i}" ${G.E>=c?'':'disabled'}>FUND<br>${c} Effort</button></div></div>`}).join('');
 }
 function rEco(P,ec){
-  P.innerHTML=`<div class="calcbar"><div class="lbl">How Effort is made</div>
+  P.innerHTML=`<details class="calcbar" ${G.calcOpen?'open':''}><summary class="eq one">Effort<b class="r">${sgn(ec.net,2)}/yr</b><span>(<span class="pos">${ec.gross.toFixed(1)}</span> − <span class="neg">${ec.upkeep.toFixed(1)}</span>)</span>· Research<b class="rc">${sgn(ec.rp,2)}/yr</b><span class="more">▾</span></summary><div class="lbl" style="margin-top:6px">How Effort is made</div>
    <div class="eq"><b>${ec.workforce.toFixed(2)}bn</b>workforce ×<b>${G.I.toFixed(0)}</b>Industry ×<b>${ec.stabM.toFixed(2)}</b>Stability ×<b>${G.dr.effM.toFixed(2)}</b>Infrastructure${ec.disp<1?' ×<b>0.90</b>Dispersed':''} × ${EFF_K} =<b class="g">+${ec.gross.toFixed(2)}</b>− upkeep<b class="x">${ec.upkeep.toFixed(2)}</b>=<b class="r">${sgn(ec.net,2)} Effort/yr</b></div>
    <div class="lbl" style="margin-top:6px">How Research is made</div>
-   <div class="eq">(<b>${G.K.toFixed(0)}</b>Knowledge × ${RES_K} +<b>${ec.labs.toFixed(1)}</b>labs) ×<b>${G.dr.resM.toFixed(2)}</b>Universities =<b class="rc">${sgn(ec.rp,2)} Research/yr</b></div></div>`+
+   <div class="eq">(<b>${G.K.toFixed(0)}</b>Knowledge × ${RES_K} +<b>${ec.labs.toFixed(1)}</b>labs) ×<b>${G.dr.resM.toFixed(2)}</b>Universities =<b class="rc">${sgn(ec.rp,2)} Research/yr</b></div></details>`+
    `<div class="hint" style="margin-bottom:6px">Programs give a boost now and a permanent one after. Each costs 5 more Effort than the last.</div>`+progCards('eco');
   P.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>doProg(DIRS[+b.dataset.d]));
+  const cb=P.querySelector('details.calcbar');if(cb)cb.ontoggle=()=>{G.calcOpen=cb.open};
 }
 function rPeo(P,ec){
-  P.innerHTML=`<div class="calcbar"><div class="lbl">Population</div>
+  P.innerHTML=`<details class="calcbar" ${G.calcOpen?'open':''}><summary class="eq one">Growth<b class="g">${sgn(ec.growth,3)}bn</b>· Crew<b class="${ec.crewPct<.999?'x':'g'}">${Math.round(ec.crewPct*100)}%</b>· Traitors<b class="${traitorDrift(G).tot>0?'x':'g'}">${sgn(traitorDrift(G).tot,2)}/yr</b><span class="more">▾</span></summary><div class="lbl" style="margin-top:6px">Population</div>
    <div class="eq"><b>${G.P.toFixed(2)}bn</b>×(<b>${(G.dr.pop*100).toFixed(2)}%</b>×<b>${G.S.toFixed(0)}</b>Stab/50${sz(G,'S2')?' + labs':''}) =<b class="g">${sgn(ec.growth,3)}bn/yr</b></div>
    <div class="lbl" style="margin-top:6px">Crew</div>
    <div class="eq"><b>${G.P.toFixed(2)}bn</b>×(5% +<b>${G.R.toFixed(0)}</b>Resolve/1000${G.dr.enl?` +<b>${(G.dr.enl*100).toFixed(0)}%</b>service`:''}) =<b>${ec.crewAvail.toFixed(2)}bn</b>can enlist · need<b>${ec.crewReq.toFixed(2)}bn</b>=<b class="${ec.crewPct<.999?'x':'g'}">${Math.round(ec.crewPct*100)}% crewed</b></div>
    <div class="lbl" style="margin-top:6px">Traitors</div><div class="eq">${(()=>{const d=traitorDrift(G);return `<b>${G.T.toFixed(0)}</b>changes <b>+0.30</b>base <b>+${d.sig.toFixed(2)}</b>signal${G.owned.has('S3')?' (blocked by Counter-AI)':' (Knowledge × 0.005)'} <b>${sgn(d.dis,2)}</b>loyalty gap (Stability/Resolve below 50)${G.dr.sec?` <b class="g">−${G.dr.sec.toFixed(2)}</b>security`:''} =<b class="${d.tot>0?'x':'g'}">${sgn(d.tot,2)}/yr</b>`})()}</div><div class="lbl" style="margin-top:6px">Trends</div><div class="eq">Stability<b>${G.S.toFixed(0)}</b>moves 2% of the gap each year toward<b>${G.dr.Seq}</b>(+2 per Welfare)${G.R<30?' · <b class="x">−0.5/yr: Resolve under 30</b>':''}</div><div class="eq">Resolve<b>${G.R.toFixed(0)}</b>changes<b class="${G.dr.R<0?'x':'g'}">${sgn(G.dr.R,2)}/yr</b>(−0.35 base, +0.10 per Unity)</div><div class="lbl" style="margin-top:6px">Stability ${G.S.toFixed(0)} feeds</div>
-   <div class="eq">Effort ×<b>${ec.stabM.toFixed(2)}</b>· growth ×<b>${(G.S/50).toFixed(2)}</b>· Occupation ×<b>${(.6+G.S/125).toFixed(2)}</b>· Resolve ${G.R.toFixed(0)} → Resistance ×<b>${(.5+G.R/100).toFixed(2)}</b></div></div>`+progCards('peo');
+   <div class="eq">Effort ×<b>${ec.stabM.toFixed(2)}</b>· growth ×<b>${(G.S/50).toFixed(2)}</b>· Occupation ×<b>${(.6+G.S/125).toFixed(2)}</b>· Resolve ${G.R.toFixed(0)} → Resistance ×<b>${(.5+G.R/100).toFixed(2)}</b></div></details>`+progCards('peo');
   P.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>doProg(DIRS[+b.dataset.d]));
+  const cb=P.querySelector('details.calcbar');if(cb)cb.ontoggle=()=>{G.calcOpen=cb.open};
 }
 function rPrj(P,ec){
   const subs=[['def','DEFENCE'],['end','ENDURANCE'],['sci','SCIENCE'],['emg','EMERGENT']];
