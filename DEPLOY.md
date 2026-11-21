@@ -144,9 +144,11 @@ Tests (repo root):
 - Getting fired or hitting a wellbeing incident (shart/cardiac) still reaches the submit UI —
   it grades as "DNF" instead of a letter, and posts to the same board as a normal run.
 
-## LEAD TIME (alien-invasion prep prototype, unlisted at staldex.com/lead-time)
+## INVASION (alien-invasion prep game, unlisted at staldex.com/invasion)
 
-Single self-contained file, `site/lead-time.html` — no build step, no Worker, no leaderboard;
+Single self-contained file, `site/invasion.html` — no build step, no Worker, no leaderboard;
 it ships with the normal site deploy. Unlisted on the same terms as LRMP and SEND IT: no links
 from the homepage and a `noindex` meta tag. It loads Inter and JetBrains Mono from Google Fonts,
 allowed for a standalone project page. Best score is kept in the player's own browser only.
+Formerly Lead Time: `/lead-time` and its short forms redirect here. Every mechanic and number is
+documented in `invasion/README.md`; keep it in step with the file.
