@@ -157,7 +157,7 @@ td.n{font-family:var(--mono);text-align:right}
 <section id="screen-title" class="screen active">
   <div class="stamp">CLASSIFIED · COUNCIL EYES ONLY</div>
   <h1>INVASION</h1>
-  <p class="brief">A hostile signal has been confirmed. Arrival: 100 years. You are Director of Planetary Preparedness. You can't win. You decide how long humanity lasts.</p>
+  <p class="brief">A hostile signal has been confirmed. Arrival: 100 years. You are Director of Planetary Preparedness. Most directors only decide how long humanity lasts. A rare few drive them off.</p>
   <div class="howto">
     <div><b>Population</b> is your workforce. Workforce × Industry produces <b>Effort</b>, the base currency.</div>
     <div><b>Knowledge</b> produces <b>Research</b>. <b>Economy</b> and <b>People</b> programs give a small boost now and a permanent boost every year after.</div>
@@ -424,14 +424,14 @@ function drawInvasion(now,{cx,cy,R,T},shieldUp){
   const killed=s=>s.k<INV.kill*Math.min(1,(ph+pp)/1.2);
   const live=[];
   SC.enemy.forEach(e=>{
-    const arr=ph>0?1:ease(clamp(pp/.45,0,1));
+    const arr=INV.won?Math.max(0,1-ease(clamp((now-INV.wonAt)/3500,0,1))):ph>0?1:ease(clamp(pp/.45,0,1));
     const sx=cx+Math.cos(e.a)*rx,sy=cy+Math.sin(e.a)*ry+Math.sin(t*1.2+e.bob)*2;
     const x=T[0]+(sx-T[0])*arr,y=T[1]+(sy-T[1])*arr;e.pos=[x,y];
     if(killed(e)){if(!e.boom)e.boom=now;if(now-e.boom<500){const k=Math.max(0,(now-e.boom)/500);ctx.fillStyle=`rgba(232,194,122,${1-k})`;ctx.beginPath();ctx.arc(x,y,3+k*10,0,6.283);ctx.fill()}return}
     live.push(e);
     ctx.fillStyle='#c0533f';ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(cy-y,cx-x));ctx.beginPath();ctx.moveTo(6,0);ctx.lineTo(-4,4);ctx.lineTo(-2,0);ctx.lineTo(-4,-4);ctx.fill();ctx.restore();
   });
-  if(INV.done)return;
+  if(INV.done||INV.won)return;
   const arrived=ph>0||pp>.4;
   // enemy fire
   if(arrived&&ph<=1&&live.length&&rnd()<.22){const e=pick(live);const a=rnd()*6.283,d=Math.sqrt(rnd())*.9;let tx=cx+Math.cos(a)*d*R,ty=cy+Math.sin(a)*d*R;
@@ -465,6 +465,8 @@ const matName=id=>isMil(id)?'experience':'maturity';
 const priceE=(n,S)=>Math.round(n.cost*(1+.8*S));
 const priceR=(n,T)=>Math.round(n.rp*(1+.8*T));
 const EFF_K=.011, RES_K=.035;
+const REPEL=3, OUTLAST=3650, FLOOR=112;
+const vRatio=r=>r.ready/Math.max(r.threat,FLOOR);
 function econ(s){
   const T3=tc(s,'S3');const crewMult=s.owned.has('S3')?Math.max(.4,.7-.1*T3):1;
   let crewReq=0,upkeep=0;const ups=[];
@@ -739,6 +741,12 @@ function rEmp(P,ec){
   h+=`<div class="sec"><span>How survival adds up (Y100)</span></div><div class="box"><table class="calc"><tr><th>PHASE</th><th>TESTS</th><th style="text-align:right">YOU</th><th style="text-align:right">THEM</th><th style="text-align:right">×</th><th style="text-align:right">DAYS</th></tr>`+
    sim.map(r=>`<tr><td style="font-family:var(--sans)">${r.p.n[0]+r.p.n.slice(1).toLowerCase()}</td><td>${(r.act.length?r.act:r.p.tr).map(t=>TRAITS[t].s).join(' + ')}</td><td class="n">${Math.round(r.ready)}</td><td class="n">${Math.round(r.threat)}</td><td class="n ${r.ratio>=1.2?'v-ok':r.ratio>=.7?'v-wa':'v-bad'}">${r.ratio.toFixed(2)}${r.pm!==1?`<br><span class="mut">×${r.pm.toFixed(2)}</span>`:''}</td><td class="n">${r.days}</td></tr>`).join('')+
    `</table><div class="why">Days = base (30 / 90 / 180 / 365) × (0.25 + ratio^1.6), where ratio = your readiness ÷ their strength. Occupation is also multiplied by Stability, and Resistance by Resolve and Population.</div></div>`;
+  {const vr0=vRatio(sim[0]),vr1=vRatio(sim[1]);const tot=sim.reduce((a,r)=>a+r.days,0)*(fw.owned.has('H1')?1.2:1);
+   h+=`<div class="sec"><span>Victory (hard)</span></div><div class="box">`+
+   lg('Repel: Contact ratio ≥ '+REPEL+' (vs at least '+FLOOR+')',`<span class="${vr0>=REPEL?'pos':'neg'}">${vr0.toFixed(2)}</span>`)+
+   lg('Repel: Landings ratio ≥ '+REPEL+' (vs at least '+FLOOR+')',`<span class="${vr1>=REPEL?'pos':'neg'}">${vr1.toFixed(2)}</span>`)+
+   lg('Outlast: survive 10 years',`<span class="${tot>=OUTLAST?'pos':'neg'}">${fmtD(tot)}</span>`)+
+   `<div class="why">Repel: hold both of the first two phases at three times their strength and they withdraw after Landings. Outlast: last ten years and they give up. Projected at Y100 against your intel read.</div></div>`;}
   h+=`<div class="sec"><span>Readiness now</span><span>line = typical threat (${TYPICAL})</span></div><div class="box">`+
    TK.map(t=>{const s=src[t],sc=220;const seg=(v,col)=>`<i style="width:${Math.max(0,v)/sc*100}%;background:${col}"></i>`;
      const items=s.items.sort((a,b)=>b.v-a.v).slice(0,3).map(x=>`${x.n} ${Math.round(x.v)}`).join(', ');
@@ -810,23 +818,28 @@ async function playInvasion(){
     cum+=r.days;
     const q=r.ratio>=1.2?'good':r.ratio>=.7?'mid':'bad';line(OUT[i][q],q==='mid'?'':q);
     await sleep(700);
+    if(i===1&&vRatio(res[0])>=REPEL&&vRatio(res[1])>=REPEL){INV.won='repel';INV.wonAt=performance.now();INV.p=(i+1)/4;INV.played=2;
+      line('The fleet breaks formation. Their landing forces are pulling back to orbit.','good');await sleep(1500);
+      line('They are withdrawing. Earth holds.','good');break}
     if(i<3)await council(i);
   }
+  if(!INV.won&&cum>=OUTLAST){INV.won='outlast';INV.wonAt=performance.now();line('Ten years on, the fleet stops resupplying. One by one, the ships leave orbit.','good');line('They are withdrawing. Humanity endures.','good')}
   if(INV.truce){cum+=INV.truce;$('#dctr').textContent=Math.floor(cum);$('#ydctr').textContent=fmtD(cum)}
-  INV.total=cum;INV.done=true;INV.doneAt=performance.now();INV.p=1.01;
-  $('#phase').textContent='END';
+  INV.total=cum;if(!INV.won){INV.done=true;INV.doneAt=performance.now();INV.p=1.01}
+  $('#phase').textContent=INV.won?'VICTORY':'END';
   if(INV.ark)line('The Ark Project leaves the Lagrange point with 40,000 people aboard. Heading: away.','good');
-  line('Final transmission received from Council Site 4. Then silence.','mute');
-  await sleep(2600);debrief();
+  if(!INV.won)line('Final transmission received from Council Site 4. Then silence.','mute');
+  await sleep(INV.won?4000:2600);debrief();
 }
 function debrief(){
   const {res,total,C}=INV;const det=G.owned.has('H2'),ec=G.ec;
-  const score=Math.round(total*(1+INV.ark));const best=getBest();const nb=score>best;if(nb)setBest(score);
+  const score=Math.round((INV.won==='repel'?Math.max(total,OUTLAST)+1825:total)*(1+INV.ark));const best=getBest();const nb=score>best;if(nb)setBest(score);
   const Lk=intelLik(G);const read=TK.slice().sort((x,y)=>Lk[y]-Lk[x]).slice(0,3);
   const hit=read.filter(t=>G.enemy[t]).length;
-  const badges=[];if(INV.ark)badges.push('ARK LAUNCHED');if(det)badges.push('DEEP STRIKE');if(G.owned.has('H3'))badges.push('UNDERCITY');if(INV.truce)badges.push('TRUCE');if(hit===3)badges.push('PERFECT READ');if(nb)badges.push('NEW RECORD');if(score>=1825)badges.push('5+ YEARS');
+  const badges=[];if(INV.won)badges.unshift(INV.won==='repel'?'VICTORY · REPELLED':'VICTORY · OUTLASTED');if(INV.ark)badges.push('ARK LAUNCHED');if(det)badges.push('DEEP STRIKE');if(G.owned.has('H3'))badges.push('UNDERCITY');if(INV.truce)badges.push('TRUCE');if(hit===3)badges.push('PERFECT READ');if(nb)badges.push('NEW RECORD');if(score>=1825)badges.push('5+ YEARS');
   $('#screen-deb').innerHTML=`
    <div class="lbl">Debrief · Council archive</div>
+   ${INV.won?`<div class="score" style="color:var(--ok)">${INV.won==='repel'?'They were driven off':'They gave up'}</div><div class="hint">${INV.won==='repel'?`Repelled after ${fmtD(total)}. Score counts as ten years plus a five-year bonus.`:`Withdrew after ${fmtD(total)}.`}</div>`:''}
    <div class="score">${fmtD(score)}</div>
    <div class="lbl">${INV.ark?`${fmtD(total)} + Ark legacy ${Math.round(INV.ark*100)}% · `:''}Best ${fmtD(Math.max(score,best))}</div>
    <div class="badges">${badges.map(b=>`<span class="badge">${b}</span>`).join('')}</div>
@@ -836,13 +849,13 @@ function debrief(){
    </table>
    <div class="hint">Your top three: ${read.map(t=>`${G.enemy[t]?'✓':'✗'} ${TRAITS[t].s}`).join(' · ')}: <b>${hit}/3 correct</b></div>
    <div class="sec"><span>Phases</span></div>
-   <table><tr><th>PHASE</th><th style="text-align:right">RATIO</th><th style="text-align:right">COUNCIL ×</th><th style="text-align:right">DAYS</th></tr>${res.map((r,i)=>{const q=r.ratio>=1.2?'v-ok':r.ratio>=.7?'v-wa':'v-bad';return `<tr><td>${r.p.n}</td><td class="n ${q}">${r.ratio.toFixed(2)}</td><td class="n">${INV.mod[i]!==1?'×'+INV.mod[i].toFixed(2):'—'}</td><td class="n">${fmtD(r.days)}</td></tr>`}).join('')}${INV.truce?`<tr><td>TRUCE</td><td></td><td></td><td class="n v-ok">365 days</td></tr>`:''}</table>
+   <table><tr><th>PHASE</th><th style="text-align:right">RATIO</th><th style="text-align:right">COUNCIL ×</th><th style="text-align:right">DAYS</th></tr>${res.map((r,i)=>{if(INV.played&&i>=INV.played)return `<tr><td>${r.p.n}</td><td class="n mut" colspan="3">never reached</td></tr>`;const q=r.ratio>=1.2?'v-ok':r.ratio>=.7?'v-wa':'v-bad';return `<tr><td>${r.p.n}</td><td class="n ${q}">${r.ratio.toFixed(2)}</td><td class="n">${INV.mod[i]!==1?'×'+INV.mod[i].toFixed(2):'—'}</td><td class="n">${fmtD(r.days)}</td></tr>`}).join('')}${INV.truce?`<tr><td>TRUCE</td><td></td><td></td><td class="n v-ok">365 days</td></tr>`:''}</table>
    <div class="hint">${G.council.join('<br>')}</div>
    <div class="sec"><span>Empire at arrival</span></div>
    <table>
     <tr><td>Population</td><td class="n">${G.P.toFixed(2)}bn (peak ${G.peakP.toFixed(2)})</td></tr>
     <tr><td>Traitors at arrival</td><td class="n">${Math.round(G.T)}${G.enemy.infil?` · added ${Math.round(G.T*.8)} to their strength`:G.T>20?' · sabotaged Occupation on their own':' · contained'}</td></tr>
-    <tr><td>Survivors at the end</td><td class="n">${popAt(1).toFixed(2)}bn</td></tr>
+    <tr><td>Survivors at the end</td><td class="n">${popAt(INV.won==='repel'?INV.p:1).toFixed(2)}bn</td></tr>
     <tr><td>Effort per year</td><td class="n">+${ec.gross.toFixed(2)} · −${ec.upkeep.toFixed(2)} upkeep</td></tr>
     <tr><td>Research per year</td><td class="n">+${ec.rp.toFixed(2)}</td></tr>
     <tr><td>Crew · funding</td><td class="n">${Math.round(ec.crewPct*100)}% · ${Math.round(G.fund*100)}%</td></tr>

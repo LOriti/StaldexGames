@@ -10,8 +10,8 @@ changes, change it here too.
 ## Premise
 
 Earth confirms a hostile signal from 100 light-years away: an advanced fleet arrives in a
-century. The player is the single Director of Planetary Preparedness. You cannot win. The
-score is how long humanity lasts once the invasion begins.
+century. The player is the single Director of Planetary Preparedness. The score is how long
+humanity lasts once the invasion begins. Winning is possible but hard (see Victory).
 
 - Phone only, portrait, about 10 minutes a run at 1× (4.5 s per year; 2× and 4× available).
 - The invasion is watched, not played, apart from three war council calls.
@@ -228,6 +228,17 @@ After each of the first three phases the invasion pauses for one call:
 | Landings | Scorched earth (Occupation ×1.4, lose 25% of the population) · Evacuate to the bunkers (Occupation ×0.8, Resistance ×1.25) · Hold the cities |
 | Occupation | Launch the Ark now (needs Ark; bonus 35% instead of 20%, Resistance ×0.75) · Go underground (Resistance ×1.2, or ×1.4 with Bunkers or Undercity) · Open a channel (25%: a one-year truce; 75%: Resistance ×0.6) |
 
+### Victory (hard)
+
+- **Repelled:** if your readiness ratio is at least 3 in both First Contact and Landings, measured
+  against the enemy's strength or 112, whichever is higher, they withdraw after Landings. Score counts
+  as ten years plus a five-year bonus (Ark bonus still applies). Survivors are counted at that point.
+- **Outlasted:** if the invasion runs to ten years (3,650 days) or more, they withdraw. Score is the
+  days survived.
+- The Empire tab shows both conditions, projected to Year 100 against your intel read.
+- In testing, automated players never won (best about 3.9 years); a fully built, maxed Defence and
+  Science programme repels comfortably.
+
 ### Last stand
 
 At arrival one enemy type is confirmed. The pool (Effort + half of Research) goes either spread
@@ -259,6 +270,7 @@ At arrival one enemy type is confirmed. The pool (Effort + half of Research) goe
 - Survival appears only in the Empire tab, not on cards or events.
 - Infiltration became Traitors: collaborators plus code from the signal, a visible meter you can kill.
 - The game is called Invasion.
+- Winning is allowed but must be hard: Repelled or Outlasted.
 
 ## Open ideas
 
