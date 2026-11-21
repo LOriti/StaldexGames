@@ -14,3 +14,10 @@
 /REWIND-ZOO     /rewind-zoo  301
 /Rewind         /rewind-zoo  301
 /Zoo            /rewind-zoo  301
+
+# Lead Time (unlisted prototype)
+/leadtime      /lead-time  301
+/lead_time     /lead-time  301
+/LeadTime      /lead-time  301
+/Lead-Time     /lead-time  301
+/LEADTIME      /lead-time  301
