@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Lead Time — prototype</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#1c1b18;--p1:#24221e;--p2:#2c2a25;--ln:#3a3730;--tx:#e8e2d6;--mu:#968e7f;--ac:#c47545;--ok:#8aa37f;--wa:#c9a24a;--bad:#c0533f;--rp:#8fb3c4;--mono:'JetBrains Mono',ui-monospace,Menlo,monospace;--sans:Inter,system-ui,-apple-system,sans-serif}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:var(--sans);font-size:14px;overflow:hidden}
+button{font:inherit;color:inherit;background:none;border:0;cursor:pointer}
+#app{max-width:480px;margin:0 auto;height:100dvh;position:relative;display:flex;flex-direction:column}
+.screen{display:none;flex:1;flex-direction:column;min-height:0}
+.screen.active{display:flex}
+.lbl{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--mu);text-transform:uppercase}
+.mono{font-family:var(--mono)}
+.pos{color:var(--ok)}.neg{color:var(--bad)}.mut{color:var(--mu)}.rpc{color:var(--rp)}
+.btn{background:var(--ac);color:#1c1b18;font-weight:700;padding:14px 18px;border-radius:10px;letter-spacing:.04em;width:100%}
+.btn.ghost{background:var(--p2);color:var(--tx);border:1px solid var(--ln)}
+#screen-title{padding:26px 22px;justify-content:center;gap:16px;overflow-y:auto}
+.stamp{font-family:var(--mono);font-size:10px;color:var(--ac);letter-spacing:.2em;border:1px solid var(--ac);padding:4px 8px;align-self:flex-start;border-radius:3px}
+h1{font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1}
+.brief{color:#cfc7b8;line-height:1.55}
+.howto{background:var(--p1);border:1px solid var(--ln);border-radius:10px;padding:14px;display:grid;gap:8px;font-size:13px;color:#cfc7b8;line-height:1.45}
+.howto b{color:var(--tx)}
+.top{display:flex;align-items:flex-start;gap:4px;padding:9px 12px 6px}
+.st{flex:1;min-width:0}
+.st .v{font-family:var(--mono);font-size:16px;font-weight:600;line-height:1.2}
+.st .d{font-family:var(--mono);font-size:10px;line-height:1.2}
+.ctl{display:flex;gap:4px}
+.ctl button{font-family:var(--mono);font-size:12px;padding:8px 9px;background:var(--p1);border:1px solid var(--ln);border-radius:7px;color:var(--tx);min-width:38px}
+.ctl button.on{background:var(--ac);color:#1c1b18;font-weight:700;border-color:var(--ac)}
+.prog{height:3px;background:var(--p2);margin:0 12px}
+#progbar{height:100%;background:var(--ac);width:0}
+.cvwrap{position:relative;flex:0 0 auto;height:clamp(150px,22vh,240px)}
+#screen-inv .cvwrap{height:clamp(240px,42vh,380px)}
+canvas{display:block;width:100%;height:100%}
+#warn{position:absolute;left:12px;top:8px;font-family:var(--mono);font-size:10px;color:var(--bad);letter-spacing:.08em;line-height:1.5}
+.meters{display:grid;grid-template-columns:repeat(4,1fr);gap:5px;padding:4px 12px 7px}
+.m{background:var(--p1);border:1px solid var(--ln);border-radius:8px;padding:5px 7px}
+.m .v{font-family:var(--mono);font-size:13px;font-weight:600;margin:1px 0 3px;display:flex;justify-content:space-between;align-items:baseline}
+.m .v span{font-size:9.5px;font-weight:400}
+.bar{height:3px;background:var(--p2);border-radius:2px;overflow:hidden;position:relative}
+.bar i{display:block;height:100%;background:var(--tx);transition:width .4s}
+.tabs{display:flex;border-bottom:1px solid var(--ln);padding:0 6px}
+.tabs button{flex:1;padding:9px 0;font-family:var(--mono);font-size:10px;letter-spacing:.06em;color:var(--mu);border-bottom:2px solid transparent}
+.tabs button.on{color:var(--tx);border-color:var(--ac)}
+#panel{flex:1;overflow-y:auto;padding:10px 12px 14px;-webkit-overflow-scrolling:touch}
+#ticker{font-family:var(--mono);font-size:11px;color:var(--mu);padding:8px 12px calc(8px + env(safe-area-inset-bottom));border-top:1px solid var(--ln);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.card{background:var(--p1);border:1px solid var(--ln);border-radius:10px;padding:10px 11px;margin-bottom:7px;display:flex;gap:10px;align-items:center;width:100%;text-align:left}
+.card .nm{font-weight:600;font-size:14px}
+.card .fx{font-family:var(--mono);font-size:10.5px;color:var(--mu);margin-top:3px;line-height:1.45}
+.card .imp{font-family:var(--mono);font-size:10.5px;margin-top:3px;line-height:1.45}
+.card .cost{margin-left:auto;font-family:var(--mono);font-weight:600;font-size:11px;white-space:nowrap;text-align:right;line-height:1.35}
+.card .cost b{display:block;font-size:10px;letter-spacing:.08em}
+.card.owned{border-color:#4f5b49}
+.card.locked{opacity:.42}
+.card.ready{border-color:var(--ac)}
+.card.emg{border-style:dashed}
+.card:active:not(.locked){transform:scale(.985)}
+.sec{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:var(--mu);margin:14px 0 7px;text-transform:uppercase;display:flex;justify-content:space-between}
+.sec:first-child{margin-top:0}
+.hint{font-size:12px;color:var(--mu);line-height:1.5;margin-bottom:10px}
+.box{background:var(--p1);border:1px solid var(--ln);border-radius:10px;padding:10px 11px;margin-bottom:8px}
+.proj{border-color:var(--ac)}
+.proj .big{font-size:24px;font-weight:700;letter-spacing:-.01em;margin:2px 0}
+.lg{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:11px;padding:4px 0;border-bottom:1px dashed var(--ln);color:#cfc7b8}
+.lg:last-child{border-bottom:0}
+.lg.tot{font-weight:600;color:var(--tx);border-top:1px solid var(--ln);border-bottom:0;margin-top:2px;padding-top:6px}
+.lg span:last-child{white-space:nowrap}
+.rrow{display:grid;grid-template-columns:62px 1fr 34px;gap:8px;align-items:center;margin-bottom:9px;font-size:12px}
+.rrow .bar{height:8px;display:flex}
+.rrow .bar i{height:100%}
+.rrow .mk{position:absolute;top:-2px;bottom:-2px;width:1px;background:var(--wa)}
+.rrow .sub{grid-column:2/4;font-family:var(--mono);font-size:9.5px;color:var(--mu);margin-top:-5px}
+.arow{display:grid;grid-template-columns:110px 1fr 46px;gap:8px;align-items:center;margin-bottom:8px;font-size:12px}
+.arow .bar{height:6px}.arow .bar i{background:var(--ac)}
+.arow .rd{font-family:var(--mono);text-align:right;color:var(--ok)}
+.rep{font-family:var(--mono);font-size:11px;padding:8px 0;border-bottom:1px solid var(--ln);color:#cfc7b8;line-height:1.5}
+.rep .y{color:var(--ac)}
+.logl{font-size:12.5px;padding:7px 0;border-bottom:1px solid var(--ln);line-height:1.45;color:#cfc7b8}
+.logl .y{font-family:var(--mono);color:var(--mu);font-size:10px;margin-right:6px}
+.modal{position:absolute;inset:0;background:rgba(10,9,8,.8);display:flex;align-items:flex-end;z-index:20}
+.modal.hidden{display:none}
+.sheet{background:var(--p1);border-top:2px solid var(--ac);width:100%;padding:18px 16px calc(18px + env(safe-area-inset-bottom));border-radius:14px 14px 0 0;max-height:92%;overflow-y:auto}
+.sheet h2{font-size:20px;margin:6px 0 8px}
+.sheet p{color:#cfc7b8;line-height:1.5;margin-bottom:12px}
+.opt{display:block;width:100%;text-align:left;background:var(--p2);border:1px solid var(--ln);border-radius:10px;padding:11px 12px;margin-bottom:8px}
+.opt b{display:block;margin-bottom:3px}
+.opt span span{display:inline}
+.opt>span{display:block;font-family:var(--mono);font-size:11px;color:var(--mu);line-height:1.5}
+.opt:disabled{opacity:.4}
+.optgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.optgrid .opt{margin:0}
+#screen-inv{padding:10px 0 0}
+.ctr{display:flex;align-items:flex-end;justify-content:space-between;padding:0 16px 4px}
+.ctr .d{font-family:var(--mono);font-size:38px;font-weight:600;letter-spacing:-.02em;line-height:1}
+.ctr .yd{font-family:var(--mono);color:var(--mu);font-size:11px;text-align:right;line-height:1.5}
+#phase{font-family:var(--mono);color:var(--ac);letter-spacing:.2em;font-size:11px;padding:0 16px}
+#lines{flex:1;overflow-y:auto;display:flex;flex-direction:column;gap:6px;padding:8px 16px}
+.ln{font-size:13px;line-height:1.45;color:#cfc7b8;animation:fi .4s}
+.ln.hdr{font-family:var(--mono);font-size:11px;color:var(--ac);letter-spacing:.15em;margin-top:6px}
+.ln.bad{color:#d98a7b}.ln.good{color:var(--ok)}.ln.mute{color:var(--mu)}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}}
+#skipBtn{margin:0 16px calc(12px + env(safe-area-inset-bottom));width:auto}
+#screen-deb{padding:22px 16px;overflow-y:auto}
+.score{font-size:34px;font-weight:700;letter-spacing:-.02em;margin:4px 0 2px}
+table{width:100%;border-collapse:collapse;font-size:12px;margin:6px 0 4px}
+td,th{padding:7px 4px;border-bottom:1px solid var(--ln);text-align:left}
+th{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;color:var(--mu);font-weight:400}
+td.n{font-family:var(--mono);text-align:right}
+.v-ok{color:var(--ok)}.v-wa{color:var(--wa)}.v-bad{color:var(--bad)}
+.badges{display:flex;flex-wrap:wrap;gap:6px;margin:8px 0}
+.badge{font-family:var(--mono);font-size:10px;padding:5px 8px;border:1px solid var(--ac);color:var(--ac);border-radius:4px;letter-spacing:.06em}
+.cm{flex:1;min-width:0}
+.cb{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
+.cb button{font-family:var(--mono);font-size:10.5px;padding:6px 7px;border-radius:7px;border:1px solid var(--ln);background:var(--p2);min-width:74px;text-align:center;line-height:1.3}
+.cb button.e{border-color:var(--ac);color:var(--ac)}.cb button.r{border-color:var(--rp);color:var(--rp)}
+.cb button:disabled{opacity:.3}
+.chip{font-family:var(--mono);font-size:9.5px;padding:1px 5px;border:1px solid var(--ln);border-radius:4px;color:var(--mu);margin-left:5px;vertical-align:2px;font-weight:400}
+.tv{display:grid;grid-template-columns:64px 38px 1fr 34px;gap:7px;align-items:center;font-size:12px;margin-bottom:4px}
+.tvbar{position:relative;height:12px;background:var(--p2);border-radius:3px;overflow:hidden}
+.tvbar .band{position:absolute;top:0;bottom:0;background:rgba(192,83,63,.28)}
+.tvbar .fill{position:absolute;left:0;top:3px;bottom:3px;border-radius:2px}
+.tvs{font-family:var(--mono);font-size:9.5px;color:var(--mu);margin:0 0 9px 109px}
+.calc td,.calc th{padding:5px 3px;font-size:11px}
+.calc td{font-family:var(--mono)}
+.why{font-size:11.5px;color:var(--mu);margin-top:4px;line-height:1.45}
+.subtabs{display:flex;gap:5px;margin-bottom:7px}
+.subtabs button{flex:1;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;padding:7px 0;border:1px solid var(--ln);border-radius:7px;color:var(--mu);background:var(--p1)}
+.subtabs button.on{border-color:var(--ac);color:var(--tx)}
+.calcbar{background:var(--p1);border:1px solid var(--ac);border-radius:10px;padding:8px 9px;margin-bottom:8px}
+.eq{display:flex;flex-wrap:wrap;align-items:center;gap:3px 4px;font-family:var(--mono);font-size:10.5px;color:var(--mu);margin:3px 0}
+.eq b{font-weight:600;color:var(--tx);background:var(--p2);border:1px solid var(--ln);border-radius:5px;padding:2px 5px}
+.eq b.r{border-color:var(--ac);color:var(--ac)}.eq b.rc{border-color:var(--rp);color:var(--rp)}.eq b.g{border-color:#4f5b49;color:var(--ok)}.eq b.x{border-color:#5f3329;color:var(--bad)}
+.pc{padding:8px 10px;margin-bottom:6px}
+.pc .nm{font-size:13.5px}
+.pc .fx,.pc .imp{font-size:10px;margin-top:2px}
+.pc .cb button{padding:4px 6px;font-size:9.5px;min-width:78px}
+#ticker{cursor:pointer}
+#screen-game.compact .cvwrap{height:clamp(110px,15vh,180px)}
+.pc .cb{gap:4px}.pc .cb button{padding:3px 5px;line-height:1.25}
+.pc .chip{white-space:nowrap}
+</style>
+</head>
+<body>
+<div id="app">
+
+<section id="screen-title" class="screen active">
+  <div class="stamp">CLASSIFIED · COUNCIL EYES ONLY</div>
+  <h1>LEAD TIME</h1>
+  <p class="brief">A hostile signal has been confirmed. Arrival: 100 years. You are Director of Planetary Preparedness. You can't win. You decide how long humanity lasts.</p>
+  <div class="howto">
+    <div><b>Population</b> is your workforce. Workforce × Industry produces <b>Effort</b>, the base currency.</div>
+    <div><b>Knowledge</b> produces <b>Research</b>. <b>Economy</b> and <b>People</b> programs give a small boost now and a permanent boost every year after.</div>
+    <div><b>Projects</b> are built and expanded with <b>Effort</b> (more size, more crew and upkeep) and improved with <b>Research</b> (better tech, cheaper to run). They grow <b>1.5% stronger every year</b> after they're built, so early builds count most. They need <b>crew</b> from Population and Effort <b>upkeep</b>. Understaffed or unfunded capabilities run weaker.</div>
+    <div>The <b>Empire</b> tab shows how long you'd last and what that rests on. Events let you choose where the hit lands, even into Effort debt. During the invasion you make three war council calls.</div>
+  </div>
+  <div id="bestline" class="lbl"></div>
+  <button class="btn" id="startBtn">BEGIN · YEAR 0</button>
+</section>
+
+<section id="screen-game" class="screen">
+  <div class="top">
+    <div class="st"><div class="lbl">Year</div><div class="v" id="sYear">000</div><div class="d mut" id="sT">T−100</div></div>
+    <div class="st"><div class="lbl">Effort</div><div class="v" id="sE" style="color:var(--ac)">0</div><div class="d" id="sEd">+0/yr</div></div>
+    <div class="st"><div class="lbl">Research</div><div class="v rpc" id="sRP">0</div><div class="d" id="sRPd">+0/yr</div></div>
+    <div class="st"><div class="lbl">Pop</div><div class="v" id="sP">8.0</div><div class="d" id="sPd">bn</div></div>
+    <div class="ctl"><button id="pauseBtn">❚❚</button><button id="spdBtn" class="on">1×</button></div>
+  </div>
+  <div class="prog"><div id="progbar"></div></div>
+  <div class="cvwrap" id="cvGame"><div id="warn"></div></div>
+  <div class="meters" id="meters"></div>
+  <nav class="tabs" id="tabs">
+    <button data-t="eco">ECONOMY</button><button data-t="peo">PEOPLE</button><button data-t="prj">PROJECTS</button><button data-t="int">INTEL</button><button data-t="emp">EMPIRE</button>
+  </nav>
+  <main id="panel"></main>
+  <footer id="ticker" title="Tap for the full log"></footer>
+</section>
+
+<section id="screen-inv" class="screen">
+  <div class="ctr"><div><div class="lbl">Days survived</div><div class="d" id="dctr">0</div></div><div class="yd"><span id="ydctr">0 days</span><br>Population <span id="pctr">—</span></div></div>
+  <div id="phase"></div>
+  <div class="cvwrap" id="cvInv"></div>
+  <div id="lines"></div>
+  <button class="btn ghost" id="skipBtn">SKIP ▸▸</button>
+</section>
+
+<section id="screen-deb" class="screen"></section>
+
+<div id="modal" class="modal hidden"><div class="sheet" id="sheet"></div></div>
+</div>
+
+<script>
+const $=s=>document.querySelector(s);
+const rnd=Math.random, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const pick=a=>a[Math.floor(rnd()*a.length)];
+const shuffle=a=>{a=a.slice();for(let i=a.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
+const ease=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+const YEAR_MS=4500;
+const sgn=(v,d=1)=>(v>=0?'+':'−')+Math.abs(v).toFixed(d);
+const cls=v=>v>0.0001?'pos':v<-0.0001?'neg':'mut';
+
+const TRAITS={
+  orb:{n:'Orbital Bombardment',s:'Orbital',c:'Kinetic impacts confirmed. Coastal capitals have gone dark.'},
+  swarm:{n:'Autonomous Swarms',s:'Swarm',c:'Drone swarms reported over three continents.'},
+  ground:{n:'Ground Legions',s:'Ground',c:'Mass landings confirmed. Armoured columns advancing.'},
+  infil:{n:'Infiltration',s:'Infil',c:'Command networks compromised from within.'},
+  bio:{n:'Engineered Pathogens',s:'Bio',c:'Unknown pathogen detected in municipal water supplies.'},
+  siege:{n:'Blockade & Siege',s:'Siege',c:'Orbital blockade in place. Supply lines being cut.'}
+};
+const TK=Object.keys(TRAITS);
+const ML={S:'Stability',I:'Industry',K:'Knowledge',R:'Resolve',E:'Effort',RP:'Research',P:'Population'};
+const BR={def:'Defence',end:'Endurance',sci:'Science'};
+const NODES=[
+ {id:'D1',br:'def',tier:1,n:'Planetary Defence Grid',rp:10,cost:15,crew:.1,up:.3,fx:{orb:10,swarm:10}},
+ {id:'D2',br:'def',tier:2,n:'Global Legion',rp:20,cost:30,crew:.5,up:.5,fx:{ground:20,swarm:5}},
+ {id:'D3',br:'def',tier:3,n:'Orbital Fleet',rp:35,cost:50,crew:.2,up:.8,fx:{orb:25,swarm:10}},
+ {id:'D4',br:'def',tier:4,n:'Planetary Lance',rp:50,cost:80,crew:.05,up:1,fx:{orb:20,ground:10}},
+ {id:'E1',br:'end',tier:1,n:'Strategic Reserves',rp:10,cost:15,crew:0,up:.2,fx:{siege:15,bio:5},note:'Riots no longer cut Industry'},
+ {id:'E2',br:'end',tier:2,n:'Hardened Cities',rp:20,cost:30,crew:.05,up:.3,fx:{orb:10,ground:10,siege:5}},
+ {id:'E3',br:'end',tier:3,n:'Deep Bunkers',rp:35,cost:50,crew:.1,up:.4,fx:{siege:20,orb:10,bio:10}},
+ {id:'E4',br:'end',tier:4,n:'Dispersed Society',rp:50,cost:80,crew:0,up:0,fx:{bio:15,infil:10,ground:10,siege:10},note:'Effort −10% · 30% fewer invasion deaths'},
+ {id:'S1',br:'sci',tier:1,n:'Signal Analysis',rp:10,cost:15,crew:.02,up:.1,fx:{},note:'+0.5 Research/yr per size · intel +15% (+5% per tech)'},
+ {id:'S2',br:'sci',tier:2,n:'Xenobiology Lab',rp:20,cost:30,crew:.05,up:.3,fx:{bio:25},note:'+0.5 Research/yr per size · +0.1% pop growth per size'},
+ {id:'S3',br:'sci',tier:3,n:'Counter-AI Network',rp:35,cost:50,crew:.05,up:.5,fx:{infil:25,swarm:15},note:'All crew −30% (−10% more per tech, max −60%)'},
+ {id:'S4',br:'sci',tier:4,n:'Shield Physics',rp:50,cost:80,crew:.05,up:1.2,fx:{orb:20,swarm:15,ground:5}},
+ {id:'H1',br:'emg',req:['D3','E3'],n:'Ark Project',rp:40,cost:60,crew:.1,up:.5,fx:{},note:'Some of humanity leaves · +20% score'},
+ {id:'H2',br:'emg',req:['D4','S4'],n:'Deep Strike Deterrent',rp:40,cost:70,crew:.05,up:.8,fx:{},note:'Hits the fleet in transit · −25% enemy strength'},
+ {id:'H3',br:'emg',req:['E4','S3'],n:'The Undercity',rp:40,cost:60,crew:0,up:.3,fx:{},note:'Resistance lasts ×1.8'}
+];
+const NB={};NODES.forEach(n=>NB[n.id]=n);
+const DIRS=[
+ {id:'ind',area:'eco',n:'Industrial Mobilisation',now:{I:3,S:-2},dr:{I:.05}},
+ {id:'inf',area:'eco',n:'Infrastructure Program',now:{},dr:{effM:.05}},
+ {id:'res',area:'eco',n:'Research Grants',now:{K:3},dr:{K:.05}},
+ {id:'uni2',area:'eco',n:'University Expansion',now:{},dr:{resM:.06}},
+ {id:'wel',area:'peo',n:'Public Welfare',now:{S:4},dr:{Seq:2}},
+ {id:'uni',area:'peo',n:'Unity Campaign',now:{R:4},dr:{R:.05}},
+ {id:'fam',area:'peo',n:'Family Policy',now:{S:1},dr:{pop:.0005}},
+ {id:'nat',area:'peo',n:'National Service',now:{S:-1},dr:{enl:.01}}
+];
+const TESTED={orb:['Contact'],swarm:['Contact','Landings'],ground:['Landings','Resistance'],infil:['Occupation'],bio:['Occupation','Resistance'],siege:['Resistance']};
+const PURPOSE={def:'Stops them in orbit and on the ground. Tested mostly in Contact and Landings.',end:'Keeps people alive, supplied and hidden. Tested mostly in Occupation and Resistance.',sci:'More research, better intel, fewer crew, and the counters to Bio and Infiltration.',emg:'Unlocked by combining finished projects from two branches.'};
+const COUNCIL=[
+ {t:'Orbit is contested',d:'The fleet can hold orbit a little longer, or buy time for the ground forces.',o:[
+   ['Sacrifice the fleet','Landings ×1.35 · Resistance ×0.85 (no orbital cover later)',{1:1.35,3:.85}],
+   ['Hold formation','No change',{}],
+   ['Pull everything home','Landings ×0.8 · Resistance ×1.15',{1:.8,3:1.15}]]},
+ {t:'The cities are falling',d:'Occupation is beginning. Decide what the population does.',o:[
+   ['Scorched earth','Occupation ×1.4 · lose 25% of the population',{2:1.4,pop:.25}],
+   ['Evacuate to the bunkers','Occupation ×0.8 · Resistance ×1.25',{2:.8,3:1.25}],
+   ['Hold the cities','No change',{}]]},
+ {t:'The last stand',d:'Organised government is ending. One final order.',o:[
+   ['Launch the Ark now','Ark bonus +35% instead of +20% · Resistance ×0.75',{3:.75,ark:.35,req:'H1'}],
+   ['Go underground','Resistance ×1.2 (×1.4 with Deep Bunkers or the Undercity)',{under:1}],
+   ['Open a channel to them','25%: a one-year truce · 75%: Resistance ×0.6',{truce:1}]]}
+];
+const EVENTS=[
+ {t:'The Hoax Movement',d:'A coalition of blocs says the signal is fabricated. Enlistment is collapsing.',o:[['Declassify the raw data',{K:4,R:4,S:-4}],['Suppress the movement',{S:3,R:-6}],['Pay for a public inquiry',{E:-12,R:3}]]},
+ {t:'Superpower Schism',d:'Two major blocs are fighting over command of the defence programme.',o:[['Broker a settlement',{E:-15,S:6}],['Let it fracture',{S:-10,I:6}],['Split research between them',{RP:-12,S:3}]]},
+ {t:'Pandemic',d:'A natural outbreak is overwhelming health systems. Something has to give.',o:[['Fund a global response',{E:-20,bio:6}],['Lock down the economy',{I:-6,S:-4}],['Let it run its course',{P:-.4,R:-3}]]},
+ {t:'Unverified Breakthrough',d:'A lab claims a field-propulsion result. Peer review is split.',o:[['Fund it (50/50)',{E:-12,gamble:{RP:25}}],['Shelve it',{}]]},
+ {t:'Doomsday Cult',d:'A movement preaching surrender has millions of followers.',o:[['Outlaw it',{S:-5,R:4}],['Tolerate it',{R:-8,S:2}]]},
+ {t:'Global Recession',d:'Defence spending has hollowed out consumer economies.',o:[['Stimulus',{E:-15,S:5}],['Austerity',{E:15,S:-8}],['Raid the research budget',{RP:-15,I:3}]]},
+ {t:'Conscription Debate',d:'The council wants mandatory service to staff the programme.',o:[['Mandatory service',{R:6,S:-8,ground:6}],['Volunteer force',{R:2}]]},
+ {t:'Generational Fatigue',d:'Two generations have lived under the countdown. Apathy is spreading.',o:[['Remembrance Day',{E:-10,R:10}],['Normalise it',{I:5,R:-6}]]},
+ {t:'Asteroid Impact',d:'An unrelated impactor is heading for a populated coast. Pick what you lose.',o:[['Evacuate the region',{E:-25}],['Absorb the losses',{P:-.5,I:-4}],['Divert the defence grid',{orb:-8,R:3}]]},
+ {t:'Refugee Wave',d:'Climate collapse displaces 300 million people.',o:[['Integrate them',{P:.3,S:-6}],['Close the borders',{S:2,R:-5}],['Fund new cities',{E:-20,P:.3}]]},
+ {t:'Automation Boom',d:'Machine labour could double output, at the cost of mass unemployment.',o:[['Embrace it',{I:8,S:-7}],['Regulate it',{I:3,S:1}],['Ban it',{S:3,K:-3}]]},
+ {t:'Rogue Lab',d:'A private lab claims to have partially decoded the signal and wants paying.',o:[['Buy the data',{E:-20,RP:30}],['Seize the lab',{RP:20,S:-6}],['Destroy it',{R:3}]]},
+ {t:'Fertility Collapse',d:'Birth rates are falling as people stop believing in a future.',o:[['Family incentives',{E:-15,S:2}],['Accept it',{P:-.4}],['A future-hope campaign',{R:-2,K:2,RP:-6}]]},
+ {t:'Mutiny in the Ranks',d:'Under-paid crews refuse orders at a major installation.',o:[['Meet their demands',{E:-18}],['Court-martial the leaders',{R:-6,S:-3}],['Automate the post',{RP:-15,I:-2}]]}
+];
+const SRC=['Deep-space array','Spectral analysis','Decoded burst transmission','Probe debris recovery','Gravitational survey','Lunar listening post','Neutrino anomaly'];
+const OUT=[
+ {good:'Interceptor grid holds. The first wave breaks in high orbit.',mid:'Heavy losses in orbit. The defence grid is degraded but still firing.',bad:'Defences overwhelmed within hours. Orbital supremacy lost.'},
+ {good:'Landing zones contained. Counter-attacks push them back to the beachheads.',mid:'Beachheads secured on four continents. Fighting retreat.',bad:'Landings meet almost no opposition.'},
+ {good:'Occupation stalls. Population centres remain ungovernable.',mid:'Occupied zones are spreading. Collaboration reported.',bad:'Civil structures collapse. The occupation consolidates.'},
+ {good:'Resistance networks hold. Supply lines are underground and intact.',mid:'Resistance is fragmenting. Cells going dark one by one.',bad:'Organised resistance ends.'}
+];
+const MID=['Council relocates to an alternate site.','Casualty estimates revised upward.','Comms intermittent across the southern hemisphere.','Reserve units committed.','Civilian evacuation corridors open.','A bloc government is unaccounted for.'];
+const PHASES=[
+ {n:'FIRST CONTACT',tr:['orb','swarm'],base:30},
+ {n:'LANDINGS',tr:['ground','swarm'],base:90},
+ {n:'OCCUPATION',tr:['infil','bio'],base:180},
+ {n:'RESISTANCE',tr:['siege','bio','ground'],base:365}
+];
+let G=null, screen='title', skip=false, INV=null;
+/* ================= CANVAS ================= */
+const cv=document.createElement('canvas'),ctx=cv.getContext('2d');
+let W=300,H=200,dpr=1,SC=null;
+function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
+function buildScene(seed){
+  const r=mulberry(seed),arr=(n,f)=>Array.from({length:n},f);
+  const cities=arr(20,()=>({a:r()*6.283,d:Math.sqrt(r())*.82,th:r()*.92,ph:r()*6.28}));
+  const net=[];cities.forEach((c,i)=>{const p=pol(c,1,0,0);cities.map((o,j)=>({j,dd:Math.hypot(pol(o,1,0,0)[0]-p[0],pol(o,1,0,0)[1]-p[1])})).filter(x=>x.j>i).sort((a,b)=>a.dd-b.dd).slice(0,2).forEach(x=>net.push([i,x.j]))});
+  SC={stars:arr(90,()=>({x:r(),y:r(),s:r()*1.1+.3,tw:r()*6.28})),
+      land:arr(10,()=>({a:r()*6.283,d:r()*.75,s:.16+r()*.26})),
+      cities,net,disp:arr(40,()=>({a:r()*6.283,d:Math.sqrt(r())*.92,th:r()*.95})),
+      enemy:arr(14,(_,i)=>({a:-2.6+i*(5.2/13)+(r()-.5)*.2,k:r(),bob:r()*6.28})),
+      ourShips:arr(6,(_,i)=>({o:i/6*6.283,k:r()}))};
+}
+function pol(o,R,cx,cy){return[cx+Math.cos(o.a)*o.d*R,cy+Math.sin(o.a)*o.d*R]}
+function mountCanvas(id){$(id).appendChild(cv);sizeCanvas()}
+function sizeCanvas(){const r=cv.getBoundingClientRect();if(!r.width)return;dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr}
+window.addEventListener('resize',sizeCanvas);
+
+function ap(id,now){
+  if(!G||!G.owned.has(id))return 0;const t=G.anim[id];const pr=t==null?1:clamp((now-t)/1400,0,1);
+  const n=NB[id];const e=(n&&n.crew?(G.ec?G.ec.crewPct:1):1)*(G.fund==null?1:G.fund);return pr*(0.35+0.65*e)
+}
+function geo(){const R=Math.min(W*.2,H*.29);return{cx:W*.5,cy:H*.54,R,T:[W*.9,H*.13]}}
+
+function draw(now){
+  if(!SC||!G)return;
+  const {cx,cy,R,T}=geo(),t=now/1000,inv=screen==='inv'&&INV;
+  ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  // stars
+  SC.stars.forEach(s=>{ctx.globalAlpha=.25+.35*(.5+.5*Math.sin(t*1.3+s.tw));ctx.fillStyle='#e8e2d6';ctx.fillRect(s.x*W,s.y*H,s.s,s.s)});ctx.globalAlpha=1;
+  const p=inv?INV.p:0; // invasion progress 0..1
+  const ph=inv?INV.phase:-1, pp=inv?INV.pp:0;
+
+  // threat marker
+  const f=inv?1:G.year/100;
+  if(!inv||ph<1){
+    const pr=2+5*f, pulse=(t%1.6)/1.6;
+    ctx.strokeStyle=`rgba(192,83,63,${.7*(1-pulse)})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(T[0],T[1],pr+pulse*16,0,6.283);ctx.stroke();
+    ctx.fillStyle='#c0533f';ctx.beginPath();ctx.arc(T[0],T[1],pr,0,6.283);ctx.fill();
+    if(!inv){ctx.font='600 9px JetBrains Mono, monospace';ctx.textAlign='right';ctx.fillStyle='#c0533f';ctx.fillText(`CONTACT T−${100-G.year}`,T[0]-pr-8,T[1]+3)}
+    // dotted approach line
+    ctx.setLineDash([2,5]);ctx.strokeStyle='rgba(192,83,63,.18)';ctx.beginPath();ctx.moveTo(T[0],T[1]);ctx.lineTo(cx,cy);ctx.stroke();ctx.setLineDash([]);
+  }
+  // intel ping
+  if(G.ping&&now-G.ping<2200){const k=Math.max(0,(now-G.ping)/2200);ctx.strokeStyle=`rgba(196,117,69,${1-k})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(T[0],T[1],6+k*40,0,6.283);ctx.stroke();
+    const dx=cx+(T[0]-cx)*(1-k),dy=cy+(T[1]-cy)*(1-k);ctx.fillStyle=`rgba(196,117,69,${1-k*.6})`;ctx.beginPath();ctx.arc(dx,dy,2.5,0,6.283);ctx.fill()}
+
+  // Ark (behind)
+  const aArk=ap('H1',now);
+  if(aArk){let ax=W*.13,ay=H*.24;if(inv&&INV.done)ax-= (now-INV.doneAt)/8;ctx.globalAlpha=aArk;
+    const g=ctx.createRadialGradient(ax,ay,0,ax,ay,26);g.addColorStop(0,'rgba(196,117,69,.35)');g.addColorStop(1,'rgba(196,117,69,0)');ctx.fillStyle=g;ctx.fillRect(ax-30,ay-30,60,60);
+    ctx.fillStyle='#e8e2d6';ctx.fillRect(ax-14,ay-2.5,28,5);ctx.fillRect(ax-6,ay-6,12,12);ctx.fillStyle='#c47545';ctx.fillRect(ax+14,ay-1.5,4,3);
+    ctx.font='600 8px JetBrains Mono, monospace';ctx.textAlign='center';ctx.fillStyle='rgba(232,226,214,.5)';ctx.fillText('ARK',ax,ay+18);ctx.globalAlpha=1}
+
+  // atmosphere
+  let g=ctx.createRadialGradient(cx,cy,R*.95,cx,cy,R*1.22);g.addColorStop(0,'rgba(150,175,180,.22)');g.addColorStop(1,'rgba(150,175,180,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(cx,cy,R*1.22,0,6.283);ctx.fill();
+  // body
+  ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,6.283);ctx.clip();
+  g=ctx.createRadialGradient(cx-R*.35,cy-R*.35,R*.1,cx,cy,R);g.addColorStop(0,'#3b4b50');g.addColorStop(1,'#1a2124');ctx.fillStyle=g;ctx.fillRect(cx-R,cy-R,2*R,2*R);
+  ctx.fillStyle='rgba(70,82,64,.75)';SC.land.forEach(l=>{const q=pol(l,R,cx,cy);ctx.beginPath();ctx.arc(q[0],q[1],l.s*R,0,6.283);ctx.fill()});
+  // undercity core
+  const aU=ap('H3',now);if(aU&&!(inv&&p>.97)){g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*.42);g.addColorStop(0,`rgba(201,162,74,${.55*aU*(.8+.2*Math.sin(t*2))})`);g.addColorStop(1,'rgba(201,162,74,0)');ctx.fillStyle=g;ctx.fillRect(cx-R,cy-R,2*R,2*R)}
+  // bunkers ring
+  const aE3=ap('E3',now);if(aE3){ctx.globalAlpha=aE3;ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(201,162,74,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,R*.5*(0.6+0.4*aE3),0,6.283);ctx.stroke();ctx.setLineDash([]);
+    for(let i=0;i<5;i++){const a=i/5*6.283+.4;ctx.fillStyle='#c9a24a';ctx.fillRect(cx+Math.cos(a)*R*.5-2,cy+Math.sin(a)*R*.5-2,4,4)}ctx.globalAlpha=1}
+  // counter-AI network
+  const aS3=ap('S3',now);if(aS3){ctx.strokeStyle=`rgba(138,163,127,${.35*aS3})`;ctx.lineWidth=.8;SC.net.forEach(([i,j])=>{const A=pol(SC.cities[i],R,cx,cy),B=pol(SC.cities[j],R,cx,cy);ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(A[0]+(B[0]-A[0])*aS3,A[1]+(B[1]-A[1])*aS3);ctx.stroke()});
+    SC.net.forEach(([i,j],n)=>{const k=((t*.5+n*.13)%1);const A=pol(SC.cities[i],R,cx,cy),B=pol(SC.cities[j],R,cx,cy);ctx.fillStyle=`rgba(138,163,127,${.9*aS3})`;ctx.fillRect(A[0]+(B[0]-A[0])*k-1,A[1]+(B[1]-A[1])*k-1,2,2)})}
+  // silos
+  const aE1=ap('E1',now);if(aE1){ctx.globalAlpha=aE1;for(let i=0;i<6;i++){const a=i/6*6.283+1;ctx.fillStyle='#c9a24a';ctx.fillRect(cx+Math.cos(a)*R*.72-1.5,cy+Math.sin(a)*R*.72-3,3,6)}ctx.globalAlpha=1}
+  // dispersed lights
+  const aE4=ap('E4',now);if(aE4)SC.disp.forEach((d,i)=>{if(inv&&d.th<p)return;if(i/SC.disp.length>aE4)return;const q=pol(d,R,cx,cy);ctx.fillStyle='rgba(232,194,122,.7)';ctx.fillRect(q[0]-.6,q[1]-.6,1.3,1.3)});
+  // cities
+  const S=G.S,col=S>55?[232,194,122]:S>35?[215,154,74]:[192,83,63];
+  const aE2=ap('E2',now),aS2=ap('S2',now),aD2=ap('D2',now);
+  SC.cities.forEach((c,i)=>{const q=pol(c,R,cx,cy);const dark=inv&&c.th<p;
+    if(dark){ctx.fillStyle='rgba(60,55,48,.9)';ctx.fillRect(q[0]-1,q[1]-1,2,2);return}
+    const fl=S<35?(.5+.5*Math.sin(t*9+c.ph)):1, sz=1.4+G.I/55;
+    g=ctx.createRadialGradient(q[0],q[1],0,q[0],q[1],sz*4);g.addColorStop(0,`rgba(${col},${.5*fl})`);g.addColorStop(1,`rgba(${col},0)`);ctx.fillStyle=g;ctx.fillRect(q[0]-sz*4,q[1]-sz*4,sz*8,sz*8);
+    ctx.fillStyle=`rgba(${col},${fl})`;ctx.beginPath();ctx.arc(q[0],q[1],sz,0,6.283);ctx.fill();
+    if(aE2){ctx.strokeStyle=`rgba(232,226,214,${.45*aE2})`;ctx.lineWidth=.8;ctx.beginPath();ctx.arc(q[0],q[1],sz+3,3.3,6.12);ctx.stroke()}
+    if(aS2&&i%4===0){ctx.strokeStyle=`rgba(138,163,127,${aS2*(.4+.4*Math.sin(t*2+i))})`;ctx.beginPath();ctx.arc(q[0],q[1],sz+5,0,6.283);ctx.stroke()}
+    if(aD2&&i%2===0){ctx.fillStyle=`rgba(138,163,127,${aD2})`;ctx.fillRect(q[0]+5,q[1]+2,2.5,2.5);ctx.fillRect(q[0]+8,q[1]+2,2.5,2.5)}
+  });
+  // terminator shadow
+  g=ctx.createLinearGradient(cx-R,cy-R,cx+R,cy+R);g.addColorStop(.55,'rgba(10,10,9,0)');g.addColorStop(1,'rgba(10,10,9,.55)');ctx.fillStyle=g;ctx.fillRect(cx-R,cy-R,2*R,2*R);
+  if(inv&&ph>=2){ctx.fillStyle=`rgba(80,20,14,${.25*Math.min(1,(p-.3)*2)})`;ctx.fillRect(cx-R,cy-R,2*R,2*R)}
+  ctx.restore();
+
+  // turrets
+  const aD1=ap('D1',now);if(aD1){ctx.fillStyle=`rgba(232,226,214,${aD1})`;for(let i=0;i<10;i++){const a=i/10*6.283+.2,r1=R+1,r2=R+4+3*aD1;ctx.beginPath();ctx.moveTo(cx+Math.cos(a-.05)*r1,cy+Math.sin(a-.05)*r1);ctx.lineTo(cx+Math.cos(a)*r2,cy+Math.sin(a)*r2);ctx.lineTo(cx+Math.cos(a+.05)*r1,cy+Math.sin(a+.05)*r1);ctx.fill()}}
+  // signal dish + scan
+  const aS1=ap('S1',now),ta=Math.atan2(T[1]-cy,T[0]-cx);
+  if(aS1){const dx=cx+Math.cos(ta)*R,dy=cy+Math.sin(ta)*R;ctx.strokeStyle=`rgba(196,117,69,${aS1})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(dx,dy,5,ta-1.3,ta+1.3);ctx.stroke();
+    if(!inv){const k=(t%2.4)/2.4;ctx.lineWidth=1;ctx.strokeStyle=`rgba(196,117,69,${.5*(1-k)*aS1})`;ctx.beginPath();ctx.arc(dx,dy,8+k*R*1.4,ta-.25,ta+.25);ctx.stroke()}}
+  // lance
+  const aD4=ap('D4',now);if(aD4){const la=-2.35,b0=[cx+Math.cos(la)*R,cy+Math.sin(la)*R],len=R*.55*aD4,b1=[b0[0]+Math.cos(la)*len,b0[1]+Math.sin(la)*len];
+    ctx.strokeStyle='#e8e2d6';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(b0[0],b0[1]);ctx.lineTo(b1[0],b1[1]);ctx.stroke();
+    g=ctx.createRadialGradient(b1[0],b1[1],0,b1[0],b1[1],9);g.addColorStop(0,`rgba(196,117,69,${.6+.4*Math.sin(t*3)})`);g.addColorStop(1,'rgba(196,117,69,0)');ctx.fillStyle=g;ctx.fillRect(b1[0]-10,b1[1]-10,20,20);INV&&(INV.lance=b1)}
+  // shield
+  const aS4=ap('S4',now);let shieldUp=aS4&&!(inv&&ph>=1&&pp>.5)&&!(inv&&ph>=2);
+  if(aS4&&shieldUp){const sr=R*1.32;ctx.strokeStyle=`rgba(150,195,215,${(.3+.15*Math.sin(t*2))*aS4})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(cx,cy,sr*(.85+.15*aS4),0,6.283);ctx.stroke();ctx.fillStyle=`rgba(150,195,215,${.05*aS4})`;ctx.fill();
+    if(INV&&INV.shieldHit&&now-INV.shieldHit<200){ctx.strokeStyle='rgba(190,225,240,.8)';ctx.lineWidth=2;ctx.stroke()}}
+  // orbital fleet
+  const aD3=ap('D3',now);
+  if(aD3){const rx=R*1.6,ry=R*1.6*.38;ctx.strokeStyle=`rgba(232,226,214,${.12*aD3})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,-.3,0,6.283);ctx.stroke();
+    const loss=inv?clamp(INV.fleetLoss*Math.min(1,(ph+pp)/1.6),0,1):0;
+    SC.ourShips.forEach((s,i)=>{if(i/6>aD3+.01)return;if(s.k<loss)return;const a=s.o+t*.35;const x=Math.cos(a)*rx,y=Math.sin(a)*ry;const rot=-.3;const X=cx+x*Math.cos(rot)-y*Math.sin(rot),Y=cy+x*Math.sin(rot)+y*Math.cos(rot);
+      if(Math.sin(a)<0&&Math.hypot(X-cx,Y-cy)<R)return;ctx.fillStyle='#e8e2d6';ctx.save();ctx.translate(X,Y);ctx.rotate(a+1.57+rot);ctx.beginPath();ctx.moveTo(0,-4);ctx.lineTo(2.5,3);ctx.lineTo(-2.5,3);ctx.fill();ctx.restore();s.pos=[X,Y]})}
+  // deterrent
+  const aH2=ap('H2',now);if(aH2&&!(inv&&ph>=0)){for(let i=0;i<8;i++){const a=i/8*6.283-t*.2;ctx.fillStyle=`rgba(196,117,69,${aH2})`;ctx.fillRect(cx+Math.cos(a)*R*1.85-1.5,cy+Math.sin(a)*R*1.85*.55-1.5,3,3)}}
+
+  // invasion layer
+  if(inv)drawInvasion(now,{cx,cy,R,T},shieldUp);
+
+  // floats + build flash
+  if(G.flash&&now-G.flash<700){const k=Math.max(0,(now-G.flash)/700);ctx.strokeStyle=`rgba(196,117,69,${.7*(1-k)})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,R*(1+k*.5),0,6.283);ctx.stroke()}
+  G.floats=G.floats.filter(fl=>now-fl.t<2200);
+  G.floats.forEach((fl,i)=>{const k=Math.max(0,(now-fl.t)/2200);ctx.globalAlpha=k<.15?k/.15:1-Math.max(0,(k-.6)/.4);ctx.font='600 10px JetBrains Mono, monospace';ctx.textAlign='center';ctx.fillStyle=fl.c||'#c47545';ctx.fillText(fl.s,cx,H-10-(G.floats.length-1-i)*13-k*8);ctx.globalAlpha=1});
+}
+
+function drawInvasion(now,{cx,cy,R,T},shieldUp){
+  const ph=INV.phase,pp=INV.pp,p=INV.p,t=now/1000;
+  const rx=R*2.05,ry=R*1.32;
+  const killed=s=>s.k<INV.kill*Math.min(1,(ph+pp)/1.2);
+  const live=[];
+  SC.enemy.forEach(e=>{
+    const arr=ph>0?1:ease(clamp(pp/.45,0,1));
+    const sx=cx+Math.cos(e.a)*rx,sy=cy+Math.sin(e.a)*ry+Math.sin(t*1.2+e.bob)*2;
+    const x=T[0]+(sx-T[0])*arr,y=T[1]+(sy-T[1])*arr;e.pos=[x,y];
+    if(killed(e)){if(!e.boom)e.boom=now;if(now-e.boom<500){const k=Math.max(0,(now-e.boom)/500);ctx.fillStyle=`rgba(232,194,122,${1-k})`;ctx.beginPath();ctx.arc(x,y,3+k*10,0,6.283);ctx.fill()}return}
+    live.push(e);
+    ctx.fillStyle='#c0533f';ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(cy-y,cx-x));ctx.beginPath();ctx.moveTo(6,0);ctx.lineTo(-4,4);ctx.lineTo(-2,0);ctx.lineTo(-4,-4);ctx.fill();ctx.restore();
+  });
+  if(INV.done)return;
+  const arrived=ph>0||pp>.4;
+  // enemy fire
+  if(arrived&&ph<=1&&live.length&&rnd()<.22){const e=pick(live);const a=rnd()*6.283,d=Math.sqrt(rnd())*.9;let tx=cx+Math.cos(a)*d*R,ty=cy+Math.sin(a)*d*R;
+    if(shieldUp){const ang=Math.atan2(e.pos[1]-cy,e.pos[0]-cx);tx=cx+Math.cos(ang)*R*1.32;ty=cy+Math.sin(ang)*R*1.32;INV.shieldHit=now}
+    INV.fx.push({x1:e.pos[0],y1:e.pos[1],x2:tx,y2:ty,t:now,c:'192,83,63',hit:!shieldUp})}
+  // our fire
+  if(arrived&&ph<=1&&live.length&&(G.owned.has('D1')||G.owned.has('D3')||G.owned.has('D4'))&&rnd()<.16){const e=pick(live);let o;
+    if(G.owned.has('D4')&&INV.lance&&rnd()<.3)o=INV.lance;else{const s=SC.ourShips.find(s=>s.pos&&rnd()<.4);o=s&&G.owned.has('D3')?s.pos:(()=>{const a=rnd()*6.283;return[cx+Math.cos(a)*R*1.05,cy+Math.sin(a)*R*1.05]})()}
+    INV.fx.push({x1:o[0],y1:o[1],x2:e.pos[0],y2:e.pos[1],t:now,c:'232,226,214'})}
+  // landings
+  if(ph===1&&live.length&&rnd()<.25){const e=pick(live);const a=rnd()*6.283,d=Math.sqrt(rnd())*.85;INV.drops.push({x1:e.pos[0],y1:e.pos[1],x2:cx+Math.cos(a)*d*R,y2:cy+Math.sin(a)*d*R,t:now})}
+  // flashes in occupation
+  if(ph>=2&&rnd()<.12){const c=pick(SC.cities);const q=pol(c,R,cx,cy);INV.fx.push({x1:q[0],y1:q[1],x2:q[0],y2:q[1],t:now,c:'192,83,63',hit:true})}
+  INV.fx=INV.fx.filter(f=>now-f.t<350);
+  INV.fx.forEach(f=>{const k=(now-f.t)/350;ctx.strokeStyle=`rgba(${f.c},${1-k})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(f.x1,f.y1);ctx.lineTo(f.x2,f.y2);ctx.stroke();
+    if(f.hit){ctx.fillStyle=`rgba(232,150,100,${1-k})`;ctx.beginPath();ctx.arc(f.x2,f.y2,2+k*5,0,6.283);ctx.fill()}});
+  INV.drops=INV.drops.filter(d=>now-d.t<900);
+  INV.drops.forEach(d=>{const k=(now-d.t)/900;ctx.fillStyle='#c0533f';ctx.fillRect(d.x1+(d.x2-d.x1)*k-1,d.y1+(d.y2-d.y1)*k-1,2.5,2.5)});
+}
+function frame(now){if(screen==='game'||screen==='inv')draw(now);requestAnimationFrame(frame)}
+requestAnimationFrame(frame);
+
+/* ================= MODEL (pure) ================= */
+const sz=(s,id)=>s.size[id]||0, tc=(s,id)=>s.tech[id]||0;
+const MAXS=4, MAXT=3, TYPICAL=112, BAND=[85,140];
+const sizeMult=S=>Math.pow(1.35,S-1), techMult=T=>Math.pow(1.25,T);
+const sizeLoad=S=>1+.4*(S-1), techLoad=T=>Math.pow(.9,T);
+const matOf=(s,id)=>Math.min(2.5,Math.pow(1.015,Math.max(0,s.year-s.builtAt[id])));
+const priceE=(n,S)=>Math.round(n.cost*(1+.8*S));
+const priceR=(n,T)=>Math.round(n.rp*(1+.8*T));
+const EFF_K=.011, RES_K=.035;
+function econ(s){
+  const T3=tc(s,'S3');const crewMult=s.owned.has('S3')?Math.max(.4,.7-.1*T3):1;
+  let crewReq=0,upkeep=0;const ups=[];
+  s.owned.forEach(id=>{const n=NB[id],S=sz(s,id),T=tc(s,id),k=sizeLoad(S)*techLoad(T);crewReq+=n.crew*k*crewMult;const u=n.up*k;upkeep+=u;if(u)ups.push([n.n,u])});
+  const enlist=.05+s.R/1000+s.dr.enl,crewAvail=s.P*enlist;
+  const crewPct=crewReq?Math.min(1,crewAvail/crewReq):1;
+  const crewUsed=crewReq*crewPct,workforce=s.P-crewUsed;
+  const stabM=.7+s.S/200,disp=s.owned.has('E4')?.9:1;
+  const gross=workforce*s.I*EFF_K*stabM*disp*s.dr.effM;
+  const labs=.5*(sz(s,'S1')+sz(s,'S2'));
+  const rp=(s.K*RES_K+labs)*s.dr.resM;
+  const gRate=s.dr.pop*(s.S/50)+.001*sz(s,'S2');
+  return{crewMult,crewReq,crewAvail,enlist,crewPct,crewUsed,workforce,stabM,disp,gross,upkeep,ups,net:gross-upkeep,labs,rp,gRate,growth:s.P*gRate};
+}
+function nodeEff(s,id,ec){const n=NB[id];return(s.fund==null?1:s.fund)*(n.crew?ec.crewPct:1)}
+function nodeMult(s,id){return sizeMult(sz(s,id))*techMult(tc(s,id))*matOf(s,id)}
+function counters(s,ec){
+  ec=ec||econ(s);
+  const c={},src={},byBr={def:0,end:0,sci:0,emg:0,soc:0};TK.forEach(t=>{c[t]=0;src[t]={doc:0,met:0,bon:s.bonus[t]||0,items:[]}});
+  s.owned.forEach(id=>{const n=NB[id],m=nodeMult(s,id),e=nodeEff(s,id,ec);
+    for(const k in n.fx){const v=n.fx[k]*m*e;src[k].doc+=v;byBr[n.br]+=v;src[k].items.push({n:n.n,v})}});
+  src.ground.met=s.R*.3;src.infil.met=s.S*.3+s.R*.15;src.siege.met=s.I*.3;src.bio.met=s.K*.15;src.orb.met=s.I*.08;src.swarm.met=s.K*.08;
+  TK.forEach(t=>{c[t]=Math.max(0,src[t].doc+src[t].met+src[t].bon);byBr.soc+=src[t].met+src[t].bon});
+  return{c,src,byBr};
+}
+function phaseMult(s,i){
+  if(i===2)return .6+s.S/125;
+  if(i===3)return(.5+s.R/100)*(.6+s.P/25)*(s.owned.has('H3')?1.8:1);
+  return 1;
+}
+function simulate(s,enemy,det){
+  const {c}=counters(s),dt=s.owned.has('H2');
+  return PHASES.map((p,i)=>{
+    const act=p.tr.filter(t=>enemy[t]);let ready,threat;
+    if(act.length){ready=act.reduce((a,t)=>a+c[t],0)/act.length;threat=act.reduce((a,t)=>a+enemy[t]*(dt?.75:1),0)/act.length}
+    else{ready=p.tr.reduce((a,t)=>a+c[t],0)/p.tr.length;threat=65*(dt?.75:1)}
+    const ratio=ready/threat,pm=phaseMult(s,i);
+    let m=(.25+Math.pow(Math.min(ratio,2.5),1.6))*pm;if(!det)m*=.9+rnd()*.2;
+    return{p,act,ratio,ready,threat,pm,days:Math.max(1,Math.round(p.base*m))};
+  });
+}
+function intelLik(s){const o={};TK.forEach(t=>o[t]=1);s.reports.forEach(r=>{o[r.trait]*=r.acc/(1-r.acc)});const L={};TK.forEach(t=>L[t]=Math.min(.97,o[t]/(1+o[t])));return L}
+function intelRead(s){
+  if(!s.reports.length){const e={};TK.forEach(t=>e[t]=TYPICAL/2);return{e,label:'No intel yet, so this assumes an even threat'}}
+  const L=intelLik(s);const top=TK.slice().sort((x,y)=>L[y]-L[x]).slice(0,3);const e={};top.forEach(t=>e[t]=TYPICAL);
+  return{e,label:'Assumes your intel read ('+top.map(t=>TRAITS[t].s).join(', ')+`) at typical strength ${TYPICAL}`};
+}
+function cloneS(s){return{...s,owned:new Set(s.owned),size:{...s.size},tech:{...s.tech},builtAt:{...s.builtAt},bonus:{...s.bonus},dr:{...s.dr}}}
+function forward(s){
+  const a=cloneS(s);
+  for(let y=a.year;y<100;y++){
+    a.P+=a.P*(a.dr.pop*(a.S/50)+.001*sz(a,'S2'));
+    a.S+=(a.dr.Seq-a.S)*.02-(a.R<30?.5:0);a.R+=a.dr.R;a.K+=a.dr.K;a.I+=a.dr.I;
+    ['S','I','K','R'].forEach(k=>a[k]=clamp(a[k],0,100));
+  }
+  a.year=100;return a;
+}
+function project(s,fwd){const st=fwd?forward(s):s;const r=intelRead(st);return Math.round(simulate(st,r.e,true).reduce((a,x)=>a+x.days,0)*(st.owned.has('H1')?1.2:1))}
+function applyFx(s,fx,real){
+  for(const k in fx){
+    if(k==='gamble'){if(!real)continue;if(rnd()<.5){applyFx(s,fx.gamble,true);log('The breakthrough holds.');float('BREAKTHROUGH +25 RESEARCH','#8aa37f')}else{log('The breakthrough fails replication. Funds lost.');float('FAILED REPLICATION','#968e7f')}continue}
+    const v=fx[k];
+    if(k==='E')s.E+=v;else if(k==='RP')s.RP=Math.max(0,s.RP+v);else if(k==='P')s.P=Math.max(.5,s.P+v);
+    else if(['S','I','K','R'].includes(k))s[k]=clamp(s[k]+v,0,100);
+    else s.bonus[k]=(s.bonus[k]||0)+v;
+  }
+}
+function applyProg(s,d){applyFx(s,d.now,false);for(const k in d.dr){if(k==='effM'||k==='resM')s.dr[k]*=1+d.dr[k];else s.dr[k]+=d.dr[k]}}
+function doBuild(s,n){const S=sz(s,n.id);s.E-=priceE(n,S);s.size[n.id]=S+1;if(!S){s.owned.add(n.id);s.builtAt[n.id]=s.year;s.tech[n.id]=0}}
+function doTech(s,n){const T=tc(s,n.id);s.RP-=priceR(n,T);s.tech[n.id]=T+1}
+function econDelta(mod){
+  const a=cloneS(G);mod(a);const e0=econ(G),e1=econ(a),c0=counters(G,e0),c1=counters(a,e1);
+  const dr={};TK.forEach(t=>{const d=c1.c[t]-c0.c[t];if(Math.abs(d)>=.5)dr[t]=d});
+  return{dE:e1.net-e0.net,dRP:e1.rp-e0.rp,dCrew:e1.crewPct-e0.crewPct,dG:e1.growth-e0.growth,dr};
+}
+function impText(im,opts={}){
+  const p=[];
+  if(Math.abs(im.dE)>.005)p.push(`<span class="${cls(im.dE)}">Effort ${sgn(im.dE,2)}/yr</span>`);
+  if(Math.abs(im.dRP)>.005)p.push(`<span class="${cls(im.dRP)}">Research ${sgn(im.dRP,2)}/yr</span>`);
+  if(Math.abs(im.dG)>.0005)p.push(`<span class="${cls(im.dG)}">Pop ${sgn(im.dG,3)}bn/yr</span>`);
+  if(Math.abs(im.dCrew)>.005)p.push(`<span class="${cls(im.dCrew)}">Crew ${sgn(im.dCrew*100,0)}%</span>`);
+  if(opts.ready)Object.entries(im.dr).forEach(([t,d])=>p.push(`<span class="${cls(d)}">${TRAITS[t].s} ${sgn(d,0)}</span>`));
+  return p.join(' · ')||'<span class="mut">No change to income</span>';
+}
+
+/* ================= GAME ================= */
+function show(s){screen=s;document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));$('#screen-'+s).classList.add('active');
+  if(s==='game')mountCanvas('#cvGame');if(s==='inv')mountCanvas('#cvInv')}
+function getBest(){try{return +localStorage.getItem('leadtime.best')||0}catch(e){return 0}}
+function setBest(v){try{localStorage.setItem('leadtime.best',v)}catch(e){}}
+function fmtD(d){d=Math.round(d);const y=Math.floor(d/365),r=d%365;return y?`${y} yr${y>1?'s':''} ${r} days`:`${r} days`}
+function fxText(fx){const p=[];for(const k in fx){if(k==='gamble'){p.push('50%: +25 Research');continue}const v=fx[k];
+  if(k==='P')p.push(`${v>0?'+':'−'}${Math.abs(v)}bn Population`);else{const lab=ML[k]||(TRAITS[k]&&TRAITS[k].s+' readiness');p.push(`${v>0?'+':'−'}${Math.abs(v)} ${lab}`)}}return p.join(' · ')||'No immediate effect'}
+function float(s,c){if(!G)return;G.floats.push({s,c,t:performance.now()});if(G.floats.length>3)G.floats.shift()}
+function floatDelta(im){const p=[];if(Math.abs(im.dE)>=.01)p.push(`EFFORT ${sgn(im.dE,2)}/YR`);if(Math.abs(im.dRP)>=.01)p.push(`RESEARCH ${sgn(im.dRP,2)}/YR`);if(p.length)float(p.join(' · '),im.dE<0?'#c0533f':'#8aa37f')}
+
+function newGame(){
+  G={year:0,t:0,E:30,RP:3,P:8,S:60,I:45,K:25,R:55,fund:1,owned:new Set(),size:{},tech:{},builtAt:{},anim:{},bonus:{},uses:{},enemy:{},reports:[],log:[],used:new Set(),
+     dr:{Seq:50,I:.1,K:.15,R:-.35,pop:.004,effM:1,resM:1,enl:0},speed:1,paused:false,tab:'eco',sub:'def',revealed:new Set(),floats:[],ping:0,flash:0,ec:null,peakP:8,council:[]};
+  G.lvl=G.size; // canvas compatibility
+  INV=null;buildScene(Math.floor(rnd()*1e9));
+  shuffle(TK).slice(0,3).forEach(t=>G.enemy[t]=BAND[0]+Math.round(rnd()*(BAND[1]-BAND[0])));
+  G.ec=econ(G);
+  log('Signal confirmed. Origin 100 light-years out. Intent hostile. Arrival in one century.');
+  show('game');G.paused=false;updCtl();render();
+}
+function log(s){G.log.unshift({y:G.year,s});$('#ticker').textContent=`Y${String(G.year).padStart(3,'0')} · ${s}`}
+const modalOpen=()=>!$('#modal').classList.contains('hidden');
+
+let last=performance.now();
+setInterval(()=>{
+  const now=performance.now(),dt=now-last;last=now;
+  if(screen!=='game'||!G||G.paused||modalOpen())return;
+  G.t+=dt*G.speed;
+  while(G.t>=YEAR_MS&&screen==='game'&&!modalOpen()){G.t-=YEAR_MS;yearTick()}
+  $('#progbar').style.width=Math.min(100,(G.year+G.t/YEAR_MS))+'%';
+},100);
+document.addEventListener('visibilitychange',()=>{if(document.hidden&&G&&screen==='game'){G.paused=true;updCtl()}});
+
+function yearTick(){
+  G.year++;
+  const ec=econ(G);
+  if(ec.net>=0||G.E+ec.net>=0){if(G.fund<.999)log('Upkeep fully funded again.');G.fund=1;G.E+=ec.net}
+  else{const f=clamp((Math.max(0,G.E)+ec.gross)/ec.upkeep,0,1);if(G.fund>=.999){log(`Upkeep unpaid. Projects at ${Math.round(f*100)}% funding.`);float('UNDERFUNDED','#c0533f')}G.fund=f;G.E=Math.min(G.E,0)}
+  G.RP+=ec.rp;G.P+=ec.growth;G.peakP=Math.max(G.peakP,G.P);
+  G.S+=(G.dr.Seq-G.S)*.02-(G.R<30?.5:0);G.R+=G.dr.R;G.K+=G.dr.K;G.I+=G.dr.I;
+  ['S','I','K','R'].forEach(k=>G[k]=clamp(G[k],0,100));
+  if(G.S<20&&rnd()<.25){if(G.owned.has('E1'))log('Riots break out. Strategic Reserves absorb the losses.');else{G.I=clamp(G.I-4,0,100);log('Riots across three blocs. Industry −4.');float('RIOTS · INDUSTRY −4','#c0533f')}}
+  if(G.R<20&&rnd()<.25){G.S=clamp(G.S-4,0,100);log('Surrender movements are spreading. Stability −4.');float('SURRENDER MOVEMENTS','#c0533f')}
+  if(ec.crewPct<.999&&G.year%5===0)log(`Crew shortage: staffed at ${Math.round(ec.crewPct*100)}%. Raise Resolve or fund National Service.`);
+  G.ec=econ(G);
+  if(G.year%10===5)intel();
+  if(G.year>=100){render();arrival();return}
+  if(G.year%10===0){log(`Decade ${G.year/10} closes. ${100-G.year} years remain.`);if(rnd()<.8)eventFire()}
+  else if(G.year%10===7&&rnd()<.45)eventFire();
+  render();
+}
+function intelAcc(s){return Math.min(.95,.5+s.K*.004+(s.owned.has('S1')?.15+.05*tc(s,'S1'):0))}
+function intel(){
+  const acc=intelAcc(G),truth=rnd()<acc,en=Object.keys(G.enemy);
+  const trait=truth?pick(en):pick(TK.filter(t=>!G.enemy[t]));
+  const conf=Math.round(acc*100),src=pick(SRC);
+  G.reports.unshift({y:G.year,trait,conf,acc,src});
+  log(`INTEL · ${src}: signs of ${TRAITS[trait].n.toLowerCase()} (source reliability ${conf}%)`);
+  G.ping=performance.now();float(`INTEL · ${TRAITS[trait].s.toUpperCase()} · ${conf}% RELIABLE`,'#c47545');
+}
+function eventFire(){
+  const pool=EVENTS.filter((e,i)=>!G.used.has(i));if(!pool.length)return;
+  const e=pick(pool);G.used.add(EVENTS.indexOf(e));
+  $('#sheet').innerHTML=`<div class="lbl">Council brief · Year ${G.year} · choose where the impact lands</div><h2>${e.t}</h2><p>${e.d}</p>`+
+   e.o.map((o,i)=>{const rpOk=!(o[1].RP<0&&G.RP<-o[1].RP);const debt=o[1].E<0&&G.E+o[1].E<0;const im=econDelta(s=>applyFx(s,o[1],false));
+     return `<button class="opt" data-i="${i}" ${rpOk?'':'disabled'}><b>${o[0]}</b><span>${fxText(o[1])}${debt?` · <span class="neg">puts you into debt (${Math.round(G.E+o[1].E)} Effort)</span>`:''}${rpOk?'':' · not enough Research'}</span><span>${impText(im,{ready:true})}</span></button>`}).join('');
+  $('#modal').classList.remove('hidden');
+  $('#sheet').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const o=e.o[+b.dataset.i];applyFx(G,o[1],true);G.ec=econ(G);log(`${e.t}: ${o[0]}.`+(G.E<0?` Effort in debt: ${Math.round(G.E)}.`:''));$('#modal').classList.add('hidden');render()});
+}
+function showLog(){if(!G)return;$('#sheet').innerHTML=`<div class="lbl">Log</div><h2>Council record</h2>`+G.log.slice(0,60).map(l=>`<div class="logl"><span class="y">Y${String(l.y).padStart(3,'0')}</span>${l.s}</div>`).join('')+`<div style="height:10px"></div><button class="btn ghost" id="closeLog">CLOSE</button>`;$('#modal').classList.remove('hidden');$('#closeLog').onclick=()=>$('#modal').classList.add('hidden')}
+function progCost(d){return 10+5*(G.uses[d.id]||0)}
+function doProg(d){const c=progCost(d);if(G.E<c)return;const im=econDelta(a=>applyProg(a,d));G.E-=c;G.uses[d.id]=(G.uses[d.id]||0)+1;applyProg(G,d);G.ec=econ(G);log(`Program funded: ${d.n}.`);float(d.n.toUpperCase(),'#e8e2d6');floatDelta(im);render()}
+function nodeState(n){
+  if(G.owned.has(n.id))return'built';
+  if(n.br==='emg')return n.req.every(r=>G.owned.has(r))?'new':'hidden';
+  const prev=NODES.find(x=>x.br===n.br&&x.tier===n.tier-1);
+  return prev&&!G.owned.has(prev.id)?'locked':'new';
+}
+function act(n,kind){
+  const st=nodeState(n);
+  if(kind==='E'){if(!['new','built'].includes(st)||sz(G,n.id)>=MAXS||G.E<priceE(n,sz(G,n.id)))return;
+    const S=sz(G,n.id),p=priceE(n,S);const im=econDelta(a=>doBuild(a,n));doBuild(G,n);G.ec=econ(G);const now=performance.now();G.flash=now;
+    if(!S){G.anim[n.id]=now;log(`Built: ${n.n} (${p} Effort).`);float(n.n.toUpperCase()+' ONLINE')}else{log(`Expanded: ${n.n} to size ${S+1} (${p} Effort).`);float(`${n.n.toUpperCase()} · SIZE ${S+1}`,'#c47545')}
+    floatDelta(im);
+    NODES.filter(h=>h.br==='emg'&&!G.revealed.has(h.id)&&h.req.every(r=>G.owned.has(r))).forEach(h=>{G.revealed.add(h.id);log(`EMERGENT PROJECT: ${h.n} is now available.`);float('EMERGENT · '+h.n.toUpperCase(),'#c9a24a')});
+  }else{if(st!=='built'||tc(G,n.id)>=MAXT||G.RP<priceR(n,tc(G,n.id)))return;
+    const T=tc(G,n.id),p=priceR(n,T);const im=econDelta(a=>doTech(a,n));doTech(G,n);G.ec=econ(G);G.flash=performance.now();
+    log(`Improved: ${n.n} to Mk ${['I','II','III','IV'][T+1]} (${p} Research).`);float(`${n.n.toUpperCase()} · MK ${['I','II','III','IV'][T+1]}`,'#8fb3c4');floatDelta(im)}
+  render();
+}
+function updCtl(){$('#pauseBtn').textContent=G.paused?'▶':'❚❚';$('#pauseBtn').classList.toggle('on',G.paused);$('#spdBtn').textContent=G.speed+'×'}
+
+/* ================= RENDER ================= */
+const DRIFT={S:s=>(s.dr.Seq-s.S)*.02-(s.R<30?.5:0),I:s=>s.dr.I,K:s=>s.dr.K,R:s=>s.dr.R};
+const MK=['I','II','III','IV'];
+function render(){
+  if(!G)return;const ec=G.ec=econ(G);
+  $('#sYear').textContent=String(G.year).padStart(3,'0');$('#sT').textContent='T−'+(100-G.year);
+  $('#sE').textContent=Math.floor(G.E);$('#sE').style.color=G.E<0?'var(--bad)':'var(--ac)';$('#sEd').innerHTML=`<span class="${cls(ec.net)}">${sgn(ec.net)}/yr</span>`;
+  $('#sRP').textContent=Math.floor(G.RP);$('#sRPd').innerHTML=`<span class="pos">${sgn(ec.rp)}/yr</span>`;
+  $('#sP').textContent=G.P.toFixed(1)+'bn';$('#sPd').innerHTML=`<span class="${cls(ec.growth)}">${sgn(ec.growth,2)}/yr</span>`;
+  const w=[];if(G.E<0)w.push(`IN DEBT · ${Math.round(G.E)} EFFORT`);if(G.fund<.999)w.push(`UNDERFUNDED · ${Math.round(G.fund*100)}%`);if(ec.crewPct<.999)w.push(`UNDERCREWED · ${Math.round(ec.crewPct*100)}%`);$('#warn').innerHTML=w.join('<br>');
+  $('#meters').innerHTML=['S','I','K','R'].map(k=>{const v=Math.round(G[k]),d=DRIFT[k](G),c=v<25?'var(--bad)':'var(--tx)';return `<div class="m"><div class="lbl">${ML[k]}</div><div class="v" style="color:${c}">${v}<span class="${cls(d)}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(2)}</span></div><div class="bar"><i style="width:${v}%;background:${c}"></i></div></div>`}).join('');
+  document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===G.tab));const cp=G.tab==='prj';if($('#screen-game').classList.contains('compact')!==cp){$('#screen-game').classList.toggle('compact',cp);requestAnimationFrame(sizeCanvas)}
+  const P=$('#panel'),st=P.scrollTop;
+  ({eco:rEco,peo:rPeo,prj:rPrj,int:rInt,emp:rEmp})[G.tab](P,ec);
+  P.scrollTop=st;
+}
+function lg(a,b,c=''){return `<div class="lg ${c}"><span>${a}</span><span>${b}</span></div>`}
+function progCards(area){
+  const yl=100-G.year;
+  return DIRS.filter(d=>d.area===area).map(d=>{const i=DIRS.indexOf(d),c=progCost(d);const im=econDelta(a=>applyProg(a,d));
+    const per=Object.entries(d.dr).map(([k,v])=>k==='Seq'?`Stability settles ${v} higher`:k==='pop'?`+${(v*100).toFixed(2)}% pop growth`:k==='effM'?`+${v*100}% Effort income`:k==='resM'?`+${v*100}% Research output`:k==='enl'?`+${v*100}% of pop can enlist`:`+${v} ${ML[k]}/yr (+${(v*yl).toFixed(1)} by Y100)`).join(' · ');
+    return `<div class="card pc"><div class="cm"><div class="nm">${d.n}${G.uses[d.id]?`<span class="chip">×${G.uses[d.id]}</span>`:''}</div><div class="fx">Now: ${fxText(d.now)} · Permanent: ${per}</div><div class="imp">${impText(im)}</div></div><div class="cb"><button class="e" data-d="${i}" ${G.E>=c?'':'disabled'}>FUND<br>${c} Effort</button></div></div>`}).join('');
+}
+function rEco(P,ec){
+  P.innerHTML=`<div class="calcbar"><div class="lbl">How Effort is made</div>
+   <div class="eq"><b>${ec.workforce.toFixed(2)}bn</b>workforce ×<b>${G.I.toFixed(0)}</b>Industry ×<b>${ec.stabM.toFixed(2)}</b>Stability ×<b>${G.dr.effM.toFixed(2)}</b>Infrastructure${ec.disp<1?' ×<b>0.90</b>Dispersed':''} × ${EFF_K} =<b class="g">+${ec.gross.toFixed(2)}</b>− upkeep<b class="x">${ec.upkeep.toFixed(2)}</b>=<b class="r">${sgn(ec.net,2)} Effort/yr</b></div>
+   <div class="lbl" style="margin-top:6px">How Research is made</div>
+   <div class="eq">(<b>${G.K.toFixed(0)}</b>Knowledge × ${RES_K} +<b>${ec.labs.toFixed(1)}</b>labs) ×<b>${G.dr.resM.toFixed(2)}</b>Universities =<b class="rc">${sgn(ec.rp,2)} Research/yr</b></div></div>`+
+   `<div class="hint" style="margin-bottom:6px">Programs give a boost now and a permanent one after. Each costs 5 more Effort than the last.</div>`+progCards('eco');
+  P.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>doProg(DIRS[+b.dataset.d]));
+}
+function rPeo(P,ec){
+  P.innerHTML=`<div class="calcbar"><div class="lbl">Population</div>
+   <div class="eq"><b>${G.P.toFixed(2)}bn</b>×(<b>${(G.dr.pop*100).toFixed(2)}%</b>×<b>${G.S.toFixed(0)}</b>Stab/50${sz(G,'S2')?' + labs':''}) =<b class="g">${sgn(ec.growth,3)}bn/yr</b></div>
+   <div class="lbl" style="margin-top:6px">Crew</div>
+   <div class="eq"><b>${G.P.toFixed(2)}bn</b>×(5% +<b>${G.R.toFixed(0)}</b>Resolve/1000${G.dr.enl?` +<b>${(G.dr.enl*100).toFixed(0)}%</b>service`:''}) =<b>${ec.crewAvail.toFixed(2)}bn</b>can enlist · need<b>${ec.crewReq.toFixed(2)}bn</b>=<b class="${ec.crewPct<.999?'x':'g'}">${Math.round(ec.crewPct*100)}% crewed</b></div>
+   <div class="lbl" style="margin-top:6px">Stability ${G.S.toFixed(0)} feeds</div>
+   <div class="eq">Effort ×<b>${ec.stabM.toFixed(2)}</b>· growth ×<b>${(G.S/50).toFixed(2)}</b>· Occupation ×<b>${(.6+G.S/125).toFixed(2)}</b>· Resolve ${G.R.toFixed(0)} → Resistance ×<b>${(.5+G.R/100).toFixed(2)}</b></div></div>`+progCards('peo');
+  P.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>doProg(DIRS[+b.dataset.d]));
+}
+function rPrj(P,ec){
+  const subs=[['def','DEFENCE'],['end','ENDURANCE'],['sci','SCIENCE'],['emg','EMERGENT']];
+  let h=`<div class="subtabs">${subs.map(([k,l])=>`<button data-s="${k}" class="${G.sub===k?'on':''}">${l}</button>`).join('')}</div><div class="why" style="margin:0 0 6px">${PURPOSE[G.sub]}<br><span style="color:var(--ac)">Effort</span> = size (+35% strength, +40% crew & upkeep) · <span class="rpc">Research</span> = tech (+25% strength, −10% crew & upkeep)</div>`;
+  NODES.filter(n=>n.br===G.sub).forEach(n=>{const s=nodeState(n);
+    if(s==='hidden'){h+=`<div class="card pc emg locked"><div class="cm"><div class="nm">◇ Unknown project</div><div class="fx">Needs: ${n.req.map(r=>NB[r].n).join(' + ')}</div></div></div>`;return}
+    const S=sz(G,n.id),T=tc(G,n.id),built=S>0;
+    const fx=Object.entries(n.fx).map(([k,v])=>`+${v} ${TRAITS[k].s}${built?` <span class="pos">(${Math.round(v*nodeMult(G,n.id)*nodeEff(G,n.id,ec))})</span>`:''}`).join(' · ');
+    const tests=[...new Set(Object.keys(n.fx).flatMap(k=>TESTED[k]))].join(', ');
+    const e=built?Math.round(nodeEff(G,n.id,ec)*100):100;
+    const chip=built?`<span class="chip">Size ${S} · Mk ${MK[T]} · ×${matOf(G,n.id).toFixed(2)}${e<100?` · <span class="neg">${e}%</span>`:''}</span>`:'';
+    const load=built?`Crew ${(n.crew*sizeLoad(S)*techLoad(T)*ec.crewMult).toFixed(2)}bn · upkeep ${(n.up*sizeLoad(S)*techLoad(T)).toFixed(2)}/yr`:`Crew ${(n.crew*ec.crewMult).toFixed(2)}bn · upkeep ${n.up}/yr`;
+    let btns='';
+    if(s==='locked')btns='';
+    else{const pe=priceE(n,S),pr=priceR(n,T);
+      const eOk=S<MAXS&&G.E>=pe,rOk=built&&T<MAXT&&G.RP>=pr;
+      btns=`<div class="cb"><button class="e" data-n="${n.id}" data-k="E" ${eOk?'':'disabled'}>${S>=MAXS?'MAX SIZE':built?'EXPAND':'BUILD'}${S<MAXS?`<br>${pe} Effort`:''}</button>${built?`<button class="r" data-n="${n.id}" data-k="R" ${rOk?'':'disabled'}>${T>=MAXT?'MAX TECH':'IMPROVE'}${T<MAXT?`<br>${pr} Research`:''}</button>`:''}</div>`}
+    h+=`<div class="card pc ${built?'owned':''} ${s==='locked'?'locked':''} ${n.br==='emg'?'emg':''}"><div class="cm"><div class="nm">${n.br==='emg'?'◆ ':''}${n.n}${chip}</div><div class="fx">${[fx,n.note].filter(Boolean).join(' · ')}</div><div class="fx">${s==='locked'?`Build ${NODES.find(x=>x.br===n.br&&x.tier===n.tier-1).n} first`:load}${tests?` · ${tests}`:''}</div></div>${btns}</div>`});
+  P.innerHTML=h;
+  P.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{G.sub=b.dataset.s;render()});
+  P.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>act(NB[b.dataset.n],b.dataset.k));
+}
+function rInt(P,ec){
+  const Lk=intelLik(G),{c}=counters(G,ec),fw=forward(G),cf=counters(fw).c,sc=200;
+  const acc=Math.round(intelAcc(G)*100);
+  P.innerHTML=`<div class="hint">The enemy brings 3 of these 6, each at strength ${BAND[0]}–${BAND[1]} (red band). Likelihood starts at 50% and moves with each report, weighted by how reliable the source is. Current reliability: <b>${acc}%</b>.</div>`+
+  `<div class="tv lbl"><span>Threat</span><span>Likely</span><span>Your readiness vs their range</span><span style="text-align:right">Y100</span></div>`+
+  TK.slice().sort((x,y)=>Lk[y]-Lk[x]).map(t=>{const r=c[t],rf=cf[t],ratio=rf/TYPICAL;const st=ratio>=1.2?['Countered','v-ok']:ratio>=.7?['Contested','v-wa']:['Exposed','v-bad'];const lk=Math.round(Lk[t]*100);
+    return `<div class="tv"><span>${TRAITS[t].s}</span><span class="mono ${lk>=65?'neg':lk<=35?'mut':''}">${lk}%</span><div class="tvbar"><span class="band" style="left:${BAND[0]/sc*100}%;width:${(BAND[1]-BAND[0])/sc*100}%"></span><span class="fill" style="width:${Math.min(100,rf/sc*100)}%;background:var(--ok);opacity:.35"></span><span class="fill" style="width:${Math.min(100,r/sc*100)}%;background:var(--ok)"></span></div><span class="mono" style="text-align:right">${Math.round(rf)}</span></div><div class="tvs">now ${Math.round(r)} · Y100 ${Math.round(rf)} · <span class="${st[1]}">${st[0]} at Y100</span> · tested in ${TESTED[t].join(', ')}</div>`}).join('')+
+  `<div class="why">Solid bar = readiness now · faded = projected at Y100 on your current course.</div>`+
+  `<div class="sec"><span>Reports</span></div>`+(G.reports.length?G.reports.map(r=>`<div class="rep"><span class="y">Y${r.y}</span> · ${r.src} → <b>${TRAITS[r.trait].n}</b> · ${r.conf}% reliable</div>`).join(''):'<div class="hint">The first report is due in Year 5.</div>');
+}
+function rEmp(P,ec){
+  const today=project(G),fw=forward(G),pf=project(G,true),ir=intelRead(fw);const {c,src}=counters(G,ec);const bf=counters(fw).byBr;
+  const sim=simulate(fw,ir.e,true);
+  const tot=Object.values(bf).reduce((a,b)=>a+b,0)||1;
+  const parts=[['def','Defence','#e8e2d6'],['end','Endurance','#c9a24a'],['sci','Science','#8fb3c4'],['emg','Emergent','#c47545'],['soc','Society (meters + events)','#6f6a5f']];
+  let h=`<div class="box proj"><div class="lbl">Year 100 survival on your current course</div><div class="big">${fmtD(pf)}</div>
+   <div class="hint" style="margin:0">If they arrived today: <b>${fmtD(today)}</b>. ${ir.label}.</div></div>`;
+  h+=`<div class="sec"><span>What your readiness rests on (Y100)</span></div><div class="box"><div class="bar" style="height:10px;display:flex">${parts.map(([k,,col])=>`<i style="width:${bf[k]/tot*100}%;background:${col}"></i>`).join('')}</div>
+   <div class="why" style="display:flex;flex-wrap:wrap;gap:4px 12px;margin-top:7px">${parts.map(([k,l,col])=>`<span><span style="color:${col}">■</span> ${l} ${Math.round(bf[k]/tot*100)}%</span>`).join('')}</div></div>`;
+  h+=`<div class="sec"><span>How survival adds up (Y100)</span></div><div class="box"><table class="calc"><tr><th>PHASE</th><th>TESTS</th><th style="text-align:right">YOU</th><th style="text-align:right">THEM</th><th style="text-align:right">×</th><th style="text-align:right">DAYS</th></tr>`+
+   sim.map(r=>`<tr><td style="font-family:var(--sans)">${r.p.n[0]+r.p.n.slice(1).toLowerCase()}</td><td>${(r.act.length?r.act:r.p.tr).map(t=>TRAITS[t].s.slice(0,3)).join('+')}</td><td class="n">${Math.round(r.ready)}</td><td class="n">${Math.round(r.threat)}</td><td class="n ${r.ratio>=1.2?'v-ok':r.ratio>=.7?'v-wa':'v-bad'}">${r.ratio.toFixed(2)}${r.pm!==1?`<br><span class="mut">×${r.pm.toFixed(2)}</span>`:''}</td><td class="n">${r.days}</td></tr>`).join('')+
+   `</table><div class="why">Days = base (30 / 90 / 180 / 365) × (0.25 + ratio^1.6), where ratio = your readiness ÷ their strength. Occupation is also multiplied by Stability, and Resistance by Resolve and Population.</div></div>`;
+  h+=`<div class="sec"><span>Readiness now</span><span>line = typical threat (${TYPICAL})</span></div><div class="box">`+
+   TK.map(t=>{const s=src[t],sc=220;const seg=(v,col)=>`<i style="width:${Math.max(0,v)/sc*100}%;background:${col}"></i>`;
+     const items=s.items.sort((a,b)=>b.v-a.v).slice(0,3).map(x=>`${x.n} ${Math.round(x.v)}`).join(', ');
+     return `<div class="rrow"><span>${TRAITS[t].s}</span><div class="bar">${seg(s.doc,'var(--ok)')}${seg(s.met,'#6f6a5f')}${seg(s.bon,'var(--ac)')}<span class="mk" style="left:${TYPICAL/sc*100}%"></span></div><span class="mono" style="text-align:right">${Math.round(c[t])}</span><div class="sub">${items||'no projects'} · meters ${Math.round(s.met)}${s.bon?` · events ${sgn(s.bon,0)}`:''}</div></div>`}).join('')+
+   `<div class="why">Each project = base × 1.35^(size−1) × 1.25^tech × maturity (1.5%/yr, max ×2.5) × crew % × funding %.</div></div>`;
+  h+=`<div class="sec"><span>Effort ledger</span><span class="${cls(ec.net)}">${sgn(ec.net,2)}/yr</span></div><div class="box">`+
+   lg('Gross income',`<span class="pos">+${ec.gross.toFixed(2)}</span>`)+(ec.ups.length?ec.ups.map(([n,u])=>lg('Upkeep · '+n,`<span class="neg">−${u.toFixed(2)}</span>`)).join(''):lg('Upkeep','<span class="mut">none yet</span>'))+
+   lg('Net per year',`<span class="${cls(ec.net)}">${sgn(ec.net,2)}</span>`,'tot')+(G.E<0?lg('Debt',`<span class="neg">${Math.round(G.E)} · no purchases until cleared</span>`):'')+`</div>`;
+  P.innerHTML=h;
+}
+
+/* ================= ARRIVAL / INVASION ================= */
+function arrival(){
+  G.paused=true;updCtl();
+  const en=Object.keys(G.enemy).sort((a,b)=>G.enemy[b]-G.enemy[a]);
+  const conf=en[0];const pool=Math.max(0,Math.floor(G.E+G.RP/2));
+  $('#sheet').innerHTML=`<div class="lbl">Year 100 · Arrival</div><h2>The fleet enters the outer system</h2><p>Visual confirmation of one capability: <b>${TRAITS[conf].n}</b>. The other two are still unknown.<br><br>Commit everything you have left (<b>${pool}</b> = Effort + half your Research) to a last-stand mobilisation.</p>`+
+  `<button class="opt" data-c="spread"><b>Spread evenly</b><span>+${Math.round(pool/12)} to all six readiness types</span></button><div class="optgrid">`+
+  TK.map(t=>`<button class="opt" data-c="${t}"><b>${TRAITS[t].s}</b><span>+${Math.round(pool/5)} readiness</span></button>`).join('')+`</div>`;
+  $('#modal').classList.remove('hidden');
+  $('#sheet').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+    const c=b.dataset.c;if(c==='spread')TK.forEach(t=>G.bonus[t]=(G.bonus[t]||0)+pool/12);else G.bonus[c]=(G.bonus[c]||0)+pool/5;
+    G.E=0;G.RP=0;$('#modal').classList.add('hidden');playInvasion();
+  });
+}
+const sleep=ms=>new Promise(r=>setTimeout(r,skip?0:ms));
+function line(s,cl=''){const d=document.createElement('div');d.className='ln '+cl;d.textContent=s;$('#lines').appendChild(d);$('#lines').scrollTop=1e9}
+function popAt(p){return G.P*(1-(INV?INV.popLoss:0))*(1-.85*Math.min(1,p)*(G.owned.has('E4')?.7:1)*(G.owned.has('H3')?.8:1))}
+function animDays(i,a,b,dur){
+  return new Promise(res=>{const st=performance.now();let midDone=false;
+    const f=now=>{const t=skip?1:Math.min(1,(now-st)/dur);const d=a+(b-a)*t;
+      INV.phase=i;INV.pp=t;INV.p=(i+t)/4;
+      $('#dctr').textContent=Math.floor(d);$('#ydctr').textContent=fmtD(d);$('#pctr').textContent=popAt(INV.p).toFixed(2)+'bn';
+      if(t>.5&&!midDone){midDone=true;if(!skip)line(pick(MID),'mute')}
+      t<1?requestAnimationFrame(f):res()};requestAnimationFrame(f)})
+}
+function council(i){
+  return new Promise(res=>{
+    const c=COUNCIL[i];const wasSkip=skip;skip=false;
+    $('#sheet').innerHTML=`<div class="lbl">War council · after ${PHASES[i].n.toLowerCase()}</div><h2>${c.t}</h2><p>${c.d}</p>`+
+      c.o.map((o,j)=>{const ok=!o[2].req||G.owned.has(o[2].req);return `<button class="opt" data-j="${j}" ${ok?'':'disabled'}><b>${o[0]}</b><span>${o[1]}${ok?'':' · needs the Ark Project'}</span></button>`}).join('');
+    $('#modal').classList.remove('hidden');
+    $('#sheet').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
+      const o=c.o[+b.dataset.j],m=o[2];
+      [1,2,3].forEach(k=>{if(m[k])INV.mod[k]*=m[k]});
+      if(m.pop){INV.popLoss=m.pop;line('Scorched earth ordered. A quarter of the population is lost.','bad')}
+      if(m.ark){INV.ark=m.ark;line('The Ark launches early.','good')}
+      if(m.under){const x=(G.owned.has('E3')||G.owned.has('H3'))?1.4:1.2;INV.mod[3]*=x;line(`Government goes underground. Resistance ×${x}.`,'good')}
+      if(m.truce){if(rnd()<.25){INV.truce=365;line('They answer. A one-year truce holds.','good')}else{INV.mod[3]*=.6;line('No reply. The channel was a mistake. Resistance ×0.6.','bad')}}
+      G.council.push(`${c.t}: ${o[0]}`);
+      $('#modal').classList.add('hidden');skip=wasSkip;res();
+    });
+  });
+}
+async function playInvasion(){
+  skip=false;$('#lines').innerHTML='';$('#dctr').textContent='0';$('#ydctr').textContent='0 days';$('#pctr').textContent=G.P.toFixed(2)+'bn';
+  G.ec=econ(G);const C=counters(G,G.ec).c;const res=simulate(G,G.enemy,false);
+  INV={res,C,p:0,phase:0,pp:0,fx:[],drops:[],done:false,mod:[1,1,1,1],popLoss:0,ark:G.owned.has('H1')?.2:0,truce:0,
+       kill:clamp(res[0].ratio*.35+(G.owned.has('H2')?.25:0),0,.8),fleetLoss:clamp(1.15-res[0].ratio*.5,.15,1)};
+  SC.enemy.forEach(e=>{e.boom=0});
+  show('inv');
+  if(G.owned.has('H2'))line('Deep Strike Deterrent fired. A quarter of the inbound fleet is destroyed in transit.','good');
+  let cum=0;
+  for(let i=0;i<4;i++){const r=res[i];r.days=Math.max(1,Math.round(r.days*INV.mod[i]));
+    $('#phase').textContent=`PHASE ${i+1}/4 · ${r.p.n}`;line(r.p.n,'hdr');INV.phase=i;INV.pp=0;
+    r.act.forEach(t=>line(TRAITS[t].c,'bad'));if(!r.act.length)line('The enemy is not specialised for this phase.','mute');
+    await sleep(900);
+    await animDays(i,cum,cum+r.days,3200+5000*Math.min(1,r.days/600));
+    cum+=r.days;
+    const q=r.ratio>=1.2?'good':r.ratio>=.7?'mid':'bad';line(OUT[i][q],q==='mid'?'':q);
+    await sleep(700);
+    if(i<3)await council(i);
+  }
+  if(INV.truce){cum+=INV.truce;$('#dctr').textContent=Math.floor(cum);$('#ydctr').textContent=fmtD(cum)}
+  INV.total=cum;INV.done=true;INV.doneAt=performance.now();INV.p=1.01;
+  $('#phase').textContent='END';
+  if(INV.ark)line('The Ark Project leaves the Lagrange point with 40,000 people aboard. Heading: away.','good');
+  line('Final transmission received from Council Site 4. Then silence.','mute');
+  await sleep(2600);debrief();
+}
+function debrief(){
+  const {res,total,C}=INV;const det=G.owned.has('H2'),ec=G.ec;
+  const score=Math.round(total*(1+INV.ark));const best=getBest();const nb=score>best;if(nb)setBest(score);
+  const Lk=intelLik(G);const read=TK.slice().sort((x,y)=>Lk[y]-Lk[x]).slice(0,3);
+  const hit=read.filter(t=>G.enemy[t]).length;
+  const badges=[];if(INV.ark)badges.push('ARK LAUNCHED');if(det)badges.push('DEEP STRIKE');if(G.owned.has('H3'))badges.push('UNDERCITY');if(INV.truce)badges.push('TRUCE');if(hit===3)badges.push('PERFECT READ');if(nb)badges.push('NEW RECORD');if(score>=1825)badges.push('5+ YEARS');
+  $('#screen-deb').innerHTML=`
+   <div class="lbl">Debrief · Council archive</div>
+   <div class="score">${fmtD(score)}</div>
+   <div class="lbl">${INV.ark?`${fmtD(total)} + Ark legacy ${Math.round(INV.ark*100)}% · `:''}Best ${fmtD(Math.max(score,best))}</div>
+   <div class="badges">${badges.map(b=>`<span class="badge">${b}</span>`).join('')}</div>
+   <div class="sec"><span>Intel vs reality</span></div>
+   <table><tr><th>THREAT</th><th style="text-align:right">LIKELY</th><th style="text-align:right">ACTUAL</th><th style="text-align:right">YOURS</th><th style="text-align:right">VERDICT</th></tr>
+   ${TK.map(t=>{const th=G.enemy[t]?Math.round(G.enemy[t]*(det?.75:1)):0;const r=th?C[t]/th:0;const v=!th?['Not present','mut']:r>=1.2?['Countered','v-ok']:r>=.7?['Contested','v-wa']:['Unprepared','v-bad'];return `<tr><td>${TRAITS[t].s}</td><td class="n">${Math.round(Lk[t]*100)}%</td><td class="n">${th||'—'}</td><td class="n">${Math.round(C[t])}</td><td class="n ${v[1]}">${v[0]}</td></tr>`}).join('')}
+   </table>
+   <div class="hint">Your top three: ${read.map(t=>`${G.enemy[t]?'✓':'✗'} ${TRAITS[t].s}`).join(' · ')}: <b>${hit}/3 correct</b></div>
+   <div class="sec"><span>Phases</span></div>
+   <table><tr><th>PHASE</th><th style="text-align:right">RATIO</th><th style="text-align:right">COUNCIL ×</th><th style="text-align:right">DAYS</th></tr>${res.map((r,i)=>{const q=r.ratio>=1.2?'v-ok':r.ratio>=.7?'v-wa':'v-bad';return `<tr><td>${r.p.n}</td><td class="n ${q}">${r.ratio.toFixed(2)}</td><td class="n">${INV.mod[i]!==1?'×'+INV.mod[i].toFixed(2):'—'}</td><td class="n">${fmtD(r.days)}</td></tr>`}).join('')}${INV.truce?`<tr><td>TRUCE</td><td></td><td></td><td class="n v-ok">365 days</td></tr>`:''}</table>
+   <div class="hint">${G.council.join('<br>')}</div>
+   <div class="sec"><span>Empire at arrival</span></div>
+   <table>
+    <tr><td>Population</td><td class="n">${G.P.toFixed(2)}bn (peak ${G.peakP.toFixed(2)})</td></tr>
+    <tr><td>Survivors at the end</td><td class="n">${popAt(1).toFixed(2)}bn</td></tr>
+    <tr><td>Effort per year</td><td class="n">+${ec.gross.toFixed(2)} · −${ec.upkeep.toFixed(2)} upkeep</td></tr>
+    <tr><td>Research per year</td><td class="n">+${ec.rp.toFixed(2)}</td></tr>
+    <tr><td>Crew · funding</td><td class="n">${Math.round(ec.crewPct*100)}% · ${Math.round(G.fund*100)}%</td></tr>
+    <tr><td>Projects</td><td class="n">${G.owned.size} of 15</td></tr>
+   </table>
+   <div class="hint">${[...G.owned].map(id=>`${NB[id].n} size ${sz(G,id)} Mk ${MK[tc(G,id)]} (Y${G.builtAt[id]})`).join(' · ')||'Nothing built.'}</div>
+   <div style="height:12px"></div>
+   <button class="btn" id="againBtn">NEW RUN</button>`;
+  show('deb');$('#againBtn').onclick=newGame;
+}
+
+$('#startBtn').onclick=newGame;
+$('#skipBtn').onclick=()=>{skip=true};
+$('#ticker').onclick=showLog;
+$('#pauseBtn').onclick=()=>{G.paused=!G.paused;updCtl()};
+$('#spdBtn').onclick=()=>{G.speed=G.speed===1?2:G.speed===2?4:1;updCtl()};
+document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{G.tab=b.dataset.t;render()});
+const b0=getBest();if(b0)$('#bestline').textContent='Best: '+fmtD(b0);
+window.__LT={get G(){return G},act:(id,k)=>act(NB[id],k),tick:n=>{for(let i=0;i<n;i++)yearTick()},render,econ,project,simulate,counters,doProg,NODES,DIRS,priceE,priceR,sz,tc,nodeState,progCost};
+</script>
+</body>
+</html>

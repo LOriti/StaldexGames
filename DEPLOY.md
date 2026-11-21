@@ -143,3 +143,10 @@ Tests (repo root):
 - Suspicious scores are accepted but flagged ⚠. Rate limit: 12 submissions/hour per player.
 - Getting fired or hitting a wellbeing incident (shart/cardiac) still reaches the submit UI —
   it grades as "DNF" instead of a letter, and posts to the same board as a normal run.
+
+## LEAD TIME (alien-invasion prep prototype, unlisted at staldex.com/lead-time)
+
+Single self-contained file, `site/lead-time.html` — no build step, no Worker, no leaderboard;
+it ships with the normal site deploy. Unlisted on the same terms as LRMP and SEND IT: no links
+from the homepage and a `noindex` meta tag. It loads Inter and JetBrains Mono from Google Fonts,
+allowed for a standalone project page. Best score is kept in the player's own browser only.
