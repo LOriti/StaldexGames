@@ -2,9 +2,8 @@
 <html lang="en">
 <head>
 <meta charset="utf-8">
-<meta name="robots" content="noindex">
 <meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
-<title>Lead Time — prototype</title>
+<title>Invasion</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
 <style>
@@ -151,7 +150,7 @@ td.n{font-family:var(--mono);text-align:right}
 
 <section id="screen-title" class="screen active">
   <div class="stamp">CLASSIFIED · COUNCIL EYES ONLY</div>
-  <h1>LEAD TIME</h1>
+  <h1>INVASION</h1>
   <p class="brief">A hostile signal has been confirmed. Arrival: 100 years. You are Director of Planetary Preparedness. You can't win. You decide how long humanity lasts.</p>
   <div class="howto">
     <div><b>Population</b> is your workforce. Workforce × Industry produces <b>Effort</b>, the base currency.</div>
@@ -558,8 +557,8 @@ function impText(im,opts={}){
 /* ================= GAME ================= */
 function show(s){screen=s;document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));$('#screen-'+s).classList.add('active');
   if(s==='game')mountCanvas('#cvGame');if(s==='inv')mountCanvas('#cvInv')}
-function getBest(){try{return +localStorage.getItem('leadtime.best')||0}catch(e){return 0}}
-function setBest(v){try{localStorage.setItem('leadtime.best',v)}catch(e){}}
+function getBest(){try{return +localStorage.getItem('invasion.best')||localStorage.getItem('leadtime.best')||0}catch(e){return 0}}
+function setBest(v){try{localStorage.setItem('invasion.best',v)}catch(e){}}
 function fmtD(d){d=Math.round(d);const y=Math.floor(d/365),r=d%365;return y?`${y} yr${y>1?'s':''} ${r} days`:`${r} days`}
 function fxText(fx){const p=[];for(const k in fx){if(k==='gamble'){p.push('50%: +25 Research');continue}const v=fx[k];
   if(k==='P')p.push(`${v>0?'+':'−'}${Math.abs(v)}bn Population`);else{const lab=ML[k]||(TRAITS[k]&&TRAITS[k].s+' readiness');p.push(`${v>0?'+':'−'}${Math.abs(v)} ${lab}`)}}return p.join(' · ')||'No immediate effect'}

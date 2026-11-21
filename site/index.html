@@ -380,6 +380,18 @@
     padding: 22px 12px 12px; display: flex; flex-direction: column; gap: 10px;
     font-family: var(--rz-round); color: var(--rz-ink);
   }
+  /* ============ INVASION ============ */
+  .invasion { --iv-bg:#1c1b18; --iv-p:#24221e; --iv-ln:#3a3730; --iv-tx:#e8e2d6; --iv-mu:#968e7f; --iv-ac:#c47545; --iv-bad:#c0533f; --iv-rp:#8fb3c4; background:var(--iv-bg); color:var(--iv-tx); border-radius:14px; padding:14px; }
+  .invasion .iv-stamp { display:inline-block; font-family:ui-monospace,Menlo,monospace; font-size:10px; letter-spacing:.18em; color:var(--iv-ac); border:1px solid var(--iv-ac); border-radius:3px; padding:3px 7px; }
+  .invasion .iv-stats { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:6px; margin:12px 0 10px; }
+  .invasion .iv-stat { background:var(--iv-p); border:1px solid var(--iv-ln); border-radius:8px; padding:6px 7px; font-family:ui-monospace,Menlo,monospace; min-width:0; }
+  .invasion .iv-stat small { display:block; font-size:9px; letter-spacing:.1em; color:var(--iv-mu); text-transform:uppercase; }
+  .invasion .iv-stat b { font-size:15px; }
+  .invasion .iv-threat { font-family:ui-monospace,Menlo,monospace; font-size:11px; color:var(--iv-bad); margin-bottom:10px; }
+  .invasion .iv-chips { display:flex; flex-wrap:wrap; gap:6px; margin-bottom:12px; }
+  .invasion .iv-chip { font-family:ui-monospace,Menlo,monospace; font-size:10.5px; border:1px solid var(--iv-ln); border-radius:999px; padding:3px 9px; color:var(--iv-mu); }
+  .invasion .iv-cta { display:block; text-align:center; background:var(--iv-ac); color:#1c1b18; font-weight:700; border-radius:10px; padding:12px; text-decoration:none; }
+  .invasion .iv-cta .meta { display:block; font-weight:400; font-size:11px; opacity:.8; }
   .rewind .rz-now { position: relative; background: var(--rz-paper); border: 3px solid var(--rz-ink); border-radius: 16px; box-shadow: 0 4px 0 var(--rz-ink); padding: 16px 8px 8px; }
   .rewind .rz-tag { position: absolute; top: -13px; left: 12px; background: var(--rz-ink); color: var(--rz-paper); font-weight: 700; font-size: 12px; line-height: 1; padding: 4px 10px 5px; border-radius: 999px; }
   .rewind .rz-plots { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 6px; }
@@ -643,6 +655,32 @@
           <span class="rz-chip">24 levels</span><span class="rz-chip">Win the crowd</span><span class="rz-chip">Endless rivals</span><span class="rz-chip">25 animals</span>
         </div>
         <a class="rz-cta" href="./rewind-zoo.html">🦁 Play Rewind Zoo<span class="meta">free · runs in this browser</span></a>
+      </div>
+    </div>
+  </details>
+
+  <!-- ============ INVASION ============ -->
+  <details class="project" id="invasion">
+    <summary class="row">
+      <span class="row-name">Invasion</span>
+      <span class="row-meta">Game · browser <span class="chev">＋</span></span>
+    </summary>
+    <p class="row-line">A hostile fleet is 100 years out. You run Earth until it arrives. You can't win; you decide how long humanity lasts.</p>
+
+    <div class="panel">
+      <div class="invasion">
+        <span class="iv-stamp">CLASSIFIED · COUNCIL EYES ONLY</span>
+        <div class="iv-stats" aria-hidden="true">
+          <div class="iv-stat"><small>Year</small><b>000</b></div>
+          <div class="iv-stat"><small>Effort</small><b style="color:var(--iv-ac)">30</b></div>
+          <div class="iv-stat"><small>Research</small><b style="color:var(--iv-rp)">3</b></div>
+          <div class="iv-stat"><small>Pop</small><b>8.0bn</b></div>
+        </div>
+        <div class="iv-threat">● CONTACT T−100 · intent hostile · capabilities unknown</div>
+        <div class="iv-chips" aria-hidden="true">
+          <span class="iv-chip">10-minute runs</span><span class="iv-chip">15 projects</span><span class="iv-chip">6 threats, 3 real</span><span class="iv-chip">War council</span><span class="iv-chip">Watch for Traitors</span>
+        </div>
+        <a class="iv-cta" href="./invasion.html">🛰 Play Invasion<span class="meta">free · runs in this browser · best on a phone</span></a>
       </div>
     </div>
   </details>

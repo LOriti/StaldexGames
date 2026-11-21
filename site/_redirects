@@ -15,9 +15,12 @@
 /Rewind         /rewind-zoo  301
 /Zoo            /rewind-zoo  301
 
-# Lead Time (unlisted prototype)
-/leadtime      /lead-time  301
-/lead_time     /lead-time  301
-/LeadTime      /lead-time  301
-/Lead-Time     /lead-time  301
-/LEADTIME      /lead-time  301
+# Invasion (was Lead Time)
+/lead-time     /invasion  301
+/leadtime      /invasion  301
+/lead_time     /invasion  301
+/LeadTime      /invasion  301
+/Lead-Time     /invasion  301
+/LEADTIME      /invasion  301
+/Invasion      /invasion  301
+/INVASION      /invasion  301
