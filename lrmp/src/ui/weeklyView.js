@@ -9,7 +9,7 @@ import { openRecipe } from './recipeModal.js';
 import { openDishPicker } from './dishPicker.js';
 import { openLunchPicker } from './lunchPicker.js';
 import { renderHistory, weekSegment, wireWeekSegment } from './historyView.js';
-import { clearManualLunch, dinnerToLunch } from '../core/lunches.js';
+import { clearManualLunch, dinnerToLunch, freezeManualLunch, lunchToDinner, moveManualLunch } from '../core/lunches.js';
 import {
   CONTEXT_DAYS, dateForIndex, dayContext, formatDate, formatDay, formatLongDate, formatRange,
 } from '../core/timeline.js';
@@ -51,7 +51,7 @@ function dinnerTile(plan, idx, left, planAnchor) {
   if (!d.dish && d.note) {
     return `<div class="tile ntile" data-idx="${idx}">
               <button class="nbtn" data-clearnote="${idx}" aria-label="Clear note">✕</button>
-              <div class="tile-name sm" data-editnote="${idx}">${escapeAttr(d.note)}</div>
+              <div class="tile-name sm">${escapeAttr(d.note)}</div>
               <div class="dctrl">${stepper(idx, d.extra ?? 0)}</div>
             </div>`;
   }
@@ -81,7 +81,7 @@ function lunchTile(lunch, idx, manualLunches = {}) {
     return `<div class="tile ltile mtile" data-idx="${idx}" data-dish="${escapeAttr(L.dish)}" style="--gc:${known ? colourOf(L.dish) : '#a49d8e'}">
               <button class="nbtn" data-clearlunch="${idx}" aria-label="Remove this lunch">✕</button>
               ${known ? '<button class="rbtn" aria-label="Recipe">📖</button>' : ''}
-              <div class="tile-name sm" data-addlunch="${idx}">${escapeAttr(L.dish)}</div>
+              <div class="tile-name sm">${escapeAttr(L.dish)}</div>
               ${L.frozen
                 ? '<div class="tile-kind">❄ from freezer</div>'
                 : `<div class="dctrl">${stepper(idx, manualLunches[idx]?.extra ?? 0, 'lunch')}</div>`}
@@ -210,6 +210,7 @@ export function renderWeekly(root) {
     ${surplusRow(weekSurplus[week], week)}
     <p class="board-note">Drag a dinner onto another day to swap, onto the freezer ❄ to bank all its leftovers, or down into the surplus strip to push it to next week ·
       drag a lunch onto another day to pin it there 📌, or onto the freezer to bank that one portion ·
+      drag any meal, notes and your own lunches included, onto another day to move it; hold it on a week button to move it to that week ·
       drag a lunch onto an empty dinner to have those leftovers for dinner instead 🥡, or a dinner onto a lunch to have it for lunch ·
       tap a lunch, or an empty one, to add your own: typed, a dish, or one from the freezer (the leftovers move on to a later day) ·
       notes and your own lunches can make leftovers too with −/+ ·
@@ -276,6 +277,28 @@ function addToFreezer(root) {
 
 /* ---------- interaction ---------- */
 
+// While dragging, resting on a week button for a moment switches to that week, so a meal
+// can be dropped on any day of the plan. The board re-renders under the finger; the drag
+// carries on because beginDrag listens on window, not on the tile.
+let weekHover = { el: null, timer: 0 };
+function hoverWeek(btn) {
+  if (btn && btn === weekHover.el) {
+    if (weekHover.timer) btn.classList.add('slot-hot'); // the drag clears highlights each move
+    return;
+  }
+  if (!btn && !weekHover.el) return;
+  clearTimeout(weekHover.timer);
+  weekHover = { el: btn, timer: 0 };
+  if (!btn) return;
+  const wk = Number(btn.dataset.wk);
+  if (wk === get().week && get().histWeek === 0) return;
+  btn.classList.add('slot-hot');
+  weekHover.timer = setTimeout(() => {
+    weekHover = { el: null, timer: 0 };
+    setUI({ week: wk, histWeek: 0 });
+  }, 450);
+}
+
 function wire(root) {
   const today = root.querySelector('[data-today]');
   if (today) today.onclick = () => setUI({ week: 0, histWeek: 0 });
@@ -334,9 +357,6 @@ function wire(root) {
       });
     }
 
-    const en = e.target.closest('[data-editnote]');
-    if (en) return openNoteEditor(root, en.closest('.dslot'), Number(en.dataset.editnote));
-
     const cn = e.target.closest('[data-clearnote]');
     if (cn) {
       s.plan[Number(cn.dataset.clearnote)].dinner = emptyDinner();
@@ -372,14 +392,38 @@ function wire(root) {
     findTarget: (x, y, payload) => {
       const el = document.elementFromPoint(x, y);
       if (!el) return null;
+      if (payload.type !== 'surplus') hoverWeek(el.closest('[data-wk]'));
       const freezerEl = el.closest('.freezer');
       if (freezerEl) return freezerEl; // every drag type can land in the freezer
       if (payload.type === 'dinner') return el.closest('.dslot') || el.closest('.lslot') || el.closest('.surplus');
-      if (payload.type === 'lunch') return el.closest('.lslot') || el.closest('.dslot');
+      if (payload.type === 'lunch' || payload.type === 'mlunch') return el.closest('.lslot') || el.closest('.dslot');
       return null;
     },
     onDrop: (target, payload) => {
       const s = get();
+
+      // A hand-added lunch: onto the freezer, another lunch, or an empty dinner.
+      if (payload.type === 'mlunch') {
+        const to = Number(target.dataset.idx);
+        if (target.classList.contains('freezer')) {
+          const frozen = s.manualLunches[payload.idx]?.frozen;
+          const n = freezeManualLunch(s.manualLunches, s.freezer, payload.idx);
+          toast(frozen ? 'Back in the freezer' : n ? `${n} portion${n === 1 ? '' : 's'} frozen` : 'No leftovers to freeze — add some with +');
+          return commit({ lunches: true, freezer: true });
+        }
+        if (target.classList.contains('lslot')) {
+          if (!moveManualLunch(s.manualLunches, s.lunchPins, payload.idx, to)) return;
+          toast(`${payload.dish} moved to ${formatDay(dateForIndex(to, s.planAnchor))} lunch`);
+          return commit({ lunches: true, pins: true });
+        }
+        if (target.classList.contains('dslot')) {
+          const res = lunchToDinner(s.plan, s.manualLunches, payload.idx, to);
+          if (!res.ok) return toast('That day already has a dinner — clear it first');
+          toast(`${res.dish} moved to ${formatDay(dateForIndex(to, s.planAnchor))} dinner`);
+          return commit({ plan: true, lunches: true });
+        }
+        return;
+      }
 
       if (target.classList.contains('freezer')) {
         if (payload.type === 'dinner') {
@@ -464,21 +508,50 @@ function wire(root) {
         return commit({ pins: true, lunches: hadManual, freezer: hadManual });
       }
     },
-    onEnd: () => renderWeekly(root),
+    onEnd: () => {
+      hoverWeek(null);
+      renderWeekly(root);
+    },
   };
 
-  root.querySelectorAll('.dtile').forEach((t) => {
+  // Dinners and note days drag the same way: swap with another day, push to next week,
+  // have it for lunch, or freeze its leftovers. A note's tap still edits it.
+  root.querySelectorAll('.dtile, .ntile').forEach((t) => {
     t.addEventListener('pointerdown', (e) => {
-      if (e.target.closest('button')) return; // let the -/+/📖 buttons through
-      const d = get().plan[Number(t.dataset.idx)].dinner;
-      if (!d.dish) return;
+      if (e.target.closest('button')) return; // let the -/+/📖/✕ buttons through
+      const idx = Number(t.dataset.idx);
+      const d = get().plan[idx].dinner;
+      const name = d.dish || d.note;
+      if (!name) return;
       beginDrag(e, t, {
         type: 'dinner',
-        idx: Number(t.dataset.idx),
-        dish: d.dish,
-        label: d.dish,
-        colour: d.cat ? MODE_BY_KEY[d.cat].color : '#888',
-      }, dragOpts);
+        idx,
+        dish: name,
+        label: name,
+        colour: d.cat && MODE_BY_KEY[d.cat] ? MODE_BY_KEY[d.cat].color : '#a49d8e',
+      }, d.dish ? dragOpts : {
+        ...dragOpts,
+        // onEnd re-renders the board after a tap, so open the inline editor on the new DOM.
+        onTap: () => setTimeout(() => {
+          const slot = root.querySelector(`.dslot[data-idx="${idx}"]`);
+          if (slot) openNoteEditor(root, slot, idx);
+        }),
+      });
+    });
+  });
+
+  // Hand-added lunches: move to another lunch, have it for dinner, or freeze. Tap edits.
+  root.querySelectorAll('.mtile').forEach((t) => {
+    t.addEventListener('pointerdown', (e) => {
+      if (e.target.closest('button')) return;
+      const idx = Number(t.dataset.idx);
+      beginDrag(e, t, {
+        type: 'mlunch',
+        idx,
+        dish: t.dataset.dish,
+        label: t.dataset.dish,
+        colour: colourOf(t.dataset.dish),
+      }, { ...dragOpts, onTap: () => openLunchPicker(idx) });
     });
   });
 
