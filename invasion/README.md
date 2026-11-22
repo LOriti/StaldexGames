@@ -24,7 +24,7 @@ humanity lasts once the invasion begins. Winning is possible but hard (see Victo
 |---|---|
 | Detection, Year 0 | Briefing; enemy profile rolled in secret |
 | The century, Years 1–100 | Real time with pause. Programs, projects, intel every decade, events |
-| Arrival, Year 100 | One enemy capability confirmed; leftover Effort + half of Research committed to a last stand |
+| Arrival, Year 100 | Time stops: final purchases with every tab open, one enemy capability confirmed, then the last-stand deployment (with back-and-forth to review) |
 | Invasion | Four phases play out on the Earth view, with a war council call after each of the first three |
 | Debrief | Time survived, intel vs reality, phase table, empire at arrival |
 
@@ -241,9 +241,13 @@ After each of the first three phases the invasion pauses for one call:
 
 ### Last stand
 
-At arrival one enemy type is confirmed. The pool (Effort + half of Research) goes either spread
-(pool ÷ 12 to every type) or focused (pool ÷ 5 to one type).
-
+At Year 100 time stops and the run enters **final preparations**: the fleet's strongest capability is
+confirmed (shown as 100% likely in Intel), every tab still works, and you can make final purchases
+with what you have. A red bar shows your reserves and a **Last stand** button. That opens the
+deployment screen: each type shows confirmed or its likelihood, readiness now and after deploying,
+with **Back to review** to return to the tabs and check more. The pool (Effort + half of Research)
+goes either spread (pool ÷ 12 to every type) or focused (pool ÷ 5 to one type); anything unspent is
+lost. With nothing left, a Begin button starts the invasion.
 ## Empire tab
 
 - Year 100 survival on your current course (meters, maturity, population and Traitors projected
