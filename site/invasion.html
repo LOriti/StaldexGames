@@ -154,7 +154,7 @@ td.n{font-family:var(--mono);text-align:right}
 .pips span{display:inline-flex;gap:2px;margin-right:4px}.pips span i{width:8px;height:8px;border-radius:2px;border:1px solid}
 .pips .mb{margin-left:auto;font-family:var(--mono);font-size:8px;color:var(--mu);border:1px solid var(--ln);border-radius:4px;padding:1px 5px}
 .cbar{display:flex;gap:1px;height:4px;border-radius:2px;overflow:hidden;background:var(--p2);margin-top:3px}.cbar i{display:block;height:100%}
-.subtabs{margin-bottom:5px!important}.subtabs button{padding:5px 0!important;font-size:8.5px!important}
+.subtabs{margin-bottom:4px!important}.subtabs button{padding:5px 0!important;font-size:8.5px!important}
 .box.tight{padding:6px 9px;margin-bottom:5px}.box.tight .lg{padding:2px 0;font-size:10px}
 .mu{margin-bottom:6px;cursor:pointer}.mr{display:grid;grid-template-columns:46px 1fr 96px;gap:6px;align-items:center;font-family:var(--mono);font-size:9.5px}
 .mr span:last-child{text-align:right;font-size:9px}
@@ -227,7 +227,7 @@ td.n{font-family:var(--mono);text-align:right}
 #ticker{white-space:normal!important;text-overflow:clip!important;line-height:1.35;max-height:44px}
 /* ---- round 5b: roomier ---- */
 .split{height:178px!important}
-.slim{padding:8px 12px!important;margin-bottom:5px!important;border-radius:11px!important}
+.slim{padding:8px 12px!important;margin-bottom:4px!important;border-radius:11px!important}
 .slim .nm{font-size:14.5px!important}.slim .nm em{font-size:10px!important}
 .slim .sp{font-size:10.5px!important;margin-top:3px!important;line-height:1.4!important}
 .trk i{width:8px!important;height:8px!important}
@@ -239,11 +239,17 @@ td.n{font-family:var(--mono);text-align:right}
 .mc{padding:5px 10px!important;font-size:10px!important}.mc b{font-size:13px!important}
 .meters{gap:5px!important;padding:5px 12px!important}
 #panel{padding:8px 12px 8px!important}
-.card.pe{padding:9px 11px!important;margin-bottom:7px!important}.pe .nm{font-size:14.5px!important}.pe .pm{font-size:10.5px!important}
-.pe .pb button{font-size:10px!important;padding:7px 8px!important}.card.pe.one{font-size:12px!important;padding:8px 11px!important}
+.card.pe{padding:7px 10px!important;margin-bottom:5px!important}.pe .nm{font-size:14.5px!important}.pe .pm{font-size:10.5px!important}
+.pe .pb button{font-size:10px!important;padding:6px 8px!important}.card.pe.one{font-size:12px!important;padding:8px 11px!important}
 .pe .pp{font-size:9px!important}.pe .pp i{width:8px!important;height:8px!important}
-.lc{padding:7px 11px!important;margin-bottom:5px!important}.lt b{font-size:14px!important}.lt span{font-size:10.5px!important}.ms2{font-size:9.5px!important}
+.lc{padding:6px 11px!important;margin-bottom:5px!important}.lt b{font-size:14px!important}.lt span{font-size:10.5px!important}.ms2{font-size:9.5px!important}
 .box.tight .lg{font-size:10.5px!important}
+.card.pe.cmp{padding:6px 10px!important;cursor:pointer}.pe.cmp .pm{align-items:center;margin-top:3px!important}
+.pb2{display:flex;gap:4px}.pb2 button{font-family:var(--mono);font-size:9.5px;padding:4px 7px;border-radius:6px;border:1px solid;background:var(--p2);white-space:nowrap}
+.pb2 button.e{border-color:var(--ac);color:var(--ac)}.pb2 button.r{border-color:var(--rp);color:var(--rp)}.pb2 button:disabled{opacity:.4}
+.lc .ms2{margin-top:2px!important}.box.tight.proj{margin-bottom:5px}
+.slim.purge{border-color:var(--bad);background:#2a1c17}.slim .pgt{font-family:var(--mono);font-size:9.5px;color:var(--bad);letter-spacing:.06em;margin-top:2px}
+.cost.pg{color:var(--bad)!important;border-color:var(--bad)!important;margin-right:4px;line-height:1.2;padding:5px 8px!important;font-size:10.5px!important}
 .badge{font-family:var(--mono);font-size:10px;padding:5px 8px;border:1px solid var(--ac);color:var(--ac);border-radius:4px;letter-spacing:.06em}
 .cm{flex:1;min-width:0}
 .cb{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
@@ -1049,9 +1055,10 @@ function purgeStrip(){if(G.T<25)return'';const ok=purgeReady()&&G.E>=25;const cd
   return `<div class="strip"><div><b>TRAITORS ${Math.round(G.T)} · ${traitorDrift(G).tot>0?'RISING':'HIGH'}</b><span>Purge cuts them 40%${cd?` · ready in ${cd} yrs`:''}</span></div><button id="purgeBtn" ${ok?'':'disabled'}>PURGE<br><em>25 E</em></button></div>`}
 function doPurge(){if(G.E<25||!purgeReady())return;G.E-=25;const t0=G.T;G.T=Math.round(G.T*.6);G.S=clamp(G.S-6,0,100);G.R=clamp(G.R-3,0,100);G.purgeY=G.year;log(`Purge ordered. Traitors ${Math.round(t0)} → ${G.T}. Stability −6, Resolve −3.`);float('PURGE · TRAITORS −40%','#c0533f');G.ec=econ(G);render()}
 function bindProgs(P){P.querySelectorAll('[data-d]').forEach(b=>b.onclick=e=>{e.stopPropagation();doProg(DIRS[+b.dataset.d])});const pb=$('#purgeBtn');if(pb)pb.onclick=doPurge}
-function rSoc(P){P.innerHTML=purgeStrip()+DIRS.filter(d=>d.area==='peo').map(slimRow).join('');bindProgs(P)}
+function rSoc(P){P.innerHTML=DIRS.filter(d=>d.area==='peo').map(d=>{let h=slimRow(d);if(d.id==='sec'&&G.T>=25){const ok=purgeReady()&&G.E>=25,cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;
+    h=h.replace('<div class="slim">','<div class="slim purge">').replace('<button class="cost"',`<button class="cost pg" id="purgeBtn" ${ok?'':'disabled'}>${cd?`PURGE<br>${cd} yrs`:'PURGE −40%<br>25 E'}</button><button class="cost"`).replace(/<span class="trk">.*?<\/span>/,'')}return h}).join('');bindProgs(P)}
 function rEco(P,ec){
-  P.innerHTML=DIRS.filter(d=>d.area==='eco').map(slimRow).join('')+`<div class="box tight" data-tap="effort"><div class="lbl">Upkeep · −${ec.upkeep.toFixed(2)}/yr</div>`+(ec.ups.length?ec.ups.map(([n,u])=>lg(n,`<span class="neg">−${u.toFixed(2)}</span>`)).join(''):lg('Nothing built yet','<span class="mut">0</span>'))+`<div class="lg2" style="margin-top:3px">Tap a project in Projects to mothball it (−70% upkeep)</div></div>`;
+  P.innerHTML=DIRS.filter(d=>d.area==='eco').map(slimRow).join('')+`<div class="box tight" data-tap="effort"><div class="lbl">Upkeep · −${ec.upkeep.toFixed(2)}/yr</div>`+(ec.ups.length?ec.ups.slice().sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,u])=>lg(n,`<span class="neg">−${u.toFixed(2)}</span>`)).join('')+(ec.ups.length>3?`<div class="lg2">+${ec.ups.length-3} more ›</div>`:''):lg('Nothing built yet','<span class="mut">0</span>'))+`</div>`;
   bindProgs(P);
 }
 /* ---------- projects (E) ---------- */
@@ -1064,7 +1071,7 @@ function btnImpact(n,kind,ec){
   return{d:deltaText(G,a,ec,e1),crew};
 }
 const ppips=(n,c)=>[0,1,2,3].map(i=>`<i style="background:${i<n?c:'transparent'};border-color:${c}"></i>`).join('');
-function projCard(n,ec){
+function projCard(n,ec,compact){
   const s=nodeState(n);
   if(s==='hidden')return `<div class="card pe one locked"><span>◇ Unknown project</span><span class="mut">needs ${n.req.map(r=>NB[r].n).join(' + ')}</span></div>`;
   if(s==='locked'){const have=brLevels(G,n.br,n.tier);return `<div class="card pe one locked"><span>${n.n}</span><span class="mut">needs ${n.tier-1} ${BR[n.br]} levels (have ${have})</span></div>`}
@@ -1085,11 +1092,13 @@ function projCard(n,ec){
     if(built&&S>=MAXS&&T>=MAXT)btns=`<span class="maxed">LV MAX · MK MAX</span>`;
   }
   const top=built?`<span class="pp">LV ${ppips(S,AC)} MK ${ppips(T+1,RPC)}<b style="color:${RPC}">${MK[T]}</b></span>`:'';
+  if(compact&&!mb){const cb=[];if(S<MAXS)cb.push(`<button class="e" data-n="${n.id}" data-k="E" ${G.E>=pe?'':'disabled'}>${built?'LV '+(S+1):'BUILD'} · ${pe} E</button>`);if(built&&T<MAXT)cb.push(`<button class="r" data-n="${n.id}" data-k="R" ${G.RP>=pr?'':'disabled'}>MK ${MK[T+1]} · ${pr} R</button>`);
+    return `<div data-pid="${n.id}" class="card pe cmp ${n.br==='emg'?'emg':''}" data-tap="out:${n.id}"><div class="pt"><span class="nm">${n.br==='emg'?'◆ ':''}${n.n}</span>${top}</div><div class="pm"><span>${out}</span><span class="pb2">${cb.join('')}</span></div></div>`}
   return `<div data-pid="${n.id}" class="card pe ${G.selPrj===n.id?'sel':''} ${mb?'moth':''} ${n.br==='emg'?'emg':''}" data-tap="out:${n.id}"><div class="pt"><span class="nm">${n.br==='emg'?'◆ ':''}${n.n}</span>${top}</div><div class="pm"><span>${out}</span><span class="mut">${right}${built&&!mb&&fxk.length?` · ${matName(n.id).slice(0,3)} ×${matOf(G,n.id).toFixed(2)}`:''}</span></div>${bar}${G.half.has(n.id)?'<div class="lg2 neg">50% readiness on day 1</div>':''}<div class="pb">${btns}</div></div>`;
 }
 function rPrj(P,ec){
   const subs=[['def','DEFENCE'],['end','ENDURANCE'],['sci','SCIENCE'],['emg','EMERGENT']];
-  P.innerHTML=`<div class="subtabs">${subs.map(([k,l])=>`<button data-s="${k}" class="${G.sub===k?'on':''}">${l}${G.sub===k&&k!=='emg'?' ›':''}</button>`).join('')}</div>`+NODES.filter(n=>n.br===G.sub).map(n=>projCard(n,ec)).join('');
+  P.innerHTML=`<div class="subtabs">${subs.map(([k,l])=>`<button data-s="${k}" class="${G.sub===k?'on':''}">${l}${G.sub===k&&k!=='emg'?' ›':''}</button>`).join('')}</div>`+(()=>{const ns=NODES.filter(n=>n.br===G.sub),open=ns.filter(n=>['new','built'].includes(nodeState(n)));const crowd=open.length>=3;if(!open.some(n=>n.id===G.selPrj))G.selPrj=(open.find(n=>G.owned.has(n.id))||open[0]||{}).id;return ns.map(n=>projCard(n,ec,crowd&&n.id!==G.selPrj)).join('')})();
   P.querySelectorAll('[data-s]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(G.sub===b.dataset.s&&G.sub!=='emg')tapSheet('scores');else{G.sub=b.dataset.s;render()}});
   P.querySelectorAll('[data-k]').forEach(b=>b.onclick=e=>{e.stopPropagation();G.selPrj=b.dataset.n;act(NB[b.dataset.n],b.dataset.k)});
   P.querySelectorAll('[data-m]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggleMoth(b.dataset.m)});
@@ -1123,8 +1132,8 @@ function rWar(P,ec){
   const weak=rows.slice().sort((a,b)=>a.rLo-b.rLo)[0];
   P.innerHTML=rows.map(x=>{const sc=Math.max(200,x.you*1.08,x.hi*1.08);const odds=x.l.tr.map(t=>`${TRAITS[t].s} ${Math.round(W.Lk[t]*100)}%`).join(' · ');
     return `<div class="lc" data-tap="lane:${x.l.k}"><div class="lt"><b>${x.l.n}</b><span class="${x.pred[1]}">${x.pred[0]}${x===weak&&!x.pred[0].startsWith('win')?' · weakest':''}</span></div><div class="mb2"><i style="width:${Math.min(100,x.you/sc*100)}%"></i><b style="left:${x.lo/sc*100}%;width:${Math.max(1.5,(x.hi-x.lo)/sc*100)}%"></b></div><div class="ms2">${Math.round(x.you)} vs ${Math.round(x.lo)}${x.hi>x.lo+1?'–'+Math.round(x.hi):''} · ${odds}${x===weak?` · fix: ${FIX[x.l.k]} ›`:''}</div></div>`}).join('')+
-   `<div class="box tight proj" data-tap="estimate"><div class="lbl" style="color:var(--ac)">Estimate · 24 likely enemies ›</div>${lg('Fleet destroyed in 3 waves',`${W.k25}–${W.k75}%`)}${lg('Repel · Outlast',`<span class="${W.rep>=25?'pos':W.rep>0?'':'neg'}">~${W.rep}%</span> · <span class="${W.out>=25?'pos':W.out>0?'':'neg'}">~${W.out}%</span>`)}${lg('Their supply',`~${W.sup} days`)}</div>`+
-   `<div class="links"><button data-tap="reports">INTEL REPORTS (${G.reports.length}) ›</button><button data-tap="types">READINESS BY TYPE ›</button></div>`;
+   `<div class="box tight proj" data-tap="estimate"><div class="lbl" style="color:var(--ac)">Estimate · 24 likely enemies ›</div>${lg('Fleet destroyed in 3 waves',`${W.k25}–${W.k75}%`)}${lg('Repel · Outlast',`<span class="${W.rep>=25?'pos':W.rep>0?'':'neg'}">~${W.rep}%</span> · <span class="${W.out>=25?'pos':W.out>0?'':'neg'}">~${W.out}%</span>`)}</div>`+
+   `<div class="links"><button data-tap="reports">REPORTS (${G.reports.length}) ›</button><button data-tap="types">BY TYPE ›</button></div>`;
 }
 /* ---------- side screen ---------- */
 function socWaterfalls(ec){
@@ -1136,7 +1145,7 @@ function socWaterfalls(ec){
 }
 function ecoWaterfalls(ec){
   const base=ec.gross/G.dr.effM,inf=ec.gross-base,gi=ghostOf('inf').dE,gm=ghostOf('ind').dE;
-  const ef=[['Workforce × Ind',base,gm],[`Infra LV${G.uses.inf||0}`,inf,gi],['Upkeep',-ec.upkeep]];
+  const ef=[['Production',base,gm],[`Infra LV${G.uses.inf||0}`,inf,gi],['Upkeep',-ec.upkeep]];
   const kn=G.K*RES_K*G.dr.resM,lb=ec.labs*G.dr.resM,un=(G.K*RES_K+ec.labs)*(G.dr.resM-1);
   const rs=[[`Knowledge ${Math.round(G.K)}`,kn-(G.K*RES_K)*(G.dr.resM-1),ghostOf('res').dRP],['Labs',ec.labs],[`Univ LV${G.uses.uni2||0}`,un,ghostOf('uni2').dRP]];
   return wf('EFFORT /YR',sgn(ec.net,2),ec.net>=0?OK:BAD,ef,false,'effort')+wf('RESEARCH /YR',sgn(ec.rp,2),OK,rs,false,'research');
@@ -1220,7 +1229,7 @@ function tapSheet(key){
   if(kind==='effort'){sheet('Economy','Effort',box(lg('Workforce (Population − crew)',`${ec.workforce.toFixed(2)}bn`)+lg('× Industry × 0.011',`× ${(G.I*EFF_K).toFixed(3)}`)+lg('× Stability (0.7 + Stab/200)',`× ${ec.stabM.toFixed(2)}`)+lg('× Infrastructure',`× ${G.dr.effM.toFixed(2)}`)+(ec.disp<1?lg('× Dispersed Society','× 0.9'):'')+lg('Income',`+${ec.gross.toFixed(2)}`,'tot')+ec.ups.map(([n,u])=>lg('Upkeep · '+n,`−${u.toFixed(2)}`)).join('')+lg('Net per year',sgn(ec.net,2),'tot'))+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('inf','+4% Effort (each repeat 80% of the last)')+iniRow('ind','Industry +0.10/yr · +3'),'effort');return}
   if(kind==='research'){sheet('Economy','Research',box(lg(`Knowledge ${Math.round(G.K)} × 0.035`,`+${(G.K*RES_K).toFixed(2)}`)+lg('Labs (0.5 per Signal and Xenobiology level)',`+${ec.labs.toFixed(2)}`)+lg('× University',`× ${G.dr.resM.toFixed(2)}`)+lg('Per year',`+${ec.rp.toFixed(2)}`,'tot'))+why(`Knowledge ${Math.round(G.K)} (${sgn(G.dr.K,2)}/yr) also sets intel reliability (${Math.round(intelAcc(G)*100)}%), Bio (×0.15) and Swarm (×0.08), and feeds the signal Traitors (×0.005).`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('res','Knowledge +0.10/yr · +3 · Traitors +2')+iniRow('uni2','+6% Research (each repeat 80% of the last)'),'research');return}
 }
-document.addEventListener('click',e=>{const t=e.target.closest('[data-tap]');if(!t||!G||screen!=='game')return;if(t.closest('#sheet'))return;const b=e.target.closest('button');if(b&&!b.hasAttribute('data-tap'))return;e.stopPropagation();tapSheet(t.dataset.tap)},true);
+document.addEventListener('click',e=>{const t=e.target.closest('[data-tap]');if(!t||!G||screen!=='game')return;if(t.closest('#sheet'))return;const b=e.target.closest('button');if(b&&!b.hasAttribute('data-tap'))return;e.stopPropagation();if(t.classList.contains('cmp')){G.selPrj=t.dataset.pid;render();return}tapSheet(t.dataset.tap)},true);
 
 /* ================= ARRIVAL / INVASION ================= */
 function enterFinal(){

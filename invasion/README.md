@@ -372,6 +372,11 @@ Outlast wins are graded on 40 + 60 × (1 − days ÷ 3,000) for speed, so a slow
   ("Resolve +4, +0.1/yr · Traitors −0.06/yr"). Tapping outside an info card (meter, tile, project, lane,
   wave, debrief, Year 100, vanguard, log) closes it; event, council and battle-card choices still need a pick.
 
+- **No scrolling (5c):** checked at 393×742 for every tab and branch at Years 3, 60 and 89, with and
+  without high Traitors. Projects: when a branch has 3+ open projects, only the selected card is full;
+  the others are compact (name, pips, output, small cost buttons); tap one to expand it. Purge now sits
+  on the Internal Security row (red, "PURGE −40%") instead of a separate strip. Upkeep shows the top 3.
+
 ## Empire tab (retired, see War Room)
 
 - Year 100 survival on your current course (meters, maturity, population and Traitors projected
