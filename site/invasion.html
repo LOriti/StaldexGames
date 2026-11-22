@@ -225,6 +225,25 @@ td.n{font-family:var(--mono);text-align:right}
 .card.pe{padding:7px 9px!important;margin-bottom:5px!important}.pe .pb{margin-top:5px!important}.pe .pb button{padding:5px 7px!important}
 .tl .lg2{white-space:normal!important;text-overflow:clip!important}
 #ticker{white-space:normal!important;text-overflow:clip!important;line-height:1.35;max-height:44px}
+/* ---- round 5b: roomier ---- */
+.split{height:178px!important}
+.slim{padding:8px 12px!important;margin-bottom:5px!important;border-radius:11px!important}
+.slim .nm{font-size:14.5px!important}.slim .nm em{font-size:10px!important}
+.slim .sp{font-size:10.5px!important;margin-top:3px!important;line-height:1.4!important}
+.trk i{width:8px!important;height:8px!important}
+.cost{font-size:11.5px!important;padding:9px 11px!important;border-radius:9px!important}
+.strip{padding:7px 12px!important}.strip>div{font-size:12px!important}.strip b{font-size:10.5px!important}
+.wr{font-size:9.5px!important;grid-template-columns:82px 1fr 72px!important}.wr b{font-size:9.5px!important}
+.wf .hd b{font-size:12.5px!important}
+.tl{padding:6px 9px!important}.tl .lg2{font-size:9.5px!important}.tl .hd b{font-size:12.5px!important}
+.mc{padding:5px 10px!important;font-size:10px!important}.mc b{font-size:13px!important}
+.meters{gap:5px!important;padding:5px 12px!important}
+#panel{padding:8px 12px 8px!important}
+.card.pe{padding:9px 11px!important;margin-bottom:7px!important}.pe .nm{font-size:14.5px!important}.pe .pm{font-size:10.5px!important}
+.pe .pb button{font-size:10px!important;padding:7px 8px!important}.card.pe.one{font-size:12px!important;padding:8px 11px!important}
+.pe .pp{font-size:9px!important}.pe .pp i{width:8px!important;height:8px!important}
+.lc{padding:7px 11px!important;margin-bottom:5px!important}.lt b{font-size:14px!important}.lt span{font-size:10.5px!important}.ms2{font-size:9.5px!important}
+.box.tight .lg{font-size:10.5px!important}
 .badge{font-family:var(--mono);font-size:10px;padding:5px 8px;border:1px solid var(--ac);color:var(--ac);border-radius:4px;letter-spacing:.06em}
 .cm{flex:1;min-width:0}
 .cb{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
@@ -915,7 +934,7 @@ function vanguard(){
   const worst=rows.slice().sort((a,b)=>a.r-b.r)[0];
   $('#sheet').innerHTML=`<div class="lbl" style="color:var(--bad)">Year 90 · Vanguard · T−10</div><h2>Their scouts reach orbit</h2><p>A short skirmish tested all four lanes. They revealed <b style="color:var(--bad)">${TRAITS[t].n}</b>.</p>`+rows.map(x=>{const st=x.r>=1.2?['won','pos']:x.r>=.8?['even','wa']:['lost','neg'];const w=Math.min(100,x.r/3*100);return `<div class="lc"><div class="lt"><b>${x.n}</b><span class="${st[1]}">${st[0]} ${x.r.toFixed(1)}×</span></div><div class="mb2"><i style="width:${w}%"></i></div></div>`}).join('')+
    `<div class="box tight" style="margin-top:6px"><div class="lbl" style="color:var(--ac)">Ten years to fix it</div><div class="ms2">${worst.r<1.2?`${worst.n} is weakest: ${FIX[worst.k]}.`:'Every lane held. Spend down and keep it that way.'} At Year 100 time stops for final spending.</div></div><div style="height:8px"></div><button class="btn" id="vgOk">BACK TO WORK</button>`;
-  $('#modal').classList.remove('hidden');$('#vgOk').onclick=()=>{$('#modal').classList.add('hidden');render()};
+  $('#modal').classList.remove('hidden');$('#modal').dataset.dismiss='1';$('#vgOk').onclick=()=>{$('#modal').classList.add('hidden');render()};
 }
 function toggleMoth(id){const n=NB[id];
   if(G.moth.has(id)){G.moth.delete(id);if(G.final){G.half.add(id);log(`Reactivated: ${n.n} (50% readiness on day 1).`)}else log(`Reactivated: ${n.n}.`)}
@@ -945,7 +964,7 @@ function showEvent(e,label){
   $('#modal').classList.remove('hidden');
   $('#sheet').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const o=e.o[+b.dataset.i];applyFx(G,o[1],true);G.ec=econ(G);log(`${e.t}: ${o[0]}.`+(G.E<0?` Effort in debt: ${Math.round(G.E)}.`:''));$('#modal').classList.add('hidden');render()});
 }
-function showLog(){if(!G)return;$('#sheet').innerHTML=`<div class="lbl">Log</div><h2>Council record</h2>`+G.log.slice(0,60).map(l=>`<div class="logl"><span class="y">Y${String(l.y).padStart(3,'0')}</span>${l.s}</div>`).join('')+`<div style="height:10px"></div><button class="btn ghost" id="closeLog">CLOSE</button>`;$('#modal').classList.remove('hidden');$('#closeLog').onclick=()=>$('#modal').classList.add('hidden')}
+function showLog(){if(!G)return;setTimeout(()=>{$('#modal').dataset.dismiss='1'},0);$('#sheet').innerHTML=`<div class="lbl">Log</div><h2>Council record</h2>`+G.log.slice(0,60).map(l=>`<div class="logl"><span class="y">Y${String(l.y).padStart(3,'0')}</span>${l.s}</div>`).join('')+`<div style="height:10px"></div><button class="btn ghost" id="closeLog">CLOSE</button>`;$('#modal').classList.remove('hidden');$('#closeLog').onclick=()=>$('#modal').classList.add('hidden')}
 function progCost(d){return 8+4*(G.uses[d.id]||0)}
 function doProg(d){const c=progCost(d);if(G.E<c)return;const im=econDelta(a=>applyProg(a,d));G.E-=c;applyProg(G,d);G.uses[d.id]=(G.uses[d.id]||0)+1;G.ec=econ(G);log(`Program funded: ${d.n}.`);float(d.n.toUpperCase(),'#e8e2d6');floatDelta(im);render()}
 const brLevels=(s,br,below)=>NODES.filter(x=>x.br===br&&x.tier<below).reduce((a,x)=>a+sz(s,x.id),0);
@@ -1012,14 +1031,15 @@ function wf(title,val,vc,rows,inv,tap){
 }
 const ghostOf=id=>{const d=DIRS.find(x=>x.id===id);return econDelta(a=>applyProg(a,d))};
 function plusText(d){
-  const p=[],neg=[];
+  const m={},order=[],neg=new Set();const add=(k,t,bad)=>{if(!m[k]){m[k]=[];order.push(k)}m[k].push(t);if(bad)neg.add(k)};
+  for(const k in d.now){const v=d.now[k];const lab={S:'Stability',R:'Resolve',I:'Industry',K:'Knowledge',T:'Traitors',TRN:'trained'}[k]||k;
+    add(lab,k==='TRN'?`+${Math.round(v*100)}%`:`${v>0?'+':'−'}${Math.abs(v)}`,(k==='T'&&v>0)||(k!=='T'&&v<0))}
   for(const k in d.dr){const v=d.dr[k];
-    if(k==='Seq')p.push(`Stability +${v} long-term`);else if(k==='R')p.push(`Resolve +${v}/yr`);else if(k==='I')p.push(`Industry +${v}/yr`);else if(k==='K')p.push(`Knowledge +${v}/yr`);
-    else if(k==='loy')p.push(`Traitors −${v}/yr`);else if(k==='sec')p.push(`Traitors −${v}/yr`);else if(k==='pop')p.push(`growth +${(v*100).toFixed(2)}%`);else if(k==='enl')p.push(`military-able +${Math.round(v*100)}%`);
-    else if(k==='trn')p.push(`trained +${(v*100).toFixed(1)}%/yr`);else if(k==='effM')p.push(`Effort +${Math.round(v*100*Math.pow(.8,G.uses[d.id]||0))}%`);else if(k==='resM')p.push(`Research +${(v*100*Math.pow(.8,G.uses[d.id]||0)).toFixed(1)}%`)}
-  for(const k in d.now){const v=d.now[k];const lab={S:'Stability',R:'Resolve',I:'Industry',K:'Knowledge',T:'Traitors',TRN:'trained'}[k]||k;const txt=k==='TRN'?`trained +${Math.round(v*100)}%`:`${lab} ${v>0?'+':'−'}${Math.abs(v)}`;
-    const bad=(k==='T'&&v>0)||(k!=='T'&&v<0);(bad?neg:p).push(txt)}
-  return{txt:[...p,...neg].join(' · '),bad:neg.length>0};
+    if(k==='Seq')add('Stability',`+${v} long-term`);else if(k==='R')add('Resolve',`+${v}/yr`);else if(k==='I')add('Industry',`+${v}/yr`);else if(k==='K')add('Knowledge',`+${v}/yr`);
+    else if(k==='loy'||k==='sec')add('Traitors',`−${v}/yr`);else if(k==='pop')add('growth',`+${(v*100).toFixed(2)}%`);else if(k==='enl')add('military-able',`+${Math.round(v*100)}%`);
+    else if(k==='trn')add('trained',`+${(v*100).toFixed(1)}%/yr`);else if(k==='effM')add('Effort',`+${Math.round(v*100*Math.pow(.8,G.uses[d.id]||0))}%`);else if(k==='resM')add('Research',`+${(v*100*Math.pow(.8,G.uses[d.id]||0)).toFixed(1)}%`)}
+  const good=order.filter(k=>!neg.has(k)),bad=order.filter(k=>neg.has(k));
+  return{txt:[...good,...bad].map(k=>`${k} ${m[k].join(', ')}`).join(' · '),bad:bad.length>0};
 }
 function slimRow(d){const i=DIRS.indexOf(d),c=progCost(d),u=G.uses[d.id]||0,pt=plusText(d);
   return `<div class="slim"><div class="sm"><div class="sh"><span class="nm">${d.n}${u?` <em>LV ${u}</em>`:''}</span>${trk(u)}</div><div class="sp" style="color:${pt.bad?'var(--wa)':'var(--ok)'}">+1 → ${pt.txt}</div></div><button class="cost" data-d="${i}" ${G.E>=c&&!G.final?'':'disabled'}>${c} E</button></div>`}
@@ -1156,7 +1176,7 @@ function chainRows(n,ec){
 /* ---------- tap sheets ---------- */
 function sheet(lbl,title,body,keep){
   $('#sheet').innerHTML=`<div class="lbl">${lbl}</div><h2>${title}</h2>${body}<div style="height:10px"></div><button class="btn ghost" id="closeSh">CLOSE</button>`;
-  $('#modal').classList.remove('hidden');$('#closeSh').onclick=()=>{$('#modal').classList.add('hidden');if(screen==='game')render()};
+  $('#modal').classList.remove('hidden');$('#modal').dataset.dismiss='1';$('#closeSh').onclick=()=>{$('#modal').classList.add('hidden');if(screen==='game')render()};
   $('#sheet').querySelectorAll('[data-fund]').forEach(b=>b.onclick=()=>{doProg(DIRS.find(x=>x.id===b.dataset.fund));tapSheet(keep)});
   $('#sheet').querySelectorAll('[data-sm]').forEach(b=>b.onclick=()=>{toggleMoth(b.dataset.sm);tapSheet(keep)});
   $('#sheet').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{$('#modal').classList.add('hidden');const [t,s,id]=b.dataset.go.split(':');G.tab=t;if(s)G.sub=s;if(id)G.selPrj=id;render();if(id){const el=document.querySelector(`[data-pid="${id}"]`);if(el){el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}}});
@@ -1229,7 +1249,7 @@ function openDeploy(pick){
    `<div class="lbl" style="margin:4px 0 6px;color:var(--ac)">Leftovers · ${Math.max(0,Math.floor(G.E))} Effort + ${Math.max(0,Math.floor(G.RP))} Research → +${pool} readiness to one lane</div>`+
    (pool?`<div class="optgrid">${opt('orbit','Orbit')}${opt('sky','Sky')}${opt('ground','Ground')}${opt('inside','Inside')}</div><button class="opt${G._pick==='spread'?' on':''}" data-c="spread" style="margin-top:6px"><b>Spread</b><span>+${Math.round(pool/4)} to each lane</span></button>`:`<div class="hint">Nothing left to convert.</div>`)+
    `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="backBtn" style="flex:1">◂ BACK TO SPEND</button><button class="btn" id="goBtn" style="flex:1" ${pool&&!G._pick?'disabled':''}>COMMIT ▸</button></div>`;
-  $('#modal').classList.remove('hidden');
+  $('#modal').classList.remove('hidden');$('#modal').dataset.dismiss='1';
   $('#backBtn').onclick=()=>{$('#modal').classList.add('hidden');render()};
   $('#sheet').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{toggleMoth(b.dataset.r);openDeploy()});
   $('#sheet').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>openDeploy(b.dataset.c));
@@ -1394,7 +1414,7 @@ function waveHTML(B,w){
    x.rows.map(r=>`<div class="lg"><span>${r.l.n} <span class="${r.state==='won'?'pos':r.state==='even'?'':'neg'}">${r.state} ${r.r.toFixed(1)}×</span>${r.lost>.001?`<br><span class="mut" style="font-size:9.5px">−${r.lost.toFixed(2)}bn · ${r.fr>.001?`reserves ${r.fr.toFixed(2)}`:''}${r.fc>.001?` conscripts ${r.fc.toFixed(2)}`:''}${r.fr+r.fc<r.lost-.001?' <span class="neg">unfilled</span>':''}</span>`:''}</span><span>exp ×${r.exp0.toFixed(2)} → ×${r.exp1.toFixed(2)}${r.l.crew?`<br><span style="font-size:9.5px;color:${r.green1>=.5?'var(--bad)':r.green1>=.25?'var(--wa)':'var(--mu)'}">vets ${Math.round((1-r.green0)*100)}% → ${Math.round((1-r.green1)*100)}%</span>`:''}</span></div>`).join('')+
    (x.ev.length?x.ev.map(t=>`<div class="ms2" style="margin-top:4px;color:${t.good?'var(--ok)':'var(--bad)'}">Turning point: ${t.t}</div>`).join(''):'');
 }
-function bSheet(lbl,title,body){$('#sheet').innerHTML=`<div class="lbl">${lbl}</div><h2>${title}</h2>${body}<div style="height:10px"></div><button class="btn ghost" id="closeSh">CLOSE</button>`;$('#modal').classList.remove('hidden');$('#closeSh').onclick=()=>$('#modal').classList.add('hidden')}
+function bSheet(lbl,title,body){$('#modal').dataset.dismiss='1';$('#sheet').innerHTML=`<div class="lbl">${lbl}</div><h2>${title}</h2>${body}<div style="height:10px"></div><button class="btn ghost" id="closeSh">CLOSE</button>`;$('#modal').classList.remove('hidden');$('#closeSh').onclick=()=>$('#modal').classList.add('hidden')}
 function waveSheet(w){const B=INV.B;bSheet(`Wave ${w+1} · ${WAVES[w].n}`,`Wave ${w+1} summary`,`<div class="box">${waveHTML(B,w)}</div>`)}
 function bTap(key){
   const B=INV&&INV.B;if(!B)return;const [k,a]=key.split(':');
@@ -1451,6 +1471,9 @@ function dTap(key){
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-dtap]');if(!t||screen!=='deb')return;e.stopPropagation();dTap(t.dataset.dtap)},true);
 
+// tap outside an info card closes it; decisions (events, council, cards) still need a choice
+new MutationObserver(()=>{const m=$('#modal');if(m.classList.contains('hidden'))delete m.dataset.dismiss}).observe($('#modal'),{attributes:true,attributeFilter:['class']});
+$('#modal').addEventListener('click',e=>{const m=$('#modal');if(e.target!==m||!m.dataset.dismiss)return;m.classList.add('hidden');if(screen==='game')render()});
 $('#startBtn').onclick=newGame;
 $('#skipBtn').onclick=()=>{skip=true};
 $('#ticker').onclick=showLog;

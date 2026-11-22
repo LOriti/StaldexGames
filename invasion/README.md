@@ -367,6 +367,11 @@ Outlast wins are graded on 40 + 60 × (1 − days ÷ 3,000) for speed, so a slow
 - **No clipping:** tile legends and the ticker wrap; on the small Earth, floating labels show in the
   ticker instead.
 
+- **Roomier (5b):** bigger names (14.5px), effect lines 10.5px, larger cost buttons and pills, sized so
+  Society's six programs fill one 742px screen. "+1 →" lines merge each meter's effects
+  ("Resolve +4, +0.1/yr · Traitors −0.06/yr"). Tapping outside an info card (meter, tile, project, lane,
+  wave, debrief, Year 100, vanguard, log) closes it; event, council and battle-card choices still need a pick.
+
 ## Empire tab (retired, see War Room)
 
 - Year 100 survival on your current course (meters, maturity, population and Traitors projected
