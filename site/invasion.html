@@ -140,6 +140,11 @@ td.n{font-family:var(--mono);text-align:right}
 .pc .fx,.pc .imp{font-size:10px;margin-top:2px}
 .pc .cb button{padding:4px 6px;font-size:9.5px;min-width:78px}
 #ticker{cursor:pointer}
+#finalBar{display:flex;gap:10px;align-items:center;padding:8px 12px;background:#2a1c17;border-top:1px solid var(--bad)}
+#finalBar.hidden{display:none}
+#finalInfo{flex:1;font-family:var(--mono);font-size:10px;color:#e0b3a8;line-height:1.5}
+#finalInfo b{color:var(--bad);letter-spacing:.08em}
+#finalBtn{width:auto;padding:11px 14px;font-size:12px}
 .calcbar{padding:7px 9px}
 .calcbar summary{list-style:none;cursor:pointer}
 .calcbar summary::-webkit-details-marker{display:none}
@@ -183,6 +188,7 @@ td.n{font-family:var(--mono);text-align:right}
     <button data-t="eco">ECONOMY</button><button data-t="peo">PEOPLE</button><button data-t="prj">PROJECTS</button><button data-t="int">INTEL</button><button data-t="emp">EMPIRE</button>
   </nav>
   <main id="panel"></main>
+  <div id="finalBar" class="hidden"><span id="finalInfo"></span><button id="finalBtn" class="btn">LAST STAND ▸</button></div>
   <footer id="ticker" title="Tap for the full log"></footer>
 </section>
 
@@ -517,7 +523,7 @@ function simulate(s,enemy,det){
     return{p,act,ratio,ready,threat,pm,days:Math.max(1,Math.round(p.base*m))};
   });
 }
-function intelLik(s){const o={};TK.forEach(t=>o[t]=1);s.reports.forEach(r=>{o[r.trait]*=r.acc/(1-r.acc)});const L={};TK.forEach(t=>L[t]=Math.min(.97,o[t]/(1+o[t])));return L}
+function intelLik(s){const o={};TK.forEach(t=>o[t]=1);s.reports.forEach(r=>{o[r.trait]*=r.acc/(1-r.acc)});const L={};TK.forEach(t=>L[t]=Math.min(.97,o[t]/(1+o[t])));if(s.confirmed)L[s.confirmed]=1;return L}
 function intelRead(s){
   if(!s.reports.length){const e={};TK.forEach(t=>e[t]=TYPICAL/2);return{e,label:'No intel yet, so this assumes an even threat'}}
   const L=intelLik(s);const top=TK.slice().sort((x,y)=>L[y]-L[x]).slice(0,3);const e={};top.forEach(t=>e[t]=TYPICAL);
@@ -610,7 +616,7 @@ function yearTick(){
   if(ec.crewPct<.999&&G.year%5===0)log(`Crew shortage: staffed at ${Math.round(ec.crewPct*100)}%. Raise Resolve or fund National Service.`);
   G.ec=econ(G);
   if(G.year%10===5)intel();
-  if(G.year>=100){render();arrival();return}
+  if(G.year>=100){enterFinal();return}
   if(G.year%10===0){log(`Decade ${G.year/10} closes. ${100-G.year} years remain.`);if(rnd()<.8)eventFire()}
   else if(G.year%10===7&&rnd()<.45)eventFire();
   render();
@@ -667,6 +673,7 @@ function render(){
   $('#sP').textContent=G.P.toFixed(1)+'bn';$('#sPd').innerHTML=`<span class="${cls(ec.growth)}">${sgn(ec.growth,2)}/yr</span>`;
   const w=[];if(G.E<0)w.push(`IN DEBT · ${Math.round(G.E)} EFFORT`);if(G.RP<0)w.push(`IN DEBT · ${Math.round(G.RP)} RESEARCH`);if(G.fund<.999)w.push(`UNDERFUNDED · ${Math.round(G.fund*100)}%`);if(ec.crewPct<.999)w.push(`UNDERCREWED · ${Math.round(ec.crewPct*100)}%`);$('#warn').innerHTML=w.join('<br>');
   $('#meters').innerHTML=['S','I','K','R'].map(k=>{const v=Math.round(G[k]),d=DRIFT[k](G),c=v<25?'var(--bad)':'var(--tx)';return `<div class="m"><div class="lbl">${ML[k]}</div><div class="v" style="color:${c}">${v}<span class="${cls(d)}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(2)}</span></div><div class="bar"><i style="width:${v}%;background:${c}"></i></div></div>`}).join('')+(()=>{const v=Math.round(G.T),d=traitorDrift(G).tot;return `<div class="m" style="border-color:#5f3329"><div class="lbl">Traitors</div><div class="v" style="color:var(--bad)">${v}<span class="${cls(-d)}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(2)}</span></div><div class="bar"><i style="width:${v}%;background:var(--bad)"></i></div></div>`})();
+  $('#finalBar').classList.toggle('hidden',!G.final);if(G.final)$('#finalInfo').innerHTML=`<b>YEAR 100 · FLEET ARRIVING</b><br>Final purchases, then deploy. Reserves: ${Math.max(0,Math.floor(G.E+G.RP/2))}`;
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===G.tab));const cp=G.tab==='prj';if($('#screen-game').classList.contains('compact')!==cp){$('#screen-game').classList.toggle('compact',cp);requestAnimationFrame(sizeCanvas)}
   const P=$('#panel'),st=P.scrollTop;
   ({eco:rEco,peo:rPeo,prj:rPrj,int:rInt,emp:rEmp})[G.tab](P,ec);
@@ -759,17 +766,28 @@ function rEmp(P,ec){
 }
 
 /* ================= ARRIVAL / INVASION ================= */
-function arrival(){
-  G.paused=true;updCtl();
-  const en=Object.keys(G.enemy).sort((a,b)=>G.enemy[b]-G.enemy[a]);
-  const conf=en[0];const pool=Math.max(0,Math.floor(G.E+G.RP/2));
-  $('#sheet').innerHTML=`<div class="lbl">Year 100 · Arrival</div><h2>The fleet enters the outer system</h2><p>Visual confirmation of one capability: <b>${TRAITS[conf].n}</b>. The other two are still unknown.<br><br>Commit everything you have left (<b>${pool}</b> = Effort + half your Research) to a last-stand mobilisation.</p>`+
-  `<button class="opt" data-c="spread"><b>Spread evenly</b><span>+${Math.round(pool/12)} to all six readiness types</span></button><div class="optgrid">`+
-  TK.map(t=>`<button class="opt" data-c="${t}"><b>${TRAITS[t].s}</b><span>+${Math.round(pool/5)} readiness</span></button>`).join('')+`</div>`;
+function enterFinal(){
+  G.final=true;G.paused=true;
+  const en=Object.keys(G.enemy).sort((a,b)=>G.enemy[b]-G.enemy[a]);G.confirmed=en[0];
+  log(`Year 100. The fleet is in the outer system. Visual confirmation: ${TRAITS[G.confirmed].n}. Final preparations.`);
+  float('FLEET ARRIVING · FINAL PREPARATIONS','#c0533f');updCtl();render();
+}
+function openDeploy(){
+  const pool=Math.max(0,Math.floor(G.E+G.RP/2)),Lk=intelLik(G),{c}=counters(G,econ(G));
+  const sp=Math.round(pool/12),fo=Math.round(pool/5);
+  const row=t=>{const now=Math.round(c[t]),lk=Math.round(Lk[t]*100),conf=t===G.confirmed;
+    return `<button class="opt" data-c="${t}" ${pool?'':'disabled'}><b>${TRAITS[t].s}${conf?' <span class="neg" style="font-size:11px">CONFIRMED</span>':''}</b><span>${conf?'present':lk+'% likely'} · ${now} → <span class="pos">${now+fo}</span></span></button>`};
+  $('#sheet').innerHTML=`<div class="lbl">Year 100 · Last stand</div><h2>Deploy your reserves</h2><p>Confirmed: <b>${TRAITS[G.confirmed].n}</b>. The other two are still unknown.<br>You have <b>${pool}</b> to commit (Effort ${Math.max(0,Math.floor(G.E))} + half of Research ${Math.floor(G.RP/2)}). Anything unspent is lost.</p>`+
+  `<button class="opt" data-c="spread" ${pool?'':'disabled'}><b>Spread evenly</b><span>+${sp} to all six · e.g. ${TRAITS[G.confirmed].s} ${Math.round(c[G.confirmed])} → ${Math.round(c[G.confirmed])+sp}</span></button><div class="optgrid">`+
+  TK.slice().sort((a,b)=>(b===G.confirmed)-(a===G.confirmed)||Lk[b]-Lk[a]).map(row).join('')+`</div>`+
+  `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="backBtn" style="flex:1">◂ BACK TO REVIEW</button>${pool?'':`<button class="btn" id="goBtn" style="flex:1">BEGIN ▸</button>`}</div>`;
   $('#modal').classList.remove('hidden');
+  $('#backBtn').onclick=()=>{$('#modal').classList.add('hidden');render()};
+  if($('#goBtn'))$('#goBtn').onclick=()=>{$('#modal').classList.add('hidden');G.final=false;playInvasion()};
   $('#sheet').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
-    const c=b.dataset.c;if(c==='spread')TK.forEach(t=>G.bonus[t]=(G.bonus[t]||0)+pool/12);else G.bonus[c]=(G.bonus[c]||0)+pool/5;
-    G.E=0;G.RP=0;$('#modal').classList.add('hidden');playInvasion();
+    const t=b.dataset.c;if(t==='spread')TK.forEach(k=>G.bonus[k]=(G.bonus[k]||0)+pool/12);else G.bonus[t]=(G.bonus[t]||0)+pool/5;
+    log(`Last stand: ${t==='spread'?'reserves spread evenly':'reserves sent to '+TRAITS[t].s}.`);
+    G.E=0;G.RP=0;G.final=false;$('#modal').classList.add('hidden');playInvasion();
   });
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,skip?0:ms));
@@ -870,8 +888,9 @@ function debrief(){
 $('#startBtn').onclick=newGame;
 $('#skipBtn').onclick=()=>{skip=true};
 $('#ticker').onclick=showLog;
-$('#pauseBtn').onclick=()=>{G.paused=!G.paused;updCtl()};
-$('#spdBtn').onclick=()=>{G.speed=G.speed===1?2:G.speed===2?4:1;updCtl()};
+$('#pauseBtn').onclick=()=>{if(G.final)return;G.paused=!G.paused;updCtl()};
+$('#spdBtn').onclick=()=>{if(G.final)return;G.speed=G.speed===1?2:G.speed===2?4:1;updCtl()};
+$('#finalBtn').onclick=()=>{if(G&&G.final)openDeploy()};
 document.querySelectorAll('#tabs button').forEach(b=>b.onclick=()=>{G.tab=b.dataset.t;render()});
 const b0=getBest();if(b0)$('#bestline').textContent='Best: '+fmtD(b0);
 window.__LT={traitorDrift,get G(){return G},act:(id,k)=>act(NB[id],k),tick:n=>{for(let i=0;i<n;i++)yearTick()},render,econ,project,simulate,counters,doProg,NODES,DIRS,priceE,priceR,sz,tc,nodeState,progCost};
