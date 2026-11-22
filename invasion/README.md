@@ -346,6 +346,27 @@ moves into a tap sheet.
 
 Outlast wins are graded on 40 + 60 × (1 − days ÷ 3,000) for speed, so a slow Outlast is not an automatic D.
 
+
+## Round 5 (Nov 2026)
+
+- **Reservists bite.** A lane's losses grow with its share of non-veterans: losses × (1 + 0.6 × share
+  of reserves and conscripts). Lane rows show "vets 79% · res 21% · con 0%" in green, amber (25%+)
+  or red (50%+); wave summaries show vets before → after. Commentary fires as the share crosses
+  25% and 50% ("Legion HQ: the reservists are brave. They just do not know the ground yet."), when
+  conscripts reach the front, and when veterans hold. Two turning points: reservists break (greenest
+  lane ×0.8) and veterans steady the line (most experienced lane ×1.2). The situation report names
+  lanes that now lean on reservists.
+- **27 project events**, about two per project, including the three emergent projects.
+- **Meter sheet links** open the exact project and flash its card.
+- **Vanguard (Year 90)** opens its own screen: each lane's skirmish result, what was revealed and the
+  weakest lane to fix. No council event that year.
+- **Tests:** `tests/invasion.test.mjs` loads the model out of `site/invasion.html` and checks wins,
+  conscripts at half strength, reservists taking heavier losses, Unity wearing Traitors down, and
+  that every project event uses known effects.
+- **Art:** pill silos, domes over cities, outlined bunker nodes and ringed science nodes.
+- **No clipping:** tile legends and the ticker wrap; on the small Earth, floating labels show in the
+  ticker instead.
+
 ## Empire tab (retired, see War Room)
 
 - Year 100 survival on your current course (meters, maturity, population and Traitors projected

@@ -118,7 +118,7 @@ td.n{font-family:var(--mono);text-align:right}
 .lane{display:grid;grid-template-columns:50px 1fr 66px;gap:6px;align-items:center;font-family:var(--mono);font-size:10px}
 .lane>div:first-child{display:flex;flex-direction:column;gap:3px}
 .lane>div:nth-child(2){display:flex;flex-direction:column;gap:2px;min-width:0}
-.lane>div:nth-child(2)>span{font-size:8.5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.lane>div:nth-child(2)>span{font-size:8.5px;white-space:normal;line-height:1.3}
 .lane b{text-align:right;font-size:9.5px;font-weight:600}
 .ln.res{color:var(--rp)}.ln b{font-family:var(--mono);font-size:10px;letter-spacing:.08em}
 .ln.tide{border-left:2px solid currentColor;padding-left:8px}
@@ -163,7 +163,7 @@ td.n{font-family:var(--mono);text-align:right}
 .links{display:flex;gap:6px}.links button{flex:1;font-family:var(--mono);font-size:9px;color:var(--ac);border:1px solid var(--ln);border-radius:7px;padding:6px 0}
 .tl.sit{flex:1;cursor:default}.st2{font-size:10.5px;line-height:1.4;color:#cfc7b8;overflow:hidden}
 [data-tap]{cursor:pointer}
-#warn{font-size:7.5px!important;bottom:auto!important;top:4px!important;left:4px!important;line-height:1.3!important}
+#warn{font-size:7.5px!important;bottom:16px!important;top:auto!important;left:4px!important;line-height:1.3!important}
 /* ---- round 4: roomy, no clipping ---- */
 .split{height:186px!important}
 .split .cvwrap{width:34%!important}
@@ -218,6 +218,13 @@ td.n{font-family:var(--mono);text-align:right}
 .dtile .lbl::after{content:' ›'}.dtile b{display:block;font-family:var(--mono);font-size:15px;margin-top:2px}.dtile span{font-family:var(--mono);font-size:9px;color:var(--mu);line-height:1.35;display:block}
 #screen-deb{display:none;flex-direction:column;gap:6px;padding:14px 14px 12px!important;overflow-y:auto}
 #screen-deb.active{display:flex}
+@keyframes fl{0%,60%{box-shadow:0 0 0 2px var(--ac)}100%{box-shadow:0 0 0 0 transparent}}
+.card.flash{animation:fl 1.6s}
+.slim{padding:6px 10px!important;margin-bottom:4px!important}.slim .sp{margin-top:2px!important}
+.strip{padding:5px 10px!important;margin-bottom:4px!important}.strip button{padding:4px 8px!important}
+.card.pe{padding:7px 9px!important;margin-bottom:5px!important}.pe .pb{margin-top:5px!important}.pe .pb button{padding:5px 7px!important}
+.tl .lg2{white-space:normal!important;text-overflow:clip!important}
+#ticker{white-space:normal!important;text-overflow:clip!important;line-height:1.35;max-height:44px}
 .badge{font-family:var(--mono);font-size:10px;padding:5px 8px;border:1px solid var(--ac);color:var(--ac);border-radius:4px;letter-spacing:.06em}
 .cm{flex:1;min-width:0}
 .cb{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
@@ -446,6 +453,14 @@ const LONGCOUNCIL={t:'The cities are falling',d:'Their remaining fleet holds orb
  ['Launch the Ark now','Ark bonus +35% instead of +20% · long war ×0.75',{long:.75,ark:.35,req:'H1'}],
  ['Open a channel to them','25%: a one-year truce · 75%: long war ×0.6',{truce:1}]]};
 // lane chatter: [won, even, lost]
+const GREENSAY={
+ orbit:['Fleet Actual: "Half my gunners joined last month. They are learning fast, but not fast enough."','Fleet Actual: "Reserve crews on the bridge. We are slower to the turn."'],
+ sky:['Air Defence: "Reservists on the flak grids. Their tracking is a beat behind."','Air Defence: "New crews keep firing at decoys."'],
+ ground:['Legion HQ: "The reservists are brave. They just do not know the ground yet."','Veteran sergeant: "I have kids in my squad who have never heard a lander come down."'],
+ inside:['Security: "New officers do not know who to watch."','Security: "Reservists on the depots. The cells noticed."']
+};
+const CONSAY=['"Half of them have never fired a shot."','"Conscripts at the front. They hold, mostly."','"We are handing rifles to people who were stacking shelves last week."'];
+const VETSAY={orbit:'Fleet Actual: "Thirty years of drills. The crews do not even look up."',sky:'Air Defence: "The old grid crews call their targets before radar does."',ground:'Legion HQ: "The veterans hold the line like they have done it a hundred times. In training, they have."',inside:'Security: "The old hands knew every cell by name."'};
 const SAY={
  orbit:[['Fleet Actual: "Their screen is breaking. Keep the pressure on."','Fleet Actual: "Two cruisers down. They\'re pulling back to regroup."'],
         ['Fleet Actual: "We trade ship for ship up here."','Orbital Command: "Holding the high line, barely."'],
@@ -470,6 +485,8 @@ const TIDES=[
  {id:'panic',w:[1,2],c:(B,s)=>s.R<35,t:'Panic in the capitals. Desertions spike overnight.',lane:'ground',m:.8,good:0},
  {id:'spore',w:[1,2],c:(B,s,e)=>e.bio&&!s.owned.has('S2'),t:'Pathogen detected in the water supply. Field hospitals overwhelmed.',lane:'inside',m:.8,good:0},
  {id:'ambush',w:[0,1,2],c:()=>true,p:.3,t:'Their reserve squadron drops out of the sun on our flank.',lane:'orbit',m:.85,good:0},
+ {id:'green',w:[1,2],c:B=>B.L.some(l=>l.crew&&(l.mix.res+l.mix.con)/Math.max(1e-6,l.mix.reg+l.mix.res+l.mix.con)>.3),t:'Reservists break under the first barrage. Veterans have to plug the gap.',lane:B=>B.L.filter(l=>l.crew).sort((a,b)=>(b.mix.res+b.mix.con)/Math.max(1e-6,b.mix.reg+b.mix.res+b.mix.con)-(a.mix.res+a.mix.con)/Math.max(1e-6,a.mix.reg+a.mix.res+a.mix.con))[0].k,m:.8,good:0,green:1},
+ {id:'vets',w:[1,2],c:B=>B.L.some(l=>l.crew&&l.matL>1.8&&l.mix.reg/Math.max(1e-6,l.mix.reg+l.mix.res+l.mix.con)>.85),t:'Veterans of thirty years steady the line. They have drilled for this since before the new recruits were born.',lane:B=>B.L.filter(l=>l.crew).sort((a,b)=>b.matL-a.matL)[0].k,m:1.2,good:1},
  {id:'counter',w:[1,2],c:(B,s)=>s.owned.has('S3'),t:'Counter-AI turns a swarm on its own carriers.',lane:'sky',m:1.2,good:1}
 ];
 // project-driven events: once each, unlocked by a project's level or Mk
@@ -486,6 +503,20 @@ const PEV=[
  {id:'s1b',need:s=>tc(s,'S1')>=2,src:'Signal Analysis Mk III',t:'Their navigation beacons',d:'We have found what they steer by.',o:[['Jam them','Their supply −5% · −10 Research',{SUP:-.05,RP:-10}],['Listen instead','+3 Knowledge',{K:3}]]},
  {id:'s2',need:s=>tc(s,'S2')>=1,src:'Xenobiology Lab Mk II',t:'A captured sample',d:'Probe debris carries living tissue.',o:[['Vaccine path','+20 Bio readiness · +2 Stability',{bio:20,S:2}],['Weapon path','+15 Traitors readiness · −5 Bio · +3 Traitors',{infil:15,bio:-5,T:3}]]},
  {id:'s3',need:s=>s.owned.has('S3'),src:'Counter-AI Network',t:'It answered back',d:'The network flagged a pattern nobody wrote.',o:[['Unplug half of it','−10 Traitors · −5 Swarm',{T:-10,swarm:-5}],['Let it learn','+15 Swarm · +3 Knowledge · +5 Traitors',{swarm:15,K:3,T:5}]]},
+ {id:'d1b',need:s=>tc(s,'D1')>=1,src:'Planetary Defence Grid Mk II',t:'Ghost contacts',d:'The new sensors see things the old ones never did. Most are nothing.',o:[['Chase every contact','+8 Swarm · −2 Resolve (alert fatigue)',{swarm:8,R:-2}],['Tune them out','+2 Stability',{S:2}]]},
+ {id:'d2b',need:s=>tc(s,'D2')>=1,src:'Global Legion Mk II',t:'The old guard',d:'Legion veterans want to train the reserves themselves.',o:[['Let them','+3% of military-able trained · −5 Ground for now',{TRN:.03,ground:-5}],['Keep them on the line','+6 Ground',{ground:6}]]},
+ {id:'d3b',need:s=>tc(s,'D3')>=1,src:'Orbital Fleet Mk II',t:'Fleet exercise',d:'A full live-fire exercise would show the public what we have built.',o:[['Run it in public','+5 Resolve · −10 Effort',{R:5,E:-10}],['Run it in secret','+8 Orbital',{orb:8}]]},
+ {id:'d4b',need:s=>tc(s,'D4')>=1,src:'Planetary Lance Mk II',t:'The Lance runs hot',d:'Engineers warn that sustained fire could crack the emitter.',o:[['Reinforce it','−20 Effort · +10 Orbital',{E:-20,orb:10}],['Accept the risk','+5 Ground (power rerouted)',{ground:5}]]},
+ {id:'e1b',need:s=>tc(s,'E1')>=1,src:'Strategic Reserves Mk II',t:'Audit of the stores',d:'A quarter of the reserves are missing on paper.',o:[['Prosecute','−5 Traitors · −2 Stability',{T:-5,S:-2}],['Quietly restock','−15 Effort · +8 Siege',{E:-15,siege:8}]]},
+ {id:'e2b',need:s=>sz(s,'E2')>=2,src:'Hardened Cities Lv 2',t:'Rebuild the codes',d:'Every new building could be a shelter.',o:[['Mandate it','+3 Industry · +6 Orbital · −3 Stability',{I:3,orb:6,S:-3}],['Incentives only','+2 Stability',{S:2}]]},
+ {id:'e3b',need:s=>sz(s,'E3')>=2,src:'Deep Bunkers Lv 2',t:'A society below',d:'People who rotate through the bunkers come back changed.',o:[['Make it a duty','+4 Resolve · +5 Siege · −2 Stability',{R:4,siege:5,S:-2}],['Keep it voluntary','+2 Stability',{S:2}]]},
+ {id:'e4b',need:s=>tc(s,'E4')>=1,src:'Dispersed Society Mk II',t:'Rural militias',d:'Scattered towns are arming themselves.',o:[['Bring them in','+3% of military-able trained · +4 Traitors',{TRN:.03,T:4}],['Disarm them','−3 Resolve · −4 Traitors',{R:-3,T:-4}]]},
+ {id:'s2b',need:s=>sz(s,'S2')>=2,src:'Xenobiology Lab Lv 2',t:'Containment breach',d:'A sample got out. It died in the open air, but people saw.',o:[['Tell the truth','−3 Stability · +8 Bio',{S:-3,bio:8}],['Cover it up','+4 Traitors (rumours)',{T:4}]]},
+ {id:'s3b',need:s=>tc(s,'S3')>=1,src:'Counter-AI Network Mk II',t:'It asks for more',d:'The network requests direct control of the power grid.',o:[['Grant it','+15 Effort now · +5 Traitors',{E:15,T:5}],['Refuse','+3 Stability',{S:3}]]},
+ {id:'s4b',need:s=>sz(s,'S4')>=2,src:'Shield Physics Lv 2',t:'Blackout',d:'Charging the shield browns out three continents for a night.',o:[['Charge it anyway','+10 Swarm · −3 Stability',{swarm:10,S:-3}],['Stagger the charge','−10 Effort',{E:-10}]]},
+ {id:'h1',need:s=>s.owned.has('H1'),src:'Ark Project',t:'The manifest',d:'Forty thousand places. The list will leak.',o:[['A lottery','+3 Stability',{S:3}],['Scientists and engineers','+5 Knowledge · −4 Resolve',{K:5,R:-4}]]},
+ {id:'h2',need:s=>s.owned.has('H2'),src:'Deep Strike Deterrent',t:'Strike first?',d:'We could hit their fleet in transit years early. It might also tell them we are ready.',o:[['Hold fire','+4 Resolve',{R:4}],['Test it on a scout','confirmed intel · −15 Effort',{INTEL:1,E:-15}]]},
+ {id:'h3',need:s=>s.owned.has('H3'),src:'The Undercity',t:'Undercity politics',d:'The tunnels are electing their own council.',o:[['Recognise it','+5 Resolve · +5 Traitors',{R:5,T:5}],['Appoint governors','−3 Resolve · −5 Traitors',{R:-3,T:-5}]]},
  {id:'s4',need:s=>s.owned.has('S4'),src:'Shield Physics',t:'Shield trial',d:'A full-power test would light the sky for a week.',o:[['Full power','−15 Effort · +15 Orbital',{E:-15,orb:15}],['Quiet test','+5 Orbital',{orb:5}]]}
 ];
 let G=null, screen='title', skip=false, INV=null;
@@ -563,12 +594,12 @@ function draw(now){
   const aU=ap('H3',now);if(aU&&!(inv&&p>.97)){g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*.42);g.addColorStop(0,`rgba(201,162,74,${.55*aU*(.8+.2*Math.sin(t*2))})`);g.addColorStop(1,'rgba(201,162,74,0)');ctx.fillStyle=g;ctx.fillRect(cx-R,cy-R,2*R,2*R)}
   // bunkers ring
   const aE3=ap('E3',now);if(aE3){ctx.globalAlpha=aE3;ctx.setLineDash([3,4]);ctx.strokeStyle='rgba(201,162,74,.6)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(cx,cy,R*.5*(0.6+0.4*aE3),0,6.283);ctx.stroke();ctx.setLineDash([]);
-    for(let i=0;i<5;i++){const a=i/5*6.283+.4;ctx.fillStyle='#c9a24a';ctx.fillRect(cx+Math.cos(a)*R*.5-2,cy+Math.sin(a)*R*.5-2,4,4)}ctx.globalAlpha=1}
+    for(let i=0;i<5;i++){const a=i/5*6.283+.4;ctx.fillStyle='#c9a24a';ctx.strokeStyle='#14130f';ctx.lineWidth=1;ctx.fillRect(cx+Math.cos(a)*R*.5-3,cy+Math.sin(a)*R*.5-3,6,6);ctx.strokeRect(cx+Math.cos(a)*R*.5-3,cy+Math.sin(a)*R*.5-3,6,6)}ctx.globalAlpha=1}
   // counter-AI network
   const aS3=ap('S3',now);if(aS3){ctx.strokeStyle=`rgba(138,163,127,${.35*aS3})`;ctx.lineWidth=.8;SC.net.forEach(([i,j])=>{const A=pol(SC.cities[i],R,cx,cy),B=pol(SC.cities[j],R,cx,cy);ctx.beginPath();ctx.moveTo(A[0],A[1]);ctx.lineTo(A[0]+(B[0]-A[0])*aS3,A[1]+(B[1]-A[1])*aS3);ctx.stroke()});
-    SC.net.forEach(([i,j],n)=>{const k=((t*.5+n*.13)%1);const A=pol(SC.cities[i],R,cx,cy),B=pol(SC.cities[j],R,cx,cy);ctx.fillStyle=`rgba(138,163,127,${.9*aS3})`;ctx.fillRect(A[0]+(B[0]-A[0])*k-1,A[1]+(B[1]-A[1])*k-1,2,2)})}
+    SC.cities.forEach((c,i)=>{if(i%3)return;const q=pol(c,R,cx,cy);ctx.strokeStyle=`rgba(159,194,143,${.8*aS3})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(q[0],q[1],5,0,6.283);ctx.stroke()});ctx.lineWidth=.8;SC.net.forEach(([i,j],n)=>{const k=((t*.5+n*.13)%1);const A=pol(SC.cities[i],R,cx,cy),B=pol(SC.cities[j],R,cx,cy);ctx.fillStyle=`rgba(138,163,127,${.9*aS3})`;ctx.fillRect(A[0]+(B[0]-A[0])*k-1,A[1]+(B[1]-A[1])*k-1,2,2)})}
   // silos
-  const aE1=ap('E1',now);if(aE1){ctx.globalAlpha=aE1;for(let i=0;i<6;i++){const a=i/6*6.283+1;ctx.fillStyle='#c9a24a';ctx.fillRect(cx+Math.cos(a)*R*.72-1.5,cy+Math.sin(a)*R*.72-3,3,6)}ctx.globalAlpha=1}
+  const aE1=ap('E1',now);if(aE1){ctx.globalAlpha=aE1;for(let i=0;i<6;i++){const a=i/6*6.283+1,x=cx+Math.cos(a)*R*.72,y=cy+Math.sin(a)*R*.72;ctx.fillStyle='#c9a24a';ctx.strokeStyle='#14130f';ctx.lineWidth=1;ctx.beginPath();if(ctx.roundRect)ctx.roundRect(x-2.2,y-4.5,4.4,9,2.2);else ctx.rect(x-2.2,y-4.5,4.4,9);ctx.fill();ctx.stroke()}ctx.globalAlpha=1}
   // dispersed lights
   const aE4=ap('E4',now);if(aE4)SC.disp.forEach((d,i)=>{if(inv&&d.th<p)return;if(i/SC.disp.length>aE4)return;const q=pol(d,R,cx,cy);ctx.fillStyle='rgba(232,194,122,.7)';ctx.fillRect(q[0]-.6,q[1]-.6,1.3,1.3)});
   // cities
@@ -578,7 +609,7 @@ function draw(now){
     if(dark){ctx.fillStyle='rgba(60,55,48,.9)';ctx.fillRect(q[0]-1,q[1]-1,2,2);return}
     const fl=S<35?(.5+.5*Math.sin(t*9+c.ph)):1, sz=1.4+G.I/55;
     ctx.fillStyle=`rgba(${col},${fl})`;ctx.fillRect(q[0]-sz,q[1]-sz,sz*2,sz*2);ctx.strokeStyle='#14130f';ctx.lineWidth=1;ctx.strokeRect(q[0]-sz,q[1]-sz,sz*2,sz*2);
-    if(aE2){ctx.strokeStyle=`rgba(232,226,214,${.45*aE2})`;ctx.lineWidth=.8;ctx.beginPath();ctx.arc(q[0],q[1],sz+3,3.3,6.12);ctx.stroke()}
+    if(aE2&&i%2===0){ctx.fillStyle=`rgba(232,226,214,${.22*aE2})`;ctx.strokeStyle=`rgba(232,226,214,${.85*aE2})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(q[0],q[1]+sz,sz+3.5,Math.PI,0);ctx.closePath();ctx.fill();ctx.stroke()}
     if(aS2&&i%4===0){ctx.strokeStyle=`rgba(138,163,127,${aS2*(.4+.4*Math.sin(t*2+i))})`;ctx.beginPath();ctx.arc(q[0],q[1],sz+5,0,6.283);ctx.stroke()}
     if(aD2&&i%2===0){ctx.fillStyle=`rgba(138,163,127,${aD2})`;ctx.fillRect(q[0]+5,q[1]+2,2.5,2.5);ctx.fillRect(q[0]+8,q[1]+2,2.5,2.5)}
   });
@@ -738,19 +769,19 @@ function battleInit(s,enemy,det){
 function battleWave(B,w){
   const W=WAVES[w],s=B.s,ev=[];
   if(!B.det){const pool=TIDES.filter(t=>t.w.includes(w)&&!B.tides.has(t.id)&&t.c(B,s,B.enemy)&&(t.p==null||rnd()<t.p));
-    if(pool.length&&rnd()<.8){const t=pick(pool);B.tides.add(t.id);const l=B.L.find(x=>x.k===t.lane);l.mod*=t.m;if(t.res)B.resolve+=t.res;ev.push(t)}}
+    if(pool.length&&rnd()<.8){const t=pick(pool);B.tides.add(t.id);const lk=typeof t.lane==='function'?t.lane(B):t.lane;t.laneK=lk;const l=B.L.find(x=>x.k===lk);l.mod*=t.m;if(t.res)B.resolve+=t.res;ev.push(t)}}
   let kw=0,ww=0,rw=0;
   const rows=B.L.map(l=>{let r=laneStr(l)/l.th;if(!B.det)r*=.9+rnd()*.2;const k=clamp((r-.6)/1.4,0,1);kw+=k*l.w;rw+=Math.min(r,2.5)*l.w;ww+=l.w;
     return{l,r,state:r>=1.2?'won':r>=.8?'even':'lost',exp0:expOf(l)}});
   const destroyed=Math.min(B.fleet,W.sh*100*kw/ww);B.fleet=Math.max(0,B.fleet-destroyed);
   const rAvg=rw/ww,days=Math.max(1,Math.round(W.base*(.25+Math.pow(rAvg,1.6))));
-  rows.forEach(x=>{const l=x.l,f=clamp(.25/x.r,.03,.5)*(W.sh/.5);x.f=f;
+  rows.forEach(x=>{const l=x.l,tot0=l.mix.reg+l.mix.res+l.mix.con,green=tot0?1-l.mix.reg/tot0:0;x.green0=green;const f=clamp(.25/x.r*(1+.6*green),.03,.6)*(W.sh/.5);x.f=f;
     if(l.crew){const tot=l.mix.reg+l.mix.res+l.mix.con,lost=f*tot*l.crew;B.used.reg+=f*l.mix.reg*l.crew;
       ['reg','res','con'].forEach(k=>l.mix[k]*=1-f);
       const fr=Math.min(lost,B.reserves);B.reserves-=fr;const fc=Math.min(lost-fr,B.spare);B.spare-=fc;
       l.mix.res+=fr/l.crew;l.mix.con+=fc/l.crew;B.used.res+=fr;B.used.con+=fc;B.refilled+=fr+fc;x.lost=lost;x.fr=fr;x.fc=fc}
     else{l.dmg*=1-f*.5;x.lost=0;x.fr=0;x.fc=0}
-    x.exp1=expOf(l);
+    x.exp1=expOf(l);{const t1=l.mix.reg+l.mix.res+l.mix.con;x.green1=t1?1-l.mix.reg/t1:0;x.con1=t1?l.mix.con/t1:0}
     l.mom=clamp(l.mom*(x.state==='won'?1.1:x.state==='lost'?.9:1),.7,1.3);if(x.state==='lost')B.resolve-=2;
     l.mod=1;l.hist.push(x)});
   B.popLoss+=(fieldHosp(s)?.7:1)*(B.mlaw?.9:1)*(W.sh*.04+W.sh*.06*rows.filter(x=>x.state==='lost'&&(x.l.k==='orbit'||x.l.k==='ground')).length);
@@ -826,7 +857,7 @@ function setBest(v){try{localStorage.setItem('invasion.best',v)}catch(e){}}
 function fmtD(d){d=Math.round(d);const y=Math.floor(d/365),r=d%365;return y?`${y} yr${y>1?'s':''} ${r} days`:`${r} days`}
 function fxText(fx){const p=[];for(const k in fx){if(k==='gamble'){p.push('50%: +25 Research');continue}const v=fx[k];
   if(k==='P')p.push(`${v>0?'+':'−'}${Math.abs(v)}bn Population`);else if(k==='TRN')p.push(`+${Math.round(v*100)}% of military-able trained`);else{const lab=ML[k]||(TRAITS[k]&&TRAITS[k].s+' readiness');p.push(`${v>0?'+':'−'}${Math.abs(v)} ${lab}`)}}return p.join(' · ')||'No immediate effect'}
-function float(s,c){if(!G)return;G.floats.push({s,c,t:performance.now()});if(G.floats.length>3)G.floats.shift()}
+function float(s,c){if(!G)return;if(W<200&&screen==='game'){G._ft={s,c:c||'#c47545',u:performance.now()+2400};const t=$('#ticker');if(t)t.innerHTML=`<span style="color:${G._ft.c}">${s}</span>`;return}G.floats.push({s,c,t:performance.now()});if(G.floats.length>3)G.floats.shift()}
 function floatDelta(im){const p=[];if(Math.abs(im.dE)>=.01)p.push(`EFFORT ${sgn(im.dE,2)}/YR`);if(Math.abs(im.dRP)>=.01)p.push(`RESEARCH ${sgn(im.dRP,2)}/YR`);if(p.length)float(p.join(' · '),im.dE<0?'#c0533f':'#8aa37f')}
 
 function newGame(){
@@ -870,7 +901,7 @@ function yearTick(){
   if(G.year===90)vanguard();
   if(G.year===95){log('Five years remain. At Year 100 time stops; anything unspent becomes reserves at 3 : 1.');float('5 YEARS LEFT · SPEND DOWN','#c47545')}
   if(G.year>=100){enterFinal();return}
-  if(G.year%10===0){log(`Decade ${G.year/10} closes. ${100-G.year} years remain.`);if(rnd()<.8)eventFire()}
+  if(G.year%10===0){log(`Decade ${G.year/10} closes. ${100-G.year} years remain.`);if(G.year!==90&&rnd()<.8)eventFire()}
   else if(G.year%10===7&&rnd()<.45)eventFire();
   else if(G.year%10!==5&&G.year<99&&rnd()<.3)projEvent();
   render();
@@ -881,6 +912,10 @@ function vanguard(){
   G.vg={t,rows};G.reports.unshift({y:G.year,trait:t,conf:99,acc:.99,src:'Vanguard skirmish'});
   log(`VANGUARD · Their scouts reach orbit. ${rows.map(x=>`${x.n} ${x.r>=1.2?'won':x.r>=.8?'even':'lost'} ${x.r.toFixed(1)}×`).join(' · ')}. Revealed: ${TRAITS[t].n}.`);
   float('VANGUARD · T−10 · '+TRAITS[t].s.toUpperCase()+' REVEALED','#c0533f');G.ping=performance.now();
+  const worst=rows.slice().sort((a,b)=>a.r-b.r)[0];
+  $('#sheet').innerHTML=`<div class="lbl" style="color:var(--bad)">Year 90 · Vanguard · T−10</div><h2>Their scouts reach orbit</h2><p>A short skirmish tested all four lanes. They revealed <b style="color:var(--bad)">${TRAITS[t].n}</b>.</p>`+rows.map(x=>{const st=x.r>=1.2?['won','pos']:x.r>=.8?['even','wa']:['lost','neg'];const w=Math.min(100,x.r/3*100);return `<div class="lc"><div class="lt"><b>${x.n}</b><span class="${st[1]}">${st[0]} ${x.r.toFixed(1)}×</span></div><div class="mb2"><i style="width:${w}%"></i></div></div>`}).join('')+
+   `<div class="box tight" style="margin-top:6px"><div class="lbl" style="color:var(--ac)">Ten years to fix it</div><div class="ms2">${worst.r<1.2?`${worst.n} is weakest: ${FIX[worst.k]}.`:'Every lane held. Spend down and keep it that way.'} At Year 100 time stops for final spending.</div></div><div style="height:8px"></div><button class="btn" id="vgOk">BACK TO WORK</button>`;
+  $('#modal').classList.remove('hidden');$('#vgOk').onclick=()=>{$('#modal').classList.add('hidden');render()};
 }
 function toggleMoth(id){const n=NB[id];
   if(G.moth.has(id)){G.moth.delete(id);if(G.final){G.half.add(id);log(`Reactivated: ${n.n} (50% readiness on day 1).`)}else log(`Reactivated: ${n.n}.`)}
@@ -962,7 +997,7 @@ function render(){
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===G.tab));
   const P=$('#panel'),st=P.scrollTop;
   ({soc:rSoc,eco:rEco,prj:rPrj,war:rWar})[G.tab](P,ec);rSide(ec);
-  const tm=tickerMsg();if(tm)$('#ticker').innerHTML=tm;else if(G.log[0])$('#ticker').textContent=`Y${String(G.log[0].y).padStart(3,'0')} · ${G.log[0].s}`;
+  const tm=tickerMsg();if(G._ft&&G._ft.u>performance.now())$('#ticker').innerHTML=`<span style="color:${G._ft.c}">${G._ft.s}</span>`;else if(tm)$('#ticker').innerHTML=tm;else if(G.log[0])$('#ticker').textContent=`Y${String(G.log[0].y).padStart(3,'0')} · ${G.log[0].s}`;
   P.scrollTop=st;
 }
 /* ---------- shared pieces (round 4) ---------- */
@@ -991,7 +1026,7 @@ function slimRow(d){const i=DIRS.indexOf(d),c=progCost(d),u=G.uses[d.id]||0,pt=p
 const PURGE_CD=10;
 function purgeReady(){return(G.purgeY==null||G.year-G.purgeY>=PURGE_CD)&&!G.final}
 function purgeStrip(){if(G.T<25)return'';const ok=purgeReady()&&G.E>=25;const cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;
-  return `<div class="strip"><div><b>TRAITORS ${Math.round(G.T)} · ${traitorDrift(G).tot>0?'RISING':'HIGH'}</b><span>${G.T>=50?'Officials are hedging their bets.':'Vigils for the signal are drawing crowds.'} A purge cuts them 40%${cd?` · ready in ${cd} yrs`:''}.</span></div><button id="purgeBtn" ${ok?'':'disabled'}>PURGE<br><em>25 E</em></button></div>`}
+  return `<div class="strip"><div><b>TRAITORS ${Math.round(G.T)} · ${traitorDrift(G).tot>0?'RISING':'HIGH'}</b><span>Purge cuts them 40%${cd?` · ready in ${cd} yrs`:''}</span></div><button id="purgeBtn" ${ok?'':'disabled'}>PURGE<br><em>25 E</em></button></div>`}
 function doPurge(){if(G.E<25||!purgeReady())return;G.E-=25;const t0=G.T;G.T=Math.round(G.T*.6);G.S=clamp(G.S-6,0,100);G.R=clamp(G.R-3,0,100);G.purgeY=G.year;log(`Purge ordered. Traitors ${Math.round(t0)} → ${G.T}. Stability −6, Resolve −3.`);float('PURGE · TRAITORS −40%','#c0533f');G.ec=econ(G);render()}
 function bindProgs(P){P.querySelectorAll('[data-d]').forEach(b=>b.onclick=e=>{e.stopPropagation();doProg(DIRS[+b.dataset.d])});const pb=$('#purgeBtn');if(pb)pb.onclick=doPurge}
 function rSoc(P){P.innerHTML=purgeStrip()+DIRS.filter(d=>d.area==='peo').map(slimRow).join('');bindProgs(P)}
@@ -1030,7 +1065,7 @@ function projCard(n,ec){
     if(built&&S>=MAXS&&T>=MAXT)btns=`<span class="maxed">LV MAX · MK MAX</span>`;
   }
   const top=built?`<span class="pp">LV ${ppips(S,AC)} MK ${ppips(T+1,RPC)}<b style="color:${RPC}">${MK[T]}</b></span>`:'';
-  return `<div class="card pe ${G.selPrj===n.id?'sel':''} ${mb?'moth':''} ${n.br==='emg'?'emg':''}" data-tap="out:${n.id}"><div class="pt"><span class="nm">${n.br==='emg'?'◆ ':''}${n.n}</span>${top}</div><div class="pm"><span>${out}</span><span class="mut">${right}${built&&!mb&&fxk.length?` · ${matName(n.id).slice(0,3)} ×${matOf(G,n.id).toFixed(2)}`:''}</span></div>${bar}${G.half.has(n.id)?'<div class="lg2 neg">50% readiness on day 1</div>':''}<div class="pb">${btns}</div></div>`;
+  return `<div data-pid="${n.id}" class="card pe ${G.selPrj===n.id?'sel':''} ${mb?'moth':''} ${n.br==='emg'?'emg':''}" data-tap="out:${n.id}"><div class="pt"><span class="nm">${n.br==='emg'?'◆ ':''}${n.n}</span>${top}</div><div class="pm"><span>${out}</span><span class="mut">${right}${built&&!mb&&fxk.length?` · ${matName(n.id).slice(0,3)} ×${matOf(G,n.id).toFixed(2)}`:''}</span></div>${bar}${G.half.has(n.id)?'<div class="lg2 neg">50% readiness on day 1</div>':''}<div class="pb">${btns}</div></div>`;
 }
 function rPrj(P,ec){
   const subs=[['def','DEFENCE'],['end','ENDURANCE'],['sci','SCIENCE'],['emg','EMERGENT']];
@@ -1124,7 +1159,7 @@ function sheet(lbl,title,body,keep){
   $('#modal').classList.remove('hidden');$('#closeSh').onclick=()=>{$('#modal').classList.add('hidden');if(screen==='game')render()};
   $('#sheet').querySelectorAll('[data-fund]').forEach(b=>b.onclick=()=>{doProg(DIRS.find(x=>x.id===b.dataset.fund));tapSheet(keep)});
   $('#sheet').querySelectorAll('[data-sm]').forEach(b=>b.onclick=()=>{toggleMoth(b.dataset.sm);tapSheet(keep)});
-  $('#sheet').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{$('#modal').classList.add('hidden');const [t,s]=b.dataset.go.split(':');G.tab=t;if(s)G.sub=s;render()});
+  $('#sheet').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{$('#modal').classList.add('hidden');const [t,s,id]=b.dataset.go.split(':');G.tab=t;if(s)G.sub=s;if(id)G.selPrj=id;render();if(id){const el=document.querySelector(`[data-pid="${id}"]`);if(el){el.scrollIntoView({block:'center'});el.classList.add('flash');setTimeout(()=>el.classList.remove('flash'),1600)}}});
   const pb=$('#sheet [data-purge]');if(pb)pb.onclick=()=>{doPurge();tapSheet(keep)};
 }
 const box=(inner)=>`<div class="box">${inner}</div>`;
@@ -1134,11 +1169,11 @@ const linkRow=(t,eff,go)=>`<div class="ini"><div><b>${t}</b><span>${eff}</span><
 const dragRow=(t,v,active=true)=>`<div class="drag"><span>${t}</span><span class="${active?'neg':'mut'}">${active?v:'not active'}</span></div>`;
 function meterSheet(k){
   const d=traitorDrift(G),u=G.uses;
-  if(k==='S'){const tgt=G.dr.Seq;sheet('Meter',`Stability ${Math.round(G.S)} → ${tgt}`,`<div class="trend">${sgn(DRIFT.S(G),2)}/yr · drifts 2% of the way to ${tgt} each year</div>`+why(`Feeds Effort ×${(.7+G.S/200).toFixed(2)} · population growth × ${(G.S/50).toFixed(2)} · the long war · riots below 20.`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('wel','+2 Stability long-term · +4')+iniRow('fam','+1')+linkRow('Hardened Cities event','Field drills, voluntary: +1','prj:end')+`<div class="lbl neg" style="margin-top:8px">Pulling it down</div>`+dragRow(`Industrial Mobilisation ×${u.ind||0}`,'−2 each, once',!!u.ind)+dragRow(`National Service ×${u.nat||0}`,'−1 each, once',!!u.nat)+dragRow(`Internal Security ×${u.sec||0}`,'−2 each, once',!!u.sec)+dragRow('Resolve below 30','−0.5/yr',G.R<30)+dragRow('Purge','−6 when ordered',G.purgeY!=null),'m:S');return}
-  if(k==='R'){sheet('Meter',`Resolve ${Math.round(G.R)}`,`<div class="trend">${sgn(G.dr.R,2)}/yr</div>`+why(`Feeds military-able ${Math.round(econ(G).ablePct*100)}% (25% + Resolve/1000) · Ground (×0.3) · Traitors readiness (×0.15) · the long war · above 50 it wears Traitors down.`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('uni','+0.10/yr · +4')+linkRow('Planetary Lance event','public test-fire: +6','prj:def')+`<div class="lbl neg" style="margin-top:8px">Pulling it down</div>`+dragRow('Base decline','−0.35/yr')+dragRow('Purge','−3 when ordered',G.purgeY!=null)+dragRow('Lanes lost in battle','−2 each'),'m:R');return}
-  if(k==='I'){sheet('Meter',`Industry ${Math.round(G.I)}`,`<div class="trend">${sgn(G.dr.I,2)}/yr</div>`+why('The biggest Effort driver: income = workforce × Industry × 0.011. Also Siege readiness (×0.3) and Orbital (×0.08).')+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('ind','+0.10/yr · +3 · Stability −2')+linkRow('Deep Bunkers event','essential workers first: +3','prj:end')+`<div class="lbl neg" style="margin-top:8px">Pulling it down</div>`+dragRow('Riots (Stability below 20)','−4',G.S<20)+dragRow('Dispersed Society event','encourage: −3',G.owned.has('E4')),'m:I');return}
+  if(k==='S'){const tgt=G.dr.Seq;sheet('Meter',`Stability ${Math.round(G.S)} → ${tgt}`,`<div class="trend">${sgn(DRIFT.S(G),2)}/yr · drifts 2% of the way to ${tgt} each year</div>`+why(`Feeds Effort ×${(.7+G.S/200).toFixed(2)} · population growth × ${(G.S/50).toFixed(2)} · the long war · riots below 20.`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('wel','+2 Stability long-term · +4')+iniRow('fam','+1')+linkRow('Hardened Cities','event: Field drills, voluntary +1','prj:end:E2')+`<div class="lbl neg" style="margin-top:8px">Pulling it down</div>`+dragRow(`Industrial Mobilisation ×${u.ind||0}`,'−2 each, once',!!u.ind)+dragRow(`National Service ×${u.nat||0}`,'−1 each, once',!!u.nat)+dragRow(`Internal Security ×${u.sec||0}`,'−2 each, once',!!u.sec)+dragRow('Resolve below 30','−0.5/yr',G.R<30)+dragRow('Purge','−6 when ordered',G.purgeY!=null),'m:S');return}
+  if(k==='R'){sheet('Meter',`Resolve ${Math.round(G.R)}`,`<div class="trend">${sgn(G.dr.R,2)}/yr</div>`+why(`Feeds military-able ${Math.round(econ(G).ablePct*100)}% (25% + Resolve/1000) · Ground (×0.3) · Traitors readiness (×0.15) · the long war · above 50 it wears Traitors down.`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('uni','+0.10/yr · +4')+linkRow('Planetary Lance','event: public test-fire +6','prj:def:D4')+`<div class="lbl neg" style="margin-top:8px">Pulling it down</div>`+dragRow('Base decline','−0.35/yr')+dragRow('Purge','−3 when ordered',G.purgeY!=null)+dragRow('Lanes lost in battle','−2 each'),'m:R');return}
+  if(k==='I'){sheet('Meter',`Industry ${Math.round(G.I)}`,`<div class="trend">${sgn(G.dr.I,2)}/yr</div>`+why('The biggest Effort driver: income = workforce × Industry × 0.011. Also Siege readiness (×0.3) and Orbital (×0.08).')+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('ind','+0.10/yr · +3 · Stability −2')+linkRow('Deep Bunkers','event: essential workers first +3','prj:end:E3')+`<div class="lbl neg" style="margin-top:8px">Pulling it down</div>`+dragRow('Riots (Stability below 20)','−4',G.S<20)+dragRow('Dispersed Society event','encourage: −3',G.owned.has('E4')),'m:I');return}
   if(k==='T'){const cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;
-    sheet('Meter',`Traitors ${Math.round(G.T)}`,`<div class="trend">${sgn(d.tot,2)}/yr</div>`+why('In battle they add ×0.8 to their Traitors in the Inside lane; above 20 they fight on their own (×1.2) even if the enemy brought none.')+`<div class="lbl pos" style="margin-top:8px">Bring it down</div>`+iniRow('uni',`−0.06/yr each, plus −0.02/yr per Resolve above 50 (now ${sgn(d.uni,2)})`)+iniRow('sec','−10 · −0.25/yr · Stability −2')+(G.T>=25?`<div class="ini"><div><b>Purge</b><span>−40% · Stability −6 · Resolve −3</span></div><button data-purge="1" ${purgeReady()&&G.E>=25?'':'disabled'}>${cd?`in ${cd} yrs`:'25 E'}</button></div>`:dragRow('Purge','available at 25 Traitors',false))+linkRow('Counter-AI Network','stops the signal · −0.10/yr','prj:sci')+`<div class="lbl neg" style="margin-top:8px">Pushing it up</div>`+dragRow('Base','+0.30/yr')+dragRow('Signal (Knowledge × 0.005)',sgn(d.sig,2)+'/yr',d.sig>0)+dragRow('Low Stability and Resolve',sgn(Math.max(0,d.dis),2)+'/yr',d.dis>0)+dragRow(`Research Grants ×${u.res||0}`,'+2 each, once',!!u.res),'m:T');return}
+    sheet('Meter',`Traitors ${Math.round(G.T)}`,`<div class="trend">${sgn(d.tot,2)}/yr</div>`+why('In battle they add ×0.8 to their Traitors in the Inside lane; above 20 they fight on their own (×1.2) even if the enemy brought none.')+`<div class="lbl pos" style="margin-top:8px">Bring it down</div>`+iniRow('uni',`−0.06/yr each, plus −0.02/yr per Resolve above 50 (now ${sgn(d.uni,2)})`)+iniRow('sec','−10 · −0.25/yr · Stability −2')+(G.T>=25?`<div class="ini"><div><b>Purge</b><span>−40% · Stability −6 · Resolve −3</span></div><button data-purge="1" ${purgeReady()&&G.E>=25?'':'disabled'}>${cd?`in ${cd} yrs`:'25 E'}</button></div>`:dragRow('Purge','available at 25 Traitors',false))+linkRow('Counter-AI Network','stops the signal · −0.10/yr','prj:sci:S3')+`<div class="lbl neg" style="margin-top:8px">Pushing it up</div>`+dragRow('Base','+0.30/yr')+dragRow('Signal (Knowledge × 0.005)',sgn(d.sig,2)+'/yr',d.sig>0)+dragRow('Low Stability and Resolve',sgn(Math.max(0,d.dis),2)+'/yr',d.dis>0)+dragRow(`Research Grants ×${u.res||0}`,'+2 each, once',!!u.res),'m:T');return}
 }
 function tapSheet(key){
   if(!G||screen!=='game')return;const ec=econ(G);const [kind,arg]=key.split(':');
@@ -1220,7 +1255,7 @@ const MIXLEG=`<div class="lg2" style="font-family:var(--mono);font-size:8.5px;co
 function laneRows(B,last){
   return B.L.map(l=>{const x=last&&last.rows.find(r=>r.l===l);const r=x?x.r:laneStr(l)/l.th;const st=x?x.state:(r>=1.2?'won':r>=.8?'even':'lost');
     const you=Math.min(r,3)/3*100;
-    return `<div class="lane" data-btap="blane:${l.k}"><div><span>${l.n}</span>${l.crew?mixBar(l):''}</div><div><div class="sb" style="height:8px"><i style="width:${you}%;background:${OK}"></i><i style="width:${100-you}%;background:${BAD}"></i></div><span class="mut">${l.crew?`crew ${(l.crew*(l.mix.reg+l.mix.res+l.mix.con)).toFixed(2)}bn · exp ×${expOf(l).toFixed(2)}`:'meters and readiness'}${l.w>1?'':' · they sent little'}</span></div><b style="color:${LC[st]}">${r.toFixed(1)}× ${x?st:''}</b></div>`}).join('');
+    return `<div class="lane" data-btap="blane:${l.k}"><div><span>${l.n}</span>${l.crew?mixBar(l):''}</div><div><div class="sb" style="height:8px"><i style="width:${you}%;background:${OK}"></i><i style="width:${100-you}%;background:${BAD}"></i></div><span class="mut">${l.crew?(()=>{const m=l.mix,t=Math.max(1e-6,m.reg+m.res+m.con),g=1-m.reg/t;return `<span style="color:${g>=.5?'var(--bad)':g>=.25?'var(--wa)':'var(--ok)'}">vets ${Math.round(m.reg/t*100)}%${m.res>.001?` · res ${Math.round(m.res/t*100)}%`:''}${m.con>.001?` · con ${Math.round(m.con/t*100)}%`:''}</span> · exp ×${expOf(l).toFixed(2)}`})():'meters and readiness'}${l.w>1?'':' · they sent little'}</span></div><b style="color:${LC[st]}">${r.toFixed(1)}× ${x?st:''}</b></div>`}).join('');
 }
 function sitrep(B,last){
   const rows=last?last.rows:B.L.map(l=>{const r=laneStr(l)/l.th;return{l,r,state:r>=1.2?'won':r>=.8?'even':'lost'}});
@@ -1230,6 +1265,7 @@ function sitrep(B,last){
   let h='';
   if(worst.r<1.2)h+=`<span class="neg">${worst.l.n} is ${worst.r<.8?'collapsing':'contested'}.</span> Their ${tr} ${Math.round(worst.l.th)} vs your ${Math.round(laneStr(worst.l))}: it costs about ${Math.round(lostDmg(worst)*100)}% of the damage we could do${last?'':' this wave'}. `;
   if(good.length)h+=`<span class="pos">${good.map(x=>x.l.n).join(' and ')} ${good.length>1?'are':'is'} winning</span>${good.some(x=>x.l.w<2)?' where they sent little':''}. `;
+  {const gl=B.L.filter(l=>l.crew&&1-l.mix.reg/Math.max(1e-6,l.mix.reg+l.mix.res+l.mix.con)>=.25);if(gl.length)h+=`<span style="color:var(--wa)">${gl.map(l=>l.n).join(' and ')} now ${gl.length>1?'lean':'leans'} on reservists: less experience, heavier losses.</span> `}
   if(B.reserves<.05&&B.spare>0)h+=`<span style="color:var(--wa)">Reserves are gone: losses now refill with conscripts.</span>`;
   return h||'All lanes are holding.';
 }
@@ -1265,6 +1301,15 @@ function midCard(B,w){
   });
 }
 function tideLine(t){line(`<b>TURNING POINT</b> · ${t.t}`,t.good?'good tide':'bad tide')}
+function greenLines(rec){
+  rec.rows.filter(x=>x.l.crew).forEach(x=>{const l=x.l;l._g=l._g||{};
+    const pct=Math.round(x.green1*100),drop=`experience ×${x.exp0.toFixed(2)} → ×${x.exp1.toFixed(2)}`;
+    if(x.green1>=.5&&!l._g.half){l._g.half=1;line(`<b>${l.n}: reservists now ${pct}% of the line</b> · ${drop} · losses +${Math.round(.6*x.green1*100)}%`,'bad');line(pick(GREENSAY[l.k]),'bad')}
+    else if(x.green1>=.25&&!l._g.q){l._g.q=1;line(`<b>${l.n}: reservists ${pct}% of the line</b> · ${drop}`,'res');line(pick(GREENSAY[l.k]),'res')}
+    if(x.con1>=.1&&!l._g.c){l._g.c=1;line(`${l.n}: conscripts at the front (×0.50). Legion HQ: ${pick(CONSAY)}`,'bad')}
+    if(x.green1<.15&&l.matL>1.8&&x.state==='won'&&!l._g.v){l._g.v=1;line(VETSAY[l.k],'good')}
+  });
+}
 function sayLines(rec){
   const rs=rec.rows.slice().sort((a,b)=>b.r-a.r);const pick2=[rs[0],rs[rs.length-1]].filter((x,i,a)=>a.indexOf(x)===i);
   pick2.forEach(x=>{const i=x.state==='won'?0:x.state==='even'?1:2;line(pick(SAY[x.l.k][i]),i===0?'good':i===2?'bad':'')});
@@ -1318,7 +1363,7 @@ async function playInvasion(){
     const d0=B.days,rec=battleWave(B,w);
     INV.mid=()=>{rec.ev.forEach(tideLine);INV.kill=(100-B.fleet)/100;INV.fleetLoss=clamp(1-rec.forces,0,1)};
     await animDays(w,d0,rec.dayEnd,2600+3000*Math.min(1,rec.days/150));
-    sayLines(rec);
+    sayLines(rec);greenLines(rec);
     line(`Wave ${w+1}: their fleet −${Math.round(rec.destroyed)}% · ${Math.round(B.fleet)}% left · ${fmtD(rec.days)}`,'mute');
     bRender(rec);const ws=$('#wsBtn');ws.style.visibility='visible';ws.textContent=`WAVE ${w+1} SUMMARY ›`;ws.onclick=()=>waveSheet(w);await sleep(900);
     if(B.won)break;
@@ -1346,7 +1391,7 @@ function bestLine(){const b=getBest(),w=getBestWin();$('#bestline').textContent=
 function waveHTML(B,w){
   const x=B.waves[w];if(!x)return'';
   return `<div class="ms2" style="margin:4px 0">Fleet −${Math.round(x.destroyed)}% (now ${Math.round(x.fleet)}%) · ${fmtD(x.days)}${B.cards&&B.cards[w]?` · card: ${B.cards[w]}`:''}</div>`+
-   x.rows.map(r=>`<div class="lg"><span>${r.l.n} <span class="${r.state==='won'?'pos':r.state==='even'?'':'neg'}">${r.state} ${r.r.toFixed(1)}×</span>${r.lost>.001?`<br><span class="mut" style="font-size:9.5px">−${r.lost.toFixed(2)}bn · ${r.fr>.001?`reserves ${r.fr.toFixed(2)}`:''}${r.fc>.001?` conscripts ${r.fc.toFixed(2)}`:''}${r.fr+r.fc<r.lost-.001?' <span class="neg">unfilled</span>':''}</span>`:''}</span><span>exp ×${r.exp0.toFixed(2)} → ×${r.exp1.toFixed(2)}</span></div>`).join('')+
+   x.rows.map(r=>`<div class="lg"><span>${r.l.n} <span class="${r.state==='won'?'pos':r.state==='even'?'':'neg'}">${r.state} ${r.r.toFixed(1)}×</span>${r.lost>.001?`<br><span class="mut" style="font-size:9.5px">−${r.lost.toFixed(2)}bn · ${r.fr>.001?`reserves ${r.fr.toFixed(2)}`:''}${r.fc>.001?` conscripts ${r.fc.toFixed(2)}`:''}${r.fr+r.fc<r.lost-.001?' <span class="neg">unfilled</span>':''}</span>`:''}</span><span>exp ×${r.exp0.toFixed(2)} → ×${r.exp1.toFixed(2)}${r.l.crew?`<br><span style="font-size:9.5px;color:${r.green1>=.5?'var(--bad)':r.green1>=.25?'var(--wa)':'var(--mu)'}">vets ${Math.round((1-r.green0)*100)}% → ${Math.round((1-r.green1)*100)}%</span>`:''}</span></div>`).join('')+
    (x.ev.length?x.ev.map(t=>`<div class="ms2" style="margin-top:4px;color:${t.good?'var(--ok)':'var(--bad)'}">Turning point: ${t.t}</div>`).join(''):'');
 }
 function bSheet(lbl,title,body){$('#sheet').innerHTML=`<div class="lbl">${lbl}</div><h2>${title}</h2>${body}<div style="height:10px"></div><button class="btn ghost" id="closeSh">CLOSE</button>`;$('#modal').classList.remove('hidden');$('#closeSh').onclick=()=>$('#modal').classList.add('hidden')}
