@@ -9,7 +9,11 @@ import { openRecipe } from './recipeModal.js';
 import { openDishPicker } from './dishPicker.js';
 import { openLunchPicker } from './lunchPicker.js';
 import { renderHistory, weekSegment, wireWeekSegment } from './historyView.js';
-import { clearManualLunch, dinnerToLunch, freezeManualLunch, lunchToDinner, moveManualLunch } from '../core/lunches.js';
+import { clearManualLunch, dinnerToLunch, freezeManualLunch, lunchToDinner, manualAt, moveManualLunch } from '../core/lunches.js';
+import { carryLeftovers } from '../core/carry.js';
+
+// Appended to a move's toast when its pinned lunches or leftover dinners came along.
+const withLeftovers = (msg, carried) => (carried ? `${msg} \u2014 its leftovers moved too` : msg);
 import {
   CONTEXT_DAYS, dateForIndex, dayContext, formatDate, formatDay, formatLongDate, formatRange,
 } from '../core/timeline.js';
@@ -412,15 +416,24 @@ function wire(root) {
           return commit({ lunches: true, freezer: true });
         }
         if (target.classList.contains('lslot')) {
-          if (!moveManualLunch(s.manualLunches, s.lunchPins, payload.idx, to)) return;
-          toast(`${payload.dish} moved to ${formatDay(dateForIndex(to, s.planAnchor))} lunch`);
-          return commit({ lunches: true, pins: true });
+          const swapping = Boolean(manualAt(s.manualLunches, to));
+          const sources = [{ day: payload.idx, meal: 'lunch' }, ...(swapping ? [{ day: to, meal: 'lunch' }] : [])];
+          const { result, carried } = carryLeftovers(s.plan, s.lunchPins, s.manualLunches, sources, () => {
+            const ok = moveManualLunch(s.manualLunches, s.lunchPins, payload.idx, to);
+            return { ok, to: ok ? [to, payload.idx] : [] };
+          });
+          if (!result.ok) return;
+          toast(withLeftovers(`${payload.dish} moved to ${formatDay(dateForIndex(to, s.planAnchor))} lunch`, carried));
+          return commit({ plan: true, lunches: true, pins: true });
         }
         if (target.classList.contains('dslot')) {
-          const res = lunchToDinner(s.plan, s.manualLunches, payload.idx, to);
+          const { result: res, carried } = carryLeftovers(s.plan, s.lunchPins, s.manualLunches, [{ day: payload.idx, meal: 'lunch' }], () => {
+            const r = lunchToDinner(s.plan, s.manualLunches, payload.idx, to);
+            return { ...r, to: [r.ok ? to : null] };
+          });
           if (!res.ok) return toast('That day already has a dinner — clear it first');
-          toast(`${res.dish} moved to ${formatDay(dateForIndex(to, s.planAnchor))} dinner`);
-          return commit({ plan: true, lunches: true });
+          toast(withLeftovers(`${res.dish} moved to ${formatDay(dateForIndex(to, s.planAnchor))} dinner`, carried));
+          return commit({ plan: true, lunches: true, pins: true });
         }
         return;
       }
@@ -446,24 +459,38 @@ function wire(root) {
       }
 
       if (target.classList.contains('surplus') && payload.type === 'dinner') {
-        const res = deferDinner(s.plan, payload.idx);
+        const { result: res, carried } = carryLeftovers(s.plan, s.lunchPins, s.manualLunches, [{ day: payload.idx }], () => {
+          const r = deferDinner(s.plan, payload.idx);
+          return { ...r, to: [r.ok ? r.idx : null] };
+        });
         if (!res.ok) return toast(res.reason === 'horizon'
           ? 'That day is already at the edge of the 28-day plan'
           : 'Next week has no empty day — clear one first');
         const movedDate = dateForIndex(res.idx, s.planAnchor);
-        toast(`Moved to ${formatDay(movedDate)} ${formatDate(movedDate)}`);
-        return commit({ plan: true });
+        toast(withLeftovers(`Moved to ${formatDay(movedDate)} ${formatDate(movedDate)}`, carried));
+        return commit({ plan: true, pins: true });
       }
 
       if (target.classList.contains('dslot') && payload.type === 'dinner') {
-        swapDinners(s.plan, payload.idx, Number(target.dataset.idx));
-        return commit({ plan: true });
+        const to = Number(target.dataset.idx);
+        if (to === payload.idx) return;
+        // Both days' meals move, and each takes its own leftovers along.
+        const { carried } = carryLeftovers(s.plan, s.lunchPins, s.manualLunches, [{ day: payload.idx }, { day: to }], () => {
+          swapDinners(s.plan, payload.idx, to);
+          return { to: [to, payload.idx] };
+        });
+        if (carried) toast(withLeftovers(`${payload.dish} moved`, carried));
+        return commit({ plan: true, pins: true });
       }
 
       // A dinner dropped on a lunch slot: have it for lunch (see core/lunches.js).
       if (target.classList.contains('lslot') && payload.type === 'dinner') {
         const to = Number(target.dataset.idx);
-        const res = dinnerToLunch(s.plan, s.lunchPins, s.manualLunches, s.freezer, payload.idx, to);
+        // Only a meal that moves itself to lunch ('moved') carries its leftovers along.
+        const { result: res, carried } = carryLeftovers(s.plan, s.lunchPins, s.manualLunches, [{ day: payload.idx }], () => {
+          const r = dinnerToLunch(s.plan, s.lunchPins, s.manualLunches, s.freezer, payload.idx, to);
+          return { ...r, to: [r.kind === 'moved' ? to : null] };
+        });
         if (!res.ok) return;
         const day = formatDay(dateForIndex(to, s.planAnchor));
         if (res.kind === 'pinned') {
@@ -474,7 +501,7 @@ function wire(root) {
         } else if (res.kind === 'frozen') {
           toast(`${res.dish} from the freezer moved to ${day} lunch`);
         } else {
-          toast(`${res.dish} moved to ${day} lunch`);
+          toast(withLeftovers(`${res.dish} moved to ${day} lunch`, carried));
         }
         return commit({ plan: true, pins: true, lunches: true, freezer: true });
       }
