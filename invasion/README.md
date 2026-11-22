@@ -326,6 +326,26 @@ explains the worst lane and how much damage it costs.
 with 2 wins in 16; no-programs 1,600 with 1; Science-first 1,424 (Inside 3.2×). Best value per cost:
 Unity Campaign, Xenobiology, Counter-AI, Hardened Cities.
 
+
+## Round 4 layout (Nov 2026)
+
+Sized to a real phone's game area (about 390×742). Rule: nothing is cut off with "…"; it wraps or
+moves into a tap sheet.
+
+| Area | Now |
+|---|---|
+| Meters | A 2×2 of pills: Stability (shown as "64 → 60", where it is heading), Resolve, Industry, Traitors. Knowledge moved into the Research waterfall and sheet |
+| Society | Side screen: Traitors/yr and Stability waterfalls by source (Unity LV, Security LV, Welfare LV), dashed ghost = what the next level adds. Programs are slim rows: name, LV, track pips, "+1 → …" (amber where it costs something), cost button. Purge only appears as a red strip once Traitors reach 25 |
+| Economy | Effort/yr and Research/yr waterfalls by source with next-level ghosts; slim program rows; upkeep box |
+| Projects | Full-width cards: LV and Mk pips, "+41 of 52" output, crew bar, wide cost-first buttons (one gain line, crew change). Locked projects are one line. Tap a card for its readiness chain, crew calculation and Mothball/Reactivate |
+| War Room | Lane cards (your Y100 strength vs their likely range, prediction, fix on the weakest), Manning/Intel/Supply tiles, estimate box; reports and readiness by type behind taps |
+| Meter sheets | Tap a pill: trend, what it feeds, **Raise it** (programs with level and a FUND button right there, plus linked projects and events), **Pulling it down** (inactive ones shown as "not active") |
+| Year 100 | War council opens with "What we take into the war": one card per lane with the projects behind it, a summary line, reactivations, then leftovers with before → after per lane; Back to spend / Commit |
+| Battle | Situation and each lane are tappable; the log shows the last 3 lines; a Wave summary button appears after each wave; the council has a full wave report |
+| Debrief | One screen: result (grade if won), compact chart, ratio grid per wave (tap a wave), four tiles (Why it ended, Intel read, Manpower, Calls) and Empire at arrival, each opening a sheet |
+
+Outlast wins are graded on 40 + 60 × (1 − days ÷ 3,000) for speed, so a slow Outlast is not an automatic D.
+
 ## Empire tab (retired, see War Room)
 
 - Year 100 survival on your current course (meters, maturity, population and Traitors projected

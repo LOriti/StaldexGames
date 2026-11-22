@@ -163,7 +163,61 @@ td.n{font-family:var(--mono);text-align:right}
 .links{display:flex;gap:6px}.links button{flex:1;font-family:var(--mono);font-size:9px;color:var(--ac);border:1px solid var(--ln);border-radius:7px;padding:6px 0}
 .tl.sit{flex:1;cursor:default}.st2{font-size:10.5px;line-height:1.4;color:#cfc7b8;overflow:hidden}
 [data-tap]{cursor:pointer}
-#warn{font-size:8px!important;bottom:4px!important;line-height:1.3!important}
+#warn{font-size:7.5px!important;bottom:auto!important;top:4px!important;left:4px!important;line-height:1.3!important}
+/* ---- round 4: roomy, no clipping ---- */
+.split{height:186px!important}
+.split .cvwrap{width:34%!important}
+.meters{display:grid!important;grid-template-columns:1fr 1fr;gap:4px;padding:4px 12px!important}
+.mc{display:flex;justify-content:space-between;align-items:baseline;font-family:var(--mono);background:var(--p1);border:1px solid var(--ln);border-radius:7px;padding:4px 8px;color:var(--mu);font-size:9.5px;letter-spacing:.04em}
+.mc b{color:var(--tx);font-size:12px}.mc b i{font-style:normal;font-size:9px;margin-left:3px;font-weight:400}
+.wf{gap:2px!important}.wf .hd b{font-size:11.5px!important}
+.wr{display:grid;grid-template-columns:74px 1fr 66px;gap:4px;align-items:center;font-family:var(--mono);font-size:8.5px}
+.wr>span{color:var(--mu);white-space:nowrap;overflow:hidden}
+.wr b{text-align:right;font-weight:400;font-size:8.5px;white-space:nowrap}.wr b em{font-style:normal}
+.wb{position:relative;height:5px}.wb .b{position:absolute;top:0;height:5px;border-radius:2px}.wb .g{position:absolute;top:0;height:5px;border:1px dashed;box-sizing:border-box;border-radius:2px}.wb .z{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--ln)}
+.lg2.wrap,.wrap{white-space:normal!important}
+.slim{display:flex;gap:8px;align-items:center;background:var(--p1);border:1px solid var(--ln);border-radius:9px;padding:7px 10px;margin-bottom:5px}
+.slim .sm{flex:1;min-width:0}.slim .sh{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.slim .nm{font-weight:600;font-size:13px}.slim .nm em{font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--ac)}
+.slim .sp{font-family:var(--mono);font-size:9.5px;margin-top:3px;line-height:1.35}
+.trk{display:flex;gap:2px;flex:0 0 auto}.trk i{width:7px;height:7px;border-radius:2px;border:1px solid}
+.cost{font-family:var(--mono);font-size:10.5px;color:var(--ac);background:var(--p2);border:1px solid var(--ac);border-radius:7px;padding:8px 9px;white-space:nowrap;flex:0 0 auto}
+.cost:disabled{opacity:.4}
+.strip{display:flex;gap:8px;align-items:center;background:#2a1c17;border:1px solid var(--bad);border-radius:9px;padding:7px 10px;margin-bottom:6px}
+.strip>div{flex:1;font-size:11.5px;color:#e0cfc8;line-height:1.35}.strip b{display:block;font-family:var(--mono);font-size:10px;color:var(--bad);letter-spacing:.08em}
+.strip button{font-family:var(--mono);font-size:10.5px;color:var(--bad);background:var(--p2);border:1px solid var(--bad);border-radius:8px;padding:6px 9px}.strip button em{font-style:normal;color:var(--mu);font-size:9px}.strip button:disabled{opacity:.4}
+.card.pe{display:block;padding:8px 10px;margin-bottom:6px}
+.card.pe.one{display:flex;justify-content:space-between;gap:8px;padding:7px 10px;font-size:12px;font-family:var(--mono)}
+.card.pe.one span:first-child{font-family:var(--sans);font-weight:600}
+.pe .pt{display:flex;justify-content:space-between;align-items:center;gap:6px}.pe .nm{font-weight:600;font-size:13.5px}
+.pe .pp{display:flex;align-items:center;gap:2px;font-family:var(--mono);font-size:8.5px;color:var(--mu)}.pe .pp i{width:7px;height:7px;border-radius:2px;border:1px solid;display:inline-block}.pe .pp b{margin-left:3px;font-size:9px}
+.pe .pm{display:flex;justify-content:space-between;gap:8px;font-family:var(--mono);font-size:10px;margin-top:4px;flex-wrap:wrap}
+.pe .pb{display:flex;gap:6px;margin-top:6px}.pe .pb button{flex:1;font-family:var(--mono);font-size:9.5px;text-align:left;padding:6px 8px;border-radius:7px;border:1px solid;background:var(--p2);line-height:1.35;white-space:normal}
+.pe .pb button.e{border-color:var(--ac);color:var(--ac)}.pe .pb button.r{border-color:var(--rp);color:var(--rp)}.pe .pb button.g{border-color:var(--ok);color:var(--ok)}.pe .pb button:disabled{opacity:.4}
+.pe .maxed{font-family:var(--mono);font-size:9px;color:var(--mu)}
+.lc{background:var(--p1);border:1px solid var(--ln);border-radius:9px;padding:6px 10px;margin-bottom:5px;cursor:pointer}
+.lt{display:flex;justify-content:space-between;align-items:baseline;gap:6px}.lt b{font-size:13px}.lt span{font-family:var(--mono);font-size:10px}.wa{color:var(--wa)}
+.ms2{font-family:var(--mono);font-size:9px;color:var(--mu);margin-top:3px;line-height:1.35}
+.lc .mb2{margin-top:4px}
+.ini{display:flex;gap:8px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--ln)}.ini>div{flex:1}.ini b{font-size:13px}.ini em{font-style:normal;font-family:var(--mono);font-size:9.5px;color:var(--ac)}.ini span{display:block;font-family:var(--mono);font-size:10px;color:var(--ok);margin-top:2px}
+.ini button{font-family:var(--mono);font-size:10.5px;color:var(--ac);background:var(--p2);border:1px solid var(--ac);border-radius:7px;padding:6px 9px;white-space:nowrap}.ini button.lk{color:var(--mu);border-color:var(--ln)}.ini button:disabled{opacity:.4}
+.drag{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10.5px;padding:4px 0}
+.box .lg2{font-family:var(--mono);font-size:9px;color:var(--mu)}
+.trend{font-family:var(--mono);font-size:12px;color:var(--ac);margin-bottom:4px}
+.card .fx,.card .imp{white-space:normal!important}
+.bbtns{display:flex;gap:6px;padding:6px 12px calc(10px + env(safe-area-inset-bottom));margin-top:auto}.bbtns .btn{flex:1;margin:0!important;font-family:var(--mono);font-size:11px;padding:11px}
+#wsBtn{color:var(--ac);border-color:var(--ac)}
+#lines{flex:0 0 auto!important;overflow:hidden!important;padding:4px 12px!important;gap:3px!important}
+#lines .ln{font-size:11.5px;line-height:1.35}
+.lane{cursor:pointer}.lane b::after{content:' ›';color:var(--mu)}
+.tl.sit{cursor:pointer}
+.opt.on{border-color:var(--ac);background:#2a2017}
+.dgrid{display:grid;gap:4px 6px;align-items:center;font-family:var(--mono);font-size:10.5px}
+.dgrid .h{font-size:9px;color:var(--mu);text-align:right;cursor:pointer}.dgrid .v{text-align:right}
+.dtile{background:var(--p1);border:1px solid var(--ln);border-radius:9px;padding:7px 9px;cursor:pointer}
+.dtile .lbl::after{content:' ›'}.dtile b{display:block;font-family:var(--mono);font-size:15px;margin-top:2px}.dtile span{font-family:var(--mono);font-size:9px;color:var(--mu);line-height:1.35;display:block}
+#screen-deb{display:none;flex-direction:column;gap:6px;padding:14px 14px 12px!important;overflow-y:auto}
+#screen-deb.active{display:flex}
 .badge{font-family:var(--mono);font-size:10px;padding:5px 8px;border:1px solid var(--ac);color:var(--ac);border-radius:4px;letter-spacing:.06em}
 .cm{flex:1;min-width:0}
 .cb{display:flex;flex-direction:column;gap:5px;flex:0 0 auto}
@@ -266,7 +320,7 @@ td.n{font-family:var(--mono);text-align:right}
   <div class="split"><div class="cvwrap" id="cvInv"></div><div id="bside"></div></div>
   <div id="blanes"></div>
   <div id="lines"></div>
-  <button class="btn ghost" id="skipBtn">SKIP ▸▸</button>
+  <div class="bbtns"><button class="btn ghost" id="wsBtn" style="visibility:hidden">WAVE SUMMARY ›</button><button class="btn ghost" id="skipBtn">SKIP ▸▸</button></div>
 </section>
 
 <section id="screen-deb" class="screen"></section>
@@ -568,7 +622,7 @@ function draw(now){
 
   // floats + build flash
   if(G.flash&&now-G.flash<700){const k=Math.max(0,(now-G.flash)/700);ctx.strokeStyle=`rgba(196,117,69,${.7*(1-k)})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,R*(1+k*.5),0,6.283);ctx.stroke()}
-  G.floats=G.floats.filter(fl=>now-fl.t<2200);
+  G.floats=G.floats.filter(fl=>now-fl.t<2200);if(W<170&&G.floats.length>1)G.floats=G.floats.slice(-1);
   G.floats.forEach((fl,i)=>{const k=Math.max(0,(now-fl.t)/2200);ctx.globalAlpha=k<.15?k/.15:1-Math.max(0,(k-.6)/.4);ctx.font='600 '+(W<200?7:W<260?8:10)+'px JetBrains Mono, monospace';ctx.textAlign='center';ctx.fillStyle=fl.c||'#c47545';ctx.fillText(fl.s,cx,H-10-(G.floats.length-1-i)*13-k*8);ctx.globalAlpha=1});
 }
 
@@ -902,7 +956,8 @@ function render(){
   $('#sP').textContent=G.P.toFixed(1)+'bn';$('#sPd').innerHTML=`<span class="${cls(ec.growth)}">${sgn(ec.growth,2)}/yr</span>`;
   const w=[];if(G.E<0)w.push(`IN DEBT · ${Math.round(G.E)} EFFORT`);if(G.RP<0)w.push(`IN DEBT · ${Math.round(G.RP)} RESEARCH`);if(G.fund<.999)w.push(`UNDERFUNDED · ${Math.round(G.fund*100)}%`);if(ec.crewPct<.999)w.push(`UNDERCREWED · ${Math.round(ec.crewPct*100)}%`);else if(ec.crewEff<.9)w.push(`CONSCRIPTS · ${Math.round(ec.crewEff*100)}% STRENGTH`);$('#warn').innerHTML=w.join('<br>');
   const chip=(k,lab,v,d,bad)=>`<button class="mc${bad?' bad':''}" data-tap="m:${k}"><span>${lab}</span><b>${v}<i class="${cls(bad?-d:d)}">${d>=0?'▲':'▼'}</i></b></button>`;
-  $('#meters').innerHTML=chip('S','STAB',Math.round(G.S),DRIFT.S(G))+chip('I','IND',Math.round(G.I),DRIFT.I(G))+chip('K','KNOW',Math.round(G.K),DRIFT.K(G))+chip('R','RES',Math.round(G.R),DRIFT.R(G))+chip('T','TRAIT',Math.round(G.T),traitorDrift(G).tot,1);
+  const pill=(k,lab,v,d,bad,extra)=>`<button class="mc${bad?' bad':''}" data-tap="m:${k}"><span>${lab}</span><b>${v}${extra||`<i class="${cls(bad?-d:d)}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(2)}</i>`}</b></button>`;
+  $('#meters').innerHTML=pill('S','STABILITY',Math.round(G.S),DRIFT.S(G),0,` <i class="${cls(DRIFT.S(G))}">→ ${G.dr.Seq}</i>`)+pill('R','RESOLVE',Math.round(G.R),DRIFT.R(G))+pill('I','INDUSTRY',Math.round(G.I),DRIFT.I(G))+pill('T','TRAITORS',Math.round(G.T),traitorDrift(G).tot,1);
   $('#finalBar').classList.toggle('hidden',!G.final);if(G.final)$('#finalInfo').innerHTML=`<b>YEAR 100 · TIME STOPPED</b><br>Spend, mothball or reactivate on any tab. Leftovers convert 3 : 1 → ${Math.floor((Math.max(0,G.E)+Math.max(0,G.RP))/3)} readiness`;
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===G.tab));
   const P=$('#panel'),st=P.scrollTop;
@@ -910,72 +965,80 @@ function render(){
   const tm=tickerMsg();if(tm)$('#ticker').innerHTML=tm;else if(G.log[0])$('#ticker').textContent=`Y${String(G.log[0].y).padStart(3,'0')} · ${G.log[0].s}`;
   P.scrollTop=st;
 }
-/* ---------- programs ---------- */
-function perText(d,k,v){const yl=100-G.year;return k==='Seq'?`settles +${v}`:k==='pop'?`+${(v*100).toFixed(2)}% growth`:k==='effM'?`+${Math.round(v*100*Math.pow(.8,G.uses[d.id]||0))}% Effort`:k==='resM'?`+${Math.round(v*100*Math.pow(.8,G.uses[d.id]||0))}% Research`:k==='enl'?`+${Math.round(v*100)}% military-able`:k==='trn'?`+${(v*100).toFixed(1)}% trained/yr`:k==='sec'?`Traitors −${v}/yr`:k==='loy'?`Traitors −${v}/yr`:`+${v} ${ML[k]}/yr`}
-function progCards(area){
-  return DIRS.filter(d=>d.area===area).map(d=>{const i=DIRS.indexOf(d),c=progCost(d);const im=econDelta(a=>applyProg(a,d));
-    const per=Object.entries(d.dr).map(([k,v])=>perText(d,k,v)).join(' · ');
-    return `<div class="card pg"><div class="cm"><div class="nm">${d.n}${G.uses[d.id]?`<span class="chip">×${G.uses[d.id]}</span>`:''}</div><div class="fx">${fxText(d.now)} now · ${per}</div><div class="imp">${impText(im)}</div></div><div class="cb"><button class="e" data-d="${i}" ${G.E>=c?'':'disabled'}>FUND<br>${c} Effort</button></div></div>`}).join('');
+/* ---------- shared pieces (round 4) ---------- */
+const trk=(n,c=AC)=>{const m=Math.max(8,n);return `<span class="trk">${Array.from({length:Math.min(m,10)},(_,i)=>`<i style="background:${i<n?c:'transparent'};border-color:${i<n?c:'#3a3730'}"></i>`).join('')}</span>`};
+function wf(title,val,vc,rows,inv,tap){
+  const mx=Math.max(.0001,...rows.map(r=>Math.abs(r[1])+Math.abs(r[2]||0)));
+  const body=rows.map(([n,v,g])=>{const good=(v>=0)!==!!inv,c=good?OK:BAD,gc=((g||0)>=0)!==!!inv?OK:BAD,w=Math.abs(v)/mx*50,gw=Math.abs(g||0)/mx*50;
+    const bar=v>=0?`<i class="b" style="left:50%;width:${w}%;background:${c}"></i>`:`<i class="b" style="right:50%;width:${w}%;background:${c}"></i>`;
+    const gh=g?(g>=0?`<i class="g" style="left:calc(50% + ${v>=0?w:0}%);width:${gw}%;border-color:${gc}"></i>`:`<i class="g" style="right:calc(50% + ${v<0?w:0}%);width:${gw}%;border-color:${gc}"></i>`):'';
+    return `<div class="wr"><span>${n}</span><div class="wb">${bar}${gh}<i class="z"></i></div><b style="color:${c}">${sgn(v,2)}${g?`<em style="color:${gc}"> ${sgn(g,2)}</em>`:''}</b></div>`}).join('');
+  return `<div class="tl wf"${tap?` data-tap="${tap}"`:''}><div class="hd"><span class="lbl">${title}</span><b style="color:${vc}">${val}</b></div>${body}</div>`;
 }
+const ghostOf=id=>{const d=DIRS.find(x=>x.id===id);return econDelta(a=>applyProg(a,d))};
+function plusText(d){
+  const p=[],neg=[];
+  for(const k in d.dr){const v=d.dr[k];
+    if(k==='Seq')p.push(`Stability +${v} long-term`);else if(k==='R')p.push(`Resolve +${v}/yr`);else if(k==='I')p.push(`Industry +${v}/yr`);else if(k==='K')p.push(`Knowledge +${v}/yr`);
+    else if(k==='loy')p.push(`Traitors −${v}/yr`);else if(k==='sec')p.push(`Traitors −${v}/yr`);else if(k==='pop')p.push(`growth +${(v*100).toFixed(2)}%`);else if(k==='enl')p.push(`military-able +${Math.round(v*100)}%`);
+    else if(k==='trn')p.push(`trained +${(v*100).toFixed(1)}%/yr`);else if(k==='effM')p.push(`Effort +${Math.round(v*100*Math.pow(.8,G.uses[d.id]||0))}%`);else if(k==='resM')p.push(`Research +${(v*100*Math.pow(.8,G.uses[d.id]||0)).toFixed(1)}%`)}
+  for(const k in d.now){const v=d.now[k];const lab={S:'Stability',R:'Resolve',I:'Industry',K:'Knowledge',T:'Traitors',TRN:'trained'}[k]||k;const txt=k==='TRN'?`trained +${Math.round(v*100)}% now`:`${lab} ${v>0?'+':'−'}${Math.abs(v)} now`;
+    const bad=(k==='T'&&v>0)||(k!=='T'&&v<0);(bad?neg:p).push(txt)}
+  return{txt:[...p,...neg].join(' · '),bad:neg.length>0};
+}
+function slimRow(d){const i=DIRS.indexOf(d),c=progCost(d),u=G.uses[d.id]||0,pt=plusText(d);
+  return `<div class="slim"><div class="sm"><div class="sh"><span class="nm">${d.n}${u?` <em>LV ${u}</em>`:''}</span>${trk(u)}</div><div class="sp" style="color:${pt.bad?'var(--wa)':'var(--ok)'}">+1 → ${pt.txt}</div></div><button class="cost" data-d="${i}" ${G.E>=c&&!G.final?'':'disabled'}>${c} E</button></div>`}
 const PURGE_CD=10;
-function purgeRow(){const cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;const ok=!cd&&G.E>=25&&!G.final;
-  return `<div class="card pg purge"><div class="cm"><div class="nm">Purge</div><div class="fx">Traitors −40% now · Stability −6 · Resolve −3 · ${cd?`ready in ${cd} yrs`:'10-year cooldown'}</div></div><div class="cb"><button class="e" id="purgeBtn" ${ok?'':'disabled'}>PURGE<br>25 Effort</button></div></div>`}
-function doPurge(){if(G.E<25)return;G.E-=25;const t0=G.T;G.T=Math.round(G.T*.6);G.S=clamp(G.S-6,0,100);G.R=clamp(G.R-3,0,100);G.purgeY=G.year;log(`Purge ordered. Traitors ${Math.round(t0)} → ${G.T}. Stability −6, Resolve −3.`);float('PURGE · TRAITORS −40%','#c0533f');G.ec=econ(G);render()}
-function rSoc(P){P.innerHTML=progCards('peo')+purgeRow();P.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>doProg(DIRS[+b.dataset.d]));const pb=$('#purgeBtn');if(pb)pb.onclick=doPurge}
+function purgeReady(){return(G.purgeY==null||G.year-G.purgeY>=PURGE_CD)&&!G.final}
+function purgeStrip(){if(G.T<25)return'';const ok=purgeReady()&&G.E>=25;const cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;
+  return `<div class="strip"><div><b>TRAITORS ${Math.round(G.T)} · ${traitorDrift(G).tot>0?'RISING':'HIGH'}</b><span>${G.T>=50?'Officials are hedging their bets.':'Vigils for the signal are drawing crowds.'} A purge cuts them 40%${cd?` · ready in ${cd} yrs`:''}.</span></div><button id="purgeBtn" ${ok?'':'disabled'}>PURGE<br><em>25 E</em></button></div>`}
+function doPurge(){if(G.E<25||!purgeReady())return;G.E-=25;const t0=G.T;G.T=Math.round(G.T*.6);G.S=clamp(G.S-6,0,100);G.R=clamp(G.R-3,0,100);G.purgeY=G.year;log(`Purge ordered. Traitors ${Math.round(t0)} → ${G.T}. Stability −6, Resolve −3.`);float('PURGE · TRAITORS −40%','#c0533f');G.ec=econ(G);render()}
+function bindProgs(P){P.querySelectorAll('[data-d]').forEach(b=>b.onclick=e=>{e.stopPropagation();doProg(DIRS[+b.dataset.d])});const pb=$('#purgeBtn');if(pb)pb.onclick=doPurge}
+function rSoc(P){P.innerHTML=purgeStrip()+DIRS.filter(d=>d.area==='peo').map(slimRow).join('');bindProgs(P)}
 function rEco(P,ec){
-  P.innerHTML=progCards('eco')+`<div class="box tight" data-tap="effort"><div class="lbl">Upkeep</div>`+(ec.ups.length?ec.ups.map(([n,u])=>lg(n,`<span class="neg">−${u.toFixed(2)}</span>`)).join(''):lg('Nothing built yet','<span class="mut">0</span>'))+`</div>`;
-  P.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>doProg(DIRS[+b.dataset.d]));
+  P.innerHTML=DIRS.filter(d=>d.area==='eco').map(slimRow).join('')+`<div class="box tight" data-tap="effort"><div class="lbl">Upkeep · −${ec.upkeep.toFixed(2)}/yr</div>`+(ec.ups.length?ec.ups.map(([n,u])=>lg(n,`<span class="neg">−${u.toFixed(2)}</span>`)).join(''):lg('Nothing built yet','<span class="mut">0</span>'))+`<div class="lg2" style="margin-top:3px">Tap a project in Projects to mothball it (−70% upkeep)</div></div>`;
+  bindProgs(P);
 }
-/* ---------- projects ---------- */
+/* ---------- projects (E) ---------- */
 function deltaText(a0,a1,e0,e1){const c0=counters(a0,e0).c,c1=counters(a1,e1).c;return TK.map(t=>[t,c1[t]-c0[t]]).filter(x=>Math.abs(x[1])>=.5).sort((x,y)=>y[1]-x[1]).slice(0,2).map(([t,v])=>`${v>0?'+':'−'}${Math.round(Math.abs(v))} ${AB[t]}`).join(' ')||'no readiness'}
 function btnImpact(n,kind,ec){
   const a=cloneS(G);if(kind==='E')doBuild(a,n);else doTech(a,n);const e1=econ(a);
   const dc=e1.crewReq-ec.crewReq;let crew='';
-  if(kind==='E')crew=n.crew?`crew +${dc.toFixed(2)}`:'no crew';
-  else if(dc<-.004){const fr=-dc,co=Math.min(fr,ec.con);crew=`frees ${fr.toFixed(2)}bn${co>.004?' · conscripts out':' → reserves'}`}
+  if(kind==='E'&&n.crew)crew=`crew +${dc.toFixed(2)}`;
+  else if(kind==='R'&&dc<-.004)crew=`frees ${(-dc).toFixed(2)}bn`;
   return{d:deltaText(G,a,ec,e1),crew};
 }
+const ppips=(n,c)=>[0,1,2,3].map(i=>`<i style="background:${i<n?c:'transparent'};border-color:${c}"></i>`).join('');
 function projCard(n,ec){
   const s=nodeState(n);
-  if(s==='hidden')return `<div class="card pc emg locked"><div class="cm"><div class="nm">◇ Unknown project</div><div class="fx">Needs: ${n.req.map(r=>NB[r].n).join(' + ')}</div></div></div>`;
+  if(s==='hidden')return `<div class="card pe one locked"><span>◇ Unknown project</span><span class="mut">needs ${n.req.map(r=>NB[r].n).join(' + ')}</span></div>`;
+  if(s==='locked'){const have=brLevels(G,n.br,n.tier);return `<div class="card pe one locked"><span>${n.n}</span><span class="mut">needs ${n.tier-1} ${BR[n.br]} levels (have ${have})</span></div>`}
   const S=sz(G,n.id),T=tc(G,n.id),built=S>0,mb=G.moth.has(n.id);
-  const fxk=Object.keys(n.fx);const full=k=>n.fx[k]*nodeMult(G,n.id),act=k=>full(k)*nodeEff(G,n.id,ec);
-  let out;
-  if(!built)out=`<span class="mut">${fxk.map(k=>`+${n.fx[k]} ${TRAITS[k].s}`).join(' · ')||n.note||''}</span>`;
-  else if(!fxk.length)out=`<span class="mut">${n.note||''}</span>`;
-  else{const k=fxk.sort((a,b)=>n.fx[b]-n.fx[a])[0],e=nodeEff(G,n.id,ec);const c=mb?'mut':e>=.95?'pos':e>=.7?'':'neg';
-    out=`<span class="${c}" data-tap="out:${n.id}">+${Math.round(act(k))} of ${Math.round(full(k))} ${TRAITS[k].s}</span>`+fxk.filter(x=>x!==k).map(x=>` · +${Math.round(act(x))} ${TRAITS[x].s}`).join('')}
-  let crewLine='',bar='';
-  if(s==='locked'){const have=brLevels(G,n.br,n.tier);crewLine=`<span class="mut">Needs ${n.tier-1} ${BR[n.br]||'branch'} levels below (have ${have})</span>`}
-  else if(!built)crewLine=`crew ${(n.crew*crewLoad(0)*ec.crewMult).toFixed(2)}bn · upkeep ${n.up}/yr`;
-  else if(mb)crewLine=`0 crew · upkeep −70% · ${matName(n.id)} fading`;
-  else if(n.crew){const r=ec.crewReq?ec.reg/ec.crewReq:1,c=ec.crewReq?ec.con/ec.crewReq:0,u=1-r-c;
-    bar=`<div class="cbar" data-tap="crew:${n.id}"><i style="width:${r*100}%;background:${OK}"></i><i style="width:${c*100}%;background:${WA}"></i><i style="width:${Math.max(0,u)*100}%;background:${BAD}"></i></div>`;
-    crewLine=`<span data-tap="crew:${n.id}">crew ${crewOf(G,n.id,ec.crewMult).toFixed(2)}bn · ${Math.round(r*100)}% regulars${c>.005?` ${Math.round(c*100)}% conscripts`:''} → ${Math.round(ec.crewEff*100)}%</span> · ${matName(n.id)} ×${matOf(G,n.id).toFixed(2)}`}
-  else crewLine=`no crew · ${matName(n.id)} ×${matOf(G,n.id).toFixed(2)}`;
-  if(G.half.has(n.id))crewLine+=' · <span class="neg">50% on day 1</span>';
-  let btns='';
-  if(s!=='locked'){
-    if(mb)btns=`<button class="g" data-m="${n.id}"><b>REACTIVATE</b><br><span class="mut">${G.final?'50% on day 1':'crew '+crewOf(G,n.id,ec.crewMult).toFixed(2)+'bn'}</span></button>`;
-    const pe=priceE(n,S),pr=priceR(n,T),eOk=S<MAXS&&G.E>=pe,rOk=built&&T<MAXT&&G.RP>=pr;
-    if(S<MAXS){const im=btnImpact(n,'E',ec);btns+=`<button class="e" data-n="${n.id}" data-k="E" ${eOk?'':'disabled'}><b>${built?'LV '+(S+1):'BUILD'}</b> <span class="pos">${im.d}</span><br><span class="mut">${im.crew} · ${pe} E</span></button>`}
-    if(built&&!mb){if(T<MAXT){const im=btnImpact(n,'R',ec);btns+=`<button class="r" data-n="${n.id}" data-k="R" ${rOk?'':'disabled'}><b>MK ${MK[T+1]}</b> <span class="pos">${im.d}</span><br><span class="mut">${im.crew?im.crew+' · ':''}${pr} R</span></button>`}else btns+=`<span class="maxed">MK MAX</span>`}
+  const fxk=Object.keys(n.fx).sort((a,b)=>n.fx[b]-n.fx[a]);const full=k=>n.fx[k]*nodeMult(G,n.id),e=built?nodeEff(G,n.id,ec):1;
+  let out,right='';
+  if(!built){out=`<span class="mut">${fxk.map(k=>`+${n.fx[k]} ${TRAITS[k].s}`).join(' · ')||n.note||''}</span>`;right=n.crew?`crew ${(n.crew*crewLoad(0)*ec.crewMult).toFixed(2)}`:''}
+  else if(!fxk.length){out=`<span class="mut">${n.note||''}</span>`}
+  else{const k=fxk[0];const c=mb?'mut':e>=.95?'pos':e>=.7?'':'neg';out=`<span class="${c}">+${Math.round(full(k)*e)} of ${Math.round(full(k))} ${TRAITS[k].s}</span>${fxk.slice(1).map(x=>` · +${Math.round(full(x)*e)} ${TRAITS[x].s}`).join('')}`;
+    right=mb?'<span class="neg">mothballed</span>':n.crew?`crew ${crewOf(G,n.id,ec.crewMult).toFixed(2)} · ${Math.round(ec.crewEff*100)}%`:'no crew'}
+  let bar='';
+  if(built&&n.crew&&!mb){const r=ec.crewReq?ec.reg/ec.crewReq:1,c=ec.crewReq?ec.con/ec.crewReq:0,u=Math.max(0,1-r-c);bar=`<div class="cbar"><i style="width:${r*100}%;background:${OK}"></i><i style="width:${c*100}%;background:${WA}"></i><i style="width:${u*100}%;background:${BAD}"></i></div>`}
+  const pe=priceE(n,S),pr=priceR(n,T);let btns='';
+  if(mb)btns=`<button class="g" data-m="${n.id}"><b>REACTIVATE</b> ${G.final?'· 50% on day 1':'· crew '+crewOf(G,n.id,ec.crewMult).toFixed(2)+'bn'}</button>`;
+  else{
+    if(S<MAXS){const im=btnImpact(n,'E',ec);btns+=`<button class="e" data-n="${n.id}" data-k="E" ${G.E>=pe?'':'disabled'}><b>${built?'LV '+(S+1):'BUILD'} · ${pe} E</b> <span class="pos">${im.d}</span>${im.crew?` <span class="mut">${im.crew}</span>`:''}</button>`}
+    if(built&&T<MAXT){const im=btnImpact(n,'R',ec);btns+=`<button class="r" data-n="${n.id}" data-k="R" ${G.RP>=pr?'':'disabled'}><b>MK ${MK[T+1]} · ${pr} R</b> <span class="pos">${im.d}</span>${im.crew?` <span class="mut">${im.crew}</span>`:''}</button>`}
+    if(built&&S>=MAXS&&T>=MAXT)btns=`<span class="maxed">LV MAX · MK MAX</span>`;
   }
-  const name=`${n.br==='emg'?'◆ ':''}${n.n}`;
-  const lvl=built?`<div class="pips">LV <span>${pips(S,AC)}</span> MK <span>${pips(T+1,RPC)}</span><b style="color:${RPC}">${MK[T]}</b>${(n.crew||n.up)&&!mb?`<button class="mb" data-m="${n.id}">mothball</button>`:''}</div>`:'';
-  return `<div class="card pc ${G.selPrj===n.id?'sel':''} ${built?'owned':''} ${s==='locked'?'locked':''} ${n.br==='emg'?'emg':''} ${mb?'moth':''}"><div class="cm"><div class="nm" data-sel="${n.id}">${name}</div>${lvl}<div class="fx">${out}</div>${bar}<div class="fx">${crewLine}</div></div><div class="cb">${btns}</div></div>`;
+  const top=built?`<span class="pp">LV ${ppips(S,AC)} MK ${ppips(T+1,RPC)}<b style="color:${RPC}">${MK[T]}</b></span>`:'';
+  return `<div class="card pe ${G.selPrj===n.id?'sel':''} ${mb?'moth':''} ${n.br==='emg'?'emg':''}" data-tap="out:${n.id}"><div class="pt"><span class="nm">${n.br==='emg'?'◆ ':''}${n.n}</span>${top}</div><div class="pm"><span>${out}</span><span class="mut">${right}${built&&!mb&&fxk.length?` · ${matName(n.id).slice(0,3)} ×${matOf(G,n.id).toFixed(2)}`:''}</span></div>${bar}${G.half.has(n.id)?'<div class="lg2 neg">50% readiness on day 1</div>':''}<div class="pb">${btns}</div></div>`;
 }
 function rPrj(P,ec){
   const subs=[['def','DEFENCE'],['end','ENDURANCE'],['sci','SCIENCE'],['emg','EMERGENT']];
-  let h=`<div class="subtabs">${subs.map(([k,l])=>`<button data-s="${k}" class="${G.sub===k?'on':''}">${l}${G.sub===k&&k!=='emg'?' ›':''}</button>`).join('')}</div>`;
-  h+=NODES.filter(n=>n.br===G.sub).map(n=>projCard(n,ec)).join('');
-  P.innerHTML=h;
-  P.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{if(G.sub===b.dataset.s&&G.sub!=='emg')tapSheet('scores');else{G.sub=b.dataset.s;render()}});
-  P.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>act(NB[b.dataset.n],b.dataset.k));
-  P.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{G.selPrj=b.dataset.sel;render()});
+  P.innerHTML=`<div class="subtabs">${subs.map(([k,l])=>`<button data-s="${k}" class="${G.sub===k?'on':''}">${l}${G.sub===k&&k!=='emg'?' ›':''}</button>`).join('')}</div>`+NODES.filter(n=>n.br===G.sub).map(n=>projCard(n,ec)).join('');
+  P.querySelectorAll('[data-s]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(G.sub===b.dataset.s&&G.sub!=='emg')tapSheet('scores');else{G.sub=b.dataset.s;render()}});
+  P.querySelectorAll('[data-k]').forEach(b=>b.onclick=e=>{e.stopPropagation();G.selPrj=b.dataset.n;act(NB[b.dataset.n],b.dataset.k)});
   P.querySelectorAll('[data-m]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggleMoth(b.dataset.m)});
 }
-/* ---------- war room ---------- */
 const FIX={orbit:'Orbital Fleet, Lance, Shield Physics',sky:'Defence Grid, Counter-AI, Shield Physics',ground:'Global Legion, Hardened Cities, Unity',inside:'Counter-AI, Internal Security, Unity, Purge'};
 function likelyRange(s,l,Lk){const lo=[],hi=[],dt=s.owned.has('H2'),k=(1-.03*sz(s,'S1'))*(dt?.75:1);
   l.tr.forEach(t=>{const L=Lk[t];let a,b;
@@ -996,91 +1059,113 @@ function warEstimate(){
   const B0=battleInit(fw,intelRead(fw).e,true);
   WEST={key,fw,Lk,B0,rep:Math.round(rep/24*100),out:Math.round(out/24*100),k25:Math.round(kill[6]),k75:Math.round(kill[17]),sup:sup[12]};return WEST;
 }
+/* ---------- war room ---------- */
 function rWar(P,ec){
   const W=warEstimate(),fw=W.fw;
   const rows=W.B0.L.map(l=>{const [lo,hi]=likelyRange(fw,l,W.Lk);const you=l.you0;const rLo=you/Math.max(1,hi),rHi=you/Math.max(1,lo);
-    const absent=hi<=ABSENT+1;const pred=absent?['win · they likely sent little','pos']:rLo>=1.2?[`win ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'pos']:rHi<.8?[`LOSE ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'neg']:[`${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,''];
-    const sc=Math.max(200,you*1.1,hi*1.1);const odds=l.tr.map(t=>`${TRAITS[t].s} ${Math.round(W.Lk[t]*100)}%`).join(' · ');
-    return{l,you,lo,hi,pred,rLo,html:`<div class="mu" data-tap="lane:${l.k}"><div class="mr"><span>${l.n}</span><div class="mb2"><i style="width:${Math.min(100,you/sc*100)}%"></i><b style="left:${lo/sc*100}%;width:${Math.max(1.5,(hi-lo)/sc*100)}%"></b></div><span class="${pred[1]}">${pred[0]}</span></div><div class="ms">${Math.round(you)} vs ${Math.round(lo)}${hi>lo+1?'–'+Math.round(hi):''} · ${odds}</div></div>`}});
+    const absent=hi<=ABSENT+1;const pred=absent?['win · they likely sent little','pos']:rLo>=1.2?[`win ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'pos']:rHi<.8?[`lose ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'neg']:[`${rLo.toFixed(1)}–${rHi.toFixed(1)}× contested`,'wa'];
+    return{l,you,lo,hi,pred,rLo}});
   const weak=rows.slice().sort((a,b)=>a.rLo-b.rLo)[0];
-  const bf=counters(fw).byBr,tot=Object.values(bf).reduce((a,b)=>a+b,0)||1;
-  P.innerHTML=`<div class="sec" style="margin:0 0 5px"><span>Match-up · Year 100 course</span><span><span style="color:${OK}">■</span> you <span style="color:${BAD}">■</span> their likely range</span></div>`+rows.map(x=>x.html).join('')+
-   `<div class="box tight proj" data-tap="estimate"><div class="lbl" style="color:var(--ac)">Battle estimate · ${24} likely enemies</div>${lg('Fleet destroyed in 3 waves',`${W.k25}–${W.k75}%`)}${lg('Repel chance',`<span class="${W.rep>=25?'pos':W.rep>0?'':'neg'}">~${W.rep}%</span>`)}${lg('Outlast chance',`<span class="${W.out>=25?'pos':W.out>0?'':'neg'}">~${W.out}%</span> · their supply ~${W.sup} days`)}${lg('Weakest lane',`<span style="color:var(--ac)">${weak.l.n} → ${FIX[weak.l.k]}</span>`)}</div>`+
-   `<div class="box tight"><div class="lbl">Readiness rests on (Y100)</div>${sb([[bf.def,'#e8e2d6'],[bf.end,WA],[bf.sci,RPC],[bf.emg,AC],[bf.soc,GREY]])}<div style="margin-top:3px;font-family:var(--mono);font-size:8.5px;color:var(--mu)">Defence ${Math.round(bf.def/tot*100)}% · Endurance ${Math.round(bf.end/tot*100)}% · Science ${Math.round(bf.sci/tot*100)}% · Society ${Math.round(bf.soc/tot*100)}%</div></div>`+
+  P.innerHTML=rows.map(x=>{const sc=Math.max(200,x.you*1.08,x.hi*1.08);const odds=x.l.tr.map(t=>`${TRAITS[t].s} ${Math.round(W.Lk[t]*100)}%`).join(' · ');
+    return `<div class="lc" data-tap="lane:${x.l.k}"><div class="lt"><b>${x.l.n}</b><span class="${x.pred[1]}">${x.pred[0]}${x===weak&&!x.pred[0].startsWith('win')?' · weakest':''}</span></div><div class="mb2"><i style="width:${Math.min(100,x.you/sc*100)}%"></i><b style="left:${x.lo/sc*100}%;width:${Math.max(1.5,(x.hi-x.lo)/sc*100)}%"></b></div><div class="ms2">${Math.round(x.you)} vs ${Math.round(x.lo)}${x.hi>x.lo+1?'–'+Math.round(x.hi):''} · ${odds}${x===weak?` · fix: ${FIX[x.l.k]} ›`:''}</div></div>`}).join('')+
+   `<div class="box tight proj" data-tap="estimate"><div class="lbl" style="color:var(--ac)">Estimate · 24 likely enemies ›</div>${lg('Fleet destroyed in 3 waves',`${W.k25}–${W.k75}%`)}${lg('Repel · Outlast',`<span class="${W.rep>=25?'pos':W.rep>0?'':'neg'}">~${W.rep}%</span> · <span class="${W.out>=25?'pos':W.out>0?'':'neg'}">~${W.out}%</span>`)}${lg('Their supply',`~${W.sup} days`)}</div>`+
    `<div class="links"><button data-tap="reports">INTEL REPORTS (${G.reports.length}) ›</button><button data-tap="types">READINESS BY TYPE ›</button></div>`;
 }
 /* ---------- side screen ---------- */
+function socWaterfalls(ec){
+  const d=traitorDrift(G),u=G.uses.uni||0,s=G.uses.sec||0;const gu=-(DIRS.find(x=>x.id==='uni').dr.loy+.002),gs=-DIRS.find(x=>x.id==='sec').dr.sec;
+  const tr=[['Base + signal',d.base+d.sig],['Loyalty',d.dis],[`Unity LV${u}`,d.uni,gu],[`Security LV${s}`,d.sec,gs]];if(d.cai)tr.push(['Counter-AI',d.cai]);
+  const w=G.uses.wel||0,tgt=G.dr.Seq,pull=(50-G.S)*.02,wel=(tgt-50)*.02,r30=G.R<30?-.5:0;
+  const st=[['Pull to 50',pull],[`Welfare LV${w}`,wel,.04]];if(r30)st.push(['Resolve < 30',r30]);
+  return wf('TRAITORS /YR',sgn(d.tot,2),d.tot>0?BAD:OK,tr,true,'m:T')+wf(`STABILITY ${Math.round(G.S)} → ${tgt}`,sgn(DRIFT.S(G),2),DRIFT.S(G)>=0?OK:BAD,st,false,'m:S');
+}
+function ecoWaterfalls(ec){
+  const base=ec.gross/G.dr.effM,inf=ec.gross-base,gi=ghostOf('inf').dE,gm=ghostOf('ind').dE;
+  const ef=[['Workforce × Ind',base,gm],[`Infra LV${G.uses.inf||0}`,inf,gi],['Upkeep',-ec.upkeep]];
+  const kn=G.K*RES_K*G.dr.resM,lb=ec.labs*G.dr.resM,un=(G.K*RES_K+ec.labs)*(G.dr.resM-1);
+  const rs=[[`Knowledge ${Math.round(G.K)}`,kn-(G.K*RES_K)*(G.dr.resM-1),ghostOf('res').dRP],['Labs',ec.labs],[`Univ LV${G.uses.uni2||0}`,un,ghostOf('uni2').dRP]];
+  return wf('EFFORT /YR',sgn(ec.net,2),ec.net>=0?OK:BAD,ef,false,'effort')+wf('RESEARCH /YR',sgn(ec.rp,2),OK,rs,false,'research');
+}
 function rSide(ec){
   const S=$('#side');let h='';
-  if(G.tab==='eco'){
-    h=tl('Effort',sgn(ec.net,2)+'/yr',cls(ec.net),sb([[ec.gross,OK],[ec.upkeep,BAD]]),`income +${ec.gross.toFixed(2)} · upkeep −${ec.upkeep.toFixed(2)}`,'effort')+
-      tl('Income',`+${ec.gross.toFixed(2)}`,'pos',sb([[1,GREY]]),`${ec.workforce.toFixed(1)}bn × Ind ${G.I.toFixed(0)} × Stab ${ec.stabM.toFixed(2)}${G.dr.effM>1?` × Infra ${G.dr.effM.toFixed(2)}`:''}`,'effort')+
-      tl('Research',sgn(ec.rp,2)+'/yr','rpc',sb([[G.K*RES_K*G.dr.resM,RPC],[ec.labs*G.dr.resM,'#5d7f8f']]),`Know ${G.K.toFixed(0)} +${(G.K*RES_K).toFixed(2)} · labs +${ec.labs.toFixed(1)}${G.dr.resM>1?` · ×${G.dr.resM.toFixed(2)}`:''}`,'research');
-  }else if(G.tab==='soc'){
-    const base=G.P*.004*(G.S/50),fam=G.P*(G.dr.pop-.004)*(G.S/50),labs=G.P*.001*sz(G,'S2'),d=traitorDrift(G);
-    h=tl('Manpower',Math.round(ec.crewEff*100)+'% strength',ec.crewEff<.9?'neg':'pos',sb([[ec.reg,OK],[ec.con,WA],[ec.reserves,RPC],[ec.spare,GREY]]),`trained ${ec.reg.toFixed(2)} · conscripts ${ec.con.toFixed(2)} · reserves ${ec.reserves.toFixed(2)} of ${ec.able.toFixed(1)}bn`,'manpower')+
-      tl('Traitors',sgn(d.tot,2)+'/yr',d.tot>0?'neg':'pos',sb([[d.base,GREY],[d.sig,BAD],[Math.max(0,d.dis),BAD],[-d.sec-d.uni-d.cai+Math.max(0,-d.dis),OK]]),`base .30 · signal ${d.sig.toFixed(2)} · loyalty ${sgn(d.dis,2)} · Unity ${d.uni.toFixed(2)} · security ${d.sec.toFixed(2)}`,'m:T')+
-      tl('Growth',sgn(ec.growth,3)+'bn','pos',sb([[base,GREY],[fam,OK],[labs,RPC]]),`0.40% base${G.uses.fam?` + Family ×${G.uses.fam}`:''} × Stab ${(G.S/50).toFixed(2)}`,'growth');
-  }else if(G.tab==='prj'){
+  if(G.tab==='eco')h=ecoWaterfalls(ec);
+  else if(G.tab==='soc')h=socWaterfalls(ec);
+  else if(G.tab==='prj'){
     const list=NODES.filter(n=>n.br===G.sub&&nodeState(n)!=='hidden');
     let n=NB[G.selPrj];if(!n||n.br!==G.sub)n=list.find(x=>G.owned.has(x.id))||list[0];
-    if(!n)h=`<div class="tl"><span class="lbl">Emergent</span><div class="lg2" style="white-space:normal">Combine finished projects from two branches to reveal these.</div></div>`;
-    else{G.selPrj=n.id;h=`<div class="tl" style="border-color:var(--ac)" data-tap="out:${n.id}"><span class="lbl" style="color:var(--ac)">${n.n}</span>${chainRows(n,ec,true)}</div>`}
+    if(!n)h=`<div class="tl"><span class="lbl">Emergent</span><div class="lg2 wrap">Combine finished projects from two branches to reveal these.</div></div>`;
+    else{G.selPrj=n.id;h=`<div class="tl" style="border-color:var(--ac)" data-tap="out:${n.id}"><span class="lbl" style="color:var(--ac)">${n.n} ›</span><div class="lg2 wrap" style="color:var(--tx);font-size:9.5px">${oneLine(n,ec)}</div></div>`}
+    const {c,src}=counters(G,ec);const types=[...new Set(NODES.filter(x=>x.br===G.sub).flatMap(x=>Object.keys(x.fx)))];
+    if(types.length)h+=`<div class="tl" data-tap="scores"><span class="lbl">${BR[G.sub]} scores ›</span>`+types.slice(0,3).map(t=>{const mine=src[t].items.filter(x=>x.br===G.sub).reduce((a,x)=>a+x.v,0);return `<div class="ch"><span>${TRAITS[t].s}</span><span>${Math.round(mine)} / ${Math.round(c[t])}</span></div>`}).join('')+`</div>`;
   }else{
     const W=warEstimate(),Lk=W.Lk,top=TK.slice().sort((x,y)=>Lk[y]-Lk[x]).slice(0,3);
-    h=tl('Manning',`${ec.crewReq.toFixed(2)}bn needed`,ec.crewEff<.9?'neg':'',sb([[ec.reg,OK],[ec.con,WA],[Math.max(0,ec.crewReq-ec.crewUsed),BAD],[ec.reserves,RPC]]),`regulars ${ec.reg.toFixed(2)} · conscripts ${ec.con.toFixed(2)} · reserves ${ec.reserves.toFixed(2)}${G.moth.size?` · ${G.moth.size} mothballed`:''}`,'manpower')+
-      tl('Intel',`${Math.round(intelAcc(G)*100)}% reliable`,'',sb([[Lk[top[0]]*100,BAD],[100-Lk[top[0]]*100,'#2c2a25']]),top.map(t=>`${TRAITS[t].s} ${Math.round(Lk[t]*100)}%`).join(' · '),'reports')+
-      tl('Their supply',`~${W.sup} days`,'',sb([[W.sup,WA],[Math.max(0,SUPPLY_BASE-W.sup),'#2c2a25']]),`${SUPPLY_BASE} − 2×Siege − Endurance${sz(G,'S1')?` · Signal −${5*sz(G,'S1')}%`:''}`,'supply');
+    h=tl('Manning',`${ec.crewReq.toFixed(2)}bn`,ec.crewEff<.9?'neg':'pos',sb([[ec.reg,OK],[ec.con,WA],[Math.max(0,ec.crewReq-ec.crewUsed),BAD],[ec.reserves,RPC]]),`${Math.round(ec.reg/(ec.crewReq||1)*100)}% regulars · ${ec.reserves.toFixed(2)}bn reserves${G.moth.size?` · ${G.moth.size} mothballed`:''}`,'manpower')+
+      tl('Intel',`${Math.round(intelAcc(G)*100)}%`,'',sb([[Lk[top[0]]*100,BAD],[100-Lk[top[0]]*100,'#2c2a25']]),top.map(t=>`${TRAITS[t].s} ${Math.round(Lk[t]*100)}%`).join(' · '),'reports')+
+      tl('Their supply',`~${W.sup} d`,'',sb([[W.sup,WA],[Math.max(0,SUPPLY_BASE-W.sup),'#2c2a25']]),`Outlast ~${W.out}%`,'supply');
   }
   S.innerHTML=h;
 }
-function chainRows(n,ec,short){
+function oneLine(n,ec){
+  const built=G.owned.has(n.id),S=sz(G,n.id),T=tc(G,n.id);const k=Object.entries(n.fx).sort((a,b)=>b[1]-a[1])[0];
+  if(!k)return n.note||'';if(!built)return `Not built · +${k[1]} ${TRAITS[k[0]].s} at Level 1, growing every year`;
+  const e=nodeEff(G,n.id,ec);return `${k[1]} × LV ${sizeMult(S).toFixed(2)} × Mk ${techMult(T).toFixed(2)} × ${matName(n.id).slice(0,3)} ${matOf(G,n.id).toFixed(2)} × crew ${(n.crew||G.moth.has(n.id)?e/(G.fund||1):1).toFixed(2)} = <b class="pos">+${Math.round(k[1]*nodeMult(G,n.id)*e)} ${TRAITS[k[0]].s}</b>`;
+}
+function chainRows(n,ec){
   const built=G.owned.has(n.id),Sz=sz(G,n.id),T=tc(G,n.id);const k=Object.entries(n.fx).sort((a,b)=>b[1]-a[1])[0];
-  if(!k)return `<div class="lg2" style="white-space:normal">${n.note||''}</div>`;
-  if(!built)return `<div class="lg2" style="white-space:normal">Not built · would add +${k[1]} ${TRAITS[k[0]].s} and start growing</div>`;
+  if(!k)return `<div class="lg2 wrap">${n.note||''}</div>`;
+  if(!built)return `<div class="lg2 wrap">Not built · would add +${k[1]} ${TRAITS[k[0]].s} and start growing</div>`;
   const e=nodeEff(G,n.id,ec);const rows=[[`${k[1]} base ${TRAITS[k[0]].s}`,''],[`× Level ${Sz}`,sizeMult(Sz).toFixed(2)],[`× Mk ${MK[T]}`,techMult(T).toFixed(2)],[`× ${matName(n.id)} ${Math.max(0,Math.round(G.year-G.builtAt[n.id]))}y`,matOf(G,n.id).toFixed(2)],[G.moth.has(n.id)?'× mothballed':'× crew strength',(n.crew||G.moth.has(n.id)?e/(G.fund||1):1).toFixed(2)]];
   if((G.fund||1)<.999)rows.push(['× funding',G.fund.toFixed(2)]);rows.push([`= ${TRAITS[k[0]].s}`,`+${Math.round(k[1]*nodeMult(G,n.id)*e)}`]);
-  return rows.map(([a,b],i)=>`<div class="ch"><span>${a}</span><span class="${i===rows.length-1?'pos':''}">${b}</span></div>`).join('')+(short?`<div class="lg2">upkeep ${(n.up*sizeLoad(Sz)*techLoad(T)*(G.moth.has(n.id)?.3:1)).toFixed(2)}/yr · tap for more</div>`:'');
+  return rows.map(([a,b],i)=>`<div class="ch"><span>${a}</span><span class="${i===rows.length-1?'pos':''}">${b}</span></div>`).join('');
 }
 /* ---------- tap sheets ---------- */
-function sheet(lbl,title,body){
+function sheet(lbl,title,body,keep){
   $('#sheet').innerHTML=`<div class="lbl">${lbl}</div><h2>${title}</h2>${body}<div style="height:10px"></div><button class="btn ghost" id="closeSh">CLOSE</button>`;
-  $('#modal').classList.remove('hidden');$('#closeSh').onclick=()=>{$('#modal').classList.add('hidden');render()};
+  $('#modal').classList.remove('hidden');$('#closeSh').onclick=()=>{$('#modal').classList.add('hidden');if(screen==='game')render()};
+  $('#sheet').querySelectorAll('[data-fund]').forEach(b=>b.onclick=()=>{doProg(DIRS.find(x=>x.id===b.dataset.fund));tapSheet(keep)});
+  $('#sheet').querySelectorAll('[data-sm]').forEach(b=>b.onclick=()=>{toggleMoth(b.dataset.sm);tapSheet(keep)});
+  $('#sheet').querySelectorAll('[data-go]').forEach(b=>b.onclick=()=>{$('#modal').classList.add('hidden');const [t,s]=b.dataset.go.split(':');G.tab=t;if(s)G.sub=s;render()});
+  const pb=$('#sheet [data-purge]');if(pb)pb.onclick=()=>{doPurge();tapSheet(keep)};
 }
 const box=(inner)=>`<div class="box">${inner}</div>`;
 const why=t=>`<div class="why">${t}</div>`;
+function iniRow(id,eff){const d=DIRS.find(x=>x.id===id),c=progCost(d),u=G.uses[id]||0;return `<div class="ini"><div><b>${d.n}</b> <em>LV ${u}</em><span>${eff}</span></div><button data-fund="${id}" ${G.E>=c&&!G.final?'':'disabled'}>LV ${u+1} · ${c} E</button></div>`}
+const linkRow=(t,eff,go)=>`<div class="ini"><div><b>${t}</b><span>${eff}</span></div><button class="lk" data-go="${go}">open ›</button></div>`;
+const dragRow=(t,v,active=true)=>`<div class="drag"><span>${t}</span><span class="${active?'neg':'mut'}">${active?v:'not active'}</span></div>`;
+function meterSheet(k){
+  const d=traitorDrift(G),u=G.uses;
+  if(k==='S'){const tgt=G.dr.Seq;sheet('Meter',`Stability ${Math.round(G.S)} → ${tgt}`,`<div class="trend">${sgn(DRIFT.S(G),2)}/yr · drifts 2% of the way to ${tgt} each year</div>`+why(`Feeds Effort ×${(.7+G.S/200).toFixed(2)} · population growth × ${(G.S/50).toFixed(2)} · the long war · riots below 20.`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('wel','+2 Stability long-term · +4 now')+iniRow('fam','+1 now')+linkRow('Hardened Cities event','Field drills, voluntary: +1','prj:end')+`<div class="lbl neg" style="margin-top:8px">Pulling it down</div>`+dragRow(`Industrial Mobilisation ×${u.ind||0}`,'−2 each, once',!!u.ind)+dragRow(`National Service ×${u.nat||0}`,'−1 each, once',!!u.nat)+dragRow(`Internal Security ×${u.sec||0}`,'−2 each, once',!!u.sec)+dragRow('Resolve below 30','−0.5/yr',G.R<30)+dragRow('Purge','−6 when ordered',G.purgeY!=null),'m:S');return}
+  if(k==='R'){sheet('Meter',`Resolve ${Math.round(G.R)}`,`<div class="trend">${sgn(G.dr.R,2)}/yr</div>`+why(`Feeds military-able ${Math.round(econ(G).ablePct*100)}% (25% + Resolve/1000) · Ground (×0.3) · Traitors readiness (×0.15) · the long war · above 50 it wears Traitors down.`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('uni','+0.10/yr · +4 now')+linkRow('Planetary Lance event','public test-fire: +6','prj:def')+`<div class="lbl neg" style="margin-top:8px">Pulling it down</div>`+dragRow('Base decline','−0.35/yr')+dragRow('Purge','−3 when ordered',G.purgeY!=null)+dragRow('Lanes lost in battle','−2 each'),'m:R');return}
+  if(k==='I'){sheet('Meter',`Industry ${Math.round(G.I)}`,`<div class="trend">${sgn(G.dr.I,2)}/yr</div>`+why('The biggest Effort driver: income = workforce × Industry × 0.011. Also Siege readiness (×0.3) and Orbital (×0.08).')+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('ind','+0.10/yr · +3 now · Stability −2')+linkRow('Deep Bunkers event','essential workers first: +3','prj:end')+`<div class="lbl neg" style="margin-top:8px">Pulling it down</div>`+dragRow('Riots (Stability below 20)','−4',G.S<20)+dragRow('Dispersed Society event','encourage: −3',G.owned.has('E4')),'m:I');return}
+  if(k==='T'){const cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;
+    sheet('Meter',`Traitors ${Math.round(G.T)}`,`<div class="trend">${sgn(d.tot,2)}/yr</div>`+why('In battle they add ×0.8 to their Traitors in the Inside lane; above 20 they fight on their own (×1.2) even if the enemy brought none.')+`<div class="lbl pos" style="margin-top:8px">Bring it down</div>`+iniRow('uni',`−0.06/yr each, plus −0.02/yr per Resolve above 50 (now ${sgn(d.uni,2)})`)+iniRow('sec','−10 now · −0.25/yr · Stability −2')+(G.T>=25?`<div class="ini"><div><b>Purge</b><span>−40% now · Stability −6 · Resolve −3</span></div><button data-purge="1" ${purgeReady()&&G.E>=25?'':'disabled'}>${cd?`in ${cd} yrs`:'25 E'}</button></div>`:dragRow('Purge','available at 25 Traitors',false))+linkRow('Counter-AI Network','stops the signal · −0.10/yr','prj:sci')+`<div class="lbl neg" style="margin-top:8px">Pushing it up</div>`+dragRow('Base','+0.30/yr')+dragRow('Signal (Knowledge × 0.005)',sgn(d.sig,2)+'/yr',d.sig>0)+dragRow('Low Stability and Resolve',sgn(Math.max(0,d.dis),2)+'/yr',d.dis>0)+dragRow(`Research Grants ×${u.res||0}`,'+2 each, once',!!u.res),'m:T');return}
+}
 function tapSheet(key){
   if(!G||screen!=='game')return;const ec=econ(G);const [kind,arg]=key.split(':');
-  if(kind==='m'){
-    const d=traitorDrift(G);
-    const M={S:['Stability',[['Moves 2% of the gap to its settle point',`settle ${G.dr.Seq}`],['Resolve below 30','−0.5/yr'],['Trend',sgn(DRIFT.S(G),2)]],'Effort ×'+ec.stabM.toFixed(2)+' (0.7 + Stab/200) · population growth × Stab/50 · long war · riots below 20'],
-      I:['Industry',[['Base trend','+0.10/yr'],['Industrial Mobilisation',`+${(G.dr.I-.1).toFixed(2)}/yr`],['Trend',sgn(G.dr.I,2)]],'Effort income (× Industry × 0.011) · Siege readiness (× 0.3) · Orbital (× 0.08)'],
-      K:['Knowledge',[['Base trend','+0.15/yr'],['Research Grants',`+${(G.dr.K-.15).toFixed(2)}/yr`],['Trend',sgn(G.dr.K,2)]],'Research (× 0.035) · intel reliability · Bio (× 0.15) · Swarm (× 0.08) · signal Traitors (× 0.005)'],
-      R:['Resolve',[['Base trend','−0.35/yr'],['Unity Campaign',`+${(G.dr.R+.35).toFixed(2)}/yr`],['Trend',sgn(G.dr.R,2)]],`Military-able ${Math.round(ec.ablePct*100)}% (25% + Resolve/1000) · Ground (× 0.3) · Traitors (× 0.15) · long war · above 50 it decays Traitors`],
-      T:['Traitors',[['Base','+0.30'],['Signal (Knowledge × 0.005, none with Counter-AI)',sgn(d.sig,2)],['Loyalty ((50−Stab)×0.02 + (50−Res)×0.01)',sgn(d.dis,2)],['Unity and Resolve above 50',sgn(d.uni,2)],['Internal Security',sgn(d.sec,2)],['Counter-AI',sgn(d.cai,2)],['Trend',sgn(d.tot,2)]],`Adds × 0.8 to their Traitors in the Inside lane if they bring Traitors; above 20 they fight on their own (× 1.2). Purge cuts 40% at once.`]}[arg];
-    sheet('Meter',`${M[0]} ${Math.round(G[arg])}`,box(M[1].map(([a,b])=>lg(a,b)).join(''))+why('Feeds: '+M[2]));return}
-  if(kind==='out'||kind==='crew'){const n=NB[arg];
-    const r=ec.crewReq?ec.reg/ec.crewReq:1,c=ec.crewReq?ec.con/ec.crewReq:0,u=Math.max(0,1-r-c),need=crewOf(G,n.id,ec.crewMult);
-    const crewBox=n.crew?box(lg('Crew needed',`${n.crew} × Level ${sizeLoad(sz(G,n.id)).toFixed(2)} × Mk ${MK[tc(G,n.id)]} ${crewLoad(tc(G,n.id))}${ec.crewMult<1?` × Counter-AI ${ec.crewMult.toFixed(2)}`:''} = ${need.toFixed(2)}bn`)+lg('Regulars (trained)',`${(need*r).toFixed(2)}bn × 1.0`)+lg('Conscripts',`${(need*c).toFixed(2)}bn × 0.5`)+lg('Unfilled',`${(need*u).toFixed(2)}bn`)+lg('Strength = regulars + ½ conscripts',`${Math.round(ec.crewEff*100)}%`,'tot')):'';
-    sheet(n.n,kind==='crew'?'How crew strength adds up':'How its readiness adds up',(kind==='out'?box(chainRows(n,ec,false)):'')+crewBox+why('Raise strength with Basic Training (more trained), a higher Mk (fewer crew) or by mothballing another project to free regulars. Crew are shared: every crewed project runs at the same strength.'));return}
+  if(kind==='m'){meterSheet(arg);return}
+  if(kind==='out'||kind==='crew'){const n=NB[arg];G.selPrj=arg;
+    const r=ec.crewReq?ec.reg/ec.crewReq:1,c=ec.crewReq?ec.con/ec.crewReq:0,u=Math.max(0,1-r-c),need=G.owned.has(n.id)?crewOf(G,n.id,ec.crewMult):0;
+    const crewBox=n.crew&&G.owned.has(n.id)&&!G.moth.has(n.id)?box(lg('Crew needed',`${need.toFixed(2)}bn`)+lg('Regulars (trained) × 1.0',`${(need*r).toFixed(2)}bn`)+lg('Conscripts × 0.5',`${(need*c).toFixed(2)}bn`)+lg('Unfilled',`${(need*u).toFixed(2)}bn`)+lg('Strength',`${Math.round(ec.crewEff*100)}%`,'tot')):'';
+    const mbtn=G.owned.has(n.id)&&(n.crew||n.up)?`<button class="opt" data-sm="${n.id}"><b>${G.moth.has(n.id)?'Reactivate':'Mothball'} ${n.n}</b><span>${G.moth.has(n.id)?(G.final?'50% readiness on day 1':'crew and full upkeep return'):`frees ${need.toFixed(2)}bn crew · upkeep −70% · readiness 0 · ${matName(n.id)} fades ~1%/yr`}</span></button>`:'';
+    sheet(BR[n.br]||'Emergent',n.n,box(chainRows(n,ec))+crewBox+mbtn+why('Crew are shared: every crewed project runs at the same strength. Raise it with Basic Training, a higher Mk (fewer crew) or by mothballing.'),key);return}
   if(kind==='scores'){const {c,src}=counters(G,ec);const types=[...new Set(NODES.filter(x=>x.br===G.sub).flatMap(x=>Object.keys(x.fx)))];const sc=200;
     sheet('Projects · '+BR[G.sub],`What ${BR[G.sub]} adds`,`<div class="lg2" style="margin-bottom:8px"><span style="color:${OK}">■</span> this branch · <span style="color:${GREY}">■</span> everything else · <span style="color:${WA}">|</span> typical threat ${TYPICAL}</div>`+types.map(t=>{const mine=src[t].items.filter(x=>x.br===G.sub).reduce((a,x)=>a+x.v,0),tot=c[t];const lane=LANES.find(l=>l.tr.includes(t));const top=src[t].items.filter(x=>x.br===G.sub).sort((a,b)=>b.v-a.v).slice(0,2).map(x=>`${x.n} ${Math.round(x.v)}`).join(' · ')||'nothing yet';
       return `<div class="rrow"><span>${TRAITS[t].s}</span><div class="bar"><i style="width:${Math.min(100,mine/sc*100)}%;background:var(--ok)"></i><i style="width:${Math.min(100,Math.max(0,tot-mine)/sc*100)}%;background:${GREY}"></i><span class="mk" style="left:${TYPICAL/sc*100}%"></span></div><span class="mono" style="text-align:right">${Math.round(mine)}/${Math.round(tot)}</span><div class="sub">→ ${lane.n} lane · ${top}</div></div>`}).join(''));return}
-  if(kind==='reports'){sheet('War Room','Intel reports',box(`<div class="lg2">Reliability ${Math.round(intelAcc(G)*100)}% · likelihood starts at 50% and moves with each report, weighted by reliability.</div>`)+(G.reports.length?G.reports.map(r=>`<div class="rep"><span class="y">Y${r.y}</span> · ${r.src} → <b>${TRAITS[r.trait].n}</b> · ${r.conf}% reliable</div>`).join(''):'<div class="hint">The first report is due in Year 5.</div>'));return}
-  if(kind==='types'){const {c,src}=counters(G,ec),sc=220;
+  if(kind==='reports'){sheet('War Room','Intel reports',box(`<div class="lg2 wrap">Reliability ${Math.round(intelAcc(G)*100)}% · likelihood starts at 50% and moves with each report, weighted by reliability.</div>`)+(G.reports.length?G.reports.map(r=>`<div class="rep"><span class="y">Y${r.y}</span> · ${r.src} → <b>${TRAITS[r.trait].n}</b> · ${r.conf}% reliable</div>`).join(''):'<div class="hint">The first report is due in Year 5.</div>'));return}
+  if(kind==='types'){const {c,src}=counters(G,ec),sc=220;const W=warEstimate(),bf=counters(W.fw).byBr,tot=Object.values(bf).reduce((a,b)=>a+b,0)||1;
     sheet('War Room','Readiness by type',TK.map(t=>{const s=src[t];const seg=(v,col)=>`<i style="width:${Math.max(0,v)/sc*100}%;background:${col}"></i>`;const items=s.items.sort((a,b)=>b.v-a.v).slice(0,3).map(x=>`${x.n} ${Math.round(x.v)}`).join(', ');
-      return `<div class="rrow"><span>${TRAITS[t].s}</span><div class="bar">${seg(s.doc,'var(--ok)')}${seg(s.met,GREY)}${seg(s.bon,'var(--ac)')}<span class="mk" style="left:${TYPICAL/sc*100}%"></span></div><span class="mono" style="text-align:right">${Math.round(c[t])}</span><div class="sub">${items||'no projects'} · meters ${Math.round(s.met)}${s.bon?` · events ${sgn(s.bon,0)}`:''}</div></div>`}).join('')+why('Project = base × 1.35^(level−1) × 1.25^Mk × experience or maturity × crew strength × funding. Meters: Ground Resolve×0.3 · Traitors Stab×0.3+Res×0.15 · Siege Ind×0.3 · Bio Know×0.15 · Orbital Ind×0.08 · Swarm Know×0.08.'));return}
+      return `<div class="rrow"><span>${TRAITS[t].s}</span><div class="bar">${seg(s.doc,'var(--ok)')}${seg(s.met,GREY)}${seg(s.bon,'var(--ac)')}<span class="mk" style="left:${TYPICAL/sc*100}%"></span></div><span class="mono" style="text-align:right">${Math.round(c[t])}</span><div class="sub">${items||'no projects'} · meters ${Math.round(s.met)}${s.bon?` · events ${sgn(s.bon,0)}`:''}</div></div>`}).join('')+
+      box(`<div class="lbl">Rests on (Y100)</div>${sb([[bf.def,'#e8e2d6'],[bf.end,WA],[bf.sci,RPC],[bf.emg,AC],[bf.soc,GREY]])}<div class="lg2 wrap" style="margin-top:3px">Defence ${Math.round(bf.def/tot*100)}% · Endurance ${Math.round(bf.end/tot*100)}% · Science ${Math.round(bf.sci/tot*100)}% · Society ${Math.round(bf.soc/tot*100)}%</div>`)+why('Project = base × 1.35^(level−1) × 1.25^Mk × experience or maturity × crew strength × funding.'));return}
   if(kind==='supply'){const W=warEstimate(),{c,byBr}=counters(W.fw);
-    sheet('War Room','Their supply (Outlast)',box(lg('Base',`${SUPPLY_BASE} days`)+lg('− 2 × your Siege (Y100)',`−${Math.round(2*c.siege)}`)+lg('− your Endurance score',`−${Math.round(byBr.end)}`)+lg('+ 3 × their Siege, if they bring it','?')+lg('× Signal Analysis',`×${(1-.05*sz(G,'S1')).toFixed(2)}`)+(G.supM&&G.supM!==1?lg('× jammed beacons',`×${G.supM.toFixed(2)}`):'')+lg('Likely supply',`~${W.sup} days`,'tot'))+why(`Minimum ${SUPPLY_MIN}. If you are still fighting when it runs out, they withdraw: Outlast.`));return}
-  if(kind==='lane'){const W=warEstimate(),l=W.B0.L.find(x=>x.k===arg);const [lo,hi]=likelyRange(W.fw,l,W.Lk);
-    sheet('War Room',`${l.n} lane`,box(lg('Your readiness (Y100)',Math.round(l.you0))+l.tr.map(t=>lg(`  ${TRAITS[t].s} odds`,`${Math.round(W.Lk[t]*100)}%`)).join('')+lg('Their likely strength',`${Math.round(lo)}–${Math.round(hi)}`)+lg('Crew in this lane',`${l.crew.toFixed(2)}bn · experience ×${l.matL.toFixed(2)}`)+lg('Reserves fight at',`×${(l.rm||1).toFixed(2)}${l.rm>1?' (veterans)':''}`))+why(`Ratio ≥ 2 destroys the lane's whole share of a wave; ≥ 1.2 wins (+10% next wave); below 0.8 loses (−10%, Resolve −2). Strengthen with ${FIX[l.k]}.`));return}
-  if(kind==='estimate'){const W=warEstimate();sheet('War Room','How the estimate works',box(lg('Enemies sampled','24, drawn from your intel odds')+lg('Fleet destroyed (middle half)',`${W.k25}–${W.k75}%`)+lg('Repel (fleet 0%)',`${W.rep}%`)+lg('Outlast (supply 0)',`${W.out}%`))+why('Each sample projects your build to Year 100 and fights three waves without council calls, cards or turning points. Your calls in battle can swing it either way.'));return}
-  if(kind==='manpower'){sheet('Society','Manpower',box(lg('Population',`${G.P.toFixed(2)}bn`)+lg(`Military-able (25% + Resolve/1000 + ${Math.round(G.dr.enl*100)}% NS)`,`${ec.able.toFixed(2)}bn`)+lg(`Trained (+${(G.dr.trn*100).toFixed(1)}% of able per year)`,`${ec.trained.toFixed(2)}bn`)+lg('Crew needed',`${ec.crewReq.toFixed(2)}bn`)+lg('Regulars deployed',`${ec.reg.toFixed(2)}bn`)+lg('Conscripts (× 0.5)',`${ec.con.toFixed(2)}bn`)+lg('Trained in reserve',`${ec.reserves.toFixed(2)}bn`)+lg('Strength',`${Math.round(ec.crewEff*100)}%`,'tot'))+why(`Upgrading Mk frees crew: conscripts leave first, then regulars return to reserves. Reserves refill battle losses at ×1.00 (×1.20 once a Defence project has 20 years of service).`));return}
-  if(kind==='effort'){sheet('Economy','Effort',box(lg('Workforce (Population − crew)',`${ec.workforce.toFixed(2)}bn`)+lg('× Industry × 0.011',`× ${(G.I*EFF_K).toFixed(3)}`)+lg('× Stability (0.7 + Stab/200)',`× ${ec.stabM.toFixed(2)}`)+lg('× Infrastructure',`× ${G.dr.effM.toFixed(2)}`)+(ec.disp<1?lg('× Dispersed Society','× 0.9'):'')+lg('Income',`+${ec.gross.toFixed(2)}`,'tot')+ec.ups.map(([n,u])=>lg('Upkeep · '+n,`−${u.toFixed(2)}`)).join('')+lg('Net per year',sgn(ec.net,2),'tot')));return}
-  if(kind==='research'){sheet('Economy','Research',box(lg('Knowledge × 0.035',`+${(G.K*RES_K).toFixed(2)}`)+lg('Labs (0.5 per Signal and Xenobiology level)',`+${ec.labs.toFixed(2)}`)+lg('× University',`× ${G.dr.resM.toFixed(2)}`)+lg('Per year',`+${ec.rp.toFixed(2)}`,'tot')));return}
-  if(kind==='growth'){sheet('Society','Population growth',box(lg('Base rate','0.40%')+lg('Family Policy',`+${((G.dr.pop-.004)*100).toFixed(2)}%`)+lg('× Stability/50',`× ${(G.S/50).toFixed(2)}`)+lg('Xenobiology',`+${(.1*sz(G,'S2')).toFixed(1)}%`)+lg('Per year',`${sgn(ec.growth,3)}bn`,'tot')));return}
+    sheet('War Room','Their supply (Outlast)',box(lg('Base',`${SUPPLY_BASE} days`)+lg('− 2 × your Siege (Y100)',`−${Math.round(2*c.siege)}`)+lg('− your Endurance score',`−${Math.round(byBr.end)}`)+lg('+ 3 × their Siege, if they bring it','?')+lg('× Signal Analysis',`×${(1-.05*sz(G,'S1')).toFixed(2)}`)+(G.supM&&G.supM!==1?lg('× jammed beacons',`×${G.supM.toFixed(2)}`):'')+lg('Likely supply',`~${W.sup} days`,'tot'))+why(`Minimum ${SUPPLY_MIN}. Still fighting when it runs out: they withdraw (Outlast).`));return}
+  if(kind==='lane'){const W=warEstimate(),l=W.B0.L.find(x=>x.k===arg);const [lo,hi]=likelyRange(W.fw,l,W.Lk);const {src}=counters(W.fw);const items=l.tr.flatMap(t=>src[t].items.map(x=>({...x,t}))).sort((a,b)=>b.v-a.v).slice(0,4);
+    sheet('War Room',`${l.n} lane`,box(lg('Your readiness (Y100)',Math.round(l.you0))+items.map(x=>lg(`  ${x.n}`,Math.round(x.v/l.tr.length))).join('')+l.tr.map(t=>lg(`${TRAITS[t].s} odds`,`${Math.round(W.Lk[t]*100)}%`)).join('')+lg('Their likely strength',`${Math.round(lo)}–${Math.round(hi)}`)+lg('Crew · experience',`${l.crew.toFixed(2)}bn · ×${l.matL.toFixed(2)}`)+lg('Reserves fight at',`×${(l.rm||1).toFixed(2)}${l.rm>1?' (veterans)':''}`))+why(`2× or better destroys the lane's whole share of a wave; 1.2× wins (+10% next wave); below 0.8× loses (−10%, Resolve −2). Strengthen with ${FIX[l.k]}.`));return}
+  if(kind==='estimate'){const W=warEstimate();sheet('War Room','How the estimate works',box(lg('Enemies sampled','24, drawn from your intel odds')+lg('Fleet destroyed (middle half)',`${W.k25}–${W.k75}%`)+lg('Repel (fleet 0%)',`${W.rep}%`)+lg('Outlast (supply 0)',`${W.out}%`))+why('Each sample projects your build to Year 100 and fights three waves without council calls, cards or turning points.'));return}
+  if(kind==='manpower'){sheet('War Room','Manpower',box(lg('Population',`${G.P.toFixed(2)}bn`)+lg(`Military-able (25% + Resolve/1000 + ${Math.round(G.dr.enl*100)}% NS)`,`${ec.able.toFixed(2)}bn`)+lg(`Trained (+${(G.dr.trn*100).toFixed(1)}% of able a year)`,`${ec.trained.toFixed(2)}bn`)+lg('Crew needed',`${ec.crewReq.toFixed(2)}bn`)+lg('Regulars deployed',`${ec.reg.toFixed(2)}bn`)+lg('Conscripts (× 0.5)',`${ec.con.toFixed(2)}bn`)+lg('Trained in reserve',`${ec.reserves.toFixed(2)}bn`)+lg('Strength',`${Math.round(ec.crewEff*100)}%`,'tot'))+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('bas','+2% trained now · +0.2%/yr')+iniRow('nat','+3% military-able')+why('A higher Mk frees crew: conscripts leave first, then regulars return to reserves. Reserves refill battle losses at ×1.00 (×1.20 once a Defence project has 20 years of service).'),'manpower');return}
+  if(kind==='effort'){sheet('Economy','Effort',box(lg('Workforce (Population − crew)',`${ec.workforce.toFixed(2)}bn`)+lg('× Industry × 0.011',`× ${(G.I*EFF_K).toFixed(3)}`)+lg('× Stability (0.7 + Stab/200)',`× ${ec.stabM.toFixed(2)}`)+lg('× Infrastructure',`× ${G.dr.effM.toFixed(2)}`)+(ec.disp<1?lg('× Dispersed Society','× 0.9'):'')+lg('Income',`+${ec.gross.toFixed(2)}`,'tot')+ec.ups.map(([n,u])=>lg('Upkeep · '+n,`−${u.toFixed(2)}`)).join('')+lg('Net per year',sgn(ec.net,2),'tot'))+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('inf','+4% Effort (each repeat 80% of the last)')+iniRow('ind','Industry +0.10/yr · +3 now'),'effort');return}
+  if(kind==='research'){sheet('Economy','Research',box(lg(`Knowledge ${Math.round(G.K)} × 0.035`,`+${(G.K*RES_K).toFixed(2)}`)+lg('Labs (0.5 per Signal and Xenobiology level)',`+${ec.labs.toFixed(2)}`)+lg('× University',`× ${G.dr.resM.toFixed(2)}`)+lg('Per year',`+${ec.rp.toFixed(2)}`,'tot'))+why(`Knowledge ${Math.round(G.K)} (${sgn(G.dr.K,2)}/yr) also sets intel reliability (${Math.round(intelAcc(G)*100)}%), Bio (×0.15) and Swarm (×0.08), and feeds the signal Traitors (×0.005).`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('res','Knowledge +0.10/yr · +3 now · Traitors +2')+iniRow('uni2','+6% Research (each repeat 80% of the last)'),'research');return}
 }
-document.addEventListener('click',e=>{const t=e.target.closest('[data-tap]');if(!t||!G||screen!=='game')return;if(t.closest('#sheet'))return;e.stopPropagation();tapSheet(t.dataset.tap)},true);
+document.addEventListener('click',e=>{const t=e.target.closest('[data-tap]');if(!t||!G||screen!=='game')return;if(t.closest('#sheet'))return;const b=e.target.closest('button');if(b&&!b.hasAttribute('data-tap'))return;e.stopPropagation();tapSheet(t.dataset.tap)},true);
 
 /* ================= ARRIVAL / INVASION ================= */
 function enterFinal(){
@@ -1089,28 +1174,36 @@ function enterFinal(){
   log(`Year 100. Time stops. The fleet is in the outer system. Visual confirmation: ${TRAITS[G.confirmed].n}. Final preparations.`);
   float('YEAR 100 · FINAL PREPARATIONS','#c0533f');updCtl();render();
 }
-function openDeploy(){
-  const pool=Math.floor((Math.max(0,G.E)+Math.max(0,G.RP))/3);const B=battleInit(G,G.enemy,true);
-  const lr=k=>{const l=B.L.find(x=>x.k===k);return l.you0/l.th};
+function openDeploy(pick){
+  const pool=Math.floor((Math.max(0,G.E)+Math.max(0,G.RP))/3);const ec=econ(G);
+  const W=warEstimate(),Lk=W.Lk,B=battleInit(G,intelRead(G).e,true),{src}=counters(G,ec);
+  G._pick=pick!==undefined?pick:(G._pick||null);
+  const conf=TK.filter(t=>Lk[t]>=.999).map(t=>TRAITS[t].n),likely=TK.filter(t=>Lk[t]>=.65&&Lk[t]<.999).map(t=>TRAITS[t].s);
+  const cards=B.L.map(l=>{const [lo,hi]=likelyRange(G,l,Lk);const mid=(lo+hi)/2;const add=G._pick===l.k?pool:G._pick==='spread'?pool/4:0;const you=l.you0;
+    const rLo=you/Math.max(1,hi),rHi=you/Math.max(1,lo);const absent=hi<=ABSENT+1;
+    const pred=absent?['win · they likely sent little','pos']:rLo>=1.2?[`win ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'pos']:rHi<.8?[`lose ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'neg']:[`${rLo.toFixed(1)}–${rHi.toFixed(1)}× contested`,'wa'];
+    const items=l.tr.flatMap(t=>src[t].items).sort((a,b)=>b.v-a.v).slice(0,3).map(x=>`${x.n.replace('Planetary ','')} ${Math.round(x.v/l.tr.length)}`).join(' · ')||'meters only';
+    const sc=Math.max(200,you*1.08,hi*1.08);
+    return `<div class="lc"><div class="lt"><b>${l.n}</b><span class="${pred[1]}">${pred[0]}</span></div><div class="mb2"><i style="width:${Math.min(100,you/sc*100)}%"></i><b style="left:${lo/sc*100}%;width:${Math.max(1.5,(hi-lo)/sc*100)}%"></b></div><div class="ms2">${Math.round(you)} vs ${Math.round(lo)}${hi>lo+1?'–'+Math.round(hi):''} · ${items}</div></div>`}).join('');
+  const opt=(k,lab)=>{const l=B.L.find(x=>x.k===k);let txt;if(k==='spread')txt=`+${Math.round(pool/4)} each`;else{const [lo,hi]=likelyRange(G,l,Lk);txt=`${Math.round(l.you0)} → ${Math.round(l.you0+pool)} · ${((l.you0+pool)/Math.max(1,hi)).toFixed(1)}–${((l.you0+pool)/Math.max(1,lo)).toFixed(1)}×`}
+    return `<button class="opt${G._pick===k?' on':''}" data-c="${k}"><b>${lab}</b><span>${txt}</span></button>`};
   const moth=[...G.moth];
-  $('#sheet').innerHTML=`<div class="lbl">Year 100 · War council</div><h2>Last orders before contact</h2><p>Confirmed: <b>${TRAITS[G.confirmed].n}</b>${G.vg?` and <b>${TRAITS[G.vg.t].n}</b>`:''}. Their supply will last about <b>${projectB(G,false).supply} days</b> on your intel read.</p>`+
-  (moth.length?`<div class="lbl" style="margin-bottom:6px">Mothballed · your call</div>`+moth.map(id=>`<button class="opt" data-r="${id}"><b>Reactivate ${NB[id].n}</b><span>50% readiness on day 1 · crew ${crewOf(G,id,econ(G).crewMult).toFixed(2)}bn from reserves (×1.00)</span></button>`).join(''):'')+
-  `<div class="lbl" style="margin:6px 0">Leftovers · ${Math.max(0,Math.floor(G.E))} Effort + ${Math.max(0,Math.floor(G.RP))} Research → ${pool} readiness</div>`+
-  (pool?`<div class="optgrid">`+LANES.map(l=>{const now=B.L.find(x=>x.k===l.k);return `<button class="opt" data-c="${l.k}"><b>${l.n}</b><span>${lr(l.k).toFixed(1)}× → <span class="pos">${((now.you0+pool)/now.th).toFixed(1)}×</span> vs wave 1</span></button>`}).join('')+`</div><button class="opt" data-c="spread" style="margin-top:8px"><b>Spread evenly</b><span>+${Math.round(pool/4)} to each lane</span></button>`:`<p class="mut" style="font-size:12px">Nothing left to convert.</p>`)+
-  `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="backBtn" style="flex:1">◂ BACK</button>${pool?'':`<button class="btn" id="goBtn" style="flex:1">BEGIN ▸</button>`}</div>`;
+  $('#sheet').innerHTML=`<div class="lbl" style="color:var(--ac)">Year 100 · War council</div><h2>What we take into the war</h2><div class="ms2" style="margin-bottom:6px">${conf.length?`Confirmed: ${conf.join(', ')}`:'Nothing confirmed'}${likely.length?` · likely ${likely.join(', ')}`:''} · crew ${ec.crewReq.toFixed(2)}bn, ${Math.round(ec.crewEff*100)}% strength · reserves ${ec.reserves.toFixed(2)}bn${vetOf(G)>1?' (×1.2 veterans)':''}</div>`+cards+
+   `<div class="ms2" style="margin:2px 0 8px">Supply ~${W.sup} d · Outlast ~${W.out}% · Repel ~${W.rep}% · ${moth.length?`mothballed: ${moth.map(id=>NB[id].n).join(', ')}`:'nothing mothballed'}</div>`+
+   moth.map(id=>`<button class="opt" data-r="${id}"><b>Reactivate ${NB[id].n}</b><span>50% readiness on day 1 · crew ${crewOf(G,id,ec.crewMult).toFixed(2)}bn from reserves</span></button>`).join('')+
+   `<div class="lbl" style="margin:4px 0 6px;color:var(--ac)">Leftovers · ${Math.max(0,Math.floor(G.E))} Effort + ${Math.max(0,Math.floor(G.RP))} Research → +${pool} readiness to one lane</div>`+
+   (pool?`<div class="optgrid">${opt('orbit','Orbit')}${opt('sky','Sky')}${opt('ground','Ground')}${opt('inside','Inside')}</div><button class="opt${G._pick==='spread'?' on':''}" data-c="spread" style="margin-top:6px"><b>Spread</b><span>+${Math.round(pool/4)} to each lane</span></button>`:`<div class="hint">Nothing left to convert.</div>`)+
+   `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="backBtn" style="flex:1">◂ BACK TO SPEND</button><button class="btn" id="goBtn" style="flex:1" ${pool&&!G._pick?'disabled':''}>COMMIT ▸</button></div>`;
   $('#modal').classList.remove('hidden');
   $('#backBtn').onclick=()=>{$('#modal').classList.add('hidden');render()};
-  if($('#goBtn'))$('#goBtn').onclick=()=>{$('#modal').classList.add('hidden');G.final=false;playInvasion()};
   $('#sheet').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{toggleMoth(b.dataset.r);openDeploy()});
-  $('#sheet').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>{
-    const k=b.dataset.c;if(k==='spread')LANES.forEach(l=>G.lb[l.k]=(G.lb[l.k]||0)+pool/4);else G.lb[k]=(G.lb[k]||0)+pool;
-    G.y100=`${pool} readiness → ${k==='spread'?'all lanes':LANES.find(l=>l.k===k).n}`;
-    log(`Year 100: ${G.y100}.`);
-    G.E=0;G.RP=0;G.final=false;$('#modal').classList.add('hidden');playInvasion();
-  });
+  $('#sheet').querySelectorAll('[data-c]').forEach(b=>b.onclick=()=>openDeploy(b.dataset.c));
+  $('#goBtn').onclick=()=>{if(pool&&!G._pick)return;const k=G._pick;
+    if(pool){if(k==='spread')LANES.forEach(l=>G.lb[l.k]=(G.lb[l.k]||0)+pool/4);else G.lb[k]=(G.lb[k]||0)+pool;G.y100=`${pool} readiness → ${k==='spread'?'all lanes':LANES.find(l=>l.k===k).n}`;log(`Year 100: ${G.y100}.`);G.E=0;G.RP=0}
+    G.final=false;$('#modal').classList.add('hidden');playInvasion()};
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,skip?0:ms));
-function line(s,cl=''){const d=document.createElement('div');d.className='ln '+cl;d.innerHTML=s;$('#lines').appendChild(d);$('#lines').scrollTop=1e9}
+function line(s,cl=''){if(INV){INV.log=INV.log||[];INV.log.push([s,cl])}const d=document.createElement('div');d.className='ln '+cl;d.innerHTML=s;const L=$('#lines');L.appendChild(d);while(L.children.length>3)L.removeChild(L.firstChild)}
 const E4F=()=>(G.owned.has('E4')?.7:1)*(G.owned.has('H3')?.8:1);
 function popNow(){return G.P*Math.max(.05,1-INV.B.popLoss)*(1-.85*INV.lp*E4F())}
 function animDays(i,a,b,dur,long){
@@ -1127,7 +1220,7 @@ const MIXLEG=`<div class="lg2" style="font-family:var(--mono);font-size:8.5px;co
 function laneRows(B,last){
   return B.L.map(l=>{const x=last&&last.rows.find(r=>r.l===l);const r=x?x.r:laneStr(l)/l.th;const st=x?x.state:(r>=1.2?'won':r>=.8?'even':'lost');
     const you=Math.min(r,3)/3*100;
-    return `<div class="lane"><div><span>${l.n}</span>${l.crew?mixBar(l):''}</div><div><div class="sb" style="height:8px"><i style="width:${you}%;background:${OK}"></i><i style="width:${100-you}%;background:${BAD}"></i></div><span class="mut">${l.crew?`crew ${(l.crew*(l.mix.reg+l.mix.res+l.mix.con)).toFixed(2)}bn · exp ×${expOf(l).toFixed(2)}`:'meters and readiness'}${l.w>1?'':' · they sent little'}</span></div><b style="color:${LC[st]}">${r.toFixed(1)}× ${x?st:''}</b></div>`}).join('');
+    return `<div class="lane" data-btap="blane:${l.k}"><div><span>${l.n}</span>${l.crew?mixBar(l):''}</div><div><div class="sb" style="height:8px"><i style="width:${you}%;background:${OK}"></i><i style="width:${100-you}%;background:${BAD}"></i></div><span class="mut">${l.crew?`crew ${(l.crew*(l.mix.reg+l.mix.res+l.mix.con)).toFixed(2)}bn · exp ×${expOf(l).toFixed(2)}`:'meters and readiness'}${l.w>1?'':' · they sent little'}</span></div><b style="color:${LC[st]}">${r.toFixed(1)}× ${x?st:''}</b></div>`}).join('');
 }
 function sitrep(B,last){
   const rows=last?last.rows:B.L.map(l=>{const r=laneStr(l)/l.th;return{l,r,state:r>=1.2?'won':r>=.8?'even':'lost'}});
@@ -1143,7 +1236,7 @@ function sitrep(B,last){
 function bRender(last){
   const B=INV.B;
   $('#bside').innerHTML=tl('Their fleet · Repel',Math.round(B.fleet)+'%','neg',sb([[B.fleet,BAD],[100-B.fleet,'#2c2a25']]),B.waves.length?B.waves.map((x,i)=>`W${i+1} −${Math.round(x.destroyed)}%`).join(' · '):'wave 1 50% · wave 2 30% · wave 3 20%')+
-    `<div class="tl sit"><span class="lbl" style="color:var(--ac)">Situation</span><div class="st2">${sitrep(B,last)}</div></div>`;
+    `<div class="tl sit" data-btap="sit"><span class="lbl" style="color:var(--ac)">Situation ›</span><div class="st2">${sitrep(B,last)}</div></div>`;
   $('#blanes').innerHTML=MIXLEG+laneRows(B,last);
   $('#bstat').innerHTML=`Supply ${Math.max(0,B.supply-B.days)} d · Resolve ${Math.round(B.resolve)} · Pop `;
 }
@@ -1167,7 +1260,7 @@ function midCard(B,w){
       else if(k==='draft'){const add=Math.min(.3,B.spare);B.spare-=add;if(ground.crew)ground.mix.con+=add/ground.crew;else ground.mod*=1.1;B.used.con+=add;B.resolve-=1;line(`Legion HQ: "${add.toFixed(2)}bn new recruits at the front by morning. Half of them have never fired a shot."`,'res')}
       else if(k==='surge'){const wl=B.L.slice().sort((a,b)=>laneStr(a)/a.th-laneStr(b)/b.th)[0];wl.mod*=1.3;B.resolve-=2;line(`Council: "Everything we have goes to ${wl.n.toLowerCase()}."`,'mute')}
       else if(k==='martial'){inside.mod*=1.25;B.mlaw=true;B.sAdj=(B.sAdj||0)-6;line('Council: "Curfew in every city. Movement by permit only."','mute')}
-      if(k!=='hold')G.council.push(`W${w+1} card · ${CARDS[k][0]}`);
+      B.cards=B.cards||{};B.cards[w]=CARDS[k][0];if(k!=='hold')G.council.push(`W${w+1} card · ${CARDS[k][0]}`);
       bRender();$('#modal').classList.add('hidden');skip=wasSkip;res()});
   });
 }
@@ -1182,7 +1275,7 @@ function bCouncil(B,w,rec){
     const won=rec.rows.filter(x=>x.state==='won').length,worst=rec.rows.slice().sort((a,b)=>a.r-b.r)[0];
     const t=won>=3?`Wave ${w+1} is broken`:won>=2?`Wave ${w+1} is held`:`Wave ${w+1} broke through`;
     const opts=Object.entries(BCOUNCIL);
-    $('#sheet').innerHTML=`<div class="lbl">War council · after wave ${w+1}</div><h2>${t}</h2><p>Fleet at ${Math.round(B.fleet)}%, supply ${B.supply-B.days} days. ${worst.l.n} took the worst of it.</p>`+
+    $('#sheet').innerHTML=`<div class="lbl">War council · after wave ${w+1}</div><h2>${t}</h2><details class="box" style="background:var(--bg)"><summary class="lbl" style="color:var(--ac);cursor:pointer">Full wave report ›</summary>${waveHTML(B,w)}</details><p>Fleet at ${Math.round(B.fleet)}%, supply ${B.supply-B.days} days. ${worst.l.n} took the worst of it.</p>`+
       `<div class="box" style="background:var(--bg)">${MIXLEG}${laneRows(B,rec)}</div>`+
       `<div class="box" style="background:var(--bg)"><div class="lbl">Losses &amp; refills</div>`+rec.rows.filter(x=>x.lost>.001).map(x=>`<div class="lg"><span>${x.l.n} −${x.lost.toFixed(2)}bn<br><span class="mut" style="font-size:9.5px">${x.fr>.001?`reserves ${x.fr.toFixed(2)}`:''}${x.fc>.001?` conscripts ${x.fc.toFixed(2)}`:''}${x.fr+x.fc<x.lost-.001?' <span class="neg">· unfilled</span>':''}</span></span><span>×${x.exp0.toFixed(2)} → ×${x.exp1.toFixed(2)}</span></div>`).join('')+`<div class="why">Unit experience = weighted crew mix. Reserves left ${B.reserves.toFixed(2)}bn, then ${B.spare.toFixed(2)}bn conscripts.</div></div>`+
       opts.map(([k,o])=>`<button class="opt" data-k="${k}"><b>${o[0]}</b><span>${o[1]}</span></button>`).join('');
@@ -1212,7 +1305,7 @@ function longCouncil(B){
 async function playInvasion(){
   skip=false;$('#lines').innerHTML='';$('#dctr').textContent='0';$('#pctr').textContent=G.P.toFixed(2)+'bn';
   G.ec=econ(G);const B=battleInit(G,G.enemy,false);
-  INV={B,p:0,phase:0,pp:0,lp:0,fx:[],drops:[],done:false,kill:0,fleetLoss:0,ark:B.ark};
+  $('#wsBtn').style.visibility='hidden';INV={B,log:[],p:0,phase:0,pp:0,lp:0,fx:[],drops:[],done:false,kill:0,fleetLoss:0,ark:B.ark};
   SC.enemy.forEach(e=>{e.boom=0});
   show('inv');bRender();
   if(G.owned.has('H2'))line('Deep Strike Deterrent fired. A quarter of the inbound fleet is destroyed in transit.','good');
@@ -1227,7 +1320,7 @@ async function playInvasion(){
     await animDays(w,d0,rec.dayEnd,2600+3000*Math.min(1,rec.days/150));
     sayLines(rec);
     line(`Wave ${w+1}: their fleet −${Math.round(rec.destroyed)}% · ${Math.round(B.fleet)}% left · ${fmtD(rec.days)}`,'mute');
-    bRender(rec);await sleep(900);
+    bRender(rec);const ws=$('#wsBtn');ws.style.visibility='visible';ws.textContent=`WAVE ${w+1} SUMMARY ›`;ws.onclick=()=>waveSheet(w);await sleep(900);
     if(B.won)break;
     if(w<2){await bCouncil(B,w,rec);if(B.won)break}
   }
@@ -1250,56 +1343,68 @@ function getBestWin(){try{return +localStorage.getItem('invasion.bestWin')||0}ca
 function setBestWin(v){try{localStorage.setItem('invasion.bestWin',v)}catch(e){}}
 const gradeOf=pts=>pts>=170?'S':pts>=130?'A':pts>=100?'B':pts>=70?'C':'D';
 function bestLine(){const b=getBest(),w=getBestWin();$('#bestline').textContent=[b?'Best: '+fmtD(b):'',w?`Best win: ${gradeOf(w)} (${w})`:''].filter(Boolean).join(' · ')}
+function waveHTML(B,w){
+  const x=B.waves[w];if(!x)return'';
+  return `<div class="ms2" style="margin:4px 0">Fleet −${Math.round(x.destroyed)}% (now ${Math.round(x.fleet)}%) · ${fmtD(x.days)}${B.cards&&B.cards[w]?` · card: ${B.cards[w]}`:''}</div>`+
+   x.rows.map(r=>`<div class="lg"><span>${r.l.n} <span class="${r.state==='won'?'pos':r.state==='even'?'':'neg'}">${r.state} ${r.r.toFixed(1)}×</span>${r.lost>.001?`<br><span class="mut" style="font-size:9.5px">−${r.lost.toFixed(2)}bn · ${r.fr>.001?`reserves ${r.fr.toFixed(2)}`:''}${r.fc>.001?` conscripts ${r.fc.toFixed(2)}`:''}${r.fr+r.fc<r.lost-.001?' <span class="neg">unfilled</span>':''}</span>`:''}</span><span>exp ×${r.exp0.toFixed(2)} → ×${r.exp1.toFixed(2)}</span></div>`).join('')+
+   (x.ev.length?x.ev.map(t=>`<div class="ms2" style="margin-top:4px;color:${t.good?'var(--ok)':'var(--bad)'}">Turning point: ${t.t}</div>`).join(''):'');
+}
+function bSheet(lbl,title,body){$('#sheet').innerHTML=`<div class="lbl">${lbl}</div><h2>${title}</h2>${body}<div style="height:10px"></div><button class="btn ghost" id="closeSh">CLOSE</button>`;$('#modal').classList.remove('hidden');$('#closeSh').onclick=()=>$('#modal').classList.add('hidden')}
+function waveSheet(w){const B=INV.B;bSheet(`Wave ${w+1} · ${WAVES[w].n}`,`Wave ${w+1} summary`,`<div class="box">${waveHTML(B,w)}</div>`)}
+function bTap(key){
+  const B=INV&&INV.B;if(!B)return;const [k,a]=key.split(':');
+  if(k==='sit'){bSheet('Battle','Situation',`<div class="box" style="font-size:12.5px;line-height:1.5">${sitrep(B,B.waves[B.waves.length-1])}</div>`+B.L.map(l=>lg(`${l.n}: you ${Math.round(laneStr(l))} vs them ${Math.round(l.th)}`,`${(laneStr(l)/l.th).toFixed(2)}×`)).join('')+why('A lane at 2× or better destroys its whole share of each wave. Each lane counts double where they brought that capability.'));return}
+  if(k==='blane'){const l=B.L.find(x=>x.k===a);const m=l.mix,t=Math.max(1e-6,m.reg+m.res+m.con);
+    bSheet('Battle',`${l.n} lane`,box(lg('Strength now',`${Math.round(laneStr(l))} vs ${Math.round(l.th)} · ${(laneStr(l)/l.th).toFixed(2)}×`)+lg('Momentum',`×${l.mom.toFixed(2)}`)+(l.crew?lg('Crew mix',`regulars ${Math.round(m.reg/t*100)}% · reserves ${Math.round(m.res/t*100)}% · conscripts ${Math.round(m.con/t*100)}%`)+lg('Experience',`×${expOf(l).toFixed(2)} (regulars ×${l.matL.toFixed(2)}, reserves ×${(l.rm||1).toFixed(2)}, conscripts ×0.50)`):lg('Crew','none: meters and readiness'))+l.hist.map((x,i)=>lg(`Wave ${i+1}`,`${x.state} ${x.r.toFixed(1)}×${x.lost>.001?` · −${x.lost.toFixed(2)}bn`:''}`)).join('')));return}
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-btap]');if(!t||screen!=='inv')return;e.stopPropagation();bTap(t.dataset.btap)},true);
 function debrief(){
-  const B=INV.B,total=B.days,det=G.owned.has('H2'),ec=G.ec;const C=B.c;
+  const B=INV.B,total=B.days,ec=G.ec,C=B.c,det=G.owned.has('H2');
   const popEnd=popNow(),kept=clamp(popEnd/G.P,0,1);
   let pts=0,grade='',score=Math.round(total*(B.won?1:1+B.ark)),nb=false;
-  if(B.won){const sp=Math.max(0,Math.round(100-total/21)),pp=Math.round(kept*100);pts=sp+pp+(B.ark?10:0);grade=gradeOf(pts);if(pts>getBestWin()){setBestWin(pts);nb=true}INV.pts={sp,pp}}
-  else{const best=getBest();if(score>best){setBest(score);nb=true}}
-  const Lk=intelLik(G);const read=TK.slice().sort((x,y)=>Lk[y]-Lk[x]).slice(0,3);const hit=read.filter(t=>G.enemy[t]).length;
-  const badges=[];if(B.won)badges.push(B.won==='repel'?'REPEL · FLEET 0%':'OUTLAST · SUPPLY 0');if(B.won!=='outlast')badges.push(`SUPPLY ${Math.max(0,B.supply-total)} DAYS LEFT`);if(B.ark)badges.push('ARK LAUNCHED');if(det)badges.push('DEEP STRIKE');if(B.tides.size)badges.push(`${B.tides.size} TURNING POINT${B.tides.size>1?'S':''}`);if(hit===3)badges.push('PERFECT READ');if(nb)badges.push('NEW RECORD');
-  // chart
-  const pts2=[[0,100,100,0]];B.waves.forEach(x=>pts2.push([x.dayEnd,x.fleet,x.forces*100,x.dayEnd]));if(B.long)pts2.push([total,B.fleet,pts2[pts2.length-1][2]*.6,total]);
-  const X=d=>(d/Math.max(1,total,B.supply*(B.won==='outlast'?1:0))*356+1).toFixed(1),Y=v=>(92-clamp(v,0,110)/110*84).toFixed(1);
-  const sup=`${X(0)},${Y(100)} ${X(total)},${Y(Math.max(0,(B.supply-total)/B.supply*100))}`;
-  const chart=`<svg width="100%" viewBox="0 0 358 100" preserveAspectRatio="none" style="height:100px" aria-hidden="true"><line x1="0" y1="92" x2="358" y2="92" stroke="#3a3730"/>${B.waves.map(x=>`<line x1="${X(x.dayEnd)}" y1="4" x2="${X(x.dayEnd)}" y2="92" stroke="#3a3730" stroke-dasharray="2 3"/>`).join('')}<polyline points="${pts2.map(p=>`${X(p[0])},${Y(p[1])}`).join(' ')}" fill="none" stroke="${BAD}" stroke-width="2"/><polyline points="${sup}" fill="none" stroke="${WA}" stroke-width="1.6" stroke-dasharray="2 3"/><polyline points="${pts2.map(p=>`${X(p[0])},${Y(p[2])}`).join(' ')}" fill="none" stroke="${OK}" stroke-width="2" stroke-dasharray="5 3"/></svg>`;
-  const rc=st=>st==='won'?'v-ok':st==='even'?'v-wa':'v-bad';
-  $('#screen-deb').innerHTML=`
-   <div class="lbl">Debrief · Council archive</div>
-   ${B.won?`<div class="score" style="color:var(--ok)">${B.won==='repel'?'They were driven off':'They gave up'}</div><div class="hint">${B.won==='repel'?`Their fleet broke after ${fmtD(total)}.`:`Their supply ran out after ${fmtD(total)}.`}</div>
-   <div class="grade"><div class="gl">${grade}</div><div style="flex:1">${lg('Days to victory',`${total} → ${INV.pts.sp} pts`)}${lg('Population kept',`${popEnd.toFixed(1)} / ${G.P.toFixed(1)}bn → ${INV.pts.pp} pts`)}${B.ark?lg('Ark','+10 pts'):''}${lg('Score',`<span class="pos">${pts} · ${grade}</span> (S at 170)`,'tot')}</div></div>`:
-   `<div class="score">${fmtD(score)}</div><div class="lbl">${B.ark?`${fmtD(total)} + Ark legacy ${Math.round(B.ark*100)}% · `:''}Best ${fmtD(Math.max(score,getBest()))}</div>`}
-   <div class="badges">${badges.map(b=>`<span class="badge">${b}</span>`).join('')}</div>
-   <div class="sec"><span>The war</span></div><div style="width:100%;flex:0 0 auto">${chart}</div>
-   <div class="hint" style="margin-top:2px"><span style="color:${BAD}">━</span> their fleet · <span style="color:${WA}">┅</span> their supply · <span style="color:${OK}">╍</span> your forces</div>
-   <div class="sec"><span>Lanes</span></div>
-   <table><tr><th></th>${B.waves.map((x,i)=>`<th style="text-align:right">WAVE ${i+1}</th>`).join('')}</tr>${B.L.map(l=>`<tr><td>${l.n}</td>${l.hist.map(x=>`<td class="n ${rc(x.state)}">${x.state} ${x.r.toFixed(1)}×</td>`).join('')}</tr>`).join('')}
-   <tr><td>Fleet destroyed</td>${B.waves.map(x=>`<td class="n">−${Math.round(x.destroyed)}%</td>`).join('')}</tr></table>
-   ${B.long?`<div class="hint">Long war: ${fmtD(B.long.days)} · endurance ${Math.round(B.long.endu)} vs ${Math.round(B.long.th)}</div>`:''}
-   <div class="sec"><span>Manpower spent</span></div><div style="width:100%;flex:0 0 auto">${sb([[B.used.reg,OK],[B.used.res,RPC],[B.used.con,WA]])}</div>
-   <div class="hint" style="margin-top:5px">Regulars lost ${B.used.reg.toFixed(2)}bn · reserves used ${B.used.res.toFixed(2)}bn · conscripts called ${B.used.con.toFixed(2)}bn</div>
-   <div class="sec"><span>Calls</span></div>
-   <div class="hint">${[G.y100?'Year 100: '+G.y100:'',G.half.size?'Reactivated: '+[...G.half].map(id=>NB[id].n).join(', '):'',...[...B.tides].map(id=>'Turning point: '+TIDES.find(t=>t.id===id).t),...G.council].filter(Boolean).join('<br>')||'None.'}</div>
-   <div class="sec"><span>Intel vs reality</span></div>
-   <table><tr><th>THREAT</th><th style="text-align:right">LIKELY</th><th style="text-align:right">ACTUAL</th><th style="text-align:right">YOURS</th><th style="text-align:right">VERDICT</th></tr>
-   ${TK.map(t=>{const th=t==='infil'?Math.round(traitorThreat(G,G.enemy,det)):G.enemy[t]?Math.round(G.enemy[t]*(det?.75:1)):0;const r=th?C[t]/th:0;const v=!th?['Not present','mut']:r>=1.2?['Countered','v-ok']:r>=.7?['Contested','v-wa']:['Unprepared','v-bad'];return `<tr><td>${TRAITS[t].s}</td><td class="n">${Math.round(Lk[t]*100)}%</td><td class="n">${th||'—'}</td><td class="n">${Math.round(C[t])}</td><td class="n ${v[1]}">${v[0]}</td></tr>`}).join('')}
-   </table>
-   <div class="hint">Your top three: ${read.map(t=>`${G.enemy[t]?'✓':'✗'} ${TRAITS[t].s}`).join(' · ')}: <b>${hit}/3 correct</b></div>
-   <div class="sec"><span>Empire at arrival</span></div>
-   <table>
-    <tr><td>Population</td><td class="n">${G.P.toFixed(2)}bn (peak ${G.peakP.toFixed(2)})</td></tr>
-    <tr><td>Trained · military-able</td><td class="n">${ec.trained.toFixed(2)} · ${ec.able.toFixed(2)}bn</td></tr>
-    <tr><td>Traitors at arrival</td><td class="n">${Math.round(G.T)}</td></tr>
-    <tr><td>Effort per year</td><td class="n">+${ec.gross.toFixed(2)} · −${ec.upkeep.toFixed(2)} upkeep</td></tr>
-    <tr><td>Crew strength · funding</td><td class="n">${Math.round(ec.crewEff*100)}% · ${Math.round(G.fund*100)}%</td></tr>
-    <tr><td>Projects</td><td class="n">${G.owned.size} of 15${G.moth.size?` · ${G.moth.size} mothballed`:''}</td></tr>
-   </table>
-   <div class="hint">${[...G.owned].map(id=>`${NB[id].n} size ${sz(G,id)} Mk ${MK[tc(G,id)]} (Y${G.builtAt[id]|0})`).join(' · ')||'Nothing built.'}</div>
-   <div class="hint">${B.won?'Wins are graded: fewer days to victory and more people kept score higher.':'Losses score days survived. Wins are graded instead.'}</div>
-   <div style="height:12px"></div>
-   <button class="btn" id="againBtn">NEW RUN</button>`;
+  if(B.won){const sp=B.won==='repel'?Math.max(0,Math.round(100-total/21)):Math.max(0,Math.round(40+60*(1-total/SUPPLY_BASE))),pp=Math.round(kept*100);pts=sp+pp+(B.ark?10:0);grade=gradeOf(pts);if(pts>getBestWin()){setBestWin(pts);nb=true}INV.pts={sp,pp}}
+  else{if(score>getBest()){setBest(score);nb=true}}
+  INV.deb={popEnd,pts,grade,nb};
+  const pts2=[[0,100,100]];B.waves.forEach(x=>pts2.push([x.dayEnd,x.fleet,x.forces*100]));if(B.long)pts2.push([total,B.fleet,pts2[pts2.length-1][2]*.6]);
+  const X=d=>(d/Math.max(1,total)*356+1).toFixed(1),Y=v=>(62-clamp(v,0,110)/110*56).toFixed(1);
+  const chart=`<svg width="100%" viewBox="0 0 358 66" preserveAspectRatio="none" style="height:60px;display:block" aria-hidden="true"><line x1="0" y1="62" x2="358" y2="62" stroke="#3a3730"/>${B.waves.map(x=>`<line x1="${X(x.dayEnd)}" y1="2" x2="${X(x.dayEnd)}" y2="62" stroke="#3a3730" stroke-dasharray="2 3"/>`).join('')}<polyline points="${pts2.map(p=>`${X(p[0])},${Y(p[1])}`).join(' ')}" fill="none" stroke="${BAD}" stroke-width="2"/><polyline points="${X(0)},${Y(100)} ${X(total)},${Y(Math.max(0,(B.supply-total)/B.supply*100))}" fill="none" stroke="${WA}" stroke-width="1.5" stroke-dasharray="2 3"/><polyline points="${pts2.map(p=>`${X(p[0])},${Y(p[2])}`).join(' ')}" fill="none" stroke="${OK}" stroke-width="2" stroke-dasharray="5 3"/></svg>`;
+  const rc=st=>st==='won'?'var(--ok)':st==='even'?'var(--wa)':'var(--bad)';
+  const cols=B.waves.length;
+  const grid=`<div class="dgrid" style="grid-template-columns:56px repeat(${cols},1fr)"><span></span>${B.waves.map((x,i)=>`<span class="h" data-dtap="wave:${i}">W${i+1} ›</span>`).join('')}`+B.L.map(l=>`<span>${l.n}</span>`+l.hist.map(x=>`<span class="v" style="color:${rc(x.state)}">${x.r.toFixed(1)}</span>`).join('')).join('')+`<span class="mut">Fleet</span>${B.waves.map(x=>`<span class="v">−${Math.round(x.destroyed)}%</span>`).join('')}</div>`;
+  const wl=weakLane(B);const Lk=intelLik(G);const read=TK.slice().sort((x,y)=>Lk[y]-Lk[x]).slice(0,3);const hit=read.filter(t=>G.enemy[t]).length;
+  const why1=B.won?(B.won==='repel'?['Fleet destroyed','every lane held','pos']:['Supply ran out',`after ${fmtD(total)}`,'pos']):[`${wl.l.n} lost`,`${wl.tr} ${Math.round(wl.l.th)} vs ${Math.round(wl.l.you0)} · avg ${wl.avg.toFixed(1)}×`,'neg'];
+  const calls=G.council.length+(G.y100?1:0)+(G.half.size?1:0);
+  $('#screen-deb').innerHTML=`<div class="lbl">Debrief</div>
+   <div style="display:flex;justify-content:space-between;align-items:flex-end;gap:8px"><div><div class="score" style="margin:0;${B.won?'color:var(--ok)':''}">${B.won?(B.won==='repel'?'Driven off':'They gave up'):fmtD(score)}</div><div class="ms2">${B.won?`after ${fmtD(total)} · grade <b style="color:var(--ok)">${grade}</b> (${pts})`:`Earth fell · best ${fmtD(Math.max(score,getBest()))}`}${nb?' · <span style="color:var(--ac)">NEW RECORD</span>':''}</div></div>${B.won?`<div class="grade" style="margin:0"><div class="gl" style="width:52px;height:52px;font-size:30px">${grade}</div></div>`:`<div class="ms2" style="text-align:right">supply had<br><b style="color:var(--wa)">${Math.max(0,B.supply-total)} d left</b></div>`}</div>
+   <div data-dtap="chart">${chart}<div class="ms2"><span style="color:${BAD}">━</span> fleet <span style="color:${WA}">┅</span> supply <span style="color:${OK}">╍</span> you · tap ›</div></div>
+   <div class="lbl" style="margin-top:4px">Lanes · ratio per wave</div>${grid}
+   ${B.long?`<div class="ms2" data-dtap="long">Long war ${fmtD(B.long.days)} · endurance ${Math.round(B.long.endu)} vs ${Math.round(B.long.th)} ›</div>`:''}
+   <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:4px">
+    <div class="dtile" data-dtap="why"><span class="lbl">${B.won?'How it ended':'Why it ended'}</span><b class="${why1[2]}">${why1[0]}</b><span>${why1[1]}</span></div>
+    <div class="dtile" data-dtap="intel"><span class="lbl">Intel read</span><b class="${hit===3?'pos':hit===2?'':'neg'}">${hit} / 3</b><span>${read.map(t=>TRAITS[t].s).join(' · ')}</span></div>
+    <div class="dtile" data-dtap="man"><span class="lbl">Manpower</span><b>${(B.used.reg+B.used.res+B.used.con).toFixed(2)}bn</b><span>regulars ${B.used.reg.toFixed(2)} · reserves ${B.used.res.toFixed(2)} · conscripts ${B.used.con.toFixed(2)}</span></div>
+    <div class="dtile" data-dtap="calls"><span class="lbl">Calls</span><b>${calls}</b><span>${B.tides.size} turning point${B.tides.size===1?'':'s'}${G.y100?' · Year 100 '+G.y100.split('→')[1].trim():''}</span></div>
+   </div>
+   <div style="display:flex;gap:6px;margin-top:auto;padding-top:8px"><button class="btn ghost" data-dtap="empire" style="flex:1;font-family:var(--mono);font-size:11px">EMPIRE AT ARRIVAL ›</button><button class="btn" id="againBtn" style="flex:1">NEW RUN</button></div>`;
   show('deb');$('#againBtn').onclick=()=>{bestLine();newGame()};
 }
+function weakLane(B){const ls=B.L.map(l=>({l,avg:mean(l.hist.map(x=>x.r)),tr:l.tr.filter(t=>t==='infil'||B.enemy[t]).map(t=>TRAITS[t].s).join('+')||'little'}));return ls.sort((a,b)=>(a.avg*(a.l.w>1?1:3))-(b.avg*(b.l.w>1?1:3)))[0]}
+function dTap(key){
+  const B=INV.B,[k,a]=key.split(':');const det=G.owned.has('H2'),C=B.c;
+  if(k==='wave'){bSheet(`Wave ${+a+1}`,`Wave ${+a+1} · ${WAVES[a].n}`,`<div class="box">${waveHTML(B,+a)}</div>`);return}
+  if(k==='chart'){bSheet('Debrief','The war',B.waves.map((x,i)=>lg(`Wave ${i+1} · day ${x.dayEnd}`,`fleet ${Math.round(x.fleet)}% · you ${Math.round(x.forces*100)}%`)).join('')+(B.long?lg(`Long war · day ${B.days}`,`fleet ${Math.round(B.fleet)}%`):'')+lg('Their supply',`${B.supply} days`,'tot'));return}
+  if(k==='long'){bSheet('Debrief','The long war',box(lg('Their remaining strength',Math.round(B.long.th))+lg('Your endurance (Siege, Bio, Ground, Traitors × momentum)',Math.round(B.long.endu))+lg('Society multiplier (Stab, Resolve, Pop)',`×${B.long.pm.toFixed(2)}`)+lg('Days',B.long.days,'tot')));return}
+  if(k==='why'){const wl=weakLane(B);
+    if(B.won){bSheet('Debrief',B.won==='repel'?'Fleet destroyed':'Supply ran out',box(B.waves.map((x,i)=>lg(`Wave ${i+1}`,`−${Math.round(x.destroyed)}%`)).join('')+lg('Their supply',`${B.supply} days`))+why(B.won==='repel'?'Every lane held at 2× or better often enough to destroy the whole fleet.':'You lasted until their supply ran out. Siege and Endurance cut it; Signal Analysis cuts it 5% per level.'));return}
+    const add=wl.l.k==='inside'&&G.enemy.infil?` (their ${Math.round(G.enemy.infil*(det?.75:1))} + your Traitors ${Math.round(G.T)} × 0.8)`:'';
+    const ww=B.waves.length?B.waves[0].rows.reduce((s,x)=>s+x.l.w,0):1;const lost=Math.round(mean(wl.l.hist.map(x=>wl.l.w*(1-clamp((x.r-.6)/1.4,0,1))/ww))*100);
+    bSheet('Debrief',`${wl.l.n} lost every wave`,box(lg(`Their ${wl.tr}`,`${Math.round(wl.l.th)}${add}`)+lg(`Your ${wl.l.n} readiness`,Math.round(wl.l.you0))+lg('Damage lost per wave',`~${lost}% of fleet kill`)+lg('Fleet left after 3 waves',`${Math.round(B.waves[B.waves.length-1].fleet)}% → long war`))+why(`Next time: ${FIX[wl.l.k]}.${wl.l.k==='inside'?' Keep Resolve above 50 and Purge when Traitors pass 25.':''}`));return}
+  if(k==='intel'){const Lk=intelLik(G);bSheet('Debrief','Intel vs reality',`<table><tr><th>THREAT</th><th style="text-align:right">LIKELY</th><th style="text-align:right">ACTUAL</th><th style="text-align:right">YOURS</th></tr>${TK.map(t=>{const th=t==='infil'?Math.round(traitorThreat(G,G.enemy,det)):G.enemy[t]?Math.round(G.enemy[t]*(det?.75:1)):0;const r=th?C[t]/th:0;const cl=!th?'mut':r>=1.2?'v-ok':r>=.7?'v-wa':'v-bad';return `<tr><td>${TRAITS[t].s}</td><td class="n">${Math.round(Lk[t]*100)}%</td><td class="n">${th||'—'}</td><td class="n ${cl}">${Math.round(C[t])}</td></tr>`}).join('')}</table>`);return}
+  if(k==='man'){bSheet('Debrief','Manpower spent',box(lg('Regulars lost',`${B.used.reg.toFixed(2)}bn`)+lg('Reserves used (×1.00)',`${B.used.res.toFixed(2)}bn`)+lg('Conscripts called (×0.50)',`${B.used.con.toFixed(2)}bn`)+lg('Reserves left',`${B.reserves.toFixed(2)}bn`)+lg('Trained at arrival',`${G.ec.trained.toFixed(2)}bn`)));return}
+  if(k==='calls'){bSheet('Debrief','Calls',box([G.y100?'Year 100: '+G.y100:'',G.half.size?'Reactivated: '+[...G.half].map(id=>NB[id].n).join(', '):'',...[...B.tides].map(id=>'Turning point: '+TIDES.find(t=>t.id===id).t),...G.council].filter(Boolean).map(x=>`<div class="logl">${x}</div>`).join('')||'None.'));return}
+  if(k==='empire'){const ec=G.ec;bSheet('Debrief','Empire at arrival',box(lg('Population',`${G.P.toFixed(2)}bn (peak ${G.peakP.toFixed(2)})`)+lg('Survivors',`${INV.deb.popEnd.toFixed(2)}bn`)+lg('Trained · military-able',`${ec.trained.toFixed(2)} · ${ec.able.toFixed(2)}bn`)+lg('Traitors at arrival',Math.round(G.T))+lg('Effort per year',`+${ec.gross.toFixed(2)} · −${ec.upkeep.toFixed(2)}`)+lg('Crew strength · funding',`${Math.round(ec.crewEff*100)}% · ${Math.round(G.fund*100)}%`)+lg('Projects',`${G.owned.size} of 15${G.moth.size?` · ${G.moth.size} mothballed`:''}`))+`<div class="hint">${[...G.owned].map(id=>`${NB[id].n} LV ${sz(G,id)} Mk ${MK[tc(G,id)]}`).join(' · ')||'Nothing built.'}</div>`);return}
+}
+document.addEventListener('click',e=>{const t=e.target.closest('[data-dtap]');if(!t||screen!=='deb')return;e.stopPropagation();dTap(t.dataset.dtap)},true);
 
 $('#startBtn').onclick=newGame;
 $('#skipBtn').onclick=()=>{skip=true};
