@@ -15,7 +15,7 @@ npm run dev       # http://localhost:5173
 ```
 
 ```bash
-npm test          # 153 tests
+npm test          # 163 tests
 npm run build     # -> dist/  (static, no backend — deploy anywhere)
 ```
 
@@ -53,6 +53,8 @@ your leftover and freezer nights.
 - **Drag any meal to move it**: dishes, notes and your own lunches. Drop it on another
   day's dinner or lunch. Near the top or bottom of the screen the page scrolls for you,
   and holding it on a week button switches to that week so you can drop it there.
+  Its leftovers move with it: lunches you pinned and leftover dinners shift by the same
+  number of days.
 - **◀** next to the week buttons goes back a week at a time to see history: what was
   planned and eaten on days that have left the plan. It is read only, and it starts from
   when this was added (a year is kept).

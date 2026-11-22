@@ -3,6 +3,7 @@ import { shuffleAll, clearPlan, seedPlan, swapDinners, emptyDinner } from '../co
 import { CONTEXT_DAYS, dateForIndex, formatDate, formatDay, formatRange } from '../core/timeline.js';
 import { get, commit } from '../state.js';
 import { toast, beginDrag } from './dom.js';
+import { carryLeftovers } from '../core/carry.js';
 import { openDishPicker, clearDay } from './dishPicker.js';
 
 /**
@@ -82,8 +83,13 @@ function wire(root) {
       }
       const to = Number(target.dataset.idx);
       if (to === payload.idx) return;
-      swapDinners(s.plan, payload.idx, to);
-      commit({ plan: true });
+      // Both days' meals move, and each takes its pinned lunches and leftover dinners along.
+      const { carried } = carryLeftovers(s.plan, s.lunchPins, s.manualLunches, [{ day: payload.idx }, { day: to }], () => {
+        swapDinners(s.plan, payload.idx, to);
+        return { to: [to, payload.idx] };
+      });
+      if (carried) toast('Moved \u2014 its leftovers moved too');
+      commit({ plan: true, pins: true });
     },
     onEnd: () => renderMonth(root),
   };

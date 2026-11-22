@@ -16,7 +16,7 @@ with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
 ```bash
 npm install
 npm run dev       # http://localhost:5173
-npm test          # 153 tests, all must stay green
+npm test          # 163 tests, all must stay green
 npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
 
@@ -59,6 +59,12 @@ moves the meal into a manual lunch, and freezer/leftover dinners move across as-
 Note days drag like dinners. Manual lunches drag too (`moveManualLunch`,
 `lunchToDinner`, `freezeManualLunch` in `core/lunches.js`).
 
+**Moving a meal moves its leftovers.** Plain leftover lunches follow on their own (they
+are derived), but pins and leftover dinners are tied to a date. Every move in the UI
+(swap, defer, dinner↔lunch, lunch→lunch, the month swap) runs through
+`carryLeftovers()` (`core/carry.js`), which notes what the moving meal feeds, does the
+move, then shifts those by the same number of days. One that can't land stays put.
+
 **Any meal can make leftovers.** `dinnerYield()` (`core/plan.js`) covers cooked dinners
 and note days with `extra`; `lunchYield()` (`core/lunches.js`) covers manual lunches with
 `extra`. Lunch-made portions release at `day + 0.5`: after that lunch, in time for its
@@ -88,6 +94,7 @@ src/
     allocate.js   *** the FIFO leftover→lunch allocator. Read this first. ***
     freezer.js    freezer accounting
     lunches.js    hand-added lunches (typed, a dish, or from the freezer)
+    carry.js      moving a meal shifts its pinned lunches and leftover dinners with it
     history.js    read-only record of days that left the window (archived on rollover)
     shopping.js   weekly shopping list derived from the plan; week-scoped ticks
     recipes.js    serving maths (1 serve = 2 portions) + recipeEdits resolution/scaling
