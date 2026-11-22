@@ -151,9 +151,26 @@ td.n{font-family:var(--mono);text-align:right}
 .eq.one{flex-wrap:nowrap;white-space:nowrap;overflow:hidden;margin:0}
 .eq .more{margin-left:auto;color:var(--ac);font-size:13px;padding-left:4px}
 .calcbar[open] .more{visibility:hidden}
-#screen-game.compact .cvwrap{height:clamp(110px,15vh,180px)}
+
 .pc .cb{gap:4px}.pc .cb button{padding:3px 5px;line-height:1.25}
 .pc .chip{white-space:nowrap}
+.split{display:flex;height:clamp(168px,22vh,204px);flex:0 0 auto}
+.split .cvwrap{width:44%;height:100%;flex:0 0 auto}
+#side{flex:1;min-width:0;padding:6px 12px 6px 2px;display:flex;flex-direction:column;gap:5px;overflow:hidden}
+.tl{background:var(--p1);border:1px solid var(--ln);border-radius:9px;padding:5px 8px;display:flex;flex-direction:column;gap:3px;min-height:0}
+.tl .hd{display:flex;justify-content:space-between;align-items:baseline;gap:6px}
+.tl .hd b{font-family:var(--mono);font-size:12px}
+.tl .lg2{font-family:var(--mono);font-size:8.5px;color:var(--mu);line-height:1.35;overflow:hidden;text-overflow:ellipsis}
+.sb{display:flex;gap:2px;height:6px;border-radius:3px;overflow:hidden}
+.sb i{display:block;height:100%}
+.ch{display:flex;justify-content:space-between;font-family:var(--mono);font-size:9.5px;color:var(--mu);padding:1.5px 0;border-bottom:1px dashed var(--ln)}
+.ch:last-child{border-bottom:0}
+.ch span:last-child{color:var(--tx)}
+#banner{margin:6px 12px 0;background:#2a2017;border:1px solid var(--ac);border-radius:9px;padding:6px 10px;font-size:11.5px;color:#e0cfc8;line-height:1.4}
+#banner b{font-family:var(--mono);font-size:10px;color:var(--ac);letter-spacing:.08em;display:block}
+#banner.hidden{display:none}
+.pc .nm[data-sel]{cursor:pointer}
+.card.sel{border-color:var(--ac)}
 </style>
 </head>
 <body>
@@ -182,7 +199,8 @@ td.n{font-family:var(--mono);text-align:right}
     <div class="ctl"><button id="pauseBtn">❚❚</button><button id="spdBtn" class="on">1×</button></div>
   </div>
   <div class="prog"><div id="progbar"></div></div>
-  <div class="cvwrap" id="cvGame"><div id="warn"></div></div>
+  <div class="split"><div class="cvwrap" id="cvGame"><div id="warn"></div></div><div id="side"></div></div>
+  <div id="banner" class="hidden"></div>
   <div class="meters" id="meters"></div>
   <nav class="tabs" id="tabs">
     <button data-t="eco">ECONOMY</button><button data-t="peo">PEOPLE</button><button data-t="prj">PROJECTS</button><button data-t="int">INTEL</button><button data-t="emp">EMPIRE</button>
@@ -325,7 +343,7 @@ function ap(id,now){
   if(!G||!G.owned.has(id))return 0;const t=G.anim[id];const pr=t==null?1:clamp((now-t)/1400,0,1);
   const n=NB[id];const e=(n&&n.crew?(G.ec?G.ec.crewPct:1):1)*(G.fund==null?1:G.fund);return pr*(0.35+0.65*e)
 }
-function geo(){const R=Math.min(W*.2,H*.29);return{cx:W*.5,cy:H*.54,R,T:[W*.9,H*.13]}}
+function geo(){const R=Math.min(W*.3,H*.29);return{cx:W*.5,cy:H*.55,R,T:[W*.88,H*.1]}}
 
 function draw(now){
   if(!SC||!G)return;
@@ -421,7 +439,7 @@ function draw(now){
   // floats + build flash
   if(G.flash&&now-G.flash<700){const k=Math.max(0,(now-G.flash)/700);ctx.strokeStyle=`rgba(196,117,69,${.7*(1-k)})`;ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,R*(1+k*.5),0,6.283);ctx.stroke()}
   G.floats=G.floats.filter(fl=>now-fl.t<2200);
-  G.floats.forEach((fl,i)=>{const k=Math.max(0,(now-fl.t)/2200);ctx.globalAlpha=k<.15?k/.15:1-Math.max(0,(k-.6)/.4);ctx.font='600 10px JetBrains Mono, monospace';ctx.textAlign='center';ctx.fillStyle=fl.c||'#c47545';ctx.fillText(fl.s,cx,H-10-(G.floats.length-1-i)*13-k*8);ctx.globalAlpha=1});
+  G.floats.forEach((fl,i)=>{const k=Math.max(0,(now-fl.t)/2200);ctx.globalAlpha=k<.15?k/.15:1-Math.max(0,(k-.6)/.4);ctx.font='600 '+(W<260?8:10)+'px JetBrains Mono, monospace';ctx.textAlign='center';ctx.fillStyle=fl.c||'#c47545';ctx.fillText(fl.s,cx,H-10-(G.floats.length-1-i)*13-k*8);ctx.globalAlpha=1});
 }
 
 function drawInvasion(now,{cx,cy,R,T},shieldUp){
@@ -616,6 +634,7 @@ function yearTick(){
   if(ec.crewPct<.999&&G.year%5===0)log(`Crew shortage: staffed at ${Math.round(ec.crewPct*100)}%. Raise Resolve or fund National Service.`);
   G.ec=econ(G);
   if(G.year%10===5)intel();
+  if(G.year===95){log('Five years remain. At Year 100 time stops; anything unspent becomes reserves at 3 : 1.');float('5 YEARS LEFT · SPEND DOWN','#c47545')}
   if(G.year>=100){enterFinal();return}
   if(G.year%10===0){log(`Decade ${G.year/10} closes. ${100-G.year} years remain.`);if(rnd()<.8)eventFire()}
   else if(G.year%10===7&&rnd()<.45)eventFire();
@@ -673,10 +692,11 @@ function render(){
   $('#sP').textContent=G.P.toFixed(1)+'bn';$('#sPd').innerHTML=`<span class="${cls(ec.growth)}">${sgn(ec.growth,2)}/yr</span>`;
   const w=[];if(G.E<0)w.push(`IN DEBT · ${Math.round(G.E)} EFFORT`);if(G.RP<0)w.push(`IN DEBT · ${Math.round(G.RP)} RESEARCH`);if(G.fund<.999)w.push(`UNDERFUNDED · ${Math.round(G.fund*100)}%`);if(ec.crewPct<.999)w.push(`UNDERCREWED · ${Math.round(ec.crewPct*100)}%`);$('#warn').innerHTML=w.join('<br>');
   $('#meters').innerHTML=['S','I','K','R'].map(k=>{const v=Math.round(G[k]),d=DRIFT[k](G),c=v<25?'var(--bad)':'var(--tx)';return `<div class="m"><div class="lbl">${ML[k]}</div><div class="v" style="color:${c}">${v}<span class="${cls(d)}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(2)}</span></div><div class="bar"><i style="width:${v}%;background:${c}"></i></div></div>`}).join('')+(()=>{const v=Math.round(G.T),d=traitorDrift(G).tot;return `<div class="m" style="border-color:#5f3329"><div class="lbl">Traitors</div><div class="v" style="color:var(--bad)">${v}<span class="${cls(-d)}">${d>=0?'▲':'▼'}${Math.abs(d).toFixed(2)}</span></div><div class="bar"><i style="width:${v}%;background:var(--bad)"></i></div></div>`})();
-  $('#finalBar').classList.toggle('hidden',!G.final);if(G.final)$('#finalInfo').innerHTML=`<b>YEAR 100 · FLEET ARRIVING</b><br>Final purchases, then deploy. Reserves: ${Math.max(0,Math.floor(G.E+G.RP/2))}`;
+  $('#finalBar').classList.toggle('hidden',!G.final);if(G.final)$('#finalInfo').innerHTML=`<b>YEAR 100 · FLEET ARRIVING</b><br>Final purchases, then deploy. Leftovers convert 3 : 1 → ${Math.floor((Math.max(0,G.E)+Math.max(0,G.RP))/3)} readiness`;
   document.querySelectorAll('#tabs button').forEach(b=>b.classList.toggle('on',b.dataset.t===G.tab));const cp=G.tab==='prj';if($('#screen-game').classList.contains('compact')!==cp){$('#screen-game').classList.toggle('compact',cp);requestAnimationFrame(sizeCanvas)}
   const P=$('#panel'),st=P.scrollTop;
-  ({eco:rEco,peo:rPeo,prj:rPrj,int:rInt,emp:rEmp})[G.tab](P,ec);
+  ({eco:rEco,peo:rPeo,prj:rPrj,int:rInt,emp:rEmp})[G.tab](P,ec);rSide(ec);
+  const bn=$('#banner');const late=G.year>=95&&!G.final;bn.classList.toggle('hidden',!late);if(late){const r=Math.floor((Math.max(0,G.E)+Math.max(0,G.RP))/3);bn.innerHTML=`<b>${100-G.year} YEAR${100-G.year===1?'':'S'} LEFT · SPEND DOWN</b>At Year 100 time stops for final spending. Anything left becomes reserves at 3 : 1 (now ${Math.floor(Math.max(0,G.E))} Effort + ${Math.floor(Math.max(0,G.RP))} Research → ${r} readiness).`}
   P.scrollTop=st;
 }
 function lg(a,b,c=''){return `<div class="lg ${c}"><span>${a}</span><span>${b}</span></div>`}
@@ -687,27 +707,53 @@ function progCards(area){
     return `<div class="card pc"><div class="cm"><div class="nm">${d.n}${G.uses[d.id]?`<span class="chip">×${G.uses[d.id]}</span>`:''}</div><div class="fx">Now: ${fxText(d.now)} · Permanent: ${per}</div><div class="imp">${impText(im)}</div></div><div class="cb"><button class="e" data-d="${i}" ${G.E>=c?'':'disabled'}>FUND<br>${c} Effort</button></div></div>`}).join('');
 }
 function rEco(P,ec){
-  P.innerHTML=`<details class="calcbar" ${G.calcOpen?'open':''}><summary class="eq one">Effort<b class="r">${sgn(ec.net,2)}/yr</b><span>(<span class="pos">${ec.gross.toFixed(1)}</span> − <span class="neg">${ec.upkeep.toFixed(1)}</span>)</span>· Research<b class="rc">${sgn(ec.rp,2)}/yr</b><span class="more">▾</span></summary><div class="lbl" style="margin-top:6px">How Effort is made</div>
-   <div class="eq"><b>${ec.workforce.toFixed(2)}bn</b>workforce ×<b>${G.I.toFixed(0)}</b>Industry ×<b>${ec.stabM.toFixed(2)}</b>Stability ×<b>${G.dr.effM.toFixed(2)}</b>Infrastructure${G.uses.inf?` ×${G.uses.inf}`:''}${ec.disp<1?' ×<b>0.90</b>Dispersed':''} × ${EFF_K} =<b class="g">+${ec.gross.toFixed(2)}</b>− upkeep<b class="x">${ec.upkeep.toFixed(2)}</b>=<b class="r">${sgn(ec.net,2)} Effort/yr</b></div>
-   <div class="lbl" style="margin-top:6px">How Research is made</div>
-   <div class="eq">(<b>${G.K.toFixed(0)}</b>Knowledge × ${RES_K} +<b>${ec.labs.toFixed(1)}</b>labs (Signal + Xenobiology size)) ×<b>${G.dr.resM.toFixed(2)}</b>University Expansion${G.uses.uni2?` ×${G.uses.uni2}`:''} =<b class="rc">${sgn(ec.rp,2)} Research/yr</b></div></details>`+
-   `<div class="hint" style="margin-bottom:6px">Programs give a boost now and a permanent one after. Each costs 5 more Effort than the last.</div>`+progCards('eco');
+  P.innerHTML=`<div class="hint" style="margin-bottom:6px">Programs give a boost now and a permanent one after. Each costs 5 more Effort than the last. The panel beside Earth shows how Effort and Research add up.</div>`+progCards('eco');
   P.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>doProg(DIRS[+b.dataset.d]));
-  const cb=P.querySelector('details.calcbar');if(cb)cb.ontoggle=()=>{G.calcOpen=cb.open};
 }
 function rPeo(P,ec){
-  P.innerHTML=`<details class="calcbar" ${G.calcOpen?'open':''}><summary class="eq one">Growth<b class="g">${sgn(ec.growth,3)}bn</b>· Crew<b class="${ec.crewPct<.999?'x':'g'}">${Math.round(ec.crewPct*100)}%</b>· Traitors<b class="${traitorDrift(G).tot>0?'x':'g'}">${sgn(traitorDrift(G).tot,2)}/yr</b><span class="more">▾</span></summary><div class="lbl" style="margin-top:6px">Population</div>
-   <div class="eq"><b>${G.P.toFixed(2)}bn</b>×((<b>0.40%</b>base${G.uses.fam?` +<b class="g">${(G.uses.fam*.05).toFixed(2)}%</b>Family Policy ×${G.uses.fam}`:''}) ×<b>${G.S.toFixed(0)}</b>Stability/50${sz(G,'S2')?` +<b class="g">${(sz(G,'S2')*.1).toFixed(1)}%</b>Xenobiology`:''}) =<b class="g">${sgn(ec.growth,3)}bn/yr</b></div>
-   <div class="lbl" style="margin-top:6px">Crew</div>
-   <div class="eq"><b>${G.P.toFixed(2)}bn</b>×(5% +<b>${G.R.toFixed(0)}</b>Resolve/1000${G.dr.enl?` +<b class="g">${(G.dr.enl*100).toFixed(0)}%</b>National Service ×${G.uses.nat}`:''}) =<b>${ec.crewAvail.toFixed(2)}bn</b>can enlist · need<b>${ec.crewReq.toFixed(2)}bn</b>=<b class="${ec.crewPct<.999?'x':'g'}">${Math.round(ec.crewPct*100)}% crewed</b></div>
-   <div class="lbl" style="margin-top:6px">Traitors</div><div class="eq">${(()=>{const d=traitorDrift(G);return `<b>${G.T.toFixed(0)}</b>changes <b>+0.30</b>base <b>+${d.sig.toFixed(2)}</b>signal${G.owned.has('S3')?' (blocked by Counter-AI)':' (Knowledge × 0.005)'} <b>${sgn(d.dis,2)}</b>loyalty gap (Stability/Resolve below 50)${G.dr.sec?` <b class="g">−${G.dr.sec.toFixed(2)}</b>Internal Security ×${G.uses.sec}`:''} =<b class="${d.tot>0?'x':'g'}">${sgn(d.tot,2)}/yr</b>`})()}</div><div class="lbl" style="margin-top:6px">Trends</div><div class="eq">Stability<b>${G.S.toFixed(0)}</b>moves 2% of the gap each year toward<b>${G.dr.Seq}</b>(50 base${G.uses.wel?` + ${G.uses.wel*2} from Welfare ×${G.uses.wel}`:', +2 per Welfare'})${G.R<30?' · <b class="x">−0.5/yr: Resolve under 30</b>':''}</div><div class="eq">Resolve<b>${G.R.toFixed(0)}</b>changes<b class="${G.dr.R<0?'x':'g'}">${sgn(G.dr.R,2)}/yr</b>(−0.35 base${G.uses.uni?` +${(G.uses.uni*.1).toFixed(2)} from Unity ×${G.uses.uni}`:', +0.10 per Unity'})</div><div class="lbl" style="margin-top:6px">Stability ${G.S.toFixed(0)} feeds</div>
-   <div class="eq">Effort ×<b>${ec.stabM.toFixed(2)}</b>· growth ×<b>${(G.S/50).toFixed(2)}</b>· Occupation ×<b>${(.6+G.S/125).toFixed(2)}</b>· Resolve ${G.R.toFixed(0)} → Resistance ×<b>${(.5+G.R/100).toFixed(2)}</b></div></details>`+progCards('peo');
+  P.innerHTML=progCards('peo');
   P.querySelectorAll('[data-d]').forEach(b=>b.onclick=()=>doProg(DIRS[+b.dataset.d]));
-  const cb=P.querySelector('details.calcbar');if(cb)cb.ontoggle=()=>{G.calcOpen=cb.open};
+}
+/* ---------- side screen ---------- */
+const sb=parts=>{const tot=parts.reduce((a,p)=>a+Math.abs(p[0]),0)||1;return `<div class="sb">${parts.filter(p=>Math.abs(p[0])>1e-6).map(p=>`<i style="width:${Math.abs(p[0])/tot*100}%;background:${p[1]}"></i>`).join('')}</div>`};
+const tl=(label,val,vc,bar,legend)=>`<div class="tl"><div class="hd"><span class="lbl">${label}</span><b class="${vc}">${val}</b></div>${bar}<div class="lg2">${legend}</div></div>`;
+const GREY='#6f6a5f',OK='#8aa37f',BAD='#c0533f',AC='#c47545',RPC='#8fb3c4',WA='#c9a24a';
+function rSide(ec){
+  const S=$('#side');let h='';
+  if(G.tab==='eco'){
+    h=tl('Effort',sgn(ec.net,2)+'/yr',cls(ec.net),sb([[ec.gross,OK],[ec.upkeep,BAD]]),`income +${ec.gross.toFixed(2)} · upkeep −${ec.upkeep.toFixed(2)}`)+
+      tl('Income',`+${ec.gross.toFixed(2)}`,'pos',sb([[1,GREY]]),`${ec.workforce.toFixed(1)}bn workforce × Industry ${G.I.toFixed(0)} × Stab ${ec.stabM.toFixed(2)}${G.dr.effM>1?` × Infra ${G.dr.effM.toFixed(2)}`:''}${ec.disp<1?' × 0.9':''}`)+
+      tl('Research',sgn(ec.rp,2)+'/yr','rpc',sb([[G.K*RES_K*G.dr.resM,RPC],[ec.labs*G.dr.resM,'#5d7f8f']]),`Knowledge ${G.K.toFixed(0)} +${(G.K*RES_K).toFixed(2)} · labs +${ec.labs.toFixed(1)}${G.dr.resM>1?` · Univ ×${G.dr.resM.toFixed(2)}`:''}`);
+  }else if(G.tab==='peo'){
+    const base=G.P*.004*(G.S/50),fam=G.P*(G.dr.pop-.004)*(G.S/50),labs=G.P*.001*sz(G,'S2'),d=traitorDrift(G);
+    h=tl('Growth',sgn(ec.growth,3)+'bn','pos',sb([[base,GREY],[fam,OK],[labs,RPC]]),`0.40% base${G.uses.fam?` + Family ×${G.uses.fam}`:''} × Stab ${(G.S/50).toFixed(2)}${labs?' + labs':''}`)+
+      tl('Crew',Math.round(ec.crewPct*100)+'%',ec.crewPct<.999?'neg':'pos',sb(ec.crewReq?[[Math.min(ec.crewReq,ec.crewAvail),OK],[Math.max(0,ec.crewAvail-ec.crewReq),GREY],[Math.max(0,ec.crewReq-ec.crewAvail),BAD]]:[[1,GREY]]),`${ec.crewAvail.toFixed(2)}bn can enlist · ${ec.crewReq.toFixed(2)}bn needed`)+
+      tl('Traitors',sgn(d.tot,2)+'/yr',d.tot>0?'neg':'pos',sb([[d.base,GREY],[d.sig,BAD],[d.dis,d.dis>0?BAD:OK],[d.sec,OK]]),`base +.30 · signal ${sgn(d.sig,2)} · loyalty ${sgn(d.dis,2)}${G.dr.sec?` · security −${G.dr.sec.toFixed(2)}`:''}`);
+  }else if(G.tab==='prj'){
+    const list=NODES.filter(n=>n.br===G.sub&&nodeState(n)!=='hidden');
+    let n=NB[G.selPrj];if(!n||n.br!==G.sub)n=list.find(x=>G.owned.has(x.id))||list[0];
+    if(!n){h=`<div class="tl"><span class="lbl">Emergent</span><div class="lg2">Combine finished projects from two branches to reveal these.</div></div>`}
+    else{G.selPrj=n.id;const built=G.owned.has(n.id),Sz=sz(G,n.id),T=tc(G,n.id);const k=Object.entries(n.fx).sort((a,b)=>b[1]-a[1])[0];
+      const rows=[];
+      if(k){rows.push(['Base '+TRAITS[k[0]].s,k[1]]);if(built){if(Sz>1)rows.push([`× Size ${Sz}`,sizeMult(Sz).toFixed(2)]);if(T>0)rows.push([`× Mk ${MK[T]}`,techMult(T).toFixed(2)]);rows.push([`× ${matName(n.id)} ${G.year-G.builtAt[n.id]}y`,matOf(G,n.id).toFixed(2)]);const e=nodeEff(G,n.id,ec);if(e<.999)rows.push(['× crew & funding',e.toFixed(2)]);rows.push([`= ${TRAITS[k[0]].s}`,`<span class="pos">+${Math.round(k[1]*nodeMult(G,n.id)*e)}</span>`])}
+        else rows.push(['Not built','build to start growing'])}
+      else rows.push(['Effect',n.note||'']);
+      const others=Object.entries(n.fx).filter(x=>!k||x[0]!==k[0]).map(([t,v])=>`${TRAITS[t].s} +${built?Math.round(v*nodeMult(G,n.id)*nodeEff(G,n.id,ec)):v}`).join(' · ');
+      h=`<div class="tl" style="border-color:var(--ac)"><div class="hd"><span class="lbl" style="color:var(--ac)">${n.n}</span></div>${rows.map(r=>`<div class="ch"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}${others?`<div class="lg2">also ${others}</div>`:''}</div>`+
+        `<div class="tl"><div class="lg2">${built?`Crew ${(n.crew*sizeLoad(Sz)*techLoad(T)*ec.crewMult).toFixed(2)}bn · upkeep ${(n.up*sizeLoad(Sz)*techLoad(T)).toFixed(2)}/yr`:`Crew ${(n.crew*ec.crewMult).toFixed(2)}bn · upkeep ${n.up}/yr when built`}<br><span style="color:var(--ac)">Effort</span> size +35% · <span class="rpc">Research</span> tech +25%, −10% upkeep</div></div>`}
+  }else if(G.tab==='int'){
+    const Lk=intelLik(G);const order=TK.slice().sort((x,y)=>Lk[y]-Lk[x]);
+    h=`<div class="tl" style="gap:4px"><div class="hd"><span class="lbl">Odds</span><b class="mut" style="font-size:10px">${Math.round(intelAcc(G)*100)}% reliable</b></div>`+order.map(t=>{const p=Math.round(Lk[t]*100);return `<div style="display:grid;grid-template-columns:62px 1fr 28px;gap:5px;align-items:center;font-family:var(--mono);font-size:9.5px"><span>${TRAITS[t].s}</span>${sb([[p,p>=65?BAD:p>=45?WA:GREY],[100-p,'#2c2a25']])}<span style="text-align:right">${p}%</span></div>`}).join('')+`</div>`;
+  }else{
+    const pf=project(G,true),fw=forward(G),bf=counters(fw).byBr,tot=Object.values(bf).reduce((a,b)=>a+b,0)||1;
+    h=tl('Y100 course',fmtD(pf),'',`<div class="lg2">If they arrived today: ${fmtD(project(G))}</div>`,'')+
+      tl('Rests on','','',sb([[bf.def,'#e8e2d6'],[bf.end,WA],[bf.sci,RPC],[bf.emg,AC],[bf.soc,GREY]]),`Defence ${Math.round(bf.def/tot*100)}% · Endurance ${Math.round(bf.end/tot*100)}% · Science ${Math.round(bf.sci/tot*100)}% · Society ${Math.round(bf.soc/tot*100)}%`);
+  }
+  S.innerHTML=h;
 }
 function rPrj(P,ec){
   const subs=[['def','DEFENCE'],['end','ENDURANCE'],['sci','SCIENCE'],['emg','EMERGENT']];
-  let h=`<div class="subtabs">${subs.map(([k,l])=>`<button data-s="${k}" class="${G.sub===k?'on':''}">${l}</button>`).join('')}</div><div class="why" style="margin:0 0 6px">${PURPOSE[G.sub]}<br><span style="color:var(--ac)">Effort</span> = size (+35% strength, +40% crew & upkeep) · <span class="rpc">Research</span> = tech (+25% strength, −10% crew & upkeep)</div>`;
+  let h=`<div class="subtabs">${subs.map(([k,l])=>`<button data-s="${k}" class="${G.sub===k?'on':''}">${l}</button>`).join('')}</div><div class="why" style="margin:0 0 6px">${PURPOSE[G.sub]}</div>`;
   NODES.filter(n=>n.br===G.sub).forEach(n=>{const s=nodeState(n);
     if(s==='hidden'){h+=`<div class="card pc emg locked"><div class="cm"><div class="nm">◇ Unknown project</div><div class="fx">Needs: ${n.req.map(r=>NB[r].n).join(' + ')}</div></div></div>`;return}
     const S=sz(G,n.id),T=tc(G,n.id),built=S>0;
@@ -721,10 +767,11 @@ function rPrj(P,ec){
     else{const pe=priceE(n,S),pr=priceR(n,T);
       const eOk=S<MAXS&&G.E>=pe,rOk=built&&T<MAXT&&G.RP>=pr;
       btns=`<div class="cb"><button class="e" data-n="${n.id}" data-k="E" ${eOk?'':'disabled'}>${S>=MAXS?'MAX SIZE':built?'EXPAND':'BUILD'}${S<MAXS?`<br>${pe} Effort`:''}</button>${built?`<button class="r" data-n="${n.id}" data-k="R" ${rOk?'':'disabled'}>${T>=MAXT?'MAX TECH':'IMPROVE'}${T<MAXT?`<br>${pr} Research`:''}</button>`:''}</div>`}
-    h+=`<div class="card pc ${built?'owned':''} ${s==='locked'?'locked':''} ${n.br==='emg'?'emg':''}"><div class="cm"><div class="nm">${n.br==='emg'?'◆ ':''}${n.n}${chip}</div><div class="fx">${[fx,n.note].filter(Boolean).join(' · ')}</div><div class="fx">${s==='locked'?`Build ${NODES.find(x=>x.br===n.br&&x.tier===n.tier-1).n} first`:load}${tests?` · ${tests}`:''}</div></div>${btns}</div>`});
+    h+=`<div class="card pc ${G.selPrj===n.id?'sel':''} ${built?'owned':''} ${s==='locked'?'locked':''} ${n.br==='emg'?'emg':''}"><div class="cm"><div class="nm" data-sel="${n.id}">${n.br==='emg'?'◆ ':''}${n.n}${chip}</div><div class="fx">${[fx,n.note].filter(Boolean).join(' · ')}</div><div class="fx">${s==='locked'?`Build ${NODES.find(x=>x.br===n.br&&x.tier===n.tier-1).n} first`:load}${tests?` · ${tests}`:''}</div></div>${btns}</div>`});
   P.innerHTML=h;
   P.querySelectorAll('[data-s]').forEach(b=>b.onclick=()=>{G.sub=b.dataset.s;render()});
   P.querySelectorAll('[data-k]').forEach(b=>b.onclick=()=>act(NB[b.dataset.n],b.dataset.k));
+  P.querySelectorAll('[data-sel]').forEach(b=>b.onclick=()=>{G.selPrj=b.dataset.sel;render()});
 }
 function rInt(P,ec){
   const Lk=intelLik(G),{c}=counters(G,ec),fw=forward(G),cf=counters(fw).c,sc=200;
@@ -773,19 +820,19 @@ function enterFinal(){
   float('FLEET ARRIVING · FINAL PREPARATIONS','#c0533f');updCtl();render();
 }
 function openDeploy(){
-  const pool=Math.max(0,Math.floor(G.E+G.RP/2)),Lk=intelLik(G),{c}=counters(G,econ(G));
-  const sp=Math.round(pool/12),fo=Math.round(pool/5);
+  const pool=Math.floor((Math.max(0,G.E)+Math.max(0,G.RP))/3),Lk=intelLik(G),{c}=counters(G,econ(G));
+  const sp=Math.round(pool/6),fo=pool;
   const row=t=>{const now=Math.round(c[t]),lk=Math.round(Lk[t]*100),conf=t===G.confirmed;
     return `<button class="opt" data-c="${t}" ${pool?'':'disabled'}><b>${TRAITS[t].s}${conf?' <span class="neg" style="font-size:11px">CONFIRMED</span>':''}</b><span>${conf?'present':lk+'% likely'} · ${now} → <span class="pos">${now+fo}</span></span></button>`};
-  $('#sheet').innerHTML=`<div class="lbl">Year 100 · Last stand</div><h2>Deploy your reserves</h2><p>Confirmed: <b>${TRAITS[G.confirmed].n}</b>. The other two are still unknown.<br>You have <b>${pool}</b> to commit (Effort ${Math.max(0,Math.floor(G.E))} + half of Research ${Math.floor(G.RP/2)}). Anything unspent is lost.</p>`+
-  `<button class="opt" data-c="spread" ${pool?'':'disabled'}><b>Spread evenly</b><span>+${sp} to all six · e.g. ${TRAITS[G.confirmed].s} ${Math.round(c[G.confirmed])} → ${Math.round(c[G.confirmed])+sp}</span></button><div class="optgrid">`+
+  $('#sheet').innerHTML=`<div class="lbl">Year 100 · Last stand</div><h2>Deploy your reserves</h2><p>Confirmed: <b>${TRAITS[G.confirmed].n}</b>. The other two are still unknown.<br>Leftover Effort ${Math.max(0,Math.floor(G.E))} + Research ${Math.max(0,Math.floor(G.RP))} converts at 3 : 1 into <b>${pool}</b> readiness. Send it all to one type, or split it across all six.</p>`+
+  `<button class="opt" data-c="spread" ${pool?'':'disabled'}><b>Spread evenly</b><span>+${sp} to each of six · e.g. ${TRAITS[G.confirmed].s} ${Math.round(c[G.confirmed])} → ${Math.round(c[G.confirmed])+sp}</span></button><div class="optgrid">`+
   TK.slice().sort((a,b)=>(b===G.confirmed)-(a===G.confirmed)||Lk[b]-Lk[a]).map(row).join('')+`</div>`+
   `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="backBtn" style="flex:1">◂ BACK TO REVIEW</button>${pool?'':`<button class="btn" id="goBtn" style="flex:1">BEGIN ▸</button>`}</div>`;
   $('#modal').classList.remove('hidden');
   $('#backBtn').onclick=()=>{$('#modal').classList.add('hidden');render()};
   if($('#goBtn'))$('#goBtn').onclick=()=>{$('#modal').classList.add('hidden');G.final=false;playInvasion()};
   $('#sheet').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{
-    const t=b.dataset.c;if(t==='spread')TK.forEach(k=>G.bonus[k]=(G.bonus[k]||0)+pool/12);else G.bonus[t]=(G.bonus[t]||0)+pool/5;
+    const t=b.dataset.c;if(t==='spread')TK.forEach(k=>G.bonus[k]=(G.bonus[k]||0)+pool/6);else G.bonus[t]=(G.bonus[t]||0)+pool;
     log(`Last stand: ${t==='spread'?'reserves spread evenly':'reserves sent to '+TRAITS[t].s}.`);
     G.E=0;G.RP=0;G.final=false;$('#modal').classList.add('hidden');playInvasion();
   });

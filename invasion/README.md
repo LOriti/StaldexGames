@@ -31,8 +31,11 @@ humanity lasts once the invasion begins. Winning is possible but hard (see Victo
 ## Screen
 
 - Top bar: Year and T-minus, Effort, Research, Population, each with its change per year; pause and speed.
-- Earth view: every built project appears on the planet; threat marker grows as arrival nears;
-  warnings for debt, underfunding and undercrewing.
+- Earth view (left) with a side screen (right) that changes with the tab: Economy shows Effort,
+  income and Research with what makes them up; People shows Growth, Crew and Traitors as tiles with
+  contribution bars; Projects shows how the selected project's readiness is built (tap a name);
+  Intel shows threat odds; Empire shows the Year 100 course and what readiness rests on.
+  Every built project appears on the planet; warnings for debt, underfunding and undercrewing.
 - Meters: Stability, Industry, Knowledge, Resolve, Traitors, each with its trend per year.
 - Tabs: Economy, People, Projects (subtabs Defence, Endurance, Science, Emergent), Intel, Empire.
   Tap the ticker for the full log.
@@ -108,9 +111,8 @@ level above 20 still tests the Occupation phase at strength Traitors × 1.2.
 ## Programs (Economy and People tabs)
 
 Each costs Effort: 10, then +5 more each time it is funded. Each gives a small effect now and a
-permanent effect every year after, so early funding compounds. Each tab has a one-line summary at
-the top (Economy: Effort and Research per year; People: growth, crew %, Traitors trend); tap it
-to expand the full live formulas.
+permanent effect every year after, so early funding compounds. The side screen beside Earth shows how the
+tab's numbers add up, so the tabs themselves hold only the program cards.
 
 | Tab | Program | Now | Permanent |
 |---|---|---|---|
@@ -239,15 +241,19 @@ After each of the first three phases the invasion pauses for one call:
 - In testing, automated players never won (best about 3.9 years); a fully built, maxed Defence and
   Science programme repels comfortably.
 
+### Spend-down warning
+
+From Year 95 a banner counts down the last five years and shows what your leftovers would convert
+to at 3 : 1, so you spend down before arrival.
+
 ### Last stand
 
 At Year 100 time stops and the run enters **final preparations**: the fleet's strongest capability is
 confirmed (shown as 100% likely in Intel), every tab still works, and you can make final purchases
 with what you have. A red bar shows your reserves and a **Last stand** button. That opens the
 deployment screen: each type shows confirmed or its likelihood, readiness now and after deploying,
-with **Back to review** to return to the tabs and check more. The pool (Effort + half of Research)
-goes either spread (pool ÷ 12 to every type) or focused (pool ÷ 5 to one type); anything unspent is
-lost. With nothing left, a Begin button starts the invasion.
+with **Back to review** to return to the tabs and check more. Leftover Effort and Research convert
+at 3 : 1 into readiness, sent all to one type or split evenly across six. With nothing left, a Begin button starts the invasion.
 ## Empire tab
 
 - Year 100 survival on your current course (meters, maturity, population and Traitors projected
