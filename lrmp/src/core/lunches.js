@@ -16,6 +16,7 @@
  */
 
 import { bank, take } from './freezer.js';
+import { metaOf } from '../data/dishes.js';
 
 export const MAX_LUNCH_NAME = 40;
 
@@ -74,9 +75,9 @@ export function isValidManualLunches(m) {
  *     slot empties.
  *   - 'freezer' dinner  → the same frozen portion becomes the target day's lunch. The
  *     portion just moves, so the freezer count does not change.
- *   - 'cook' dinner, later day → its leftovers feed that lunch: a pin. A dinner with no
- *     leftovers gets one, since the user just asked for a portion.
- *   - 'cook' dinner, same or earlier day → leftovers can't exist yet, so the meal itself
+ *   - 'cook' dinner or note day, later day → its leftovers feed that lunch: a pin. One
+ *     with no leftovers gets one, since the user just asked for a portion.
+ *   - 'cook' dinner or note day, same or earlier day → leftovers can't exist yet, so the meal itself
  *     moves to lunch as a hand-added lunch, keeping its leftover count, and the dinner
  *     slot empties.
  *
@@ -85,8 +86,8 @@ export function isValidManualLunches(m) {
  */
 export function dinnerToLunch(plan, pins, manual, freezer, from, to) {
   const d = plan[from]?.dinner;
-  if (!d?.dish || !plan[to]) return { ok: false, kind: 'empty' };
-  const dish = d.dish;
+  const dish = d?.dish || (typeof d?.note === 'string' ? d.note.trim() : '');
+  if (!dish || !plan[to]) return { ok: false, kind: 'empty' };
   const empty = { cat: null, dish: null, src: null, extra: 0 };
 
   clearManualLunch(manual, freezer, to);
@@ -111,4 +112,71 @@ export function dinnerToLunch(plan, pins, manual, freezer, from, to) {
   manual[to] = d.extra > 0 ? { name: dish, extra: d.extra } : { name: dish };
   plan[from].dinner = empty;
   return { ok: true, kind: 'moved', dish };
+}
+
+/**
+ * Drag a hand-added lunch onto another day's lunch. It moves with its leftover count; if
+ * that day already has a hand-added lunch, the two swap. A pin on the target day is
+ * dropped (a hand-added lunch beats a pin anyway). Mutates. Returns whether it moved.
+ */
+export function moveManualLunch(manual, pins, from, to) {
+  const m = manualAt(manual, from);
+  if (!m || from === to) return false;
+  const other = manualAt(manual, to);
+  manual[to] = m;
+  if (other) manual[from] = other;
+  else delete manual[from];
+  if (pins) delete pins[to];
+  return true;
+}
+
+/**
+ * Drag a hand-added lunch onto an EMPTY dinner slot: have it for dinner instead.
+ *   - from the freezer → a freezer dinner (the same portion moves; the freezer count
+ *     doesn't change)
+ *   - a dish with a recipe → a cooked dinner, keeping its leftover count (so it shops)
+ *   - anything else → a note day with its leftover count
+ * Mutates. Returns { ok, kind: 'frozen' | 'cook' | 'note' | 'occupied' | 'empty', dish }.
+ */
+export function lunchToDinner(plan, manual, from, to) {
+  const m = manualAt(manual, from);
+  if (!m || !plan[to]) return { ok: false, kind: 'empty' };
+  const d = plan[to].dinner;
+  if (d.dish || d.note) return { ok: false, kind: 'occupied' };
+  const name = m.name.trim();
+  const info = metaOf(name);
+  const extra = m.frozen ? 0 : m.extra ?? 0;
+  let kind;
+  if (m.frozen) {
+    plan[to].dinner = { cat: info ? info.mode : null, dish: name, src: 'freezer', extra: 0 };
+    kind = 'frozen';
+  } else if (info) {
+    plan[to].dinner = { cat: info.mode, dish: name, src: 'cook', extra };
+    kind = 'cook';
+  } else {
+    plan[to].dinner = { cat: null, dish: null, src: null, extra, note: name };
+    kind = 'note';
+  }
+  delete manual[from];
+  return { ok: true, kind, dish: name };
+}
+
+/**
+ * Drag a hand-added lunch onto the freezer. One from the freezer goes back; a typed one
+ * banks its leftover portions (the lunch itself stays: it is still eaten).
+ * Mutates. Returns how many portions went into the freezer.
+ */
+export function freezeManualLunch(manual, freezer, idx) {
+  const m = manualAt(manual, idx);
+  if (!m) return 0;
+  if (m.frozen) {
+    clearManualLunch(manual, freezer, idx);
+    return 1;
+  }
+  const n = m.extra ?? 0;
+  if (n > 0) {
+    bank(freezer, m.name.trim(), n);
+    m.extra = 0;
+  }
+  return n;
 }

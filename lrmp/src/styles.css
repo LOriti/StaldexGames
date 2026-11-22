@@ -176,7 +176,7 @@
   .add-lunch{font-family:inherit;background:none;cursor:pointer;line-height:1.5;transition:background .12s,color .12s}
   .add-lunch:hover{background:rgba(192,138,22,.07);color:var(--ink-soft)}
   .add-lunch:focus-visible{outline:2px solid var(--focus);outline-offset:1px}
-  .ltile.mtile{border-style:dashed;border-left-style:solid;box-shadow:none;cursor:default;touch-action:auto}
+  .ltile.mtile{border-style:dashed;border-left-style:solid;box-shadow:none;cursor:grab;touch-action:none}
   .mtile .tile-name{cursor:pointer;padding-right:44px}
   .mtile .rbtn{right:30px}
   .unful .tile-name{cursor:pointer}
@@ -194,6 +194,8 @@
   .unful .pinbtn,.ltile:not(:has(.rbtn)) .pinbtn{right:5px}
   .ntile{--gc:#a49d8e;background:var(--bg2);border:1px dashed var(--line);border-left:4px solid var(--gc);cursor:pointer;box-shadow:none}
   .ntile .tile-name{font-style:italic;color:var(--cream)}
+  .ntile{cursor:grab;touch-action:none}
+  .wk-btn.slot-hot{background:rgba(192,138,22,.18);color:var(--ink)}
   .ntile .tile-kind{color:var(--cream-dim)}
   .nbtn{position:absolute;top:5px;right:5px;width:21px;height:21px;border:1px solid var(--line);background:none;color:var(--cream-dim);border-radius:5px;cursor:pointer;font-size:10px;line-height:1;padding:0}
   .nbtn:hover{color:var(--fry);border-color:var(--fry)}

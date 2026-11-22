@@ -61,7 +61,7 @@ export function weekSegment({ histWeek, week, planAnchor, history, rangeOf }) {
     const label = i === 0 ? 'Now' : `+${i} wk${i === 1 ? '' : 's'}`;
     return `<button class="wk-btn ${histWeek === 0 && i === week ? 'on' : ''}" data-wk="${i}" title="${rangeOf(i)}">${label}</button>`;
   }).join('');
-  return `<div class="wk-seg">${back}${here}${ahead}</div>`;
+  return `<div class="wk-seg" data-noscroll>${back}${here}${ahead}</div>`;
 }
 
 export function wireWeekSegment(root) {

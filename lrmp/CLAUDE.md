@@ -16,7 +16,7 @@ with automatic cross-device sync through a tiny Worker (`../worker-lrmp/`, route
 ```bash
 npm install
 npm run dev       # http://localhost:5173
-npm test          # 141 tests, all must stay green
+npm test          # 153 tests, all must stay green
 npm run build     # -> ../site/lrmp/, committed, served unlisted at staldex.com/lrmp
 ```
 
@@ -56,6 +56,8 @@ default; this is opt-in by dragging a lunch onto an empty dinner or via the pick
 The reverse drag, a dinner onto a lunch, is `dinnerToLunch()` in `core/lunches.js`: a
 later day pins the leftovers (bumping `extra` to 1 if needed), the same or an earlier day
 moves the meal into a manual lunch, and freezer/leftover dinners move across as-is.
+Note days drag like dinners. Manual lunches drag too (`moveManualLunch`,
+`lunchToDinner`, `freezeManualLunch` in `core/lunches.js`).
 
 **Any meal can make leftovers.** `dinnerYield()` (`core/plan.js`) covers cooked dinners
 and note days with `extra`; `lunchYield()` (`core/lunches.js`) covers manual lunches with
@@ -208,6 +210,10 @@ error — the app must always work fully client-side.
 HTML5 DnD does not work on touch. This app gets used on a phone, in a kitchen, with one
 hand. `beginDrag()` in `ui/dom.js` is the shared implementation — 6px threshold to
 distinguish tap from drag, `elementFromPoint` for hit-testing, a floating ghost element.
+It listens on `window`, not the tile, so the board can re-render mid-drag (the Weekly view
+switches week when a drag rests on a week button). Near the screen edge it scrolls the
+page, except over `[data-noscroll]` (the week buttons). A tap on a draggable tile arrives
+via `onTap`, and `onEnd` re-renders right after, so a tap that opens inline UI must defer it.
 
 **3. Render strategy is "nuke and rebuild".**
 Every state change re-renders the whole active view via `innerHTML`. At this scale (28 days,
