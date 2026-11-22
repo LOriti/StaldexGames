@@ -24,15 +24,16 @@ humanity lasts once the invasion begins. Winning is possible but hard (see Victo
 |---|---|
 | Detection, Year 0 | Briefing; enemy profile rolled in secret |
 | The century, Years 1–100 | Real time with pause. Programs, projects, intel every decade, events |
-| Arrival, Year 100 | Time stops: final purchases with every tab open, one enemy capability confirmed, then the last-stand deployment (with back-and-forth to review) |
-| Invasion | Four phases play out on the Earth view, with a war council call after each of the first three |
-| Debrief | Time survived, intel vs reality, phase table, empire at arrival |
+| Vanguard, Year 90 | Their scouts skirmish in orbit: a second capability is revealed and each lane's result is shown |
+| Arrival, Year 100 | Time stops: final purchases, mothball or reactivate with every tab open, one enemy capability confirmed, then the war council at Year 100 (reactivations, leftovers to a lane) |
+| Invasion | Three waves in four lanes, with turning points, lane chatter and a war council call after each wave; a long war if any fleet survives |
+| Debrief | Win grade or time survived, the war chart, lanes per wave, manpower spent, calls, intel vs reality |
 
 ## Screen
 
 - Top bar: Year and T-minus, Effort, Research, Population, each with its change per year; pause and speed.
 - Earth view (left) with a side screen (right) that changes with the tab: Economy shows Effort,
-  income and Research with what makes them up; People shows Growth, Crew and Traitors as tiles with
+  income and Research with what makes them up; People shows Growth, Manpower and Traitors as tiles with
   contribution bars; Projects shows how the selected project's readiness is built (tap a name);
   Intel shows threat odds; Empire shows the Year 100 course and what readiness rests on.
   The Earth view changes with the tab: Economy pulses production around the cities; People shows
@@ -74,16 +75,24 @@ Starts at 8.0bn. Growth per year = Population × (0.4% × Stability/50 + 0.1% pe
 Family Policy adds +0.05% to the base rate. Population is the workforce, the crew pool, a
 Resistance multiplier and the survivor count.
 
-### Crew
+### Manpower
 
 ```
-crew needed   = Σ project crew × (1 + 0.4 × (size − 1)) × 0.9^tech × Counter-AI factor
-crew available = Population × (5% + Resolve/1000 + National Service)
-crewed %      = min(1, available ÷ needed)
+military-able = Population × (25% + Resolve/1000 + 3% per National Service)
+trained       starts at 0.12bn; grows each year by military-able × 0.3% (+0.3% per Basic Training)
+crew needed   = Σ project crew × (1 + 0.4 × (size − 1)) × Mk crew factor × Counter-AI factor
+Mk crew factor: Mk I 1.00 · Mk II 0.65 · Mk III 0.40 · Mk IV 0.30
+deployed      = trained first (regulars), then untrained military-able (conscripts)
+crew strength = (regulars + 0.5 × conscripts) ÷ crew needed
+reserves      = trained − regulars deployed
 ```
 
-Counter-AI factor: 0.7 when built, then −0.1 per tech level, floor 0.4.
-Crewed projects run at crewed % strength.
+Crewed projects run at crew strength. Conscripts fight at half strength. Real-world check: 35–45%
+of a population is typically fit for service, but only around 1% serves, so trained starts small.
+
+**Mothballing:** any built project with crew or upkeep can be mothballed: 0 crew, upkeep −70%,
+readiness 0, and experience or maturity fades (counted age falls 0.5 years each year, about −1%/yr).
+Reactivating is immediate, except at Year 100, where a reactivated project starts the war at 50%.
 
 ### Meters (0–100)
 
@@ -128,7 +137,8 @@ tab's numbers add up, so the tabs themselves hold only the program cards.
 | People | Public Welfare | +4 Stability | Stability settle point +2 |
 | People | Unity Campaign | +4 Resolve | +0.10 Resolve/yr |
 | People | Family Policy | +1 Stability | +0.05% population growth |
-| People | National Service | −1 Stability | +1% of Population can enlist |
+| People | National Service | −1 Stability | +3% of Population military-able |
+| People | Basic Training | +2% of military-able trained | +0.3% of military-able trained per year |
 | People | Internal Security | −8 Traitors, −3 Stability | −0.15 Traitors/yr |
 
 Previews show only the effect on income, research, growth, crew and readiness. Survival is
@@ -141,13 +151,13 @@ branch built. Emergent projects appear once both of their requirements are built
 
 - **Effort builds and expands size** (1–4): +35% strength per size, +40% crew and upkeep.
   Price = Effort cost × (1 + 0.8 × current size).
-- **Research improves tech** (Mk I–IV): +25% strength per level, −10% crew and upkeep.
+- **Research improves tech** (Mk I–IV): +25% strength per level, crew ×0.65 / 0.40 / 0.30 (Mk II–IV), upkeep −10% per level.
   Price = Research cost × (1 + 0.8 × current tech). Only once built.
 - **Growth over time:** Defence projects gain experience (2%/yr compounding, max ×3); all others
   mature (1.5%/yr compounding, max ×2.5), counted from the year built.
 
 ```
-project readiness = base × 1.35^(size−1) × 1.25^tech × experience or maturity × crewed % × funding %
+project readiness = base × 1.35^(size−1) × 1.25^tech × experience or maturity × crew strength × funding %
 ```
 
 | Branch | Project | Effort | Research | Crew bn | Upkeep/yr | Readiness | Other |
@@ -206,70 +216,97 @@ Automation Boom, Rogue Lab, Fertility Collapse, Mutiny in the Ranks.
 
 ## The invasion
 
-Four phases. Each compares your average readiness in the types it tests against the enemy's
-average strength in the types they brought (Traitors as above). If the enemy brought none of a
-phase's types, a generic strength of 65 is used.
+Three waves fight in four lanes. Each lane compares your readiness with their strength there.
+
+| Lane | Readiness types |
+|---|---|
+| Orbit | Orbital |
+| Sky | Swarm |
+| Ground | Ground |
+| Inside | Traitors, Bio |
+
+Their lane strength is their value in those types (Traitors as above); a lane where they brought
+nothing is 40 and counts half when weighing the wave. Year 100 leftovers add straight to a lane.
+
+| Wave | Share of their fleet | Base days |
+|---|---|---|
+| Contact | 50% | 30 |
+| Landings | 30% | 90 |
+| Assault | 20% | 120 |
 
 ```
-ratio = your readiness ÷ their strength
-days  = base × (0.25 + min(ratio, 2.5)^1.6) × phase multiplier × random 0.9–1.1
+lane ratio  = your lane strength ÷ their lane strength × random 0.9–1.1
+lane kill   = clamp((ratio − 0.6) ÷ 1.4, 0, 1)   (2× or better destroys the lane's full share)
+destroyed   = wave share × weighted average lane kill
+days        = base × (0.25 + min(average ratio, 2.5)^1.6)
+your losses = clamp(0.25 ÷ ratio, 3%, 50%) × wave share ÷ 50% of each lane's crew
 ```
 
-| Phase | Base days | Tests | Phase multiplier |
-|---|---|---|---|
-| First Contact | 30 | Orbital, Swarm | — |
-| Landings | 90 | Ground, Swarm | — |
-| Occupation | 180 | Traitors, Bio | 0.6 + Stability/125 |
-| Resistance | 365 | Siege, Bio, Ground | (0.5 + Resolve/100) × (0.6 + Population/25) × Undercity 1.8 |
+- **Momentum:** a lane won (≥1.2) gets +10% next wave; a lane lost (<0.8) −10% and Resolve −2.
+- **Losses carry over:** lost crew refill from trained reserves (experience ×1.00), then conscripts
+  (×0.50). A lane's experience is its crew mix: regulars bring the project's experience.
+- **Turning points:** most waves draw one event from the situation, such as the Lance firing on the
+  flagship, reserves arriving by rail, a garrison declaring for the signal, or a pathogen in the water.
+  Each changes one lane for that wave.
+- **Chatter:** each wave reports the best and worst lane in the voice of Fleet, Air Defence, Legion HQ
+  or Security, plus refills and experience changes.
+- **Long war:** if any fleet survives three waves, one more stage runs:
 
-Score = total days × (1 + Ark bonus). Survivors = Population × (1 − 0.85 × progress),
-reduced 30% by Dispersed Society and 20% by the Undercity.
+```
+their strength = average enemy strength × (0.4 + 0.6 × fleet left)
+your endurance = average of Siege, Bio, Ground, Traitors readiness × average lane momentum
+days = 545 × (0.25 + min(ratio, 2.5)^1.6) × √((0.6 + Stab/125)(0.5 + Resolve/100)(0.6 + Pop/25)) × Undercity 1.8 × council
+```
+
+Survivors fall with lanes lost in Orbit and Ground during waves and with long-war progress (30% fewer
+with Dispersed Society, 20% fewer with the Undercity).
 
 ### War council
 
-After each of the first three phases the invasion pauses for one call:
+After waves 1 and 2: **Press the attack** (45%, 60% if Orbit won: fleet −15%; fail: Orbit −30%) ·
+**Reinforce the weakest lane** (×1.3 next wave, strongest ×0.85) · **Dig in** (their remaining supply
+−20%, Resolve +2). The sheet shows lanes with crew mix, and losses and refills per lane.
 
-| After | Options |
-|---|---|
-| First Contact | Sacrifice the fleet (Landings ×1.35, Resistance ×0.85) · Hold formation · Pull everything home (Landings ×0.8, Resistance ×1.15) |
-| Landings | Scorched earth (Occupation ×1.4, lose 25% of the population) · Evacuate to the bunkers (Occupation ×0.8, Resistance ×1.25) · Hold the cities |
-| Occupation | Launch the Ark now (needs Ark; bonus 35% instead of 20%, Resistance ×0.75) · Go underground (Resistance ×1.2, or ×1.4 with Bunkers or Undercity) · Open a channel (25%: a one-year truce; 75%: Resistance ×0.6) |
+Before the long war: Scorched earth (×1.4, lose 25% of the population) · Go underground (×1.2, or ×1.4
+with Bunkers or Undercity) · Launch the Ark now (needs Ark) · Open a channel (25%: a one-year truce;
+75%: ×0.6).
 
 ### Victory (hard)
 
-- **Repelled:** if your readiness ratio is at least 3 in both First Contact and Landings, measured
-  against the enemy's strength or 112, whichever is higher, they withdraw after Landings. Score counts
-  as ten years plus a five-year bonus (Ark bonus still applies). Survivors are counted at that point.
-- **Outlasted:** if the invasion runs to ten years (3,650 days) or more, they withdraw. Score is the
-  days survived.
-- The Empire tab shows both conditions, projected to Year 100 against your intel read.
-- In testing, automated players never won (best about 3.9 years); a fully built, maxed Defence and
-  Science programme repels comfortably.
+- **Repel:** their fleet reaches 0% during the three waves.
+- **Outlast:** their supply runs out first. Supply = 3,000 days − 2 × your Siege − your Endurance
+  branch score (+3 × their Siege if they brought it), minimum 540.
+- Wins are graded: (100 − days ÷ 21) + % of population kept (+10 with the Ark). S ≥ 170, A ≥ 130,
+  B ≥ 100, C ≥ 70, else D. Losses score days survived × (1 + Ark bonus). Best loss and best win are
+  both kept.
+- In testing, automated players never won (1.7–4.5 years); all twelve projects at size 2 repel,
+  and maxed builds win either way.
 
-### Spend-down warning
+### Vanguard and spend-down
 
-From Year 95 a banner counts down the last five years and shows what your leftovers would convert
-to at 3 : 1, so you spend down before arrival.
+At Year 90 their vanguard skirmishes in orbit: the second-strongest capability is revealed and each
+lane shows won, even or lost. A banner keeps this up until Year 95, when it switches to the spend-down
+countdown with what your leftovers would convert to at 3 : 1.
 
-### Last stand
+### Year 100
 
-At Year 100 time stops and the run enters **final preparations**: the fleet's strongest capability is
-confirmed (shown as 100% likely in Intel), every tab still works, and you can make final purchases
-with what you have. A red bar shows your reserves and a **Last stand** button. That opens the
-deployment screen: each type shows confirmed or its likelihood, readiness now and after deploying,
-with **Back to review** to return to the tabs and check more. Leftover Effort and Research convert
-at 3 : 1 into readiness, sent all to one type or split evenly across six. With nothing left, a Begin button starts the invasion.
+Time stops and the run enters **final preparations**: the strongest capability is confirmed, every tab
+still works, and projects can be bought, mothballed or reactivated (50% on day 1). The **War council**
+button opens the Year 100 sheet: reactivate mothballed projects, then send leftovers (3 : 1) to one
+lane or spread across four, with Back to return to the tabs.
+
 ## Empire tab
 
 - Year 100 survival on your current course (meters, maturity, population and Traitors projected
   forward), and survival if they arrived today, both against your intel read.
 - What your readiness rests on: share from Defence, Endurance, Science, Emergent and Society.
-- How survival adds up: the phase table with ratio, multiplier and days, plus the formula.
+- How the war plays out: each wave's lane ratios, fleet left and days, the long war, and both win conditions.
+- The Empire side screen shows lanes against wave 1 and their supply.
 - Readiness by type with its top contributors, and the Effort ledger.
 
 ## Balance notes (Nov 2026)
 
-- An automated player that buys whatever is cheapest each year survives about 1.3–2.8 years.
+- An automated player that buys whatever is cheapest each year survives about 1.7–4.5 years and never wins.
 - Research was too fast and Effort too slow; Effort was raised about 40% and Research cut about 40%.
 - Ignoring Traitors reached about 66 by Year 100 in testing, adding about 53 to enemy strength.
 
@@ -285,7 +322,11 @@ at 3 : 1 into readiness, sent all to one type or split evenly across six. With n
 - Survival appears only in the Empire tab, not on cards or events.
 - Infiltration became Traitors: collaborators plus code from the signal, a visible meter you can kill.
 - The game is called Invasion.
-- Winning is allowed but must be hard: Repelled or Outlasted.
+- Winning is allowed but must be hard: Repel (fleet 0%) or Outlast (supply 0), graded.
+- Manpower: military-able, trained reserves, deployed crew; conscripts at half strength; mothballing.
+- End game: Year 100 stop, vanguard at T−10, four lanes, three waves, losses carry over, momentum,
+  turning points and lane chatter; reserves fight at ×1.00 experience.
+- Graphics: flat stylised planet with outlines, square city lights and chunkier ships.
 
 ## Open ideas
 
