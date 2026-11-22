@@ -335,7 +335,7 @@ moves into a tap sheet.
 | Area | Now |
 |---|---|
 | Meters | A 2×2 of pills: Stability (shown as "64 → 60", where it is heading), Resolve, Industry, Traitors. Knowledge moved into the Research waterfall and sheet |
-| Society | Side screen: Traitors/yr and Stability waterfalls by source (Unity LV, Security LV, Welfare LV), dashed ghost = what the next level adds. Programs are slim rows: name, LV, track pips, "+1 → …" (amber where it costs something), cost button. Purge only appears as a red strip once Traitors reach 25 |
+| Society | Side screen: Traitors/yr and Stability waterfalls by source (Unity LV, Security LV, Welfare LV), dashed ghost = what the next level adds. Programs are slim rows: name, LV, track pips, "+1 → …" (amber where it costs something; one-off effects carry no "now"), cost button. Purge only appears as a red strip once Traitors reach 25 |
 | Economy | Effort/yr and Research/yr waterfalls by source with next-level ghosts; slim program rows; upkeep box |
 | Projects | Full-width cards: LV and Mk pips, "+41 of 52" output, crew bar, wide cost-first buttons (one gain line, crew change). Locked projects are one line. Tap a card for its readiness chain, crew calculation and Mothball/Reactivate |
 | War Room | Lane cards (your Y100 strength vs their likely range, prediction, fix on the weakest), Manning/Intel/Supply tiles, estimate box; reports and readiness by type behind taps |
