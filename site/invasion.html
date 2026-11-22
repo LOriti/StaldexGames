@@ -37,7 +37,7 @@ h1{font-size:44px;font-weight:700;letter-spacing:-.02em;line-height:1}
 .cvwrap{position:relative;flex:0 0 auto;height:clamp(150px,22vh,240px)}
 #screen-inv .cvwrap{height:clamp(240px,42vh,380px)}
 canvas{display:block;width:100%;height:100%}
-#warn{position:absolute;left:12px;top:8px;font-family:var(--mono);font-size:10px;color:var(--bad);letter-spacing:.08em;line-height:1.5}
+#warn{position:absolute;left:6px;bottom:18px;z-index:2;font-family:var(--mono);font-size:10px;color:var(--bad);letter-spacing:.08em;line-height:1.5}
 .meters{display:grid;grid-template-columns:repeat(5,1fr);gap:4px;padding:4px 12px 7px}
 .m{background:var(--p1);border:1px solid var(--ln);border-radius:8px;padding:5px 5px;min-width:0}
 .m .lbl{font-size:8.5px;letter-spacing:.04em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
@@ -339,9 +339,13 @@ function mountCanvas(id){$(id).appendChild(cv);sizeCanvas()}
 function sizeCanvas(){const r=cv.getBoundingClientRect();if(!r.width)return;dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr}
 window.addEventListener('resize',sizeCanvas);
 
+function viewMode(){if(!G||screen!=='game'||G.final)return'all';return G.tab==='prj'?'b:'+G.sub:G.tab}
+function focusF(id){const m=viewMode();if(m.startsWith('b:'))return NB[id].br===m.slice(2)?1:.1;if(m==='eco'||m==='peo')return .28;return 1}
 function ap(id,now){
-  if(!G||!G.owned.has(id))return 0;const t=G.anim[id];const pr=t==null?1:clamp((now-t)/1400,0,1);
-  const n=NB[id];const e=(n&&n.crew?(G.ec?G.ec.crewPct:1):1)*(G.fund==null?1:G.fund);return pr*(0.35+0.65*e)
+  if(!G)return 0;const m=viewMode();
+  if(!G.owned.has(id))return(m.startsWith('b:')&&NB[id].br===m.slice(2)&&nodeState(NB[id])!=='hidden')?.16:0;
+  const t=G.anim[id];const pr=t==null?1:clamp((now-t)/1400,0,1);
+  const n=NB[id];const e=(n&&n.crew?(G.ec?G.ec.crewPct:1):1)*(G.fund==null?1:G.fund);return pr*(0.35+0.65*e)*focusF(id)
 }
 function geo(){const R=Math.min(W*.3,H*.29);return{cx:W*.5,cy:H*.55,R,T:[W*.88,H*.1]}}
 
@@ -364,6 +368,11 @@ function draw(now){
     // dotted approach line
     ctx.setLineDash([2,5]);ctx.strokeStyle='rgba(192,83,63,.18)';ctx.beginPath();ctx.moveTo(T[0],T[1]);ctx.lineTo(cx,cy);ctx.stroke();ctx.setLineDash([]);
   }
+  if(!inv&&G&&screen==='game'){const m=viewMode();
+    if(m==='int'){ctx.fillStyle='rgba(196,117,69,.07)';ctx.beginPath();ctx.moveTo(T[0],T[1]);const a=Math.atan2(cy-T[1],cx-T[0]),pa=a+1.57;ctx.lineTo(cx+Math.cos(pa)*R*1.1,cy+Math.sin(pa)*R*1.1);ctx.lineTo(cx-Math.cos(pa)*R*1.1,cy-Math.sin(pa)*R*1.1);ctx.closePath();ctx.fill();
+      const Lk=intelLik(G);const top=TK.slice().sort((x,y)=>Lk[y]-Lk[x]).slice(0,2);ctx.font='600 8px JetBrains Mono, monospace';ctx.textAlign='right';ctx.fillStyle='#c47545';top.forEach((tt,i)=>ctx.fillText(`${TRAITS[tt].s.toUpperCase()} ${Math.round(Lk[tt]*100)}%`,T[0]-4,T[1]+16+i*10))}
+    const lab={eco:'ECONOMY VIEW · PRODUCTION',peo:'PEOPLE VIEW · TRAITORS ■ CREW ■','b:def':'DEFENCE VIEW','b:end':'ENDURANCE VIEW','b:sci':'SCIENCE VIEW','b:emg':'EMERGENT VIEW',int:'INTEL VIEW',emp:''}[m];
+    if(lab){ctx.font='600 8px JetBrains Mono, monospace';ctx.textAlign='left';ctx.fillStyle='rgba(150,142,127,.9)';ctx.fillText(lab,6,H-6)}}
   // intel ping
   if(G.ping&&now-G.ping<2200){const k=Math.max(0,(now-G.ping)/2200);ctx.strokeStyle=`rgba(196,117,69,${1-k})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(T[0],T[1],6+k*40,0,6.283);ctx.stroke();
     const dx=cx+(T[0]-cx)*(1-k),dy=cy+(T[1]-cy)*(1-k);ctx.fillStyle=`rgba(196,117,69,${1-k*.6})`;ctx.beginPath();ctx.arc(dx,dy,2.5,0,6.283);ctx.fill()}
@@ -405,6 +414,12 @@ function draw(now){
     if(aS2&&i%4===0){ctx.strokeStyle=`rgba(138,163,127,${aS2*(.4+.4*Math.sin(t*2+i))})`;ctx.beginPath();ctx.arc(q[0],q[1],sz+5,0,6.283);ctx.stroke()}
     if(aD2&&i%2===0){ctx.fillStyle=`rgba(138,163,127,${aD2})`;ctx.fillRect(q[0]+5,q[1]+2,2.5,2.5);ctx.fillRect(q[0]+8,q[1]+2,2.5,2.5)}
   });
+  // tab overlays
+  if(!inv){const m=viewMode();
+    if(m==='eco'){SC.cities.forEach((c,i)=>{const q=pol(c,R,cx,cy);const k=((t*.6+i*.17)%1);ctx.strokeStyle=`rgba(232,194,122,${.6*(1-k)})`;ctx.lineWidth=1;ctx.beginPath();ctx.arc(q[0],q[1],2+k*7*(G.I/50),0,6.283);ctx.stroke()})}
+    if(m==='peo'){const n=Math.round(G.T/4);for(let i=0;i<n;i++){const c=SC.disp[i%SC.disp.length];const q=pol(c,R,cx,cy);ctx.fillStyle=`rgba(192,83,63,${.55+.4*Math.sin(t*3+i)})`;ctx.fillRect(q[0]-1.2,q[1]-1.2,2.6,2.6)}
+      const crew=Math.round((G.ec?G.ec.crewReq:0)*8);for(let i=0;i<crew;i++){const c=SC.disp[(i*7+3)%SC.disp.length];const q=pol(c,R*.8,cx,cy);ctx.fillStyle='rgba(138,163,127,.85)';ctx.fillRect(q[0]-1,q[1]-1,2,2)}}
+  }
   // terminator shadow
   g=ctx.createLinearGradient(cx-R,cy-R,cx+R,cy+R);g.addColorStop(.55,'rgba(10,10,9,0)');g.addColorStop(1,'rgba(10,10,9,.55)');ctx.fillStyle=g;ctx.fillRect(cx-R,cy-R,2*R,2*R);
   if(inv&&ph>=2){ctx.fillStyle=`rgba(80,20,14,${.25*Math.min(1,(p-.3)*2)})`;ctx.fillRect(cx-R,cy-R,2*R,2*R)}
@@ -511,7 +526,7 @@ function counters(s,ec){
   ec=ec||econ(s);
   const c={},src={},byBr={def:0,end:0,sci:0,emg:0,soc:0};TK.forEach(t=>{c[t]=0;src[t]={doc:0,met:0,bon:s.bonus[t]||0,items:[]}});
   s.owned.forEach(id=>{const n=NB[id],m=nodeMult(s,id),e=nodeEff(s,id,ec);
-    for(const k in n.fx){const v=n.fx[k]*m*e;src[k].doc+=v;byBr[n.br]+=v;src[k].items.push({n:n.n,v})}});
+    for(const k in n.fx){const v=n.fx[k]*m*e;src[k].doc+=v;byBr[n.br]+=v;src[k].items.push({n:n.n,v,br:n.br})}});
   src.ground.met=s.R*.3;src.infil.met=s.S*.3+s.R*.15;src.siege.met=s.I*.3;src.bio.met=s.K*.15;src.orb.met=s.I*.08;src.swarm.met=s.K*.08;
   TK.forEach(t=>{c[t]=Math.max(0,src[t].doc+src[t].met+src[t].bon);byBr.soc+=src[t].met+src[t].bon});
   return{c,src,byBr};
@@ -732,15 +747,19 @@ function rSide(ec){
   }else if(G.tab==='prj'){
     const list=NODES.filter(n=>n.br===G.sub&&nodeState(n)!=='hidden');
     let n=NB[G.selPrj];if(!n||n.br!==G.sub)n=list.find(x=>G.owned.has(x.id))||list[0];
-    if(!n){h=`<div class="tl"><span class="lbl">Emergent</span><div class="lg2">Combine finished projects from two branches to reveal these.</div></div>`}
+    const {c,src}=counters(G,ec);
+    const types=[...new Set(NODES.filter(x=>x.br===G.sub).flatMap(x=>Object.keys(x.fx)))];
+    const brName={def:'Defence',end:'Endurance',sci:'Science',emg:'Emergent'}[G.sub];
+    let scores='';
+    if(types.length){scores=`<div class="tl" style="gap:3px"><div class="hd"><span class="lbl">${brName} scores</span><span class="lbl">line = ${TYPICAL}</span></div>`+types.map(t=>{const mine=src[t].items.filter(x=>x.br===G.sub).reduce((a,x)=>a+x.v,0),tot=c[t],sc=200;
+      return `<div style="display:grid;grid-template-columns:52px 1fr 54px;gap:5px;align-items:center;font-family:var(--mono);font-size:9px"><span>${TRAITS[t].s}</span><div class="sb" style="position:relative;height:7px;background:#2c2a25"><i style="width:${Math.min(100,mine/sc*100)}%;background:${OK}"></i><i style="width:${Math.min(100,Math.max(0,tot-mine)/sc*100)}%;background:${GREY}"></i><span style="position:absolute;left:${TYPICAL/sc*100}%;top:-1px;bottom:-1px;width:1px;background:${WA}"></span></div><span style="text-align:right">${Math.round(mine)} <span class="mut">/ ${Math.round(tot)}</span></span></div>`}).join('')+`</div>`}
+    if(!n){h=scores||`<div class="tl"><span class="lbl">Emergent</span><div class="lg2">Combine finished projects from two branches to reveal these.</div></div>`}
     else{G.selPrj=n.id;const built=G.owned.has(n.id),Sz=sz(G,n.id),T=tc(G,n.id);const k=Object.entries(n.fx).sort((a,b)=>b[1]-a[1])[0];
-      const rows=[];
-      if(k){rows.push(['Base '+TRAITS[k[0]].s,k[1]]);if(built){if(Sz>1)rows.push([`× Size ${Sz}`,sizeMult(Sz).toFixed(2)]);if(T>0)rows.push([`× Mk ${MK[T]}`,techMult(T).toFixed(2)]);rows.push([`× ${matName(n.id)} ${G.year-G.builtAt[n.id]}y`,matOf(G,n.id).toFixed(2)]);const e=nodeEff(G,n.id,ec);if(e<.999)rows.push(['× crew & funding',e.toFixed(2)]);rows.push([`= ${TRAITS[k[0]].s}`,`<span class="pos">+${Math.round(k[1]*nodeMult(G,n.id)*e)}</span>`])}
-        else rows.push(['Not built','build to start growing'])}
-      else rows.push(['Effect',n.note||'']);
-      const others=Object.entries(n.fx).filter(x=>!k||x[0]!==k[0]).map(([t,v])=>`${TRAITS[t].s} +${built?Math.round(v*nodeMult(G,n.id)*nodeEff(G,n.id,ec)):v}`).join(' · ');
-      h=`<div class="tl" style="border-color:var(--ac)"><div class="hd"><span class="lbl" style="color:var(--ac)">${n.n}</span></div>${rows.map(r=>`<div class="ch"><span>${r[0]}</span><span>${r[1]}</span></div>`).join('')}${others?`<div class="lg2">also ${others}</div>`:''}</div>`+
-        `<div class="tl"><div class="lg2">${built?`Crew ${(n.crew*sizeLoad(Sz)*techLoad(T)*ec.crewMult).toFixed(2)}bn · upkeep ${(n.up*sizeLoad(Sz)*techLoad(T)).toFixed(2)}/yr`:`Crew ${(n.crew*ec.crewMult).toFixed(2)}bn · upkeep ${n.up}/yr when built`}<br><span style="color:var(--ac)">Effort</span> size +35% · <span class="rpc">Research</span> tech +25%, −10% upkeep</div></div>`}
+      let f;
+      if(!k)f=n.note||'';
+      else if(built){const e=nodeEff(G,n.id,ec);f=`${k[1]} base${Sz>1?` × ${sizeMult(Sz).toFixed(2)} size`:''}${T?` × ${techMult(T).toFixed(2)} Mk ${MK[T]}`:''} × ${matOf(G,n.id).toFixed(2)} ${matName(n.id)}${e<.999?` × ${e.toFixed(2)} crew`:''} = <span class="pos">+${Math.round(k[1]*nodeMult(G,n.id)*e)} ${TRAITS[k[0]].s}</span>`}
+      else f=`Not built · would add +${k[1]} ${TRAITS[k[0]].s} and start growing`;
+      h=`<div class="tl" style="border-color:var(--ac)"><span class="lbl" style="color:var(--ac)">${n.n}</span><div class="lg2" style="font-size:9px;color:var(--tx);white-space:normal">${f}</div><div class="lg2">${built?`crew ${(n.crew*sizeLoad(Sz)*techLoad(T)*ec.crewMult).toFixed(2)}bn · upkeep ${(n.up*sizeLoad(Sz)*techLoad(T)).toFixed(2)}/yr`:`crew ${(n.crew*ec.crewMult).toFixed(2)}bn · upkeep ${n.up}/yr`} · <span style="color:var(--ac)">Effort</span> size · <span class="rpc">Research</span> tech</div></div>`+scores}
   }else if(G.tab==='int'){
     const Lk=intelLik(G);const order=TK.slice().sort((x,y)=>Lk[y]-Lk[x]);
     h=`<div class="tl" style="gap:4px"><div class="hd"><span class="lbl">Odds</span><b class="mut" style="font-size:10px">${Math.round(intelAcc(G)*100)}% reliable</b></div>`+order.map(t=>{const p=Math.round(Lk[t]*100);return `<div style="display:grid;grid-template-columns:62px 1fr 28px;gap:5px;align-items:center;font-family:var(--mono);font-size:9.5px"><span>${TRAITS[t].s}</span>${sb([[p,p>=65?BAD:p>=45?WA:GREY],[100-p,'#2c2a25']])}<span style="text-align:right">${p}%</span></div>`}).join('')+`</div>`;

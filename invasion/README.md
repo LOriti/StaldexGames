@@ -35,6 +35,11 @@ humanity lasts once the invasion begins. Winning is possible but hard (see Victo
   income and Research with what makes them up; People shows Growth, Crew and Traitors as tiles with
   contribution bars; Projects shows how the selected project's readiness is built (tap a name);
   Intel shows threat odds; Empire shows the Year 100 course and what readiness rests on.
+  The Earth view changes with the tab: Economy pulses production around the cities; People shows
+  Traitors (red) and crew (green) on the planet; each Projects branch highlights that branch's
+  builds, dims the rest and ghosts what you could still build; Intel draws a scan cone to the
+  threat with the two likeliest types. The Projects side screen also shows the branch's scores per
+  readiness type (branch / total, against the typical threat of 112).
   Every built project appears on the planet; warnings for debt, underfunding and undercrewing.
 - Meters: Stability, Industry, Knowledge, Resolve, Traitors, each with its trend per year.
 - Tabs: Economy, People, Projects (subtabs Defence, Endurance, Science, Emergent), Intel, Empire.
