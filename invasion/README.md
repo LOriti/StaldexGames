@@ -29,22 +29,22 @@ humanity lasts once the invasion begins. Winning is possible but hard (see Victo
 | Invasion | Three waves in four lanes, with turning points, lane chatter and a war council call after each wave; a long war if any fleet survives |
 | Debrief | Win grade or time survived, the war chart, lanes per wave, manpower spent, calls, intel vs reality |
 
-## Screen
+## Screen (one screen, no scrolling)
 
-- Top bar: Year and T-minus, Effort, Research, Population, each with its change per year; pause and speed.
-- Earth view (left) with a side screen (right) that changes with the tab: Economy shows Effort,
-  income and Research with what makes them up; People shows Growth, Manpower and Traitors as tiles with
-  contribution bars; Projects shows how the selected project's readiness is built (tap a name);
-  Intel shows threat odds; Empire shows the Year 100 course and what readiness rests on.
-  The Earth view changes with the tab: Economy pulses production around the cities; People shows
-  Traitors (red) and crew (green) on the planet; each Projects branch highlights that branch's
-  builds, dims the rest and ghosts what you could still build; Intel draws a scan cone to the
-  threat with the two likeliest types. The Projects side screen also shows the branch's scores per
-  readiness type (branch / total, against the typical threat of 112).
-  Every built project appears on the planet; warnings for debt, underfunding and undercrewing.
-- Meters: Stability, Industry, Knowledge, Resolve, Traitors, each with its trend per year.
-- Tabs: Economy, People, Projects (subtabs Defence, Endurance, Science, Emergent), Intel, Empire.
-  Tap the ticker for the full log.
+- Top bar: Year and T-minus, Effort, Research, Population with change per year; pause and speed.
+- Earth view (150px, switches per tab) with a side screen of 2–3 tiles.
+- Meters as one row of chips (Stability, Industry, Knowledge, Resolve, Traitors); tap for drivers and what each feeds.
+- Tabs: **Society · Economy · Projects · War Room**. Empire is gone: its projection, match-up and
+  "rests on" moved to the War Room, the Effort ledger to Economy.
+- Ticker at the bottom carries the log, plus the vanguard and spend-down warnings.
+- **Tap any number** (side tiles, meter chips, project output, crew bars, lanes) for a sheet with the full calculation.
+
+| Tab | Side screen | Content |
+|---|---|---|
+| Society | Manpower, Traitors, Growth | People programs (Welfare, Unity, Family, National Service, Basic Training, Internal Security) and Purge |
+| Economy | Effort, Income, Research | Economy programs and the upkeep ledger |
+| Projects | Selected project's readiness chain | Subtabs (tap the active one for branch scores). Cards: Level pips (Effort), Mk pips (Research), output as "+41 of 52" (actual vs fully crewed), crew bar (regulars, conscripts, unfilled), buttons showing the gain and crew change ("frees 0.13bn · conscripts out"), mothball / reactivate |
+| War Room | Manning, Intel, their supply | Match-up per lane: your Year 100 readiness vs their likely range from intel, predicted result; battle estimate from 24 sampled enemies (fleet destroyed, Repel and Outlast chance, weakest lane and fixes); what readiness rests on; intel reports and readiness by type behind taps. No days |
 
 ## Currencies and meters
 
@@ -295,7 +295,38 @@ still works, and projects can be bought, mothballed or reactivated (50% on day 1
 button opens the Year 100 sheet: reactivate mothballed projects, then send leftovers (3 : 1) to one
 lane or spread across four, with Back to return to the tabs.
 
-## Empire tab
+
+## Round 3 changes (Nov 2026)
+
+**Programs** cost 8 + 4 per repeat. Industrial Mobilisation +0.10 Industry/yr, Research Grants +0.10
+Knowledge/yr, Family Policy +0.10% growth. Infrastructure (+5%) and University (+6%) count 80% of the
+previous each repeat. Unity also takes 0.06/yr off Traitors. Internal Security −10 Traitors −2 Stability
+now, −0.25/yr. Basic Training +0.2% trained/yr; base training 0.1% of military-able a year.
+
+**Traitors trend** = 0.30 + signal (Knowledge × 0.005, none with Counter-AI) + loyalty
+((50 − Stab) × 0.02 + (50 − Resolve) × 0.01) − Internal Security − Unity − (Resolve above 50) × 0.02 − 0.1 with Counter-AI.
+**Purge** (Society): 25 Effort, Traitors −40%, Stability −6, Resolve −3, 10-year cooldown.
+
+**Crew:** Mk crew factor Mk I 1.5 · Mk II 0.975 · Mk III 0.6 · Mk IV 0.45 (Mk II is −35% vs Mk I).
+**Tiers** unlock by branch levels below: tier 2 needs 1, tier 3 needs 2, tier 4 needs 3 (any mix).
+**Xenobiology** adds +10 Traitors readiness. **Signal Analysis** cuts their supply 5% and their lane
+strength 3% per level. **Veterans:** once a Defence project has 20 years of service, reserves refill at
+×1.20. **Field Hospitals** (Xenobiology + Hardened Cities): Inside +10, 30% fewer losses at home.
+
+**Project events:** 13 one-off events unlocked by a project's Level or Mk (decode attempt, captured
+sample with vaccine or weapon path, the generals want more, deep patrol, Lance test-fire, it answered
+back, and others). Each choice locks the other. Checked most years with a 30% chance.
+
+**Battle:** each wave opens with a card picked from the situation: Purge the garrisons (Inside ×1.5,
+once), Emergency draft (+0.3bn conscripts to Ground), Martial law (Inside ×1.25, fewer losses at home,
+Stability −6 for the long war), Surge the weakest lane (×1.3), or Hold. A situation report beside Earth
+explains the worst lane and how much damage it costs.
+
+**Balance check after the changes** (automated players, 16 runs each): cheapest-first median 1,631 days
+with 2 wins in 16; no-programs 1,600 with 1; Science-first 1,424 (Inside 3.2×). Best value per cost:
+Unity Campaign, Xenobiology, Counter-AI, Hardened Cities.
+
+## Empire tab (retired, see War Room)
 
 - Year 100 survival on your current course (meters, maturity, population and Traitors projected
   forward), and survival if they arrived today, both against your intel read.
