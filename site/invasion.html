@@ -937,6 +937,7 @@ const indDisc=s=>s&&s.I!=null?1-clamp(s.I-60,0,40)*.01:1,kDisc=s=>s&&s.K!=null?1
 const priceE=(n,S,s=G)=>Math.round(n.cost*(1+.6*S)*(n.br==='def'?indDisc(s):1)*(n.br==='emg'?.85:1));
 const priceR=(n,T,s=G)=>Math.round(n.rp*(1+.8*T)*kDisc(s));
 const EFF_K=.011, RES_K=.035;
+const kRes=s=>s.K*RES_K*Math.sqrt(Math.max(.1,s.P)/8);
 const REPEL=3, OUTLAST=3650, FLOOR=112;
 const vRatio=r=>r.ready/Math.max(r.threat,FLOOR);
 const crewLoad=T=>[1.5,.975,.6,.45][T]||.45;
@@ -953,7 +954,7 @@ function econ(s){
   const stabM=.7+s.S/200,disp=s.owned.has('E4')?.9:1;
   const gross=workforce*s.I*EFF_K*stabM*disp*s.dr.effM;
   const labs=.5*(sz(s,'S1')+sz(s,'S2'));
-  const rp=(s.K*RES_K+labs)*s.dr.resM;
+  const rp=(kRes(s)+labs)*s.dr.resM;
   const gRate=(s.dr.pop*(s.S/50)+.001*sz(s,'S2'))*Math.max(0,1-s.P/50);
   return{crewMult,crewReq,ablePct,able,trained,reg,con,reserves,spare,crewPct,crewEff,crewUsed,workforce,stabM,disp,gross,upkeep,ups,net:gross-upkeep,labs,rp,gRate,growth:s.P*gRate};
 }
@@ -1461,8 +1462,8 @@ function socWaterfalls(ec){
 function ecoWaterfalls(ec){
   const base=ec.gross/G.dr.effM,inf=ec.gross-base,gi=ghostOf('inf').dE,gm=ghostOf('ind').dE;
   const ef=[['Production',base,gm],[`Infra LV${G.uses.inf||0}`,inf,gi],['Upkeep',-ec.upkeep]];
-  const kn=G.K*RES_K*G.dr.resM,lb=ec.labs*G.dr.resM,un=(G.K*RES_K+ec.labs)*(G.dr.resM-1);
-  const rs=[[`Knowledge ${Math.round(G.K)}`,kn-(G.K*RES_K)*(G.dr.resM-1),ghostOf('res').dRP],['Labs',ec.labs],[`Univ LV${G.uses.uni2||0}`,un,ghostOf('uni2').dRP]];
+  const kn=kRes(G)*G.dr.resM,lb=ec.labs*G.dr.resM,un=(kRes(G)+ec.labs)*(G.dr.resM-1);
+  const rs=[[`Knowledge × pop`,kn-kRes(G)*(G.dr.resM-1),ghostOf('res').dRP],['Labs',ec.labs],[`Univ LV${G.uses.uni2||0}`,un,ghostOf('uni2').dRP]];
   return wf('EFFORT /YR',sgn(ec.net,2),ec.net>=0?OK:BAD,ef,false,'effort')+wf('RESEARCH /YR',sgn(ec.rp,2),OK,rs,false,'research');
 }
 function rSide(ec){
@@ -1557,7 +1558,7 @@ function tapSheet(key){
   if(kind==='estimate'){const W=warEstimate();sheet('War Room','How the estimate works',box(lg('Enemies sampled','24, drawn from your intel odds')+lg('Fleet destroyed (middle half)',`${W.k25}–${W.k75}%`)+lg('Repel (fleet 0%)',`${W.rep}%`)+lg('Outlast (supply 0)',`${W.out}%`))+why('Each sample projects your build to Year 100 and fights three waves without council calls, cards or turning points.'));return}
   if(kind==='manpower'){sheet('War Room','Manpower',box(lg('Population',`${G.P.toFixed(2)}bn`)+lg(`Military-able (25% + Resolve/1000 + ${Math.round(G.dr.enl*100)}% NS)`,`${ec.able.toFixed(2)}bn`)+lg(`Trained (+${(G.dr.trn*100).toFixed(1)}% of able a year)`,`${ec.trained.toFixed(2)}bn`)+lg('Crew needed',`${ec.crewReq.toFixed(2)}bn`)+lg('Regulars deployed',`${ec.reg.toFixed(2)}bn`)+lg('Conscripts (× 0.5)',`${ec.con.toFixed(2)}bn`)+lg('Trained in reserve',`${ec.reserves.toFixed(2)}bn`)+lg('Strength',`${Math.round(ec.crewEff*100)}%`,'tot'))+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('bas','+2% trained · +0.2%/yr')+iniRow('nat','+3% military-able')+why('A higher Mk frees crew: conscripts leave first, then regulars return to reserves. Reserves refill battle losses at ×1.00 (×1.20 once a Defence project has 20 years of service).'),'manpower');return}
   if(kind==='effort'){sheet('Economy','Effort',box(lg('Workforce (Population − crew)',`${ec.workforce.toFixed(2)}bn`)+lg('× Industry × 0.011',`× ${(G.I*EFF_K).toFixed(3)}`)+lg('× Stability (0.7 + Stab/200)',`× ${ec.stabM.toFixed(2)}`)+lg('× Infrastructure',`× ${G.dr.effM.toFixed(2)}`)+(ec.disp<1?lg('× Dispersed Society','× 0.9'):'')+lg('Income',`+${ec.gross.toFixed(2)}`,'tot')+ec.ups.map(([n,u])=>lg('Upkeep · '+n,`−${u.toFixed(2)}`)).join('')+lg('Net per year',sgn(ec.net,2),'tot'))+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('inf','+4% Effort (each repeat 80% of the last)')+iniRow('ind','Industry +0.10/yr · +3'),'effort');return}
-  if(kind==='research'){sheet('Economy','Research',box(lg(`Knowledge ${Math.round(G.K)} × 0.035`,`+${(G.K*RES_K).toFixed(2)}`)+lg('Labs (0.5 per Signal and Xenobiology level)',`+${ec.labs.toFixed(2)}`)+lg('× University',`× ${G.dr.resM.toFixed(2)}`)+lg('Per year',`+${ec.rp.toFixed(2)}`,'tot'))+why(`Knowledge ${Math.round(G.K)} (${sgn(G.dr.K,2)}/yr) also sets intel reliability (${Math.round(intelAcc(G)*100)}%), Bio (×0.15) and Swarm (×0.08), and feeds the signal Traitors (×0.005).`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('res','Knowledge +0.10/yr · +3 · Traitors +2')+iniRow('uni2','+6% Research (each repeat 80% of the last)'),'research');return}
+  if(kind==='research'){sheet('Economy','Research',box(lg(`Knowledge ${Math.round(G.K)} × 0.035 × √(Pop ${G.P.toFixed(1)} / 8)`,`+${kRes(G).toFixed(2)}`)+lg('Labs (0.5 per Signal and Xenobiology level)',`+${ec.labs.toFixed(2)}`)+lg('× University',`× ${G.dr.resM.toFixed(2)}`)+lg('Per year',`+${ec.rp.toFixed(2)}`,'tot'))+why(`Knowledge ${Math.round(G.K)} (${sgn(G.dr.K,2)}/yr) also sets intel reliability (${Math.round(intelAcc(G)*100)}%), Bio (×0.15) and Swarm (×0.08), and feeds the signal Traitors (×0.005).`)+`<div class="lbl pos" style="margin-top:8px">Raise it</div>`+iniRow('res','Knowledge +0.10/yr · +3 · Traitors +2')+iniRow('uni2','+6% Research (each repeat 80% of the last)'),'research');return}
 }
 document.addEventListener('click',e=>{const t=e.target.closest('[data-tap]');if(!t||!G||screen!=='game')return;if(t.closest('#sheet'))return;const b=e.target.closest('button');if(b&&!b.hasAttribute('data-tap'))return;e.stopPropagation();if(t.classList.contains('cmp')){G.selPrj=t.dataset.pid;render();return}tapSheet(t.dataset.tap)},true);
 
