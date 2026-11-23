@@ -418,3 +418,24 @@ Outlast wins are graded on 40 + 60 × (1 − days ÷ 3,000) for speed, so a slow
 - The Archive across runs, and a daily seeded run with a leaderboard on Workers + D1 (idea 5).
 - Should Research also gate the higher tiers?
 - Interest on debt; whether intel's 97% cap settles threats too early; early Defence feeling weak.
+
+## Round 6 · species, campaign, difficulty
+
+- **Six species.** Each run secretly draws one: the Vaskari (the Hunt), the Ollun Choir, the Teth (the Gardeners), the Kel (the Harvest), the Meridan Exiles and the Auditors. A species sets which capabilities are likely, adds one rule and gives the battle its voice.
+  - Hunt: waves 30% shorter, supply ×0.85; win 2+ lanes in Wave 1 and the kill threshold drops by 0.1.
+  - Choir: positive Traitor drift ×1.5 (shown as "Unexplained").
+  - Gardeners: supply ×1.3, population losses ×1.5.
+  - Harvest: Ark 40% and Field Hospitals ×0.5 (instead of 20% and ×0.7).
+  - Exiles: fleet kill ×0.75, supply ×0.75.
+  - Auditors: every 20 years (and at the Vanguard) they move 10–15 points from the capability you counter best to the one you counter worst, capped at 25. At Signal Analysis Level 3, half their reads are random.
+- **Clues** arrive in Years 8, 23, 38, 62 and 77, plus a strong one with the Year 50 artefact event. Reliability: 35% / 50% / 65% / 80% / 90% by Signal Analysis level, adjusted by difficulty and perks. False clues point to another species. Suspect odds are a simple Bayes update. They're in War Room → suspects.
+- **Reveal:** their voice at the Vanguard; the codename in battle; the full dossier (name, motive, specialty, rule, clues marked true or false) at the debrief. At Year 100 you can name the enemy: right = +10% in their lanes (+5% to all lanes for the Exiles and the Auditors).
+- **Difficulty** (per campaign or quick play):
+
+  | Difficulty | Enemy strength | Supply | Clue accuracy | Traitors drift | Start Effort | Kill threshold |
+  |---|---|---|---|---|---|---|
+  | Easy | ×1.0 | ×1.0 | +0 | +0 | 100% | 0.60 |
+  | Medium | ×1.2 | ×1.15 | −0.1 | +0.1 | 90% | 0.65 |
+  | Hard | ×1.45 | ×1.3 | −0.2 | +0.25 | 75% | 0.70 |
+
+- **Campaign:** six chapters. Chapters 1–5 are drawn at random from unbeaten species; chapter 6 is always the Auditors. A loss redraws the chapter. Each win keeps one of three legacy perks. Medal = lowest grade at the campaign's difficulty. Saved in localStorage (`invasion.campaign`).

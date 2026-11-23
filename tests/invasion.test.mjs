@@ -13,7 +13,7 @@ function sandbox() {
   const ctx = { Math, Set, Object, Array, JSON, console, document: { querySelector: () => null }, log: () => {}, float: () => {} };
   vm.createContext(ctx);
   vm.runInContext(consts.replace(/^let G=null.*$/m, 'var G=null, screen="title", skip=false, INV=null;') + model +
-    ';globalThis.api={NODES,DIRS,PEV,LANES,TRAITS,econ,counters,battleInit,battleWave,battleRun,traitorDrift,cloneS,applyFx};', ctx);
+    ';globalThis.api={NODES,DIRS,PEV,LANES,TRAITS,SPECIES,econ,counters,battleInit,battleWave,battleRun,traitorDrift,cloneS,applyFx};', ctx);
   return ctx.api;
 }
 function state(over = {}) {
@@ -68,4 +68,28 @@ test('project events are about two per project and only use known effects', () =
   assert.ok(A.PEV.length >= 26);
   const ok = new Set(['E', 'RP', 'P', 'S', 'I', 'K', 'R', 'T', 'TRN', 'INTEL', 'SUP', ...Object.keys(A.TRAITS)]);
   for (const e of A.PEV) for (const o of e.o) for (const k of Object.keys(o[2])) assert.ok(ok.has(k), `${e.id}: ${k}`);
+});
+
+test('six species, each with clues, a voice and valid traits', () => {
+  const A = sandbox();
+  assert.equal(A.SPECIES.length, 6);
+  for (const x of A.SPECIES) {
+    assert.ok(x.clues.length >= 4 && x.voice && x.say.length === 3, x.id);
+    for (const t of [...x.core, ...x.alt]) assert.ok(A.TRAITS[t], `${x.id}: ${t}`);
+  }
+});
+
+test('harder difficulty means a longer enemy supply and a higher kill threshold', () => {
+  const A = sandbox();
+  const s = build(state(), ['D1', 'D2', 'D3'], 2, 1, 20);
+  const e = A.battleInit(s, enemy, true), h = A.battleInit({ ...s, diff: 'hard' }, enemy, true);
+  assert.ok(h.supply > e.supply);
+  assert.ok(h.kth > e.kth);
+});
+
+test('the Choir makes Traitors grow faster', () => {
+  const A = sandbox();
+  const base = A.traitorDrift(state({ R: 40, S: 40 })).tot;
+  const choir = A.traitorDrift(state({ R: 40, S: 40, trtX: 1.5 })).tot;
+  assert.ok(choir > base * 1.4);
 });
