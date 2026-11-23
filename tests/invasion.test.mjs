@@ -93,3 +93,15 @@ test('the Choir makes Traitors grow faster', () => {
   const choir = A.traitorDrift(state({ R: 40, S: 40, trtX: 1.5 })).tot;
   assert.ok(choir > base * 1.4);
 });
+
+test('holding the surface after wave 3 means a standoff, not an occupation', () => {
+  const A = sandbox();
+  const s = build(state(), ['D3', 'E2', 'S2', 'S3'], 4, 3, 10);
+  const B = A.battleRun(s, { ground: 100, infil: 100, orb: 300 }, true);
+  if (B.long) {
+    const lw = B.waves[B.waves.length - 1];
+    const held = ['ground', 'inside'].every(k => lw.rows.find(x => x.l.k === k).state === 'won');
+    assert.equal(B.long.mode === 'stand', held);
+  }
+  assert.ok(Object.keys(B.infra).length > 0, 'infrastructure tracked');
+});
