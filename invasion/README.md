@@ -447,3 +447,14 @@ Outlast wins are graded on 40 + 60 × (1 − days ÷ 3,000) for speed, so a slow
 - Programs cap at LV 4. A Mk track paid in Research (10/20/35) multiplies every level ×1.25/×1.5/×1.75. Mk II needs 1 Science level, Mk III needs 3 and removes the downside, Mk IV needs the linked science project. Society and Economy have a Levels / Mk switch.
 - Every level and Mk of every program and project is named (`UPN`). Program LV 2, LV 4 and Mk III bring a decision (`MEV`, 30 events).
 - Welfare raises the Stability target by 4 per level and Family Policy by 1. Strategic Reserves now need crew. Tap Pop for the growth breakdown.
+
+## Round 8 · balance review, links, combos, events
+
+A strategy bot (each turn it buys the most projected days per point spent) played 54+ runs per pass.
+- **Before:** Traitors ended at 0, Resolve ~100, population 8 → 19bn, upkeep 2 vs income 18, 6 of 15 projects used.
+- **Too high:** Resolve's pull on Traitors 0.02 → 0.01; Unity loyalty 0.06 → 0.04; war fatigue (−0.3/yr above Resolve 80); Industry gains halve above 75; Family Policy growth 0.10% → 0.08%; growth × (1 − Pop/50).
+- **Too low:** upkeep ×1.5; trained growth 0.10% → 0.06%; Legion crew 0.8; level price growth 0.8 → 0.6; tier-4 cost 80 → 65; emergent −15%; Internal Security has no Stability cost at LV 1–2 and LV 3+ adds −0.1 Traitor drift; Signal Analysis clue reliability 55/75/90/95%.
+- **Difficulty:** Easy enemy ×0.95; Medium ×1.1, supply ×1.1, kill threshold 0.62. Bot wins ≈ 73% / 39% / 22%.
+- **Links:** Industry >60 cuts Defence prices 1%/pt · Knowledge >40 cuts Research costs 1%/pt · Resolve >70: conscripts ×0.6 · Stability <35: crew −10% · Traitors >30 leak the build (enemy shifts 5 points at Years 20/40/60/80, cap 10) · Pop scales their Siege in supply (×Pop/12, 0.7–1.6). Shown under "Links" in meter sheets.
+- **Combos (`COMBOS`):** Welfare 3 + Hardened Cities, Basic Training 3 + Legion, Unity 4 + Counter-AI, Research Grants 4 + Xenobiology, Industrial Mobilisation 4 + Fleet. Shown on the selected project card and in program sheets.
+- **Events:** sabotage (Traitors >30, 8%/yr; stopped by Internal Security LV 2), housing crisis (Pop >15bn, unless Welfare LV 3), boom (Year 33) and bust (Year 71), and one species event at Year 45 (`SPEV`). Events queue rather than overwrite each other.
