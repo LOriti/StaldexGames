@@ -439,3 +439,11 @@ Outlast wins are graded on 40 + 60 × (1 − days ÷ 3,000) for speed, so a slow
   | Hard | ×1.45 | ×1.3 | −0.2 | +0.25 | 75% | 0.70 |
 
 - **Campaign:** six chapters. Chapters 1–5 are drawn at random from unbeaten species; chapter 6 is always the Auditors. A loss redraws the chapter. Each win keeps one of three legacy perks. Medal = lowest grade at the campaign's difficulty. Saved in localStorage (`invasion.campaign`).
+
+## Round 7 · battle flow, named upgrades, Research in Society and Economy
+
+- War councils wait for a pulsing button; the battle log keeps every line and scrolls, with day-stamped lane narration that names your upgrades.
+- Standoff: if Ground and Inside are both won in Wave 3, there's no occupation; Orbit and Sky hunt down the remaining fleet. Infrastructure condition is shown per project.
+- Programs cap at LV 4. A Mk track paid in Research (10/20/35) multiplies every level ×1.25/×1.5/×1.75. Mk II needs 1 Science level, Mk III needs 3 and removes the downside, Mk IV needs the linked science project. Society and Economy have a Levels / Mk switch.
+- Every level and Mk of every program and project is named (`UPN`). Program LV 2, LV 4 and Mk III bring a decision (`MEV`, 30 events).
+- Welfare raises the Stability target by 4 per level and Family Policy by 1. Strategic Reserves now need crew. Tap Pop for the growth breakdown.

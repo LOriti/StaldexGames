@@ -13,7 +13,7 @@ function sandbox() {
   const ctx = { Math, Set, Object, Array, JSON, console, document: { querySelector: () => null }, log: () => {}, float: () => {} };
   vm.createContext(ctx);
   vm.runInContext(consts.replace(/^let G=null.*$/m, 'var G=null, screen="title", skip=false, INV=null;') + model +
-    ';globalThis.api={NODES,DIRS,PEV,LANES,TRAITS,SPECIES,econ,counters,battleInit,battleWave,battleRun,traitorDrift,cloneS,applyFx};', ctx);
+    ';globalThis.api={NODES,DIRS,PEV,LANES,TRAITS,SPECIES,econ,counters,battleInit,battleWave,battleRun,traitorDrift,cloneS,applyFx,applyProg,applyMk,UPN,MEV};', ctx);
   return ctx.api;
 }
 function state(over = {}) {
@@ -104,4 +104,23 @@ test('holding the surface after wave 3 means a standoff, not an occupation', () 
     assert.equal(B.long.mode === 'stand', held);
   }
   assert.ok(Object.keys(B.infra).length > 0, 'infrastructure tracked');
+});
+
+test('program Mk multiplies every level, past and future', () => {
+  const A = sandbox();
+  const s = state({ uses: { wel: 2 } });
+  const wel = A.DIRS.find(d => d.id === 'wel');
+  const before = s.dr.Seq;
+  A.applyMk(s, wel);
+  assert.equal(Math.round((s.dr.Seq - before) * 100) / 100, 2 * 4 * 0.25);
+  assert.equal(s.pmk.wel, 1);
+});
+
+test('every program and project has four level names and three Mk names', () => {
+  const A = sandbox();
+  for (const id of [...A.DIRS.map(d => d.id), ...A.NODES.map(n => n.id)]) {
+    assert.equal(A.UPN[id].lv.length, 4, id);
+    assert.equal(A.UPN[id].mk.length, 3, id);
+  }
+  for (const e of A.MEV) assert.ok(A.UPN[e.p], e.p);
 });
