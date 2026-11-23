@@ -458,3 +458,10 @@ A strategy bot (each turn it buys the most projected days per point spent) playe
 - **Links:** Industry >60 cuts Defence prices 1%/pt · Knowledge >40 cuts Research costs 1%/pt · Resolve >70: conscripts ×0.6 · Stability <35: crew −10% · Traitors >30 leak the build (enemy shifts 5 points at Years 20/40/60/80, cap 10) · Pop scales their Siege in supply (×Pop/12, 0.7–1.6). Shown under "Links" in meter sheets.
 - **Combos (`COMBOS`):** Welfare 3 + Hardened Cities, Basic Training 3 + Legion, Unity 4 + Counter-AI, Research Grants 4 + Xenobiology, Industrial Mobilisation 4 + Fleet. Shown on the selected project card and in program sheets.
 - **Events:** sabotage (Traitors >30, 8%/yr; stopped by Internal Security LV 2), housing crisis (Pop >15bn, unless Welfare LV 3), boom (Year 33) and bust (Year 71), and one species event at Year 45 (`SPEV`). Events queue rather than overwrite each other.
+
+## Round 9 · battle pacing, program rows
+
+- The fixed pre-wave card and post-wave council are gone. After a wave, a decision appears only when something specific happened (`crisis()`), each at most once per battle: **the gates open** (Inside < 0.85×), **a lane is breaking** (a lost lane), **they are reeling** (≥28% of their fleet destroyed in one wave), **the lines are thinning** (reserves spent).
+- Every wave end, and the end of the battle, waits for a tap (`WAVE n ▸`, `DEBRIEF ▸`), so the log can be read.
+- Program rows show both Effort and Mk buttons; the Levels / Mk switch is gone. Project cards keep the LV and MK buttons at half width each, with a "MAX" placeholder.
+- The Mk requirement now reads "build any Science project first" / "needs 3 levels across Science projects", with a link to the Science tab in the program sheet.

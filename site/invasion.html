@@ -341,11 +341,15 @@ p.voice{color:var(--bad);font-family:var(--mono);font-size:12px}
 .pmode{display:flex;gap:4px;margin-bottom:5px}.pmode button{flex:1;font-family:var(--mono);font-size:9.5px;letter-spacing:.06em;padding:5px 0;border:1px solid var(--ln);border-radius:7px;color:var(--mu);background:var(--p1)}
 .pmode button.on{color:#1c1b18;background:var(--ac);border-color:var(--ac)}.pmode button[data-pm="R"].on{background:var(--rp);border-color:var(--rp)}
 .slim .nm em i{font-style:normal;color:var(--rp)}
-#panel .slim{padding:6px 11px!important;margin-bottom:3px!important}#panel .slim .nm{font-size:14px!important}#panel .slim .sp{margin-top:2px!important;font-size:10px!important}.pmode{margin-bottom:4px}.pmode button{padding:4px 0}
+#panel .slim{padding:6px 11px!important;margin-bottom:3px!important}#panel .slim .nm{font-size:14px!important}#panel .slim .sp{margin-top:2px!important;font-size:10px!important;line-height:1.3}.pmode{margin-bottom:4px}.pmode button{padding:4px 0}
 .pe.cmp .pm{flex-direction:column;align-items:flex-start!important;gap:3px;margin-top:1px!important}
 .card.pe.cmp{padding:4px 10px 5px!important;margin-bottom:4px!important}.pe.cmp .nm{font-size:14px!important}.pe.cmp .pb2 button{padding:3px 8px}
-.pmode button{padding:3px 0!important;font-size:9px!important}#panel .slim{padding:5px 11px!important}
+.pmode button{padding:3px 0!important;font-size:9px!important}#panel .slim{padding:5px 11px!important;margin-bottom:2px!important}
 .combo{font-family:var(--mono);font-size:9.5px;margin-top:3px;line-height:1.35}
+.pe .pb .ph{flex:1;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:9.5px;color:var(--mu);border:1px dashed var(--ln);border-radius:7px}
+.slim .cb2{display:grid;grid-template-columns:46px 46px;gap:4px;flex:0 0 auto;align-items:stretch}
+.slim .cb2 .cost{padding:4px 2px!important;font-size:10px!important;line-height:1.2;width:46px;text-align:center}
+.slim .cb2 .ph.sm{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8.5px;color:var(--mu);border:1px dashed var(--ln);border-radius:7px;text-align:center}
 .y.pos{color:var(--ok)}.y.neg{color:var(--bad)}
 </style>
 </head>
@@ -1269,7 +1273,7 @@ function lvName(id,s=G){const u=UPN[id];if(!u)return'';const L=DIRS.some(d=>d.id
 function mkName(id,s=G){const u=UPN[id];if(!u)return'';const T=DIRS.some(d=>d.id===id)?pmk(s,id):tc(s,id);return T?u.mk[T-1]:''}
 function nameNow(id,s=G){return [lvName(id,s),mkName(id,s)].filter(Boolean).join(' · ')}
 function mkReq(d){const nx=pmk(G,d.id);const sci=brLevels(G,'sci',99);
-  if(nx===0)return sci>=1?'':'needs 1 Science level';if(nx===1)return sci>=3?'':`needs 3 Science levels (have ${sci})`;if(nx===2)return G.owned.has(UPN[d.id].link)?'':`needs ${NB[UPN[d.id].link].n}`;return'max'}
+  if(nx===0)return sci>=1?'':'build any Science project first';if(nx===1)return sci>=3?'':`needs 3 levels across Science projects (have ${sci})`;if(nx===2)return G.owned.has(UPN[d.id].link)?'':`needs ${NB[UPN[d.id].link].n}`;return'max'}
 function mileEv(d,at){const e=MEV.find(x=>x.p===d.id&&x.at===at);if(!e)return;G.mq={t:e.t,d:e.d,o:e.o.map(o=>[o[0],o[2],o[1]]),lab:`${at==='mk3'?mkName(d.id):lvName(d.id)} · ${d.n} ${at==='mk3'?'Mk III':'LV '+at.slice(2)}`}}
 function fireMq(){if(!G.mq)return false;const e=G.mq;G.mq=null;showEvent(e,e.lab);return true}
 const mkCost=(s,mk)=>Math.round(MKC[mk]*kDisc(s));
@@ -1351,13 +1355,12 @@ function plusText(d){
   const good=order.filter(k=>!neg.has(k)),bad=order.filter(k=>neg.has(k));
   return{txt:[...good,...bad].map(k=>`${k} ${m[k].join(', ')}`).join(' · '),bad:bad.length>0};
 }
-function slimRow(d,noMk){const i=DIRS.indexOf(d),c=progCost(d),u=G.uses[d.id]||0,pt=plusText(d),mk=pmk(G,d.id),req=mkReq(d),max=u>=MAXP,R=G.pmode==='R'&&!noMk;
-  let sub,btn,bad=pt.bad;
-  if(R){bad=false;sub=mk>=3?'<span class="mut">Mk IV · fully upgraded</span>':`<b style="color:var(--rp)">${UPN[d.id].mk[mk]}</b> → every level ×${MKM[mk+1]}${mk+1===2?', no downside':''}${req?` · <span class="neg">${req}</span>`:''}`;
-    btn=mk>=3?'':`<button class="cost rk" data-mk="${i}" ${!req&&G.RP>=mkCost(G,mk)&&!G.final?'':'disabled'}>${mkCost(G,mk)} R</button>`}
-  else{sub=max?`<span class="mut">LV MAX · ${UPN[d.id].lv[3]}</span>`:`<b>${UPN[d.id].lv[u]}</b> → ${pt.txt}`;btn=max?'':`<button class="cost" data-d="${i}" ${G.E>=c&&!G.final?'':'disabled'}>${c} E</button>`}
-  return `<div class="slim" data-tap="prog:${d.id}"><div class="sm"><div class="sh"><span class="nm">${d.n}${u||mk?` <em>LV ${u}${mk?` <i>MK ${MK[mk]}</i>`:''}</em>`:''}</span>${R?trk(mk,RPC,3):trk(u,AC,4)}</div><div class="sp" style="color:${bad&&!max?'var(--wa)':'var(--ok)'}">${sub}</div></div>${btn}</div>`}
-const pmodeBar=()=>`<div class="pmode"><button data-pm="E" class="${G.pmode!=='R'?'on':''}">LEVELS · EFFORT</button><button data-pm="R" class="${G.pmode==='R'?'on':''}">MK · RESEARCH</button></div>`;
+function slimRow(d,noMk){const i=DIRS.indexOf(d),c=progCost(d),u=G.uses[d.id]||0,pt=plusText(d),mk=pmk(G,d.id),req=mkReq(d),max=u>=MAXP;
+  const sub=max?`<span class="mut">LV MAX · ${UPN[d.id].lv[3]}</span>`:`<b>${UPN[d.id].lv[u]}</b> → ${pt.txt}`;
+  const eb=max?`<span class="ph sm">LV MAX</span>`:`<button class="cost" data-d="${i}" ${G.E>=c&&!G.final?'':'disabled'}>${c} E</button>`;
+  const rb=noMk?'':mk>=3?`<span class="ph sm">MK MAX</span>`:`<button class="cost rk" data-mk="${i}" ${!req&&G.RP>=mkCost(G,mk)&&!G.final?'':'disabled'}>${req?'🔒 ':''}MK ${MK[mk+1]}<br>${mkCost(G,mk)} R</button>`;
+  return `<div class="slim" data-tap="prog:${d.id}"><div class="sm"><div class="sh"><span class="nm">${d.n}${u||mk?` <em>LV ${u}${mk?` <i>MK ${MK[mk]}</i>`:''}</em>`:''}</span></div><div class="sp" style="color:${pt.bad&&!max?'var(--wa)':'var(--ok)'}">${sub}</div></div><div class="cb2">${eb}${rb}</div></div>`}
+const pmodeBar=()=>'';
 const PURGE_CD=10;
 function purgeReady(){return(G.purgeY==null||G.year-G.purgeY>=PURGE_CD)&&!G.final}
 function purgeStrip(){if(G.T<25)return'';const ok=purgeReady()&&G.E>=25;const cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;
@@ -1365,7 +1368,7 @@ function purgeStrip(){if(G.T<25)return'';const ok=purgeReady()&&G.E>=25;const cd
 function doPurge(){if(G.E<25||!purgeReady())return;G.E-=25;const t0=G.T;G.T=Math.round(G.T*.6);G.S=clamp(G.S-6,0,100);G.R=clamp(G.R-3,0,100);G.purgeY=G.year;log(`Purge ordered. Traitors ${Math.round(t0)} → ${G.T}. Stability −6, Resolve −3.`);float('PURGE · TRAITORS −40%','#c0533f');G.ec=econ(G);render()}
 function bindProgs(P){P.querySelectorAll('[data-d]').forEach(b=>b.onclick=e=>{e.stopPropagation();doProg(DIRS[+b.dataset.d])});P.querySelectorAll('[data-mk]').forEach(b=>b.onclick=e=>{e.stopPropagation();doMk(DIRS[+b.dataset.mk])});P.querySelectorAll('[data-pm]').forEach(b=>b.onclick=e=>{e.stopPropagation();G.pmode=b.dataset.pm;render()});const pb=$('#purgeBtn');if(pb)pb.onclick=doPurge}
 function rSoc(P){P.innerHTML=pmodeBar()+DIRS.filter(d=>d.area==='peo').map(d=>{const pg=d.id==='sec'&&G.T>=25;let h=slimRow(d,pg);if(pg){const ok=purgeReady()&&G.E>=25,cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;
-    h=h.replace('<div class="slim">','<div class="slim purge">').replace('<button class="cost"',`<button class="cost pg" id="purgeBtn" ${ok?'':'disabled'}>${cd?`PURGE<br>${cd} yrs`:'PURGE −40%<br>25 E'}</button><button class="cost"`).replace(/<span class="trk">.*?<\/span>/,'')}return h}).join('');bindProgs(P)}
+    h=h.replace('<div class="slim"','<div class="slim purge"').replace('<button class="cost"',`<button class="cost pg" id="purgeBtn" ${ok?'':'disabled'}>${cd?`PURGE<br>${cd} yrs`:'PURGE<br>25 E'}</button><button class="cost"`).replace(/<span class="trk">.*?<\/span>/,'')}return h}).join('');bindProgs(P)}
 function rEco(P,ec){
   P.innerHTML=pmodeBar()+DIRS.filter(d=>d.area==='eco').map(d=>slimRow(d)).join('')+`<div class="box tight" data-tap="effort"><div class="lbl">Upkeep · −${ec.upkeep.toFixed(2)}/yr</div>`+(ec.ups.length?ec.ups.slice().sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,u])=>lg(n,`<span class="neg">−${u.toFixed(2)}</span>`)).join('')+(ec.ups.length>3?`<div class="lg2">+${ec.ups.length-3} more ›</div>`:''):lg('Nothing built yet','<span class="mut">0</span>'))+`</div>`;
   bindProgs(P);
@@ -1398,6 +1401,8 @@ function projCard(n,ec,compact){
   else{
     if(S<MAXS){const im=btnImpact(n,'E',ec);btns+=`<button class="e" data-n="${n.id}" data-k="E" ${G.E>=pe?'':'disabled'}><b>${built?'LV '+(S+1):'BUILD'} · ${pe} E</b> <span class="pos">${im.d}</span>${im.crew?` <span class="mut">${im.crew}</span>`:''}</button>`}
     if(built&&T<MAXT){const im=btnImpact(n,'R',ec);btns+=`<button class="r" data-n="${n.id}" data-k="R" ${G.RP>=pr?'':'disabled'}><b>MK ${MK[T+1]} · ${pr} R</b> <span class="pos">${im.d}</span>${im.crew?` <span class="mut">${im.crew}</span>`:''}</button>`}
+    if(built&&S>=MAXS&&T<MAXT)btns=`<span class="ph">LV MAX</span>`+btns;
+    if(built&&T>=MAXT&&S<MAXS)btns+=`<span class="ph">MK MAX</span>`;
     if(built&&S>=MAXS&&T>=MAXT)btns=`<span class="maxed">LV MAX · MK MAX</span>`;
   }
   const cbs=comboFor(n.id),unm=!compact&&cbs.length&&G.selPrj===n.id?`<div class="combo">${cbs.map(c=>{const on=combosOn(G).includes(c);return `<span class="${on?'pos':'mut'}">⚭ ${DIRS.find(d=>d.id===c.p).n} LV ${c.lv}: ${c.fx}${on?' ✓':''}</span>`}).join(' ')}</div>`:'';
@@ -1530,7 +1535,7 @@ function tapSheet(key){
   if(kind==='m'){meterSheet(arg);return}
   if(kind==='prog'){const d=DIRS.find(x=>x.id===arg),u=G.uses[arg]||0,mk=pmk(G,arg),U=UPN[arg];
     sheet('Program',d.n,box(U.lv.map((n,i)=>lg(`LV ${i+1} · ${n}`,i<u?'<span class="pos">done</span>':i===u?`${progCost(d)} E`:'',i<u?'':'mut')).join('')+U.mk.map((n,i)=>lg(`Mk ${MK[i+1]} · ${n}`,i<mk?'<span class="pos">done</span>':`${mkCost(G,i)} R · ×${MKM[i+1]}${i===1?' · removes downside':''}${i===2?' · needs '+NB[U.link].n:''}`)).join(''))+
-      (comboFor(arg).length?`<div class="lbl" style="margin-top:8px;color:var(--ac)">Combos</div>`+comboFor(arg).map(c=>lg(`⚭ LV ${c.lv} + ${NB[c.n].n}`,`${c.fx}${combosOn(G).includes(c)?' ✓':''}`)).join(''):'')+why('Levels (Effort) add the effect. Mk (Research) multiplies every level, past and future: ×1.25 / ×1.5 / ×1.75. Mk II needs 1 Science level, Mk III needs 3. LV 2, LV 4 and Mk III bring a decision.'),key);return}
+      (mkReq(d)&&mkReq(d)!=='max'?`<div class="lbl neg" style="margin-top:8px">Next Mk: ${mkReq(d)}</div>`+linkRow('Go to Science projects','Signal Analysis, Xenobiology, Counter-AI, Shield Physics','prj:sci:S1'):'')+(comboFor(arg).length?`<div class="lbl" style="margin-top:8px;color:var(--ac)">Combos</div>`+comboFor(arg).map(c=>lg(`⚭ LV ${c.lv} + ${NB[c.n].n}`,`${c.fx}${combosOn(G).includes(c)?' ✓':''}`)).join(''):'')+why('Levels (Effort) add the effect. Mk (Research) multiplies every level, past and future: ×1.25 / ×1.5 / ×1.75. Mk II needs 1 Science level, Mk III needs 3. LV 2, LV 4 and Mk III bring a decision.'),key);return}
   if(kind==='suspects'){suspectSheet();return}
   if(kind==='out'||kind==='crew'){const n=NB[arg];G.selPrj=arg;
     const r=ec.crewReq?ec.reg/ec.crewReq:1,c=ec.crewReq?ec.con/ec.crewReq:0,u=Math.max(0,1-r-c),need=G.owned.has(n.id)?crewOf(G,n.id,ec.crewMult):0;
@@ -1686,6 +1691,27 @@ function narrate(B,w,rec,d0){const q=[],days=rec.dayEnd-d0;const order=rec.rows.
   if(rec.destroyed>=15)at(.9,`Their fleet is down to ${Math.round(B.fleet)}%. ${rec.destroyed>=30?'Whole squadrons are gone.':'They are bleeding ships.'}`,'good');
   else at(.9,`Only ${Math.round(rec.destroyed)}% of their fleet destroyed. ${Math.round(B.fleet)}% remains.`,'bad');
   INV.q=q}
+function crisis(B,w,rec){B.crises=B.crises||{};const R=k=>rec.rows.find(x=>x.l.k===k),used=k=>B.crises[k];
+  const ins=R('inside'),lost=rec.rows.filter(x=>x.state==='lost').sort((a,b)=>a.r-b.r)[0],best=rec.rows.slice().sort((a,b)=>b.r-a.r)[0];
+  if(!used('gates')&&ins&&ins.r<.85)return{k:'gates',t:'The gates open',lead:'A garrison opened its gates to them. Traitors are moving on the depots.',d:`Inside held at only ${ins.r.toFixed(1)}×. Whoever opened the gates is still inside our lines.`,o:[
+    ['Purge the garrisons','Inside ×1.5 next wave · Resolve −4',()=>{B.L.find(l=>l.k==='inside').mod*=1.5;B.resolve-=4;line('Security: "The garrisons are clean. It was not pretty."','good')}],
+    ['Martial law','Inside ×1.25 · Stability −6 after the war',()=>{B.L.find(l=>l.k==='inside').mod*=1.25;B.sAdj=(B.sAdj||0)-6;line('Council: "Curfew in every city. Movement by permit only."','mute')}],
+    ['Trust our people','Resolve +3 · 50%: Inside ×0.85 next wave',()=>{B.resolve+=3;if(rnd()<.5){B.L.find(l=>l.k==='inside').mod*=.85;line('It was the wrong call. Another depot burns.','bad')}else line('The trust holds. Nobody else opens a gate.','good')}]]};
+  if(!used('break')&&lost&&best&&best!==lost)return{k:'break',t:`${lost.l.n} is breaking`,lead:`${lost.l.n} lost at ${lost.r.toFixed(1)}×. Commanders there are asking for help.`,d:`${best.l.n} is winning at ${best.r.toFixed(1)}×. Help can only come from somewhere.`,o:[
+    [`Strip ${best.l.n}`,`${lost.l.n} ×1.35 · ${best.l.n} ×0.8 next wave`,()=>{lost.l.mod*=1.35;best.l.mod*=.8;line(`Council: "Take it from ${best.l.n.toLowerCase()}. All of it."`,'mute')}],
+    ['Send the conscripts',`+${Math.min(.3,B.spare).toFixed(2)}bn conscripts to ${lost.l.n} · Resolve −2`,()=>{const add=Math.min(.3,B.spare),l=lost.l;B.spare-=add;if(l.crew)l.mix.con+=add/l.crew;else l.mod*=1.1;B.used.con+=add;B.resolve-=2;line(`Legion HQ: "${add.toFixed(2)}bn recruits on the way. Most have never fired a shot."`,'res')}],
+    ['Let it fall back','Population loss +2% · the other lanes ×1.1',()=>{B.popLoss+=.02;B.L.filter(l=>l!==lost.l).forEach(l=>l.mod*=1.1);line(`${lost.l.n} pulls back. The cities behind it are on their own.`,'bad')}]]};
+  if(!used('reel')&&rec.destroyed>=28)return{k:'reel',t:'They are reeling',lead:`Their fleet lost ${Math.round(rec.destroyed)}% in one wave. Fleet Actual wants to chase.`,d:`They are down to ${Math.round(B.fleet)}%. A strike now could finish the next wave before it lands, or walk into a trap.`,o:[
+    ['Chase them','60%: fleet −15% · 40%: Orbit ×0.7',()=>{if(rnd()<.6){B.fleet=Math.max(0,B.fleet-15);line('Fleet Actual: "We caught them in transit. Fifteen percent of their fleet is gone."','good');if(B.fleet<=.5){B.fleet=0;B.won='repel'}}else{B.L.find(l=>l.k==='orbit').dmg*=.7;line('Fleet Actual: "It was a trap. We lost three ships getting out."','bad')}}],
+    ['Let them come','Every lane ×1.1 next wave',()=>{B.L.forEach(l=>l.mod*=1.1);line('Council: "Let them come to us. We are ready."','mute')}]]};
+  if(!used('thin')&&B.reserves<.05&&B.spare>.05)return{k:'thin',t:'The lines are thinning',lead:'Reserves are spent. Every loss from here is replaced by someone untrained.',d:'The trained reserve is gone. What comes next is a choice about who fights.',o:[
+    ['Draft everyone','+0.3bn conscripts across the lanes · Stability −5 after the war',()=>{const add=Math.min(.3,B.spare);B.spare-=add;const cl=B.L.filter(l=>l.crew);cl.forEach(l=>l.mix.con+=add/cl.length/l.crew);B.used.con+=add;B.sAdj=(B.sAdj||0)-5;line('Council: "Every adult who can hold a rifle reports by Friday."','res')}],
+    ['Pull back the veterans','Weakest lane ×1.2 · strongest ×0.9',()=>{const o=B.L.slice().sort((a,b)=>laneStr(a)/a.th-laneStr(b)/b.th);o[0].mod*=1.2;o[o.length-1].mod*=.9;line('The best units are moved to where the line is thinnest.','mute')}]]};
+  return null}
+function crisisCard(B,w,c){return new Promise(res=>{const wasSkip=skip;skip=false;B.crises[c.k]=1;
+  $('#sheet').innerHTML=`<div class="lbl">Decision · after wave ${w+1}</div><h2>${c.t}</h2><p>${c.d}</p>`+c.o.map((o,j)=>`<button class="opt" data-j="${j}"><b>${o[0]}</b><span>${o[1]}</span></button>`).join('');
+  $('#modal').dataset.dismiss='';$('#modal').classList.remove('hidden');
+  $('#sheet').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const o=c.o[+b.dataset.j];o[2]();G.council.push(`W${w+1} · ${c.t}: ${o[0]}`);bRender();$('#modal').classList.add('hidden');skip=wasSkip;res()})})}
 function bCouncil(B,w,rec){
   return new Promise(res=>{const wasSkip=skip;skip=false;
     const won=rec.rows.filter(x=>x.state==='won').length,worst=rec.rows.slice().sort((a,b)=>a.r-b.r)[0];
@@ -1745,8 +1771,6 @@ async function playInvasion(){
     line(SPB[G.sp].say[w],'bad');
     if(w===0)Object.keys(G.enemy).forEach(t=>line(TRAITS[t].c,'bad'));
     await sleep(600);
-    if(w===0){line('Orders are needed before contact.','mute');await gate('ORDERS FOR WAVE 1 ▸')}
-    await midCard(B,w);
     const d0=B.days,rec=battleWave(B,w);narrate(B,w,rec,d0);
     INV.mid=()=>{rec.ev.forEach(tideLine);INV.kill=(100-B.fleet)/100;INV.fleetLoss=clamp(1-rec.forces,0,1)};
     await animDays(w,d0,rec.dayEnd,2600+3000*Math.min(1,rec.days/150));
@@ -1754,7 +1778,7 @@ async function playInvasion(){
     line(`WAVE ${w+1} COMPLETE · their fleet −${Math.round(rec.destroyed)}% · ${Math.round(B.fleet)}% left · ${fmtD(rec.days)}`,'hdr');
     bRender(rec);const ws=$('#wsBtn');ws.style.visibility='visible';ws.textContent=`WAVE ${w+1} SUMMARY ›`;ws.onclick=()=>waveSheet(w);await sleep(900);
     if(B.won)break;
-    if(w<2){line('The war council is waiting.','mute');await gate(`WAR COUNCIL · WAVE ${w+2} ORDERS ▸`);await bCouncil(B,w,rec);if(B.won)break}
+    if(w<2){const c=crisis(B,w,rec);if(c){line(c.lead,'bad tide');await gate(`DECISION · ${c.t.toUpperCase()} ▸`);await crisisCard(B,w,c);if(B.won)break;await gate(`WAVE ${w+2} ▸`)}else{line(pick(['No new orders. The line holds.','Command: "Hold what you have. Reload. Rest if you can."','The council has nothing to add. The plan is working.']),'mute');await gate(`WAVE ${w+2} ▸`)}}
   }
   if(!B.won){
     const lw=B.waves[B.waves.length-1],stand=['ground','inside'].every(k=>lw.rows.find(x=>x.l.k===k).state==='won');
@@ -1780,7 +1804,7 @@ async function playInvasion(){
   else{INV.done=true;INV.doneAt=performance.now();INV.p=1.01;line('Final transmission received from Council Site 4. Then silence.','mute')}
   if(B.ark)line('The Ark Project leaves the Lagrange point with 40,000 people aboard. Heading: away.','good');
   INV.total=B.days;$('#dctr').textContent=Math.floor(B.days);$('#phase').textContent=B.won?'VICTORY':'END';
-  await sleep(B.won?3500:2600);debrief();
+  await sleep(1200);await gate('DEBRIEF ▸');debrief();
 }
 function getBestWin(){try{return +localStorage.getItem('invasion.bestWin')||0}catch(e){return 0}}
 function setBestWin(v){try{localStorage.setItem('invasion.bestWin',v)}catch(e){}}
