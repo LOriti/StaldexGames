@@ -465,3 +465,12 @@ A strategy bot (each turn it buys the most projected days per point spent) playe
 - Every wave end, and the end of the battle, waits for a tap (`WAVE n ▸`, `DEBRIEF ▸`), so the log can be read.
 - Program rows show both Effort and Mk buttons; the Levels / Mk switch is gone. Project cards keep the LV and MK buttons at half width each, with a "MAX" placeholder.
 - The Mk requirement now reads "build any Science project first" / "needs 3 levels across Science projects", with a link to the Science tab in the program sheet.
+
+## Round 10 · Research scales with population · Invasion 2 prototype
+
+- Research = (Knowledge × 0.035 × √(Pop/8) + labs) × University. Bot check: Easy 78%, Medium 22% (18 runs each, noisy).
+- **`site/invasion2.html` (/invasion2):** a prototype with the same model and battle, on a new main screen.
+  - **Map hub:** top bar, 2×2 meters, a large planet, a readiness strip (each lane's likely ratio, the top suspect, and the weakest lane with its best buy), ticker, and a dock (Society · Economy · Projects · War Room · Log). The dock opens half-sheets holding the original tabs.
+  - **Raise a lane:** tap a lane for every project, Mk and program that raises it, ranked by lane gain per point spent (`laneOpts`).
+  - **Field operations:** Effort and Research drops (tap to collect, expire after 4 years); 5 rim regions to scout (intel reliability +2% each up to +10%, plus a clue or intel report) and then claim (+10 to one lane, Western +4 to all, via `G.lb`); local crises with a 5-year timer (relief / crackdown; ignored = Stability −5, Traitors +3); alert bubbles (Traitors, Stability, weakest lane, new clue) that open the relevant sheet.
+  - Campaign progress is shared with /invasion (the same localStorage key).
