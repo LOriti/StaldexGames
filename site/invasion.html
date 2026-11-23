@@ -325,6 +325,13 @@ td.n{font-family:var(--mono);text-align:right}
 .gchips button.on{border-color:var(--ac);background:var(--ac);color:#1c1b18}.gchips button.on em{color:#1c1b18}
 p.voice{color:var(--bad);font-family:var(--mono);font-size:12px}
 .dl{padding:4px 0;border-bottom:1px solid var(--ln);font-size:12.5px;line-height:1.4}.dl:last-child{border:0}.dl .lbl{font-size:9px}
+.lc.dp{padding:5px 10px!important;margin-bottom:4px!important;cursor:default}.lc.dp .lt b em{font-style:normal;font-family:var(--mono);font-size:10px;font-weight:400;color:var(--mu);margin-left:4px}.lc.dp .mb2{height:7px;margin-top:3px}
+.dph{margin:6px 0 4px;color:var(--ac)}
+.gchips.g6{grid-template-columns:repeat(auto-fit,minmax(54px,1fr));gap:4px}.gchips.g6 button{padding:5px 1px;font-size:10px}
+.dpgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(62px,1fr));gap:4px;margin-bottom:2px}
+.dpgrid button{background:var(--p2);border:1px solid var(--ln);border-radius:8px;padding:6px 2px;display:flex;flex-direction:column;align-items:center;gap:1px;color:var(--tx)}
+.dpgrid button b{font-size:12px}.dpgrid button span{font-family:var(--mono);font-size:9px;color:var(--mu);text-align:center}
+.dpgrid button.on{background:var(--ac);border-color:var(--ac);color:#1c1b18}.dpgrid button.on span{color:#1c1b18}
 .y.pos{color:var(--ok)}.y.neg{color:var(--bad)}
 </style>
 </head>
@@ -1366,25 +1373,23 @@ function enterFinal(){
 }
 function openDeploy(pick){
   const pool=Math.floor((Math.max(0,G.E)+Math.max(0,G.RP))/3);const ec=econ(G);
-  const W=warEstimate(),Lk=W.Lk,B=battleInit(G,intelRead(G).e,true),{src}=counters(G,ec);
+  const W=warEstimate(),Lk=W.Lk,B=battleInit(G,intelRead(G).e,true);
   G._pick=pick!==undefined?pick:(G._pick||null);
-  const conf=TK.filter(t=>Lk[t]>=.999).map(t=>TRAITS[t].n),likely=TK.filter(t=>Lk[t]>=.65&&Lk[t]<.999).map(t=>TRAITS[t].s);
-  const cards=B.L.map(l=>{const [lo,hi]=likelyRange(G,l,Lk);const mid=(lo+hi)/2;const add=G._pick===l.k?pool:G._pick==='spread'?pool/4:0;const you=l.you0;
+  const conf=TK.filter(t=>Lk[t]>=.999).map(t=>TRAITS[t].s),likely=TK.filter(t=>Lk[t]>=.65&&Lk[t]<.999).map(t=>TRAITS[t].s);
+  const cards=B.L.map(l=>{const [lo,hi]=likelyRange(G,l,Lk);const you=l.you0;
     const rLo=you/Math.max(1,hi),rHi=you/Math.max(1,lo);const absent=hi<=ABSENT+1;
-    const pred=absent?['win · they likely sent little','pos']:rLo>=1.2?[`win ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'pos']:rHi<.8?[`lose ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'neg']:[`${rLo.toFixed(1)}–${rHi.toFixed(1)}× contested`,'wa'];
-    const items=l.tr.flatMap(t=>src[t].items).sort((a,b)=>b.v-a.v).slice(0,3).map(x=>`${x.n.replace('Planetary ','')} ${Math.round(x.v/l.tr.length)}`).join(' · ')||'meters only';
+    const pred=absent?['win · little sent','pos']:rLo>=1.2?[`win ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'pos']:rHi<.8?[`lose ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'neg']:[`${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'wa'];
     const sc=Math.max(200,you*1.08,hi*1.08);
-    return `<div class="lc"><div class="lt"><b>${l.n}</b><span class="${pred[1]}">${pred[0]}</span></div><div class="mb2"><i style="width:${Math.min(100,you/sc*100)}%"></i><b style="left:${lo/sc*100}%;width:${Math.max(1.5,(hi-lo)/sc*100)}%"></b></div><div class="ms2">${Math.round(you)} vs ${Math.round(lo)}${hi>lo+1?'–'+Math.round(hi):''} · ${items}</div></div>`}).join('');
-  const opt=(k,lab)=>{const l=B.L.find(x=>x.k===k);let txt;if(k==='spread')txt=`+${Math.round(pool/4)} each`;else{const [lo,hi]=likelyRange(G,l,Lk);txt=`${Math.round(l.you0)} → ${Math.round(l.you0+pool)} · ${((l.you0+pool)/Math.max(1,hi)).toFixed(1)}–${((l.you0+pool)/Math.max(1,lo)).toFixed(1)}×`}
-    return `<button class="opt${G._pick===k?' on':''}" data-c="${k}"><b>${lab}</b><span>${txt}</span></button>`};
-  const moth=[...G.moth];
-  $('#sheet').innerHTML=`<div class="lbl" style="color:var(--ac)">Year 100 · War council</div><h2>What we take into the war</h2><div class="ms2" style="margin-bottom:6px">${conf.length?`Confirmed: ${conf.join(', ')}`:'Nothing confirmed'}${likely.length?` · likely ${likely.join(', ')}`:''} · crew ${ec.crewReq.toFixed(2)}bn, ${Math.round(ec.crewEff*100)}% strength · reserves ${ec.reserves.toFixed(2)}bn${vetOf(G)>1?' (×1.2 veterans)':''}</div>`+cards+
-   `<div class="ms2" style="margin:2px 0 8px">Supply ~${W.sup} d · Outlast ~${W.out}% · Repel ~${W.rep}% · ${moth.length?`mothballed: ${moth.map(id=>NB[id].n).join(', ')}`:'nothing mothballed'}</div>`+
-   moth.map(id=>`<button class="opt" data-r="${id}"><b>Reactivate ${NB[id].n}</b><span>50% readiness on day 1 · crew ${crewOf(G,id,ec.crewMult).toFixed(2)}bn from reserves</span></button>`).join('')+
-   (()=>{const Sx=suspects(G);const c=SPECIES.filter(x=>Sx[x.id]>0);return `<div class="lbl" style="margin:4px 0 6px;color:var(--ac)">Name the enemy · right = +10% in their lanes</div><div class="gchips">${c.map(x=>`<button class="${G.guess===x.id?'on':''}" data-g="${x.id}">${x.code.replace('The ','')}<em>${Math.round(Sx[x.id]*100)}%</em></button>`).join('')}</div>`})()+
-   `<div class="lbl" style="margin:4px 0 6px;color:var(--ac)">Leftovers · ${Math.max(0,Math.floor(G.E))} Effort + ${Math.max(0,Math.floor(G.RP))} Research → +${pool} readiness to one lane</div>`+
-   (pool?`<div class="optgrid">${opt('orbit','Orbit')}${opt('sky','Sky')}${opt('ground','Ground')}${opt('inside','Inside')}</div><button class="opt${G._pick==='spread'?' on':''}" data-c="spread" style="margin-top:6px"><b>Spread</b><span>+${Math.round(pool/4)} to each lane</span></button>`:`<div class="hint">Nothing left to convert.</div>`)+
-   `<div style="display:flex;gap:8px;margin-top:10px"><button class="btn ghost" id="backBtn" style="flex:1">◂ BACK TO SPEND</button><button class="btn" id="goBtn" style="flex:1" ${pool&&!G._pick?'disabled':''}>COMMIT ▸</button></div>`;
+    return `<div class="lc dp"><div class="lt"><b>${l.n} <em>${Math.round(you)} vs ${Math.round(lo)}${hi>lo+1?'–'+Math.round(hi):''}</em></b><span class="${pred[1]}">${pred[0]}</span></div><div class="mb2"><i style="width:${Math.min(100,you/sc*100)}%"></i><b style="left:${lo/sc*100}%;width:${Math.max(1.5,(hi-lo)/sc*100)}%"></b></div></div>`}).join('');
+  const opt=k=>{if(k==='spread')return `<button class="${G._pick==='spread'?'on':''}" data-c="spread"><b>Spread</b><span>+${Math.round(pool/4)} each</span></button>`;
+    const l=B.L.find(x=>x.k===k);const [lo,hi]=likelyRange(G,l,Lk);return `<button class="${G._pick===k?'on':''}" data-c="${k}"><b>${l.n}</b><span>→ ${Math.round(l.you0+pool)}</span><span>${((l.you0+pool)/Math.max(1,hi)).toFixed(1)}–${((l.you0+pool)/Math.max(1,lo)).toFixed(1)}×</span></button>`};
+  const moth=[...G.moth];const Sx=suspects(G);const cand=SPECIES.filter(x=>Sx[x.id]>0);
+  $('#sheet').innerHTML=`<div class="lbl" style="color:var(--ac)">Year 100 · War council</div><h2 style="margin-bottom:2px">What we take into the war</h2><div class="ms2" style="margin-bottom:5px">${conf.length?`Confirmed ${conf.join(', ')}`:'Nothing confirmed'}${likely.length?` · likely ${likely.join(', ')}`:''} · crew ${Math.round(ec.crewEff*100)}% · reserves ${ec.reserves.toFixed(2)}bn${vetOf(G)>1?' ×1.2':''}</div>`+cards+
+   `<div class="ms2" style="margin:1px 0 5px">Supply ~${W.sup} d · Outlast ~${W.out}% · Repel ~${W.rep}%</div>`+
+   (moth.length?`<div class="dpgrid">${moth.map(id=>`<button data-r="${id}"><b>Reactivate</b><span>${NB[id].n}</span><span>50% on day 1</span></button>`).join('')}</div>`:'')+
+   `<div class="lbl dph">Name the enemy · right = +10% in their lanes</div><div class="gchips g6">${cand.map(x=>`<button class="${G.guess===x.id?'on':''}" data-g="${x.id}">${x.code.replace('The ','')}<em>${Math.round(Sx[x.id]*100)}%</em></button>`).join('')}</div>`+
+   (pool?`<div class="lbl dph">Leftovers · ${Math.max(0,Math.floor(G.E))} E + ${Math.max(0,Math.floor(G.RP))} R → +${pool} readiness</div><div class="dpgrid">${['orbit','sky','ground','inside','spread'].map(opt).join('')}</div>`:`<div class="hint">No leftovers to convert.</div>`)+
+   `<div style="display:flex;gap:8px;margin-top:8px"><button class="btn ghost" id="backBtn" style="flex:1">◂ BACK TO SPEND</button><button class="btn" id="goBtn" style="flex:1" ${pool&&!G._pick?'disabled':''}>COMMIT ▸</button></div>`;
   $('#modal').classList.remove('hidden');$('#modal').dataset.dismiss='1';
   $('#backBtn').onclick=()=>{$('#modal').classList.add('hidden');render()};
   $('#sheet').querySelectorAll('[data-r]').forEach(b=>b.onclick=()=>{toggleMoth(b.dataset.r);openDeploy()});
