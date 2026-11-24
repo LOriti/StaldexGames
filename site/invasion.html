@@ -356,6 +356,9 @@ p.voice{color:var(--bad);font-family:var(--mono);font-size:12px}
 .lane.lost{background:rgba(192,83,63,.12);border-radius:7px;box-shadow:inset 3px 0 0 var(--bad);animation:lanep 1.2s infinite}
 .lane.even{box-shadow:inset 3px 0 0 var(--wa);border-radius:7px}.lane.won{box-shadow:inset 3px 0 0 var(--ok);border-radius:7px}
 @keyframes lanep{50%{background:rgba(192,83,63,.24)}}
+.gapbox{border:1px solid var(--ln);border-radius:10px;padding:3px 9px;margin-bottom:4px;background:var(--p1);cursor:pointer}.gapbox div{font-family:var(--mono);font-size:10px;line-height:1.35;margin-top:2px}
+#panel .lc{padding:5px 10px!important;margin-bottom:4px!important}#panel .lc .mb2{margin:3px 0!important}
+.gapl{font-family:var(--mono);font-size:9.5px;line-height:1.35;margin:2px 0 3px;cursor:pointer}
 .y.pos{color:var(--ok)}.y.neg{color:var(--bad)}
 </style>
 </head>
@@ -1452,11 +1455,27 @@ function rWar(P,ec){
     const absent=hi<=ABSENT+1;const pred=absent?['win · they likely sent little','pos']:rLo>=1.2?[`win ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'pos']:rHi<.8?[`lose ${rLo.toFixed(1)}–${rHi.toFixed(1)}×`,'neg']:[`${rLo.toFixed(1)}–${rHi.toFixed(1)}× contested`,'wa'];
     return{l,you,lo,hi,pred,rLo}});
   const weak=rows.slice().sort((a,b)=>a.rLo-b.rLo)[0];
-  P.innerHTML=rows.map(x=>{const sc=Math.max(200,x.you*1.08,x.hi*1.08);const odds=x.l.tr.map(t=>`${TRAITS[t].s} ${Math.round(W.Lk[t]*100)}%`).join(' · ');
+  const gv=defGap();P.innerHTML=rows.map(x=>{const sc=Math.max(200,x.you*1.08,x.hi*1.08);const odds=x.l.tr.map(t=>`${TRAITS[t].s} ${Math.round(W.Lk[t]*100)}%`).join(' · ');
     return `<div class="lc" data-tap="lane:${x.l.k}"><div class="lt"><b>${x.l.n}</b><span class="${x.pred[1]}">${x.pred[0]}${x===weak&&!x.pred[0].startsWith('win')?' · weakest':''}</span></div><div class="mb2"><i style="width:${Math.min(100,x.you/sc*100)}%"></i><b style="left:${x.lo/sc*100}%;width:${Math.max(1.5,(x.hi-x.lo)/sc*100)}%"></b></div><div class="ms2">${Math.round(x.you)} vs ${Math.round(x.lo)}${x.hi>x.lo+1?'–'+Math.round(x.hi):''} · ${odds}${x===weak?` · fix: ${FIX[x.l.k]} ›`:''}</div></div>`}).join('')+
-   `<div class="box tight proj" data-tap="estimate"><div class="lbl" style="color:var(--ac)">Estimate · 24 likely enemies ›</div>${lg('Fleet destroyed in 3 waves',`${W.k25}–${W.k75}%`)}${lg('Repel · Outlast',`<span class="${W.rep>=25?'pos':W.rep>0?'':'neg'}">~${W.rep}%</span> · <span class="${W.out>=25?'pos':W.out>0?'':'neg'}">~${W.out}%</span>`)}</div>`+
+   `<div class="box tight proj" data-tap="estimate"><div class="lbl" style="color:var(--ac)">Estimate · 24 likely enemies ›</div><div class="gapl" data-tap="gap">${gapLine(gv)} ›</div>${lg('Repel · Outlast',`<span class="${W.rep>=25?'pos':W.rep>0?'':'neg'}">~${W.rep}%</span> · <span class="${W.out>=25?'pos':W.out>0?'':'neg'}">~${W.out}%</span>`)}</div>`+
    `<div class="links"><button data-tap="suspects">${(()=>{const Sx=suspects(G),top=SPECIES.slice().sort((a,b)=>Sx[b.id]-Sx[a.id])[0];return G.clues.length?`${top.code.toUpperCase()} ${Math.round(Sx[top.id]*100)}%`:'SUSPECTS'})()} ›</button><button data-tap="reports">REPORTS (${G.reports.length}) ›</button><button data-tap="types">BY TYPE ›</button></div>`;
 }
+
+/* ---------- defence gap ---------- */
+function laneYouG(s,k,e){return battleInit(s,e,true).L.find(l=>l.k===k).you0}
+function laneRateE(k){const e=intelRead(G).e,base=laneYouG(G,k,e);let best=0;
+  NODES.forEach(n=>{const st=nodeState(n);if(['new','built'].includes(st)&&sz(G,n.id)<4){const a=cloneS(G);doBuild(a,n);best=Math.max(best,(laneYouG(a,k,e)-base)/priceE(n,sz(G,n.id)))}});
+  DIRS.forEach(dd=>{if((G.uses[dd.id]||0)<MAXP){const a=cloneS(G);applyProg(a,dd);a.uses[dd.id]=(a.uses[dd.id]||0)+1;best=Math.max(best,(laneYouG(a,k,e)-base)/progCost(dd))}});return best}
+let GAPC=null;
+function defGap(){const key=G.year+'|'+Math.round(G.E/5)+'|'+JSON.stringify(G.size)+JSON.stringify(G.tech)+JSON.stringify(G.uses)+JSON.stringify(G.lb)+(G.final?1:0);if(GAPC&&GAPC.key===key)return GAPC.v;
+  const W=warEstimate(),B=battleInit(G,intelRead(G).e,true);let cost=0,unreach=false;
+  const lanes=B.L.map(l=>{const [lo,hi]=likelyRange(G,l,W.Lk);if(hi<=ABSENT+1)return{k:l.k,n:l.n,short:0};const short=Math.max(0,hi*1.2-l.you0);let c=0;if(short>0){const r=laneRateE(l.k);if(r>0)c=short/r;else unreach=true}cost+=c;return{k:l.k,n:l.n,short,c}});
+  const net=G.ec?G.ec.net:econ(G).net,left=Math.max(0,100-G.year),yrs=cost<=0?0:net>0?cost/net:Infinity;
+  const v={lanes,cost,net,yrs,left,unreach,st:cost<=0?'ok':yrs<=left*.7?'ok':yrs<=left?'wa':'bad'};GAPC={key,v};return v}
+function gapLine(v){if(v.cost<=0)return `<span class="pos">No defence gap: every lane beats the top of the likely range by 1.2×.</span>`;
+  const sh=v.lanes.filter(x=>x.short>0).sort((a,b)=>b.short-a.short).map(x=>`${x.n} −${Math.round(x.short)}`).join(' · ');
+  const t=v.yrs===Infinity?'never at current income':`~${v.yrs<10?v.yrs.toFixed(1):Math.round(v.yrs)} yrs at ${sgn(v.net)} E/yr`;
+  return `<span class="${v.st==='ok'?'pos':v.st==='wa'?'wa':'neg'}">Gap ${sh} · ≈${Math.round(v.cost)} E · ${t} · ${v.left} yrs left${v.st==='ok'?' · on track':v.st==='wa'?' · tight':' · behind'}</span>`}
 /* ---------- side screen ---------- */
 function socWaterfalls(ec){
   const d=traitorDrift(G),u=G.uses.uni||0,s=G.uses.sec||0;const gu=-(DIRS.find(x=>x.id==='uni').dr.loy+.002),gs=-DIRS.find(x=>x.id==='sec').dr.sec;
@@ -1544,6 +1563,7 @@ function tapSheet(key){
     sheet('Program',d.n,box(U.lv.map((n,i)=>lg(`LV ${i+1} · ${n}`,i<u?'<span class="pos">done</span>':i===u?`${progCost(d)} E`:'',i<u?'':'mut')).join('')+U.mk.map((n,i)=>lg(`Mk ${MK[i+1]} · ${n}<br><span class="mut" style="font-size:10px">${['needs any Science project','removes downside · Science projects LV 3+','needs the '+NB[U.link].n][i]}</span>`,i<mk?'<span class="pos">done</span>':`${mkCost(G,i)} R · ×${MKM[i+1]}`)).join(''))+
       (mkReq(d)&&mkReq(d)!=='max'?`<div class="hint neg" style="margin-top:8px">🔒 Next Mk ${mkReq(d)}.</div>`+linkRow('Open Projects › Science','build or level up a Science project',`prj:sci:${pmk(G,arg)===2?UPN[arg].link:'S1'}`):'')+(comboFor(arg).length?`<div class="lbl" style="margin-top:8px;color:var(--ac)">Combos</div>`+comboFor(arg).map(c=>lg(`⚭ LV ${c.lv} + ${NB[c.n].n}`,`${c.fx}${combosOn(G).includes(c)?' ✓':''}`)).join(''):'')+why('Levels (Effort) add the effect. Mk (Research) multiplies every level, past and future: ×1.25 / ×1.5 / ×1.75. Science projects (Projects › Science) unlock Mk: any one for Mk II, LV 3 in total for Mk III, a specific one for Mk IV. LV 2, LV 4 and Mk III bring a decision.'),key);return}
   if(kind==='suspects'){suspectSheet();return}
+  if(kind==='gap'){const v=defGap();sheet('War Room','Defence gap',`<div class="trend">${gapLine(v)}</div>`+box(v.lanes.map(x=>lg(x.n,x.short>0?`short ${Math.round(x.short)} · ≈${Math.round(x.c)} E`:'<span class="pos">covered</span>')).join('')+lg('Effort income',`${sgn(v.net)} /yr`)+lg('Years to close',v.cost<=0?'0':v.yrs===Infinity?'never':v.yrs.toFixed(1),'tot'))+why('Target: each lane at 1.2× the top of the likely enemy range (a clear win). Cost uses the best-value Effort buy for each lane today, so it is a rough guide: prices rise as you buy, and new intel moves the range. Compare years to close with years left.'),'gap');return}
   if(kind==='out'||kind==='crew'){const n=NB[arg];G.selPrj=arg;
     const r=ec.crewReq?ec.reg/ec.crewReq:1,c=ec.crewReq?ec.con/ec.crewReq:0,u=Math.max(0,1-r-c),need=G.owned.has(n.id)?crewOf(G,n.id,ec.crewMult):0;
     const crewBox=n.crew&&G.owned.has(n.id)&&!G.moth.has(n.id)?box(lg('Crew needed',`${need.toFixed(2)}bn`)+lg('Regulars (trained) × 1.0',`${(need*r).toFixed(2)}bn`)+lg('Conscripts × 0.5',`${(need*c).toFixed(2)}bn`)+lg('Unfilled',`${(need*u).toFixed(2)}bn`)+lg('Strength',`${Math.round(ec.crewEff*100)}%`,'tot')):'';
