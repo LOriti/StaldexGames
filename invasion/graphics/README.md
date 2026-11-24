@@ -67,6 +67,8 @@ The animation loop is capped at 30 fps (15 with reduced motion) and skips
 rendering when the document is hidden. Reduced motion also freezes decorative
 star twinkles and orbit/pulse movement, and disables CSS transitions and pulses.
 Essential invasion arrival and damage effects still communicate battle events.
+Canvas-container resize observation prevents stretching when readiness panels
+or phone dimensions change the space available to the map.
 
 ### Reuse or removal
 
