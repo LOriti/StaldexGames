@@ -779,8 +779,9 @@ function buildScene(seed){
       ourShips:arr(6,(_,i)=>({o:i/6*6.283,k:r()}))};
 }
 function pol(o,R,cx,cy){return[cx+Math.cos(o.a)*o.d*R,cy+Math.sin(o.a)*o.d*R]}
-function mountCanvas(id){$(id).appendChild(cv);sizeCanvas()}
+function mountCanvas(id){$(id).appendChild(cv);if(canvasResize){canvasResize.disconnect();canvasResize.observe(cv.parentElement)}sizeCanvas()}
 function sizeCanvas(){const r=cv.getBoundingClientRect();if(!r.width)return;dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr}
+const canvasResize=typeof ResizeObserver==='function'?new ResizeObserver(sizeCanvas):null;
 window.addEventListener('resize',sizeCanvas);
 
 function viewMode(){if(!G||screen!=='game'||G.final)return'all';return G.tab==='prj'?'b:'+G.sub:G.tab==='soc'?'peo':G.tab==='war'?'int':G.tab}
