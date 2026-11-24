@@ -1624,7 +1624,13 @@ function openDeploy(pick){
     G.final=false;$('#modal').classList.add('hidden');playInvasion()};
 }
 const sleep=ms=>new Promise(r=>setTimeout(r,skip?0:ms));
-function line(s,cl=''){if(INV){INV.log=INV.log||[];INV.log.push([s,cl])}const d=document.createElement('div');d.className='ln '+cl;d.innerHTML=s;const L=$('#lines');L.appendChild(d);L.scrollTop=L.scrollHeight}
+function lineNow(s,cl){if(INV){INV.log=INV.log||[];INV.log.push([s,cl])}const d=document.createElement('div');d.className='ln '+cl;d.innerHTML=s;const L=$('#lines');L.appendChild(d);L.scrollTop=L.scrollHeight}
+function line(s,cl=''){if(INV&&INV.pace&&!skip){INV.lq=INV.lq||[];INV.lq.push([s,cl]);pumpLines();return}lineNow(s,cl)}
+function pumpLines(){if(!INV||INV.pumping)return;INV.pumping=true;
+  const step=()=>{if(!INV||!INV.lq||!INV.lq.length){if(INV)INV.pumping=false;return}
+    if(skip){while(INV.lq.length)lineNow(...INV.lq.shift());INV.pumping=false;return}
+    lineNow(...INV.lq.shift());setTimeout(step,INV.lq.length>8?420:INV.lq.length>4?620:820)};step()}
+function flushLines(){return new Promise(res=>{const chk=()=>{if(!INV||!INV.lq||!INV.lq.length)res();else{if(skip){while(INV.lq.length)lineNow(...INV.lq.shift())}setTimeout(chk,120)}};chk()})}
 const E4F=()=>(G.owned.has('E4')?.7:1)*(G.owned.has('H3')?.8:1);
 function popNow(){return G.P*Math.max(.05,1-INV.B.popLoss)*(1-.85*INV.lp*E4F())}
 function liveFront(t,now){const e=1-Math.pow(1-t,2);
@@ -1716,8 +1722,8 @@ function sayLines(rec){
   pick2.forEach(x=>{const i=x.state==='won'?0:x.state==='even'?1:2;line(pick(SAY[x.l.k][i]),i===0?'good':i===2?'bad':'')});
   rec.rows.filter(x=>x.fr+x.fc>.005).sort((a,b)=>b.lost-a.lost).slice(0,1).forEach(x=>line(`${x.l.n}: ${x.lost.toFixed(2)}bn crew lost · refilled from ${x.fr>.001?'reserves':''}${x.fr>.001&&x.fc>.001?' and ':''}${x.fc>.001?'conscripts':''} · experience ×${x.exp0.toFixed(2)} → ×${x.exp1.toFixed(2)}`,'res'));
 }
-function gate(label){return new Promise(res=>{const b=$('#cBtn'),sk=$('#skipBtn');skip=false;b.textContent=label;b.style.display='';sk.style.display='none';b.classList.add('pulse');
-  b.onclick=()=>{b.style.display='none';sk.style.display='';b.classList.remove('pulse');res()}})}
+async function gate(label){await flushLines();await sleep(500);return new Promise(res=>{const b=$('#cBtn'),sk=$('#skipBtn'),ws=$('#wsBtn');skip=false;b.textContent=label;b.style.display='';sk.style.display='none';if(ws)ws.style.display='none';b.classList.add('pulse');
+  b.onclick=()=>{b.style.display='none';sk.style.display='';if(ws)ws.style.display='';b.classList.remove('pulse');res()}})}
 function narrate(B,w,rec,d0){const q=[],days=rec.dayEnd-d0;const order=rec.rows.slice().sort(()=>rnd()-.5);
   const at=(f,txt,cl)=>q.push([f,()=>line(`<span class="dy">DAY ${Math.round(d0+days*f)}</span> ${txt}`,cl)]);
   at(.05,pick(NARR.open[w]));
@@ -1745,6 +1751,12 @@ function crisis(B,w,rec){B.crises=B.crises||{};const R=k=>rec.rows.find(x=>x.l.k
     ['Draft everyone','+0.3bn conscripts across the lanes · Stability −5 after the war',()=>{const add=Math.min(.3,B.spare);B.spare-=add;const cl=B.L.filter(l=>l.crew);cl.forEach(l=>l.mix.con+=add/cl.length/l.crew);B.used.con+=add;B.sAdj=(B.sAdj||0)-5;line('Council: "Every adult who can hold a rifle reports by Friday."','res')}],
     ['Pull back the veterans','Weakest lane ×1.2 · strongest ×0.9',()=>{const o=B.L.slice().sort((a,b)=>laneStr(a)/a.th-laneStr(b)/b.th);o[0].mod*=1.2;o[o.length-1].mod*=.9;line('The best units are moved to where the line is thinnest.','mute')}]]};
   return null}
+function reportCard(B,w,c){return new Promise(res=>{const wasSkip=skip;skip=false;if(c)B.crises[c.k]=1;
+  const orders=c?`<div class="lbl" style="margin-top:10px;color:var(--bad)">Orders · ${c.t}</div><p style="margin:3px 0 6px">${c.d}</p>`+c.o.map((o,j)=>`<button class="opt" data-j="${j}"><b>${o[0]}</b><span>${o[1]} · then Wave ${w+2}</span></button>`).join(''):`<div class="ms2" style="margin-top:8px">${pick(['No new orders. The line holds.','Command: "Hold what you have. Reload. Rest if you can."','The council has nothing to add. The plan is working.'])}</div><div style="height:8px"></div><button class="btn" id="goW" style="width:100%">BEGIN WAVE ${w+2} ▸</button>`;
+  $('#sheet').innerHTML=`<div class="lbl">Wave ${w+1} · ${WAVES[w].n} · report</div><h2>${B.waves[w].destroyed>=25?'A strong wave':B.waves[w].destroyed>=12?'Ground held':'A hard wave'}</h2><div class="box">${waveHTML(B,w)}</div>`+orders;
+  $('#modal').dataset.dismiss='';$('#modal').classList.remove('hidden');
+  const done=()=>{bRender();$('#modal').classList.add('hidden');skip=wasSkip;res()};
+  if(c)$('#sheet').querySelectorAll('.opt').forEach(b=>b.onclick=()=>{const o=c.o[+b.dataset.j];o[2]();G.council.push(`W${w+1} · ${c.t}: ${o[0]}`);done()});else $('#goW').onclick=()=>{done()}})}
 function crisisCard(B,w,c){return new Promise(res=>{const wasSkip=skip;skip=false;B.crises[c.k]=1;
   $('#sheet').innerHTML=`<div class="lbl">Decision · after wave ${w+1}</div><h2>${c.t}</h2><p>${c.d}</p>`+c.o.map((o,j)=>`<button class="opt" data-j="${j}"><b>${o[0]}</b><span>${o[1]}</span></button>`).join('');
   $('#modal').dataset.dismiss='';$('#modal').classList.remove('hidden');
@@ -1808,14 +1820,14 @@ async function playInvasion(){
     line(SPB[G.sp].say[w],'bad');
     if(w===0)Object.keys(G.enemy).forEach(t=>line(TRAITS[t].c,'bad'));
     await sleep(600);
-    const d0=B.days,rec=battleWave(B,w);narrate(B,w,rec,d0);INV.live={rows:rec.rows};document.querySelectorAll('.fr .fy').forEach(e=>e.style.width='50%');document.querySelectorAll('.fr .fm').forEach(e=>e.style.left='50%');
+    INV.pace=true;const d0=B.days,rec=battleWave(B,w);narrate(B,w,rec,d0);INV.live={rows:rec.rows};document.querySelectorAll('.fr .fy').forEach(e=>e.style.width='50%');document.querySelectorAll('.fr .fm').forEach(e=>e.style.left='50%');
     INV.mid=()=>{rec.ev.forEach(tideLine);INV.kill=(100-B.fleet)/100;INV.fleetLoss=clamp(1-rec.forces,0,1)};
-    await animDays(w,d0,rec.dayEnd,2600+3000*Math.min(1,rec.days/150));
+    await animDays(w,d0,rec.dayEnd,5200+3800*Math.min(1,rec.days/150));
     INV.live=null;sayLines(rec);greenLines(rec);if(rec.heart)line('They falter. Losing the first wave has broken their charge.','good tide');
     line(`WAVE ${w+1} COMPLETE · their fleet −${Math.round(rec.destroyed)}% · ${Math.round(B.fleet)}% left · ${fmtD(rec.days)}`,'hdr');
     bRender(rec);const ws=$('#wsBtn');ws.style.visibility='visible';ws.textContent=`WAVE ${w+1} SUMMARY ›`;ws.onclick=()=>waveSheet(w);await sleep(900);
     if(B.won)break;
-    if(w<2){const c=crisis(B,w,rec);if(c){line(c.lead,'bad tide');await gate(`DECISION · ${c.t.toUpperCase()} ▸`);await crisisCard(B,w,c);if(B.won)break;await gate(`WAVE ${w+2} ▸`)}else{line(pick(['No new orders. The line holds.','Command: "Hold what you have. Reload. Rest if you can."','The council has nothing to add. The plan is working.']),'mute');await gate(`WAVE ${w+2} ▸`)}}
+    if(w<2){const c=crisis(B,w,rec);if(c)line(c.lead,'bad tide');await gate(`WAVE ${w+1} REPORT${c?' · ORDERS NEEDED':''} ▸`);await reportCard(B,w,c);if(B.won)break}
   }
   if(!B.won){
     const lw=B.waves[B.waves.length-1],stand=['ground','inside'].every(k=>lw.rows.find(x=>x.l.k===k).state==='won');
