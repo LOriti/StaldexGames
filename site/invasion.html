@@ -350,6 +350,12 @@ p.voice{color:var(--bad);font-family:var(--mono);font-size:12px}
 .slim .cb2{display:grid;grid-template-columns:46px 46px;gap:4px;flex:0 0 auto;align-items:stretch}
 .slim .cb2 .cost{padding:4px 2px!important;font-size:10px!important;line-height:1.2;width:46px;text-align:center}
 .slim .cb2 .ph.sm{display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-size:8.5px;color:var(--mu);border:1px dashed var(--ln);border-radius:7px;text-align:center}
+.fr{position:relative;height:10px;border-radius:5px;background:#5a2a22;overflow:hidden;box-shadow:inset 0 0 0 1px rgba(0,0,0,.3)}
+.fr .fy{position:absolute;left:0;top:0;bottom:0;background:linear-gradient(90deg,#6f8f62,#8fae7e)}
+.fr .fm{position:absolute;top:-2px;bottom:-2px;width:3px;margin-left:-1.5px;background:#e8e2d6;box-shadow:0 0 6px #e8e2d6}
+.lane.lost{background:rgba(192,83,63,.12);border-radius:7px;box-shadow:inset 3px 0 0 var(--bad);animation:lanep 1.2s infinite}
+.lane.even{box-shadow:inset 3px 0 0 var(--wa);border-radius:7px}.lane.won{box-shadow:inset 3px 0 0 var(--ok);border-radius:7px}
+@keyframes lanep{50%{background:rgba(192,83,63,.24)}}
 .y.pos{color:var(--ok)}.y.neg{color:var(--bad)}
 </style>
 </head>
@@ -1601,6 +1607,13 @@ const sleep=ms=>new Promise(r=>setTimeout(r,skip?0:ms));
 function line(s,cl=''){if(INV){INV.log=INV.log||[];INV.log.push([s,cl])}const d=document.createElement('div');d.className='ln '+cl;d.innerHTML=s;const L=$('#lines');L.appendChild(d);L.scrollTop=L.scrollHeight}
 const E4F=()=>(G.owned.has('E4')?.7:1)*(G.owned.has('H3')?.8:1);
 function popNow(){return G.P*Math.max(.05,1-INV.B.popLoss)*(1-.85*INV.lp*E4F())}
+function liveFront(t,now){const e=1-Math.pow(1-t,2);
+  INV.live.rows.forEach((x,i)=>{const k=x.l.k,fr=document.querySelector(`.fr[data-lk="${k}"]`),lb=document.querySelector(`[data-ls="${k}"]`),ln=document.querySelector(`[data-ll="${k}"]`);if(!fr)return;
+    const p1=frontP(x.r),p=clamp(50+(p1-50)*e+Math.sin(now/170+i*1.7)*5*(1-t*.7),3,97);
+    fr.querySelector('.fy').style.width=p+'%';fr.querySelector('.fm').style.left=p+'%';
+    const st=t<.25?null:x.state;if(lb){lb.textContent=st?`${x.r.toFixed(1)}× ${STW[st]}`:'ENGAGING';lb.style.color=st?LC[st]:'var(--mu)'}
+    if(ln){ln.classList.remove('won','even','lost');if(st)ln.classList.add(st)}
+    if(st==='lost'&&!x._flag){x._flag=1;float(`${x.l.n.toUpperCase()} IS LOSING`,'#c0533f')}})}
 function animDays(i,a,b,dur,long){
   return new Promise(res=>{const st=performance.now();let midDone=false;
     const f=now=>{const t=skip?1:Math.min(1,(now-st)/dur);const d=a+(b-a)*t;
@@ -1608,15 +1621,18 @@ function animDays(i,a,b,dur,long){
       $('#dctr').textContent=Math.floor(d);$('#pctr').textContent=popNow().toFixed(2)+'bn';
       if(t>.45&&!midDone){midDone=true;if(INV.mid)INV.mid()}
       while(INV.q&&INV.q.length&&INV.q[0][0]<=t)INV.q.shift()[1]();
+      if(INV.live)liveFront(t,now);
       t<1?requestAnimationFrame(f):res()};requestAnimationFrame(f)})
 }
 const LC={won:'var(--ok)',even:'var(--wa)',lost:'var(--bad)'};
+const STW={won:'WINNING',even:'HOLDING',lost:'LOSING'};
+const frontP=r=>clamp(r/(1+r)*100,6,94);
 const mixBar=l=>{const m=l.mix,t=Math.max(1e-6,m.reg+m.res+m.con);return `<div class="sb" style="height:4px"><i style="width:${m.reg/t*100}%;background:${OK}"></i><i style="width:${m.res/t*100}%;background:${RPC}"></i><i style="width:${m.con/t*100}%;background:${WA}"></i></div>`};
 const MIXLEG=`<div class="lg2" style="font-family:var(--mono);font-size:8.5px;color:var(--mu)"><span style="color:${OK}">■</span> regulars ×exp · <span style="color:${RPC}">■</span> reserves ×1.00 · <span style="color:${WA}">■</span> conscripts ×0.50</div>`;
 function laneRows(B,last){
   return B.L.map(l=>{const x=last&&last.rows.find(r=>r.l===l);const r=x?x.r:laneStr(l)/l.th;const st=x?x.state:(r>=1.2?'won':r>=.8?'even':'lost');
-    const you=Math.min(r,3)/3*100;
-    return `<div class="lane" data-btap="blane:${l.k}"><div><span>${l.n}</span>${l.crew?mixBar(l):''}</div><div><div class="sb" style="height:8px"><i style="width:${you}%;background:${OK}"></i><i style="width:${100-you}%;background:${BAD}"></i></div><span class="mut">${l.crew?(()=>{const m=l.mix,t=Math.max(1e-6,m.reg+m.res+m.con),g=1-m.reg/t;return `<span style="color:${g>=.5?'var(--bad)':g>=.25?'var(--wa)':'var(--ok)'}">vets ${Math.round(m.reg/t*100)}%${m.res>.001?` · res ${Math.round(m.res/t*100)}%`:''}${m.con>.001?` · con ${Math.round(m.con/t*100)}%`:''}</span> · exp ×${expOf(l).toFixed(2)}`})():'meters and readiness'}${l.w>1?'':' · they sent little'}</span></div><b style="color:${LC[st]}">${r.toFixed(1)}× ${x?st:''}</b></div>`}).join('');
+    const you=frontP(r);
+    return `<div class="lane ${st}" data-btap="blane:${l.k}" data-ll="${l.k}"><div><span>${l.n}</span>${l.crew?mixBar(l):''}</div><div><div class="fr" data-lk="${l.k}"><i class="fy" style="width:${you}%"></i><i class="fm" style="left:${you}%"></i></div><span class="mut">${l.crew?(()=>{const m=l.mix,t=Math.max(1e-6,m.reg+m.res+m.con),g=1-m.reg/t;return `<span style="color:${g>=.5?'var(--bad)':g>=.25?'var(--wa)':'var(--ok)'}">vets ${Math.round(m.reg/t*100)}%${m.res>.001?` · res ${Math.round(m.res/t*100)}%`:''}${m.con>.001?` · con ${Math.round(m.con/t*100)}%`:''}</span> · exp ×${expOf(l).toFixed(2)}`})():'meters and readiness'}${l.w>1?'':' · they sent little'}</span></div><b data-ls="${l.k}" style="color:${LC[st]}">${r.toFixed(1)}× ${x?STW[st]:''}</b></div>`}).join('');
 }
 function sitrep(B,last){
   const rows=last?last.rows:B.L.map(l=>{const r=laneStr(l)/l.th;return{l,r,state:r>=1.2?'won':r>=.8?'even':'lost'}});
@@ -1772,10 +1788,10 @@ async function playInvasion(){
     line(SPB[G.sp].say[w],'bad');
     if(w===0)Object.keys(G.enemy).forEach(t=>line(TRAITS[t].c,'bad'));
     await sleep(600);
-    const d0=B.days,rec=battleWave(B,w);narrate(B,w,rec,d0);
+    const d0=B.days,rec=battleWave(B,w);narrate(B,w,rec,d0);INV.live={rows:rec.rows};document.querySelectorAll('.fr .fy').forEach(e=>e.style.width='50%');document.querySelectorAll('.fr .fm').forEach(e=>e.style.left='50%');
     INV.mid=()=>{rec.ev.forEach(tideLine);INV.kill=(100-B.fleet)/100;INV.fleetLoss=clamp(1-rec.forces,0,1)};
     await animDays(w,d0,rec.dayEnd,2600+3000*Math.min(1,rec.days/150));
-    sayLines(rec);greenLines(rec);if(rec.heart)line('They falter. Losing the first wave has broken their charge.','good tide');
+    INV.live=null;sayLines(rec);greenLines(rec);if(rec.heart)line('They falter. Losing the first wave has broken their charge.','good tide');
     line(`WAVE ${w+1} COMPLETE · their fleet −${Math.round(rec.destroyed)}% · ${Math.round(B.fleet)}% left · ${fmtD(rec.days)}`,'hdr');
     bRender(rec);const ws=$('#wsBtn');ws.style.visibility='visible';ws.textContent=`WAVE ${w+1} SUMMARY ›`;ws.onclick=()=>waveSheet(w);await sleep(900);
     if(B.won)break;
