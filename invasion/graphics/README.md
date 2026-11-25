@@ -55,8 +55,10 @@ purchase rules, scores, storage keys, event choices or enemy data.
 
 If the pack script is unavailable, the game uses its original canvas renderer
 and card labels. If only the Earth image fails or is still loading, the old
-procedural planet draws until the image is available. CSS and script use `?v=1`;
-bump these when changing pack files to avoid stale browser caches.
+procedural planet draws until the image is available. The CSS uses `?v=2` and
+the script uses `?v=1`; bump the corresponding URL when changing pack files to
+avoid stale browser caches. Modal decisions sit above the map's half-sheet so
+timed events and war councils remain accessible while Projects is open.
 
 The existing live overlays remain: turrets, cities, reserves, bunkers, network,
 fleet, science, shields, the Ark and invasion damage. The new circular arc uses
