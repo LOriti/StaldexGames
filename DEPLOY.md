@@ -146,8 +146,12 @@ Tests (repo root):
 
 ## INVASION (alien-invasion prep game, listed under Games at staldex.com/invasion)
 
-Single self-contained file, `site/invasion.html` — no build step, no Worker, no leaderboard;
+Game file `site/invasion.html`, with shared graphics under `site/invasion-assets/command-v1/` — no build step, no Worker, no leaderboard;
 it ships with the normal site deploy. Listed in the homepage Games section (`#invasion`). It loads Inter and JetBrains Mono from Google Fonts,
 allowed for a standalone project page. Best score is kept in the player's own browser only.
 Formerly Lead Time: `/lead-time` and its short forms redirect here. Every mechanic and number is
-documented in `invasion/README.md`; keep it in step with the file.
+documented in `invasion/README.md`; keep it in step with the file. The Command
+graphics pack is shared with `/invasion2`; review it at `/invasion-graphics`.
+Ship the complete `site/` folder so the CSS, renderer, WebP images and SVG symbols
+remain beside the game pages. Full-resolution artwork masters stay in
+`invasion/graphics/source/` outside the deploy folder.

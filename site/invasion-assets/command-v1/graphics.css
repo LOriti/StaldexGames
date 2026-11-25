@@ -1,0 +1,75 @@
+/* Shared by /invasion and the /invasion2 map prototype. */
+.command-gfx{--bg:#0b1118;--p1:#111c26;--p2:#182733;--ln:#2b3b47;--tx:#e6e9e7;--mu:#a4b0b7;--ac:#e0a46a;--ok:#94b99d;--wa:#dfbe71;--bad:#ed836c;--rp:#8ebfd1;color-scheme:dark}
+.command-gfx body{background:radial-gradient(ellipse at 50% 0,#182632,#080d13 80%)}
+.command-gfx #app{background:var(--bg);box-shadow:0 0 100px #0008;border-inline:1px solid #20303a}
+.command-gfx button:focus-visible,.command-gfx summary:focus-visible{outline:2px solid var(--rp);outline-offset:3px}
+.command-gfx button:disabled{cursor:default}
+.command-gfx .btn{border-radius:5px;min-height:44px;box-shadow:inset 0 1px #ffffff20;color:#101820;font-size:12px;letter-spacing:.08em}
+.command-gfx .btn.ghost{color:var(--tx)}
+.command-gfx .brief,.command-gfx .sheet p{color:#c5cdd1}
+.command-gfx .stamp{border-color:#71563c;color:var(--ac);border-radius:2px;font-size:8px;letter-spacing:.14em}
+.command-gfx #screen-title{justify-content:flex-start;gap:14px;padding:0 22px 24px}
+.command-gfx h1{font-size:44px;font-weight:600;letter-spacing:.14em;line-height:1.1;margin-right:-.14em}
+.command-gfx #screen-title>.brief{font-size:12px;line-height:1.7}
+.ig-title-art{height:240px;min-height:180px;flex-shrink:0;position:relative;margin:0 -22px -6px;overflow:hidden;background:radial-gradient(ellipse at 50% 55%,#20374455,transparent 70%),radial-gradient(circle at 12% 26%,#a7c1cf 0 .7px,transparent 1px),radial-gradient(circle at 76% 11%,#a7c1cf 0 .7px,transparent 1px),radial-gradient(circle at 84% 62%,#a7c1cf 0 .7px,transparent 1px),#080f17}
+.ig-title-art:after{content:'';position:absolute;inset:0;background:linear-gradient(0deg,var(--bg),transparent 30%,transparent 85%,#0b1118)}
+.ig-title-art img{position:absolute;width:224px;height:224px;left:50%;top:10px;transform:translateX(-50%);filter:drop-shadow(0 0 24px #75a4c133)}
+.ig-reticle{position:absolute;width:240px;height:240px;border:1px solid #7f9bac33;border-radius:50%;left:50%;top:2px;transform:translateX(-50%)}
+.ig-reticle:before{content:'';position:absolute;inset:-16px;border:1px dashed #7f9bac28;border-radius:50%;transform:rotate(-25deg) scaleY(.45)}
+.ig-reticle:after{content:'';position:absolute;inset:18px -45px;border:1px solid #e0a46a30;border-radius:50%;transform:rotate(30deg) scaleY(.4)}
+.ig-coordinate,.ig-contact{position:absolute;z-index:1;font:8px/1.5 var(--mono);letter-spacing:.08em;color:#a4b8c4}
+.ig-coordinate{bottom:16px;left:22px}.ig-contact{right:16px;top:31px;color:#ed836c;text-align:right;padding-right:8px;border-right:2px solid #ed836c}
+.ig-manual{border-top:1px solid var(--ln);border-bottom:1px solid var(--ln)}
+.ig-manual summary{padding:12px 0;font:9px var(--mono);letter-spacing:.12em;color:var(--mu);cursor:pointer}
+.command-gfx .howto{background:none;border:0;border-radius:0;padding:0 0 14px;font-size:12px;line-height:1.65;color:#c5cdd1}
+.command-gfx #bestline{font-size:8px;line-height:1.6;min-height:0}
+.command-gfx .top{padding-top:12px;padding-bottom:10px;background:linear-gradient(#17232c66,transparent)}
+.command-gfx .top .lbl{font-size:8px;letter-spacing:.08em}.command-gfx .top .v{font-size:15px}
+.command-gfx .ctl button{border-radius:4px;min-height:38px;padding:8px}
+.command-gfx .prog{height:2px}.command-gfx #progbar{box-shadow:0 0 8px #e0a46a80}
+.command-gfx .split{background:linear-gradient(90deg,#080f17,transparent);border-bottom:1px solid #223340}
+.command-gfx .split .cvwrap{width:42%!important}
+.command-gfx .tl{background:#111c26d9;border-radius:4px;border-color:#2b3b47;border-left-color:#718d9b55}
+.command-gfx #warn{font-size:7px!important;left:5px!important;max-width:95%;text-shadow:0 1px 3px #000}
+.command-gfx .mc{border-radius:4px;background:#111c26;border-color:#2b3b47;padding:6px 8px}
+.command-gfx .mc.bad{border-color:#70483f}
+.command-gfx .tabs{padding:0 12px;gap:4px;border-bottom:1px solid #344752}
+.command-gfx .tabs button{font-size:8px;letter-spacing:.04em;display:flex;justify-content:center;align-items:center;gap:4px;min-height:42px}
+.ig-icon{width:22px;height:22px;flex:0 0 auto;vertical-align:middle;color:var(--rp)}
+.tabs .ig-icon{width:15px;height:15px;color:currentColor}
+.command-gfx .tabs button.on{color:var(--ac);border-color:var(--ac)}
+.command-gfx .subtabs button{min-height:32px;border-radius:3px}
+.command-gfx .card,.command-gfx .slim,.command-gfx .box,.command-gfx .lc,.command-gfx .gapbox{border-radius:5px;border-color:#2b3b47;background:linear-gradient(125deg,#16232c,#111c26)}
+.command-gfx .card.sel{border-color:#aa8059;box-shadow:inset 2px 0 var(--ac)}
+.command-gfx .card.locked{opacity:.58}
+.command-gfx .pe .nm{display:flex;gap:7px;align-items:center;min-width:0;font-size:12px}
+.command-gfx .pe .nm .ig-icon{width:23px;height:23px;color:var(--rp)}
+.command-gfx .pe .pt{align-items:flex-start}
+.command-gfx .pe .pp{flex-shrink:0;margin-top:5px}
+.command-gfx .pe .pb button{border-radius:3px;min-height:32px}
+.command-gfx .pe .pm{font-size:9px;line-height:1.5}
+.ig-branch{position:relative;isolation:isolate;min-height:88px;margin:0 0 8px;border:1px solid #3b525f;border-radius:5px;overflow:hidden;background:#0b1118 var(--branch-art) center 47%/cover}
+.ig-branch:before{content:'';position:absolute;inset:0;z-index:-1;background:linear-gradient(90deg,#080f17f5,#080f17a0 50%,#080f1710)}
+.ig-branch>div{display:flex;flex-direction:column;gap:4px;padding:13px 12px}
+.ig-branch b{font-size:20px;font-weight:500;letter-spacing:.02em}.ig-branch span:last-child{font:8px var(--mono);color:#c5d0d5}
+.ig-eyebrow{font:7px var(--mono);color:var(--ac);letter-spacing:.15em}
+/* Decisions and information dialogs must sit above the map's z-index 31 half-sheet. */
+.command-gfx .modal{z-index:60}
+.command-gfx .sheet{background:linear-gradient(145deg,#192933,#111c26 60%);border-radius:9px 9px 0 0;box-shadow:0 -15px 60px #0007}
+.command-gfx .opt{border-radius:5px}.command-gfx .opt:hover{border-color:var(--rp)}
+.command-gfx #ticker{font-size:9px;min-height:34px;background:#080f17;line-height:1.5}
+.command-gfx .ctr{background:linear-gradient(#392a2670,transparent);border-bottom:1px solid #70483f}
+.command-gfx #blanes .lane{padding:5px 7px;border:1px solid #2b3b47;border-radius:4px;background:#111c26}
+.command-gfx #blanes .lane.lost{border-color:#70483f;background:#38251f}
+.command-gfx .fr .fy{background:linear-gradient(90deg,#526f66,#94b99d)}
+.command-gfx .grade .gl{border-radius:5px}
+.command-gfx #finalBar,.command-gfx .strip{background:#34251e}
+.command-gfx #dock button{border-radius:5px;border-color:#3b525f}.command-gfx #dock .ig-icon{width:23px;height:23px;color:inherit}
+.command-gfx #ready{border-radius:5px;background:linear-gradient(125deg,#172831,#111c26);border-color:#718d9b}
+.command-gfx #hsheet{background:#0b1118;border-color:#718d9b;border-radius:9px 9px 0 0}
+.command-gfx .fo-reg,.command-gfx .fo-bub span,.command-gfx .fo-key,.command-gfx .fo-cr{background:#111c26ed;border-radius:4px}
+.command-gfx .fo-key{font-size:7.5px}.command-gfx .hubmap{background:radial-gradient(ellipse at 50% 55%,#1a303b50,transparent 70%),#080f17}
+.command-gfx body[data-ig-alert=arrival] #progbar{background:var(--bad);box-shadow:0 0 8px #ed836c80}
+@media(max-height:740px){.ig-title-art{height:180px;min-height:180px}.ig-title-art img{width:184px;height:184px;top:-4px}.ig-reticle{width:190px;height:190px;top:-8px}.command-gfx #screen-title{gap:11px}.command-gfx #screen-title>.brief{font-size:11px}.command-gfx .ig-branch{min-height:68px}.ig-branch>div{padding:9px 11px;gap:3px}.ig-branch b{font-size:17px}}
+@media(max-width:350px){.command-gfx h1{font-size:38px}.command-gfx .tabs button{font-size:7px;gap:3px}.command-gfx .tabs .ig-icon{width:12px;height:12px}.command-gfx .pe .pp{font-size:7px}.command-gfx .pe .nm{font-size:11px}.command-gfx .pe .nm .ig-icon{width:19px;height:19px}.command-gfx .split .cvwrap{width:37%!important}}
+@media(prefers-reduced-motion:reduce){.command-gfx *, .command-gfx *:before,.command-gfx *:after{animation:none!important;transition:none!important;scroll-behavior:auto!important}}

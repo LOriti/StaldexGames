@@ -1,6 +1,12 @@
 # Invasion — game design and mechanics
 
-The playable build is one self-contained file, `site/invasion.html`, served at
+Presentation: the **Command graphics pack v1** is integrated into both game
+versions. Artwork, symbols, renderer hooks and analysis are documented in
+[`graphics/README.md`](graphics/README.md). `/invasion-graphics` is the review
+gallery. The pack changes presentation only; the mechanics below are unchanged.
+
+The playable build is `site/invasion.html`, with optional shared presentation
+assets under `site/invasion-assets/command-v1/`, served at
 `staldex.com/invasion` and listed under Games on the homepage (old path `/lead-time` and short forms redirect there). There is no
 build step, no Worker and no server state; the best score is kept in the player's browser.
 
