@@ -420,6 +420,7 @@ p.voice{color:var(--bad);font-family:var(--mono);font-size:12px}
 .grab{display:flex;justify-content:center;padding:6px 0 0;cursor:pointer}.grab i{width:44px;height:5px;border-radius:3px;background:var(--ln)}
 .hsh{padding-top:2px!important}
 </style>
+<link rel="stylesheet" href="invasion-assets/command-v1/graphics.css?v=2">
 </head>
 <body>
 <div id="app">
@@ -473,6 +474,7 @@ p.voice{color:var(--bad);font-family:var(--mono);font-size:12px}
 <div id="modal" class="modal hidden"><div class="sheet" id="sheet"></div></div>
 </div>
 
+<script src="invasion-assets/command-v1/graphics.js?v=1"></script>
 <script>
 const $=s=>document.querySelector(s);
 const rnd=Math.random, clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
@@ -821,6 +823,7 @@ const CYCLE=[
  {y:33,t:'Boom years',d:'The economy runs hot. Factories cannot hire fast enough.',o:[['Invest in capacity','−10 Effort · Industry +5',{E:-10,I:5}],['Bank the surplus','Effort +12',{E:12}],['Raise wages','Stability +3 · Effort +4',{S:3,E:4}]]},
  {y:71,t:'The bust',d:'A financial crash. Unemployment doubles in a year.',o:[['Austerity','Effort +8 · Stability −4',{E:8,S:-4}],['Stimulus','−8 Effort · Stability +2 · Industry +2',{E:-8,S:2,I:2}],['Put them in uniform','trained +3% · Effort −4',{TRN:.03,E:-4}]]}];
 /* ================= CANVAS ================= */
+const GFX=window.InvasionGraphics||null;
 const cv=document.createElement('canvas'),ctx=cv.getContext('2d');
 let W=300,H=200,dpr=1,SC=null;
 function mulberry(a){return()=>{a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
@@ -835,8 +838,9 @@ function buildScene(seed){
       ourShips:arr(6,(_,i)=>({o:i/6*6.283,k:r()}))};
 }
 function pol(o,R,cx,cy){return[cx+Math.cos(o.a)*o.d*R,cy+Math.sin(o.a)*o.d*R]}
-function mountCanvas(id){$(id).appendChild(cv);sizeCanvas()}
+function mountCanvas(id){$(id).appendChild(cv);if(canvasResize){canvasResize.disconnect();canvasResize.observe(cv.parentElement)}sizeCanvas()}
 function sizeCanvas(){const r=cv.getBoundingClientRect();if(!r.width)return;dpr=Math.min(2,window.devicePixelRatio||1);W=r.width;H=r.height;cv.width=W*dpr;cv.height=H*dpr}
+const canvasResize=typeof ResizeObserver==='function'?new ResizeObserver(sizeCanvas):null;
 window.addEventListener('resize',sizeCanvas);
 
 function viewMode(){if(!G||screen!=='game'||G.final)return'all';return G.tab==='prj'?'b:'+G.sub:G.tab==='soc'?'peo':G.tab==='war'?'int':G.tab}
@@ -851,8 +855,9 @@ function geo(){const R=Math.min(W*.3,H*.29);return{cx:W*.5,cy:H*.55,R,T:[W*.88,H
 
 function draw(now){
   if(!SC||!G)return;
-  const {cx,cy,R,T}=geo(),t=now/1000,inv=screen==='inv'&&INV;
+  const {cx,cy,R,T}=geo(),t=GFX&&GFX.reducedMotion?0:now/1000,inv=screen==='inv'&&INV;
   ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+  if(GFX)GFX.backdrop(ctx,W,H,now);
   // stars
   SC.stars.forEach(s=>{ctx.globalAlpha=.25+.35*(.5+.5*Math.sin(t*1.3+s.tw));ctx.fillStyle='#e8e2d6';ctx.fillRect(s.x*W,s.y*H,s.s,s.s)});ctx.globalAlpha=1;
   const p=inv?INV.p:0; // invasion progress 0..1
@@ -877,6 +882,8 @@ function draw(now){
   if(G.ping&&now-G.ping<2200){const k=Math.max(0,(now-G.ping)/2200);ctx.strokeStyle=`rgba(196,117,69,${1-k})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(T[0],T[1],6+k*40,0,6.283);ctx.stroke();
     const dx=cx+(T[0]-cx)*(1-k),dy=cy+(T[1]-cy)*(1-k);ctx.fillStyle=`rgba(196,117,69,${1-k*.6})`;ctx.beginPath();ctx.arc(dx,dy,2.5,0,6.283);ctx.fill()}
 
+  if(GFX)GFX.rings(ctx,{cx,cy,R},now,G.year);
+
   // Ark (behind)
   const aArk=ap('H1',now);
   if(aArk){let ax=W*.13,ay=H*.24;if(inv&&INV.done)ax-= (now-INV.doneAt)/8;ctx.globalAlpha=aArk;
@@ -888,8 +895,10 @@ function draw(now){
   let g;ctx.strokeStyle='rgba(143,179,196,.35)';ctx.lineWidth=3;ctx.beginPath();ctx.arc(cx,cy,R+5,0,6.283);ctx.stroke();
   // body
   ctx.save();ctx.beginPath();ctx.arc(cx,cy,R,0,6.283);ctx.clip();
+  if(!GFX||!GFX.planet(ctx,cx,cy,R)){
   ctx.fillStyle='#2f4a52';ctx.fillRect(cx-R,cy-R,2*R,2*R);
   ctx.fillStyle='#6b7a4e';SC.land.forEach(l=>{const q=pol(l,R,cx,cy);ctx.beginPath();l.pts.forEach(([a,k],i)=>{const x=q[0]+Math.cos(a)*k*l.s*R,y=q[1]+Math.sin(a)*k*l.s*R;i?ctx.lineTo(x,y):ctx.moveTo(x,y)});ctx.closePath();ctx.fill()});
+  }
   // undercity core
   const aU=ap('H3',now);if(aU&&!(inv&&p>.97)){g=ctx.createRadialGradient(cx,cy,0,cx,cy,R*.42);g.addColorStop(0,`rgba(201,162,74,${.55*aU*(.8+.2*Math.sin(t*2))})`);g.addColorStop(1,'rgba(201,162,74,0)');ctx.fillStyle=g;ctx.fillRect(cx-R,cy-R,2*R,2*R)}
   // bunkers ring
@@ -920,7 +929,7 @@ function draw(now){
       const crew=Math.round((G.ec?G.ec.crewReq:0)*8);for(let i=0;i<crew;i++){const c=SC.disp[(i*7+3)%SC.disp.length];const q=pol(c,R*.8,cx,cy);ctx.fillStyle='rgba(138,163,127,.85)';ctx.fillRect(q[0]-1,q[1]-1,2,2)}}
   }
   // terminator shadow
-  ctx.fillStyle='rgba(20,19,15,.4)';ctx.beginPath();ctx.moveTo(cx+R*.12,cy-R-2);ctx.quadraticCurveTo(cx+R*.62,cy,cx+R*.12,cy+R+2);ctx.lineTo(cx+R+4,cy+R+2);ctx.lineTo(cx+R+4,cy-R-2);ctx.closePath();ctx.fill();
+  ctx.fillStyle=GFX?'rgba(5,12,19,.12)':'rgba(20,19,15,.4)';ctx.beginPath();ctx.moveTo(cx+R*.12,cy-R-2);ctx.quadraticCurveTo(cx+R*.62,cy,cx+R*.12,cy+R+2);ctx.lineTo(cx+R+4,cy+R+2);ctx.lineTo(cx+R+4,cy-R-2);ctx.closePath();ctx.fill();
   if(inv&&ph>=2){ctx.fillStyle=`rgba(80,20,14,${.25*Math.min(1,(p-.3)*2)})`;ctx.fillRect(cx-R,cy-R,2*R,2*R)}
   ctx.restore();
   ctx.strokeStyle='#14130f';ctx.lineWidth=2;ctx.beginPath();ctx.arc(cx,cy,R,0,6.283);ctx.stroke();
@@ -939,12 +948,13 @@ function draw(now){
   const aS4=ap('S4',now);let shieldUp=aS4&&!(inv&&ph>=1&&pp>.5)&&!(inv&&ph>=2);
   if(aS4&&shieldUp){const sr=R*1.32;ctx.strokeStyle=`rgba(150,195,215,${(.3+.15*Math.sin(t*2))*aS4})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.arc(cx,cy,sr*(.85+.15*aS4),0,6.283);ctx.stroke();ctx.fillStyle=`rgba(150,195,215,${.05*aS4})`;ctx.fill();
     if(INV&&INV.shieldHit&&now-INV.shieldHit<200){ctx.strokeStyle='rgba(190,225,240,.8)';ctx.lineWidth=2;ctx.stroke()}}
+  if(GFX&&aS4&&shieldUp)GFX.shield(ctx,cx,cy,R*1.32,aS4,now);
   // orbital fleet
   const aD3=ap('D3',now);
   if(aD3){const rx=R*1.6,ry=R*1.6*.38;ctx.strokeStyle=`rgba(232,226,214,${.12*aD3})`;ctx.lineWidth=1;ctx.beginPath();ctx.ellipse(cx,cy,rx,ry,-.3,0,6.283);ctx.stroke();
     const loss=inv?clamp(INV.fleetLoss*Math.min(1,(ph+pp)/1.6),0,1):0;
     SC.ourShips.forEach((s,i)=>{if(i/6>aD3+.01)return;if(s.k<loss)return;const a=s.o+t*.35;const x=Math.cos(a)*rx,y=Math.sin(a)*ry;const rot=-.3;const X=cx+x*Math.cos(rot)-y*Math.sin(rot),Y=cy+x*Math.sin(rot)+y*Math.cos(rot);
-      if(Math.sin(a)<0&&Math.hypot(X-cx,Y-cy)<R)return;ctx.fillStyle='#e8e2d6';ctx.strokeStyle='#14130f';ctx.lineWidth=1.1;ctx.save();ctx.translate(X,Y);ctx.rotate(a+1.57+rot);ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(2.6,1.5);ctx.lineTo(4.5,3.5);ctx.lineTo(0,2.6);ctx.lineTo(-4.5,3.5);ctx.lineTo(-2.6,1.5);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#c47545';ctx.fillRect(-.8,3,1.6,2);ctx.restore();s.pos=[X,Y]})}
+      if(Math.sin(a)<0&&Math.hypot(X-cx,Y-cy)<R)return;if(GFX)GFX.ship(ctx,X,Y,a+rot,false,W<190?.7:1);else{ctx.fillStyle='#e8e2d6';ctx.strokeStyle='#14130f';ctx.lineWidth=1.1;ctx.save();ctx.translate(X,Y);ctx.rotate(a+1.57+rot);ctx.beginPath();ctx.moveTo(0,-6);ctx.lineTo(2.6,1.5);ctx.lineTo(4.5,3.5);ctx.lineTo(0,2.6);ctx.lineTo(-4.5,3.5);ctx.lineTo(-2.6,1.5);ctx.closePath();ctx.fill();ctx.stroke();ctx.fillStyle='#c47545';ctx.fillRect(-.8,3,1.6,2);ctx.restore()}s.pos=[X,Y]})}
   // deterrent
   const aH2=ap('H2',now);if(aH2&&!(inv&&ph>=0)){for(let i=0;i<8;i++){const a=i/8*6.283-t*.2;ctx.fillStyle=`rgba(196,117,69,${aH2})`;ctx.fillRect(cx+Math.cos(a)*R*1.85-1.5,cy+Math.sin(a)*R*1.85*.55-1.5,3,3)}}
 
@@ -968,7 +978,8 @@ function drawInvasion(now,{cx,cy,R,T},shieldUp){
     const x=T[0]+(sx-T[0])*arr,y=T[1]+(sy-T[1])*arr;e.pos=[x,y];
     if(killed(e)){if(!e.boom)e.boom=now;if(now-e.boom<500){const k=Math.max(0,(now-e.boom)/500);ctx.fillStyle=`rgba(232,194,122,${1-k})`;ctx.beginPath();ctx.arc(x,y,3+k*10,0,6.283);ctx.fill()}return}
     live.push(e);
-    ctx.fillStyle='#c0533f';ctx.strokeStyle='#14130f';ctx.lineWidth=1.1;ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(cy-y,cx-x));ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(5,2);ctx.lineTo(-2,3.5);ctx.lineTo(-6,0);ctx.lineTo(-2,-3.5);ctx.lineTo(5,-2);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore();
+    if(GFX)GFX.ship(ctx,x,y,Math.atan2(cy-y,cx-x),true,W<190?.7:1);else{
+    ctx.fillStyle='#c0533f';ctx.strokeStyle='#14130f';ctx.lineWidth=1.1;ctx.save();ctx.translate(x,y);ctx.rotate(Math.atan2(cy-y,cx-x));ctx.beginPath();ctx.moveTo(8,0);ctx.lineTo(5,2);ctx.lineTo(-2,3.5);ctx.lineTo(-6,0);ctx.lineTo(-2,-3.5);ctx.lineTo(5,-2);ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
   });
   if(INV.done||INV.won)return;
   const arrived=ph>0||pp>.4;
@@ -986,11 +997,12 @@ function drawInvasion(now,{cx,cy,R,T},shieldUp){
   if(ph>=2&&rnd()<.12){const c=pick(SC.cities);const q=pol(c,R,cx,cy);INV.fx.push({x1:q[0],y1:q[1],x2:q[0],y2:q[1],t:now,c:'192,83,63',hit:true})}
   INV.fx=INV.fx.filter(f=>now-f.t<350);
   INV.fx.forEach(f=>{const k=(now-f.t)/350;ctx.strokeStyle=`rgba(${f.c},${1-k})`;ctx.lineWidth=1.2;ctx.beginPath();ctx.moveTo(f.x1,f.y1);ctx.lineTo(f.x2,f.y2);ctx.stroke();
-    if(f.hit){ctx.fillStyle=`rgba(232,150,100,${1-k})`;ctx.beginPath();ctx.arc(f.x2,f.y2,2+k*5,0,6.283);ctx.fill()}});
+    if(f.hit){if(GFX)GFX.impact(ctx,f.x2,f.y2,k);ctx.fillStyle=`rgba(232,150,100,${1-k})`;ctx.beginPath();ctx.arc(f.x2,f.y2,2+k*5,0,6.283);ctx.fill()}});
   INV.drops=INV.drops.filter(d=>now-d.t<900);
   INV.drops.forEach(d=>{const k=(now-d.t)/900;ctx.fillStyle='#c0533f';ctx.fillRect(d.x1+(d.x2-d.x1)*k-1,d.y1+(d.y2-d.y1)*k-1,2.5,2.5)});
 }
-function frame(now){if(screen==='game'||screen==='inv')draw(now);requestAnimationFrame(frame)}
+let lastDraw=0;
+function frame(now){if(!document.hidden&&(screen==='game'||screen==='inv')&&now-lastDraw>=1000/(GFX&&GFX.reducedMotion?15:30)){draw(now);lastDraw=now}requestAnimationFrame(frame)}
 requestAnimationFrame(frame);
 
 /* ================= MODEL (pure) ================= */
@@ -1178,7 +1190,7 @@ function impText(im,opts={}){
 }
 
 /* ================= GAME ================= */
-function show(s){screen=s;document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));$('#screen-'+s).classList.add('active');
+function show(s){screen=s;if(GFX)GFX.decorate(s,G);document.querySelectorAll('.screen').forEach(e=>e.classList.remove('active'));$('#screen-'+s).classList.add('active');
   if(s==='game')mountCanvas('#cvGame');if(s==='inv')mountCanvas('#cvInv')}
 function getBest(){try{return +localStorage.getItem('invasion.best')||localStorage.getItem('leadtime.best')||0}catch(e){return 0}}
 function setBest(v){try{localStorage.setItem('invasion.best',v)}catch(e){}}
@@ -1386,7 +1398,7 @@ function tickerMsg(){
   return null;
 }
 function render(){
-  if(!G)return;const ec=G.ec=econ(G);
+  if(!G)return;if(GFX)GFX.decorate(screen,G);const ec=G.ec=econ(G);
   $('#sYear').textContent=String(G.year).padStart(3,'0');$('#sT').textContent='T−'+(100-G.year);
   $('#sE').textContent=Math.floor(G.E);$('#sE').style.color=G.E<0?'var(--bad)':'var(--ac)';$('#sEd').innerHTML=`<span class="${cls(ec.net)}">${sgn(ec.net)}/yr</span>`;
   $('#sRP').textContent=Math.floor(G.RP);$('#sRP').style.color=G.RP<0?'var(--bad)':'var(--rp)';$('#sRPd').innerHTML=`<span class="pos">${sgn(ec.rp)}/yr</span>`;
@@ -1479,12 +1491,12 @@ function projCard(n,ec,compact){
   const cbs=comboFor(n.id),unm=!compact&&cbs.length&&G.selPrj===n.id?`<div class="combo">${cbs.map(c=>{const on=combosOn(G).includes(c);return `<span class="${on?'pos':'mut'}">⚭ ${DIRS.find(d=>d.id===c.p).n} LV ${c.lv}: ${c.fx}${on?' ✓':''}</span>`}).join(' ')}</div>`:'';
   const top=built?`<span class="pp">LV ${ppips(S,AC)} MK ${ppips(T+1,RPC)}<b style="color:${RPC}">${MK[T]}</b></span>`:'';
   if(compact&&!mb){const cb=[];if(S<MAXS)cb.push(`<button class="e" data-n="${n.id}" data-k="E" ${G.E>=pe?'':'disabled'}>${built?'LV '+(S+1):'BUILD'} · ${pe} E</button>`);if(built&&T<MAXT)cb.push(`<button class="r" data-n="${n.id}" data-k="R" ${G.RP>=pr?'':'disabled'}>MK ${MK[T+1]} · ${pr} R</button>`);
-    return `<div data-pid="${n.id}" class="card pe cmp ${n.br==='emg'?'emg':''}" data-tap="out:${n.id}"><div class="pt"><span class="nm">${n.br==='emg'?'◆ ':''}${n.n}</span>${top}</div>${unm}<div class="pm"><span>${out}</span><span class="pb2">${cb.join('')}</span></div></div>`}
-  return `<div data-pid="${n.id}" class="card pe ${G.selPrj===n.id?'sel':''} ${mb?'moth':''} ${n.br==='emg'?'emg':''}" data-tap="out:${n.id}"><div class="pt"><span class="nm">${n.br==='emg'?'◆ ':''}${n.n}</span>${top}</div>${unm}<div class="pm"><span>${out}</span><span class="mut">${right}${built&&!mb&&fxk.length?` · ${matName(n.id).slice(0,3)} ×${matOf(G,n.id).toFixed(2)}`:''}</span></div>${bar}${G.half.has(n.id)?'<div class="lg2 neg">50% readiness on day 1</div>':''}<div class="pb">${btns}</div></div>`;
+    return `<div data-pid="${n.id}" class="card pe cmp ${n.br==='emg'?'emg':''}" data-tap="out:${n.id}"><div class="pt"><span class="nm">${GFX?GFX.icon(n.id):n.br==='emg'?'◆ ':''}${n.n}</span>${top}</div>${unm}<div class="pm"><span>${out}</span><span class="pb2">${cb.join('')}</span></div></div>`}
+  return `<div data-pid="${n.id}" class="card pe ${G.selPrj===n.id?'sel':''} ${mb?'moth':''} ${n.br==='emg'?'emg':''}" data-tap="out:${n.id}"><div class="pt"><span class="nm">${GFX?GFX.icon(n.id):n.br==='emg'?'◆ ':''}${n.n}</span>${top}</div>${unm}<div class="pm"><span>${out}</span><span class="mut">${right}${built&&!mb&&fxk.length?` · ${matName(n.id).slice(0,3)} ×${matOf(G,n.id).toFixed(2)}`:''}</span></div>${bar}${G.half.has(n.id)?'<div class="lg2 neg">50% readiness on day 1</div>':''}<div class="pb">${btns}</div></div>`;
 }
 function rPrj(P,ec){
   const subs=[['def','DEFENCE'],['end','ENDURANCE'],['sci','SCIENCE'],['emg','EMERGENT']];
-  P.innerHTML=`<div class="subtabs">${subs.map(([k,l])=>`<button data-s="${k}" class="${G.sub===k?'on':''}">${l}${G.sub===k&&k!=='emg'?' ›':''}</button>`).join('')}</div>`+(()=>{const ns=NODES.filter(n=>n.br===G.sub),open=ns.filter(n=>['new','built'].includes(nodeState(n)));const crowd=open.length>=3;if(!open.some(n=>n.id===G.selPrj))G.selPrj=(open.find(n=>G.owned.has(n.id))||open[0]||{}).id;return ns.map(n=>projCard(n,ec,crowd&&n.id!==G.selPrj)).join('')})();
+  P.innerHTML=`<div class="subtabs">${subs.map(([k,l])=>`<button data-s="${k}" class="${G.sub===k?'on':''}">${l}${G.sub===k&&k!=='emg'?' ›':''}</button>`).join('')}</div>`+(GFX?GFX.banner(G.sub):'')+(()=>{const ns=NODES.filter(n=>n.br===G.sub),open=ns.filter(n=>['new','built'].includes(nodeState(n)));const crowd=open.length>=3;if(!open.some(n=>n.id===G.selPrj))G.selPrj=(open.find(n=>G.owned.has(n.id))||open[0]||{}).id;return ns.map(n=>projCard(n,ec,crowd&&n.id!==G.selPrj)).join('')})();
   P.querySelectorAll('[data-s]').forEach(b=>b.onclick=e=>{e.stopPropagation();if(G.sub===b.dataset.s&&G.sub!=='emg')tapSheet('scores');else{G.sub=b.dataset.s;render()}});
   P.querySelectorAll('[data-k]').forEach(b=>b.onclick=e=>{e.stopPropagation();G.selPrj=b.dataset.n;act(NB[b.dataset.n],b.dataset.k)});
   P.querySelectorAll('[data-m]').forEach(b=>b.onclick=e=>{e.stopPropagation();toggleMoth(b.dataset.m)});
