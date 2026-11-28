@@ -428,6 +428,12 @@ p.voice{color:var(--bad);font-family:var(--mono);font-size:12px}
 #hsheet.full.lanem #side{display:none!important}
 .hstabs.mt{flex-wrap:wrap}.hstabs.mt button{flex:1 0 30%;font-size:11px;padding:5px 2px}
 #meters [data-tap]{cursor:pointer}
+.hsite{position:absolute;border-radius:50%;background:rgba(28,27,24,.88);border:1.5px solid var(--ok);color:var(--ok);display:flex;align-items:center;justify-content:center;transition:all .25s}
+.hsite.eco{border-color:var(--ac);color:var(--ac)}
+.hsite.off{opacity:.62;border-style:dashed}
+.hsite.can{animation:sitec 1.6s infinite}@keyframes sitec{50%{filter:drop-shadow(0 0 6px currentColor)}}
+.hsite b{position:absolute;right:-5px;bottom:-5px;min-width:14px;height:14px;border-radius:7px;background:currentColor;color:#1c1b18;font:700 9px var(--mono);display:flex;align-items:center;justify-content:center;padding:0 3px}
+.hsite b{color:#1c1b18}
 </style>
 <link rel="stylesheet" href="invasion-assets/command-v1/graphics.css?v=2">
 </head>
@@ -855,7 +861,7 @@ window.addEventListener('resize',sizeCanvas);
 function viewMode(){if(!G||screen!=='game'||G.final)return'all';return G.tab==='prj'?'b:'+G.sub:G.tab==='soc'?'peo':G.tab==='war'?'int':G.tab}
 function focusF(id){const m=viewMode();if(m.startsWith('b:'))return NB[id].br===m.slice(2)?1:.1;if(m==='eco'||m==='peo')return .28;return 1}
 function ap(id,now){
-  if(!G)return 0;const m=viewMode();
+  if(!G)return 0;if(!INV&&screen==='game'&&NB[id])return 0;const m=viewMode();
   if(!G.owned.has(id))return(m.startsWith('b:')&&NB[id].br===m.slice(2)&&nodeState(NB[id])!=='hidden')?.16:0;
   const t=G.anim[id];const pr=t==null?1:clamp((now-t)/1400,0,1);
   if(G.moth&&G.moth.has(id))return .14*focusF(id);const n=NB[id];const e=(n&&n.crew?(G.ec?G.ec.crewEff:1):1)*(G.fund==null?1:G.fund);const dm=INV&&INV.B&&INV.B.infra&&INV.B.infra[id]!=null?(.25+.75*INV.B.infra[id])*(INV.B.infra[id]<.6?(.75+.25*Math.sin(now/90)):1):1;return pr*(0.35+0.65*e)*focusF(id)*dm
@@ -2123,6 +2129,28 @@ function openSheet(t){if(t==='log'){showLog();return}if(t==='suspects'){suspectS
   else if(['def','end','sci','emg'].includes(t)){$('#hsheet').classList.remove('lanem');G.tab='prj';G.sub=t;$('#hsTitle').innerHTML=tabStrip(t);render()}else{$('#hsheet').classList.remove('lanem');G.tab=t;$('#hsTitle').innerHTML=tabStrip(t);render()}
   document.querySelectorAll('#dock button').forEach(b=>b.classList.toggle('on',b.dataset.dk===t))}
 function closeSheet(){G.hs=null;const hs=$('#hsheet');hs.classList.add('out');setTimeout(()=>{if(!G.hs){hs.classList.add('hidden');hs.classList.remove('out','full')}},220);document.querySelectorAll('#dock button').forEach(b=>b.classList.remove('on'));G.tab='war';render()}
+
+/* ---------- home-front sites: society and economy on the planet ---------- */
+const HSI={wel:'<path d="M8 13s-5-3-5-6.5A2.5 2.5 0 0 1 8 5a2.5 2.5 0 0 1 5 1.5C13 10 8 13 8 13z"/>',
+ uni:'<path d="M8 3v10M5 6a4 4 0 0 0 0 4M11 6a4 4 0 0 1 0 4M3 4a7 7 0 0 0 0 8M13 4a7 7 0 0 1 0 8"/>',
+ fam:'<path d="M3 8l5-4 5 4v5H3z M7 13v-3h2v3"/>',nat:'<path d="M8 2l1.8 3.7 4 .6-2.9 2.8.7 4L8 11.2 4.4 13.1l.7-4L2.2 6.3l4-.6z"/>',
+ bas:'<circle cx="8" cy="8" r="5"/><circle cx="8" cy="8" r="2"/>',sec:'<path d="M2 8s2.5-4 6-4 6 4 6 4-2.5 4-6 4-6-4-6-4z"/><circle cx="8" cy="8" r="1.6"/>',
+ ind:'<path d="M2 13V7l4 2V7l4 2V4h3v9z"/>',inf:'<path d="M9 2L4 9h4l-1 5 5-7H8z"/>',
+ res:'<path d="M6 2h4M7 2v4L3.5 12.5A1 1 0 0 0 4.4 14h7.2a1 1 0 0 0 .9-1.5L9 6V2"/>',uni2:'<path d="M1 6l7-3 7 3-7 3z M4 7.5V11c2 1.5 6 1.5 8 0V7.5"/>'};
+const HSITE=[['wel',-120,.42],['fam',-75,.3],['uni',-30,.5],['sec',15,.28],['nat',150,.45],['bas',115,.25],['ind',60,.55],['inf',100,.66],['res',-160,.68],['uni2',-10,.75]];
+function homeSites(g){if(G.final)return '';return HSITE.map(([id,a,r])=>{const d=DIRS.find(x=>x.id===id);if(!d)return '';const u=G.uses[id]||0,mk=pmk(G,id),ar=a*Math.PI/180;
+  const x=g.cx+Math.cos(ar)*g.R*r,y=g.cy+Math.sin(ar)*g.R*r,sz=24+u*3,can=u<MAXP&&G.E>=progCost(d);
+  return `<button class="hsite${u?'':' off'}${can?' can':''}${d.area==='eco'?' eco':''}" data-site="${id}" style="left:${x-sz/2}px;top:${y-sz/2}px;width:${sz}px;height:${sz}px;${mk?`box-shadow:0 0 0 ${mk}px var(--rp)`:''}" title="${d.n}"><svg viewBox="0 0 16 16" width="${sz*.55}" height="${sz*.55}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round">${HSI[id]}</svg>${u?`<b>${u}</b>`:''}</button>`}).join('')}
+function sitePanel(id){const d=DIRS.find(x=>x.id===id),U=UPN[id],u=G.uses[id]||0,mk=pmk(G,id),ec=econ(G);
+  G.hs='site:'+id;const hs=$('#hsheet');hs.classList.remove('hidden','out');hs.classList.add('lanem');
+  $('#hsTitle').innerHTML=`${d.n} <span class="m" style="font-size:11px;color:var(--ac)">${d.area==='eco'?'ECONOMY':'SOCIETY'} · LV ${u}${mk?' · MK '+MK[mk]:''}</span>`;
+  const now=u?nameNow(id):'Not started';
+  $('#hsLane').innerHTML=`<div class="ms2" style="margin-bottom:6px">${now}</div>`+slimRow(d)+
+   box(U.lv.map((n,i)=>lg(`LV ${i+1} · ${n}`,i<u?'<span class="pos">done</span>':i===u?`${progCost(d)} E · ${yrsTo(progCost(d),G.E,ec.net)}`:'',i<u?'':'mut')).join('')+U.mk.map((n,i)=>lg(`Mk ${MK[i+1]} · ${n}`,i<mk?'<span class="pos">done</span>':`${mkCost(G,i)} R · ×${MKM[i+1]}`)).join(''))+
+   (mkReq(d)&&mkReq(d)!=='max'?`<div class="hint neg" style="margin-top:6px">🔒 Next Mk ${mkReq(d)}.</div>`:'')+
+   (comboFor(id).length?`<div class="lbl" style="margin-top:8px;color:var(--ac)">Combos</div>`+comboFor(id).map(c=>lg(`⚭ LV ${c.lv} + ${NB[c.n].n}`,`${c.fx}${combosOn(G).includes(c)?' ✓':''}`)).join(''):'')+
+   `<div class="hint" style="margin-top:8px">The full picture for the numbers this program moves: tap the meters at the top.</div>`;
+  bindProgs($('#hsLane'));document.querySelectorAll('#dock button').forEach(b=>b.classList.remove('on'))}
 function hubRender(ec){if(!G.fo)return;const v=hubLanes(),wk=weakLaneHub();
   const Sx=suspects(G),top=SPECIES.slice().sort((a,b)=>Sx[b.id]-Sx[a.id])[0];
   const col=x=>x.absent||x.rLo>=1.2?'var(--ok)':x.rHi<.9?'var(--bad)':'var(--wa)';
@@ -2141,7 +2169,8 @@ function hubRender(ec){if(!G.fo)return;const v=hubLanes(),wk=weakLaneHub();
   fo.drops.forEach(d=>{const a=d.a*Math.PI/180,x=g.cx+Math.cos(a)*g.R*d.r,y=g.cy+Math.sin(a)*g.R*d.r;h+=`<button class="fo-drop" data-fo="drop:${d.id}" style="left:${x-14}px;top:${y-14}px;background:${d.k==='E'?'var(--ac)':'var(--rp)'};color:${d.k==='E'?'#1c1b18':'#1c1b18'}">+${d.v}</button>`});
   if(fo.cr){const [x,y]=regXY(g,REG[fo.cr.r]);h+=`<button class="fo-cr" data-fo="crisis" style="left:${clamp(x-75,4,g.W-154)}px;top:${y+16}px"><b>⚠ ${fo.cr.t}</b><span>${REG[fo.cr.r].n} · ${fo.cr.end-G.year} yrs to act · tap</span></button>`}
   fo.bubs.forEach((b,i)=>{const x=clamp(g.cx+Math.cos(b.a*Math.PI/180)*g.R*1.05-40,4,g.W-190),y=clamp(14+i*34,4,g.H-30);h+=`<button class="fo-bub" data-fo="bub:${b.id}" style="left:${x}px;top:${y}px"><i style="background:${b.c}">${b.i}</i><span>${b.t}</span></button>`});
-  h+=`<div class="fo-key">● tap drops · 🔭 scout for intel · claim regions · ⚠ answer crises</div>`;
+  h+=homeSites(g);
+  h+=`<div class="fo-key">tap a site to upgrade · ● drops · 🔭 scout · claim · ⚠ crises</div>`;
   $('#ovl').innerHTML=h;
 }
 function crisisSheet(){const cr=G.fo.cr;if(!cr)return;const relief=Math.round(6+G.year/10);
@@ -2185,14 +2214,14 @@ window.addEventListener('click',e=>{if(!G||screen!=='game')return;const m=e.targ
   let k=null;if(m)k=m.dataset.tap.slice(2);else if(st){const l=(st.textContent||'').toLowerCase();k=l.includes('effort')?'E':l.includes('research')?'RP':null}
   if(k&&MKEYS[k]){e.stopImmediatePropagation();e.preventDefault();openSheet('m:'+k)}},true);
 // re-render open meter panel after purchases
-const _render3=render;render=function(){_render3.apply(this,arguments);if(G&&G.hs&&G.hs.startsWith('m:')&&!$('#hsheet').classList.contains('hidden'))meterPanel(G.hs.slice(2))};
-// planet glyphs: tap to open the project
-const GLYPH=[['H3',0,.32,null],['E3',.42,.58,null],['E1',.64,.8,null],['D1',.94,1.1,null],['D4',.95,1.6,-2.35],['S4',1.18,1.45,null],['D3',1.12,1.6,null],['S1',.9,1.15,'T']];
-$('#cvGame').addEventListener('click',e=>{if(!G||screen!=='game'||G.final)return;if(e.target.closest('#ovl>*'))return;const r=$('#cvGame').getBoundingClientRect(),g=geo(),x=e.clientX-r.left,y=e.clientY-r.top;
-  const d=Math.hypot(x-g.cx,y-g.cy)/g.R,a=Math.atan2(y-g.cy,x-g.cx),ta=Math.atan2(g.T[1]-g.cy,g.T[0]-g.cx);
-  let hit=null;for(const [id,lo,hi,ang] of GLYPH){if(!G.owned.has(id))continue;if(d<lo||d>hi)continue;if(ang==='T'&&Math.abs(((a-ta+9.42)%6.283)-3.14)>.5)continue;if(typeof ang==='number'&&Math.abs(((a-ang+9.42)%6.283)-3.14)>.5)continue;hit=id;break}
-  if(!hit&&d<1){const c=['E2','S3','S2','E4','D2'].filter(id=>G.owned.has(id));if(c.length)hit=c[0]}
-  if(!hit)return;const n=NB[hit];G.selPrj=hit;openSheet(n.br==='def'||n.br==='end'||n.br==='sci'||n.br==='emg'?n.br:'def');float(n.n.toUpperCase(),'#e8e2d6')});
+const _render3=render;render=function(){_render3.apply(this,arguments);if(G&&G.hs&&!$('#hsheet').classList.contains('hidden')){if(G.hs.startsWith('m:'))meterPanel(G.hs.slice(2));else if(G.hs.startsWith('site:'))sitePanel(G.hs.slice(5))}};
+document.addEventListener('click',e=>{const b=e.target.closest('[data-site]');if(!b||!G||screen!=='game')return;e.stopPropagation();sitePanel(b.dataset.site)},true);
+// tap outside an open panel closes it (interactive things still work)
+window.addEventListener('click',e=>{if(!G||screen!=='game')return;const t=e.target;
+  const live='#hsheet,#sheet,#dock,#meters,.top,#ovl button,#ready button,[data-site],#ticker,#modal .opt,#finalBar';
+  if(t.closest(live))return;
+  if(!$('#hsheet').classList.contains('hidden'))closeSheet();
+  const m=$('#modal');if(!m.classList.contains('hidden')&&m.dataset.dismiss==='1')slideClose()},true);
 if(GFX)document.querySelectorAll('#dock [data-ic]').forEach(b=>{try{b.querySelector('i').innerHTML=GFX.icon(b.dataset.ic)}catch(e){}});
 titleRender();
 window.__LT={newGame,campLoad,campSave,suspects,clue,adapt,SPECIES,traitorDrift,get G(){return G},act:(id,k)=>act(NB[id],k),tick:n=>{for(let i=0;i<n;i++)yearTick()},render,econ,project,projectB,battleRun,battleInit,battleWave,battleLong,toggleMoth,openDeploy,counters,doProg,NODES,DIRS,priceE,priceR,sz,tc,nodeState,progCost};

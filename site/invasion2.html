@@ -2155,6 +2155,10 @@ document.addEventListener('click',e=>{if(!G||screen!=='game')return;
 });
 window.addEventListener('resize',()=>{if(G&&screen==='game')render()});
 dragClose($('#hsheet'),()=>closeSheet(),()=>$('#hsheet').classList.add('full'));
+window.addEventListener('click',e=>{if(!G||screen!=='game')return;const t=e.target;
+  if(t.closest('#hsheet,#sheet,#dock,#meters,.top,#ovl button,#ready button,#ticker,#modal .opt,#finalBar'))return;
+  if(!$('#hsheet').classList.contains('hidden'))closeSheet();
+  const m=$('#modal');if(!m.classList.contains('hidden')&&m.dataset.dismiss==='1')slideClose()},true);
 titleRender();
 window.__LT={newGame,campLoad,campSave,suspects,clue,adapt,SPECIES,traitorDrift,get G(){return G},act:(id,k)=>act(NB[id],k),tick:n=>{for(let i=0;i<n;i++)yearTick()},render,econ,project,projectB,battleRun,battleInit,battleWave,battleLong,toggleMoth,openDeploy,counters,doProg,NODES,DIRS,priceE,priceR,sz,tc,nodeState,progCost};
 </script>
