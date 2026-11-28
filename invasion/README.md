@@ -480,3 +480,12 @@ A strategy bot (each turn it buys the most projected days per point spent) playe
   - **Raise a lane:** tap a lane for every project, Mk and program that raises it, ranked by lane gain per point spent (`laneOpts`).
   - **Field operations:** Effort and Research drops (tap to collect, expire after 4 years); 5 rim regions to scout (intel reliability +2% each up to +10%, plus a clue or intel report) and then claim (+10 to one lane, Western +4 to all, via `G.lb`); local crises with a 5-year timer (relief / crackdown; ignored = Stability −5, Traitors +3); alert bubbles (Traitors, Stability, weakest lane, new clue) that open the relevant sheet.
   - Campaign progress is shared with /invasion (the same localStorage key).
+
+## Invasion 3 prototype (`site/invasion3.html`, /invasion3)
+
+Built from /invasion2 (map hub, field operations, slide panels, graphics pack).
+- **Dock:** Defence · Endurance · Science · Emergent · War Room. Each opens that project branch directly; the panel tab strip switches between them.
+- **Home front through the meters:** tapping Stability, Resolve, Industry or Traitors, or Effort or Research in the top bar, opens a panel with the calculation, a now → Year 100 forecast, the programs that improve that meter (with buy and Mk buttons), programs that cost it as a side effect, Purge (Traitors ≥ 25), upkeep (Effort), combo progress and next steps. The panel's tab strip switches between the six numbers.
+- **Planet glyphs are tappable:** tapping a built project's picture opens its card (rings by distance from the centre: Undercity, Bunkers, Silos, Grid rim, Lance, Shield and Fleet orbits, Signal arc; cities → Hardened Cities, Counter-AI, Xenobiology, Dispersal, Legion).
+- **Battle damage on glyphs:** each project's picture fades with its infrastructure condition and flickers below 60%.
+- Alert bubbles for Traitors and Stability open those meter panels.
