@@ -419,6 +419,11 @@ p.voice{color:var(--bad);font-family:var(--mono);font-size:12px}
 #hscrim{display:none!important}
 .grab{display:flex;justify-content:center;padding:6px 0 0;cursor:pointer}.grab i{width:44px;height:5px;border-radius:3px;background:var(--ln)}
 .hsh{padding-top:2px!important}
+.xbox{margin-top:6px}.xbox .lg{font-size:12px}
+.xl{display:grid;grid-template-columns:1fr;gap:1px;padding:4px 0;border-bottom:1px dashed var(--ln);font-family:var(--mono);font-size:10px;color:var(--mu)}.xl:last-child{border:0}.xl b{font-family:var(--sans,inherit);font-size:12px;color:var(--tx)}.xl i{font-style:normal;color:var(--wa)}
+.xc{font-family:var(--mono);font-size:10.5px;line-height:1.45;margin-top:4px}.xc b{color:var(--tx)}
+.hstabs{display:flex;gap:4px}.hstabs button{flex:1;font:600 12px var(--sans,inherit);padding:6px 2px;border-radius:8px;border:1px solid var(--ln);color:var(--mu);background:var(--p1);white-space:nowrap}
+.hstabs button.on{color:#1c1b18;background:var(--ac);border-color:var(--ac)}
 </style>
 <link rel="stylesheet" href="invasion-assets/command-v1/graphics.css?v=2">
 </head>
@@ -1450,10 +1455,32 @@ function purgeStrip(){if(G.T<25)return'';const ok=purgeReady()&&G.E>=25;const cd
   return `<div class="strip"><div><b>TRAITORS ${Math.round(G.T)} · ${traitorDrift(G).tot>0?'RISING':'HIGH'}</b><span>Purge cuts them 40%${cd?` · ready in ${cd} yrs`:''}</span></div><button id="purgeBtn" ${ok?'':'disabled'}>PURGE<br><em>25 E</em></button></div>`}
 function doPurge(){if(G.E<25||!purgeReady())return;G.E-=25;const t0=G.T;G.T=Math.round(G.T*.6);G.S=clamp(G.S-6,0,100);G.R=clamp(G.R-3,0,100);G.purgeY=G.year;log(`Purge ordered. Traitors ${Math.round(t0)} → ${G.T}. Stability −6, Resolve −3.`);float('PURGE · TRAITORS −40%','#c0533f');G.ec=econ(G);render()}
 function bindProgs(P){P.querySelectorAll('[data-d]').forEach(b=>b.onclick=e=>{e.stopPropagation();doProg(DIRS[+b.dataset.d])});P.querySelectorAll('[data-mk]').forEach(b=>b.onclick=e=>{e.stopPropagation();doMk(DIRS[+b.dataset.mk])});P.querySelectorAll('[data-pm]').forEach(b=>b.onclick=e=>{e.stopPropagation();G.pmode=b.dataset.pm;render()});const pb=$('#purgeBtn');if(pb)pb.onclick=doPurge}
-function rSoc(P){P.innerHTML=pmodeBar()+DIRS.filter(d=>d.area==='peo').map(d=>{const pg=d.id==='sec'&&G.T>=25;let h=slimRow(d,pg);if(pg){const ok=purgeReady()&&G.E>=25,cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;
-    h=h.replace('<div class="slim"','<div class="slim purge"').replace('<button class="cost"',`<button class="cost pg" id="purgeBtn" ${ok?'':'disabled'}>${cd?`PURGE<br>${cd} yrs`:'PURGE<br>25 E'}</button><button class="cost"`).replace(/<span class="trk">.*?<\/span>/,'')}return h}).join('');bindProgs(P)}
+function rSoc(P){const ecS=econ(G);P.innerHTML=pmodeBar()+DIRS.filter(d=>d.area==='peo').map(d=>{const pg=d.id==='sec'&&G.T>=25;let h=slimRow(d,pg);if(pg){const ok=purgeReady()&&G.E>=25,cd=G.purgeY!=null?Math.max(0,G.purgeY+PURGE_CD-G.year):0;
+    h=h.replace('<div class="slim"','<div class="slim purge"').replace('<button class="cost"',`<button class="cost pg" id="purgeBtn" ${ok?'':'disabled'}>${cd?`PURGE<br>${cd} yrs`:'PURGE<br>25 E'}</button><button class="cost"`).replace(/<span class="trk">.*?<\/span>/,'')}return h}).join('')+(G.hs?socCalc()+forecastBox(['S','R','T','P'])+nextBuys('peo',ecS)+comboBox():'');bindProgs(P)}
+
+/* ---------- sheet extras: calcs, forecasts, progress ---------- */
+const yrsTo=(c,have,rate)=>have>=c?'<span class="pos">now</span>':rate>0?`in ${((c-have)/rate).toFixed(1)} yrs`:'<span class="neg">never</span>';
+function fcRow(n,now,then,dec=0,good=1){const d=then-now,c=Math.abs(d)<.5?'mut':(d>0)===(good>0)?'pos':'neg';return lg(n,`${now.toFixed(dec)} → <span class="${c}">${then.toFixed(dec)}</span>`)}
+function forecastBox(keys){const W=warEstimate(),f=W.fw,ef=econ(f),ec=econ(G);
+  const R={S:['Stability',G.S,f.S,0,1],R:['Resolve',G.R,f.R,0,1],T:['Traitors',G.T,f.T,0,-1],I:['Industry',G.I,f.I,0,1],P:['Population (bn)',G.P,f.P,1,1],E:['Effort /yr',ec.net,ef.net,1,1],RP:['Research /yr',ec.rp,ef.rp,1,1],K:['Knowledge',G.K,f.K,0,1]};
+  return `<div class="box tight xbox"><div class="lbl" style="color:var(--ac)">Year ${G.year} → Year 100 at current rates</div>${keys.map(k=>fcRow(...R[k])).join('')}</div>`}
+function nextBuys(area,ec){const sci=brLevels(G,'sci',99);
+  return `<div class="box tight xbox"><div class="lbl" style="color:var(--ac)">Next steps · time to afford at ${sgn(ec.net)} E/yr, ${sgn(ec.rp)} R/yr</div>`+DIRS.filter(d=>d.area===area).map(d=>{const u=G.uses[d.id]||0,mk=pmk(G,d.id),req=mkReq(d);
+    const lv=u<MAXP?`LV ${u+1} ${UPN[d.id].lv[u]} · ${progCost(d)} E ${yrsTo(progCost(d),G.E,ec.net)}`:'<span class="mut">levels done</span>';
+    const m=mk>=3?'<span class="mut">Mk done</span>':req?`<span class="mut">Mk ${MK[mk+1]}: ${mk===0?`Science ${sci}/1`:mk===1?`Science ${sci}/3`:'needs '+NB[UPN[d.id].link].n}</span>`:`Mk ${MK[mk+1]} · ${mkCost(G,mk)} R ${yrsTo(mkCost(G,mk),G.RP,ec.rp)}`;
+    const ms=u<2?'decision at LV 2':u<4?'decision at LV 4':mk<2?'decision at Mk III':'';
+    return `<div class="xl"><b>${d.n}</b><span>${lv}</span><span>${m}${ms?` · <i>${ms}</i>`:''}</span></div>`}).join('')+`</div>`}
+function comboBox(){return `<div class="box tight xbox"><div class="lbl" style="color:var(--ac)">Combos · program + project</div>`+COMBOS.map(c=>{const on=combosOn(G).includes(c),u=G.uses[c.p]||0,has=G.owned.has(c.n);
+  return lg(`${on?'✓':'·'} ${DIRS.find(d=>d.id===c.p).n} LV ${c.lv} + ${NB[c.n].n}`,on?`<span class="pos">${c.fx}</span>`:`<span class="mut">${u>=c.lv?'':`LV ${u}/${c.lv}`}${u<c.lv&&!has?' · ':''}${has?'':'build it'}</span>`)}).join('')+`</div>`}
+function ecoCalc(ec){return `<div class="box tight xbox" data-tap="effort"><div class="lbl" style="color:var(--ac)">How this year's numbers are made ›</div>
+  <div class="xc">Effort = ${ec.workforce.toFixed(2)}bn workers × Industry ${Math.round(G.I)} × 0.011 × Stability ×${ec.stabM.toFixed(2)} × programs ×${G.dr.effM.toFixed(2)} = <b>${ec.gross.toFixed(2)}</b> − upkeep ${ec.upkeep.toFixed(2)} = <b class="pos">${sgn(ec.net,2)}/yr</b></div>
+  <div class="xc">Research = (Knowledge ${Math.round(G.K)} × 0.035 × √(Pop ${G.P.toFixed(1)}/8) = ${kRes(G).toFixed(2)} + labs ${ec.labs.toFixed(2)}) × University ×${G.dr.resM.toFixed(2)} = <b class="rp">${sgn(ec.rp,2)}/yr</b></div></div>`}
+function socCalc(){const d=traitorDrift(G);return `<div class="box tight xbox" data-tap="m:T"><div class="lbl" style="color:var(--ac)">What is moving your society ›</div>
+  <div class="xc">Stability moves 2% a year toward its target <b>${Math.round(G.dr.Seq)}</b> (50 + Welfare + Family${G.R<30?', −0.5 while Resolve < 30':''}): now ${Math.round(G.S)}, so <b class="${G.dr.Seq>=G.S?'pos':'neg'}">${sgn((G.dr.Seq-G.S)*.02,2)}/yr</b>.</div>
+  <div class="xc">Traitors drift <b class="${d.tot<=0?'pos':'neg'}">${sgn(d.tot,2)}/yr</b>: base and signal ${sgn(d.base+d.sig,2)}, loyalty ${sgn(d.dis,2)}, Unity and Resolve ${sgn(d.uni,2)}, Security ${sgn(d.sec,2)}${d.unk?`, unexplained ${sgn(d.unk,2)}`:''}.${G.T>30?' <span class="neg">Above 30: sabotage risk and leaks.</span>':''}</div></div>`}
 function rEco(P,ec){
   P.innerHTML=pmodeBar()+DIRS.filter(d=>d.area==='eco').map(d=>slimRow(d)).join('')+`<div class="box tight" data-tap="effort"><div class="lbl">Upkeep · −${ec.upkeep.toFixed(2)}/yr</div>`+(ec.ups.length?ec.ups.slice().sort((a,b)=>b[1]-a[1]).slice(0,3).map(([n,u])=>lg(n,`<span class="neg">−${u.toFixed(2)}</span>`)).join('')+(ec.ups.length>3?`<div class="lg2">+${ec.ups.length-3} more ›</div>`:''):lg('Nothing built yet','<span class="mut">0</span>'))+`</div>`;
+  if(G.hs)P.insertAdjacentHTML('beforeend',ecoCalc(ec)+forecastBox(['E','RP','P','I','K'])+nextBuys('eco',ec));
   bindProgs(P);
 }
 /* ---------- projects (E) ---------- */
@@ -2087,7 +2114,7 @@ function laneSheetHub(k){const L=hubLanes().find(x=>x.k===k),o=laneOpts(k);
 }
 function openSheet(t){if(t==='log'){showLog();return}if(t==='suspects'){suspectSheet();return}
   G.hs=t;const hs=$('#hsheet');hs.classList.remove('hidden','out');
-  if(t.startsWith('lane:')){$('#hsheet').classList.add('lanem');laneSheetHub(t.slice(5))}else{$('#hsheet').classList.remove('lanem');G.tab=t;$('#hsTitle').textContent={soc:'Society',eco:'Economy',prj:'Projects',war:'War Room'}[t];render()}
+  if(t.startsWith('lane:')){$('#hsheet').classList.add('lanem');laneSheetHub(t.slice(5))}else{$('#hsheet').classList.remove('lanem');G.tab=t;$('#hsTitle').innerHTML=`<span class="hstabs">${[['soc','Society'],['eco','Economy'],['prj','Projects'],['war','War Room']].map(([k,n])=>`<button data-hs="${k}" class="${k===t?'on':''}">${n}</button>`).join('')}</span>`;render()}
   document.querySelectorAll('#dock button').forEach(b=>b.classList.toggle('on',b.dataset.dk===t))}
 function closeSheet(){G.hs=null;const hs=$('#hsheet');hs.classList.add('out');setTimeout(()=>{if(!G.hs){hs.classList.add('hidden');hs.classList.remove('out','full')}},220);document.querySelectorAll('#dock button').forEach(b=>b.classList.remove('on'));G.tab='war';render()}
 function hubRender(ec){if(!G.fo)return;const v=hubLanes(),wk=weakLaneHub();
